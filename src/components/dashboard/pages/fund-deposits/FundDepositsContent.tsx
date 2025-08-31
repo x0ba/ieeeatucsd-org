@@ -384,7 +384,18 @@ const FundDepositsContent: React.FC = () => {
                 depositData.bankTransferFiles = bankTransferFileUrls;
             }
 
-            await addDoc(collection(db, 'fundDeposits'), depositData);
+            const docRef = await addDoc(collection(db, 'fundDeposits'), depositData);
+
+            // fire-and-forget email notification (submission)
+            try {
+                await fetch('/api/email/send-fund-deposit-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'fund_deposit_submission', depositId: docRef.id })
+                });
+            } catch (e) {
+                console.warn('Fund deposit submission email failed', e);
+            }
 
             setShowNewDepositModal(false);
             setNewDeposit({
@@ -451,6 +462,17 @@ const FundDepositsContent: React.FC = () => {
             }
 
             await updateDoc(depositRef, updateData);
+
+            // fire-and-forget email notification (status change)
+            try {
+                await fetch('/api/email/send-fund-deposit-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'fund_deposit_status_change', depositId, newStatus, rejectionReason })
+                });
+            } catch (e) {
+                console.warn('Fund deposit status email failed', e);
+            }
         } catch (error) {
             console.error('Error updating deposit status:', error);
         }

@@ -339,14 +339,21 @@ export default function ManageEventsContent() {
     // Sort functionality
     const sortedEventRequests = [...filteredEventRequests].sort((a, b) => {
         switch (sortBy) {
-            case 'date-desc':
-                const dateA = a.createdAt?.toDate?.() || new Date(0);
-                const dateB = b.createdAt?.toDate?.() || new Date(0);
-                return dateB.getTime() - dateA.getTime();
-            case 'date-asc':
-                const dateAsc_A = a.createdAt?.toDate?.() || new Date(0);
-                const dateAsc_B = b.createdAt?.toDate?.() || new Date(0);
-                return dateAsc_A.getTime() - dateAsc_B.getTime();
+            case 'date-desc': {
+                // Purely sort by event startDateTime (latest -> nearest). Fallback to createdAt when missing.
+                const aStart = a.startDateTime?.toDate?.() || (a.startDateTime?.toMillis ? new Date(a.startDateTime.toMillis()) : null);
+                const bStart = b.startDateTime?.toDate?.() || (b.startDateTime?.toMillis ? new Date(b.startDateTime.toMillis()) : null);
+                const aDate = aStart || a.createdAt?.toDate?.() || new Date(0);
+                const bDate = bStart || b.createdAt?.toDate?.() || new Date(0);
+                return bDate.getTime() - aDate.getTime();
+            }
+            case 'date-asc': {
+                const aStart = a.startDateTime?.toDate?.() || (a.startDateTime?.toMillis ? new Date(a.startDateTime.toMillis()) : null);
+                const bStart = b.startDateTime?.toDate?.() || (b.startDateTime?.toMillis ? new Date(b.startDateTime.toMillis()) : null);
+                const aDate = aStart || a.createdAt?.toDate?.() || new Date(0);
+                const bDate = bStart || b.createdAt?.toDate?.() || new Date(0);
+                return aDate.getTime() - bDate.getTime();
+            }
             case 'name-asc':
                 return a.name.localeCompare(b.name);
             case 'name-desc':
@@ -640,10 +647,12 @@ export default function ManageEventsContent() {
             case 'approved':
                 return 'bg-green-100 text-green-800';
             case 'submitted':
+                return 'bg-blue-100 text-blue-800';
             case 'pending':
                 return 'bg-yellow-100 text-yellow-800';
             case 'needs_review':
-                return 'bg-orange-100 text-orange-800';
+                return 'bg-amber-100 text-amber-800';
+            case 'declined':
             case 'rejected':
                 return 'bg-red-100 text-red-800';
             default:
@@ -660,6 +669,7 @@ export default function ManageEventsContent() {
                 return <Clock className="w-4 h-4" />;
             case 'needs_review':
                 return <AlertTriangle className="w-4 h-4" />;
+            case 'declined':
             case 'rejected':
                 return <XCircle className="w-4 h-4" />;
             default:
