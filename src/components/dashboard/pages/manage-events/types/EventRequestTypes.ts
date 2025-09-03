@@ -44,6 +44,7 @@ export interface EventFormData {
   requiredLogos: string[];
   otherLogos: string[];
   otherLogoFiles: File[];
+  otherFlyerFiles: File[];
   advertisingFormat: string;
   additionalSpecifications: string;
   hasRoomBooking: boolean;
@@ -56,6 +57,7 @@ export interface EventFormData {
   // Existing files for editing
   existingRoomBookingFiles: string[];
   existingOtherLogos: string[];
+  existingOtherFlyerFiles: string[];
   // Legacy fields for backward compatibility
   itemizedInvoice: ItemizedInvoiceItem[];
   invoiceTax: number;

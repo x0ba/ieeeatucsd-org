@@ -226,7 +226,7 @@ export default function EventReviewSection({
             <h3 className="text-lg font-semibold text-purple-900 mb-4">Requirements & Services</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${data?.needsGraphics || data?.flyersNeeded ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                <div className={`w-3 h-3 rounded-full ${data?.needsGraphics || data?.flyersNeeded || (data?.flyerType && data?.flyerType.length > 0) ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                 <span className="text-purple-700">Graphics Required</span>
               </div>
               <div className="flex items-center space-x-2">
@@ -234,7 +234,7 @@ export default function EventReviewSection({
                 <span className="text-purple-700">AS Funding Required</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${data?.flyersNeeded ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                <div className={`w-3 h-3 rounded-full ${data?.flyersNeeded || (data?.flyerType && data?.flyerType.length > 0) ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                 <span className="text-purple-700">Flyers Needed</span>
               </div>
               <div className="flex items-center space-x-2">

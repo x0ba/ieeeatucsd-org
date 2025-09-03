@@ -9,7 +9,7 @@ interface MarketingSectionProps {
     onInputChange: (field: string, value: any) => void;
     onArrayChange: (field: string, value: string, checked: boolean) => void;
     onFileChange: (field: string, files: FileList | null) => void;
-    onRemoveExistingFile?: (fileUrl: string, fileType: 'roomBooking' | 'invoice' | 'invoiceFiles' | 'otherLogos') => void;
+    onRemoveExistingFile?: (fileUrl: string, fileType: 'roomBooking' | 'invoice' | 'invoiceFiles' | 'otherLogos' | 'otherFlyerFiles') => void;
     eventRequestId?: string;
 }
 
@@ -67,17 +67,48 @@ export default function MarketingSection({
 
                     {/* Other Flyer Type */}
                     {formData.flyerType.includes('Other (please specify in additional requests)') && (
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Please specify the other flyer type *
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.otherFlyerType}
-                                onChange={(e) => onInputChange('otherFlyerType', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Specify other flyer type"
-                            />
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Please specify the other flyer type *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.otherFlyerType}
+                                    onChange={(e) => onInputChange('otherFlyerType', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Specify other flyer type"
+                                />
+                            </div>
+
+                            {/* Other Flyer Files Upload */}
+                            <div>
+                                <EnhancedFileUploadManager
+                                    title="Other Flyer Reference Files"
+                                    description="Upload reference files, examples, or specifications for your custom flyer type. Max size: 10MB each"
+                                    existingFiles={formData.existingOtherFlyerFiles || []}
+                                    newFiles={formData.otherFlyerFiles || []}
+                                    onFilesChange={(files) => {
+                                        // Convert File[] to FileList-like object
+                                        if (Array.isArray(files)) {
+                                            const fileList = {
+                                                item: (index: number) => files[index] || null,
+                                                ...files
+                                            } as FileList;
+                                            onFileChange('otherFlyerFiles', fileList);
+                                        } else {
+                                            onFileChange('otherFlyerFiles', null);
+                                        }
+                                    }}
+                                    onRemoveExistingFile={(fileUrl) => onRemoveExistingFile?.(fileUrl, 'otherFlyerFiles')}
+                                    allowedTypes={['pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx']}
+                                    maxSizeInMB={10}
+                                    maxFiles={5}
+                                    multiple={true}
+                                    required={false}
+                                    eventRequestId={eventRequestId}
+                                />
+                            </div>
                         </div>
                     )}
 

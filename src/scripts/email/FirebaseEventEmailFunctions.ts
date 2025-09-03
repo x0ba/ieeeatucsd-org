@@ -149,14 +149,15 @@ export async function sendFirebaseEventRequestSubmissionEmail(
               eventRequest.needsGraphics ||
               eventRequest.needsAsFunding ||
               eventRequest.flyersNeeded ||
+              (eventRequest.flyerType && eventRequest.flyerType.length > 0) ||
               eventRequest.photographyNeeded
                 ? `
             <div class="info-card">
               <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 18px;">⚡ Special Requirements</h3>
               <div>
-                ${eventRequest.needsGraphics ? '<span class="badge">Graphics Required</span>' : ""}
+                ${eventRequest.needsGraphics || (eventRequest.flyerType && eventRequest.flyerType.length > 0) ? '<span class="badge">Graphics Required</span>' : ""}
                 ${eventRequest.needsAsFunding ? '<span class="badge">AS Funding</span>' : ""}
-                ${eventRequest.flyersNeeded ? '<span class="badge">Flyers Needed</span>' : ""}
+                ${eventRequest.flyersNeeded || (eventRequest.flyerType && eventRequest.flyerType.length > 0) ? '<span class="badge">Flyers Needed</span>' : ""}
                 ${eventRequest.photographyNeeded ? '<span class="badge">Photography</span>' : ""}
               </div>
             </div>

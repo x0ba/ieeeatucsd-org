@@ -62,6 +62,7 @@ export default function EventRequestModal({ onClose, editingRequest, onSuccess }
         requiredLogos: [],
         otherLogos: [],
         otherLogoFiles: [],
+        otherFlyerFiles: [],
         advertisingFormat: '',
         additionalSpecifications: '',
         hasRoomBooking: true,
@@ -74,6 +75,7 @@ export default function EventRequestModal({ onClose, editingRequest, onSuccess }
         // Existing files for editing
         existingRoomBookingFiles: [],
         existingOtherLogos: [],
+        existingOtherFlyerFiles: [],
         // Legacy fields for backward compatibility
         itemizedInvoice: [],
         invoiceTax: 0,
@@ -144,6 +146,7 @@ export default function EventRequestModal({ onClose, editingRequest, onSuccess }
                 // File fields
                 existingRoomBookingFiles: editingRequest.roomBookingFiles || [],
                 existingOtherLogos: editingRequest.otherLogos || [],
+                existingOtherFlyerFiles: editingRequest.otherFlyerFiles || [],
                 existingInvoiceFiles: editingRequest.invoiceFiles || [],
                 invoices: invoicesData,
                 _firestore: editingRequest
@@ -169,6 +172,7 @@ export default function EventRequestModal({ onClose, editingRequest, onSuccess }
                 requiredLogos: editingRequest.requiredLogos || [],
                 otherLogos: editingRequest.otherLogos || [],
                 otherLogoFiles: [],
+                otherFlyerFiles: [],
                 advertisingFormat: editingRequest.advertisingFormat || '',
                 additionalSpecifications: editingRequest.additionalSpecifications || '',
                 hasRoomBooking: editingRequest.hasRoomBooking ?? editingRequest.willOrHaveRoomBooking ?? true,
@@ -180,6 +184,7 @@ export default function EventRequestModal({ onClose, editingRequest, onSuccess }
                 needsGraphics: editingRequest.needsGraphics || false,
                 existingRoomBookingFiles: editingRequest.roomBookingFiles || [],
                 existingOtherLogos: editingRequest.otherLogos || [],
+                existingOtherFlyerFiles: editingRequest.otherFlyerFiles || [],
                 // Legacy fields
                 itemizedInvoice: editingRequest.itemizedInvoice || [],
                 invoiceTax: editingRequest.invoiceTax || 0,
@@ -220,7 +225,7 @@ export default function EventRequestModal({ onClose, editingRequest, onSuccess }
         }
     };
 
-    const handleRemoveExistingFile = (fileUrl: string, fileType: 'roomBooking' | 'invoice' | 'invoiceFiles' | 'otherLogos') => {
+    const handleRemoveExistingFile = (fileUrl: string, fileType: 'roomBooking' | 'invoice' | 'invoiceFiles' | 'otherLogos' | 'otherFlyerFiles') => {
         setFormData(prev => {
             switch (fileType) {
                 case 'roomBooking':
@@ -232,6 +237,11 @@ export default function EventRequestModal({ onClose, editingRequest, onSuccess }
                     return {
                         ...prev,
                         existingOtherLogos: prev.existingOtherLogos.filter(url => url !== fileUrl)
+                    };
+                case 'otherFlyerFiles':
+                    return {
+                        ...prev,
+                        existingOtherFlyerFiles: prev.existingOtherFlyerFiles.filter(url => url !== fileUrl)
                     };
                 default:
                     return prev;
@@ -291,6 +301,7 @@ export default function EventRequestModal({ onClose, editingRequest, onSuccess }
             // Upload files using event-based structure
             let roomBookingUrls: string[] = [];
             let otherLogoUrls: string[] = [];
+            let otherFlyerUrls: string[] = [];
 
             if (formData.roomBookingFile) {
                 roomBookingUrls = await uploadFilesForEvent([formData.roomBookingFile], eventId, 'room_booking');
@@ -298,6 +309,10 @@ export default function EventRequestModal({ onClose, editingRequest, onSuccess }
 
             if (formData.otherLogoFiles.length > 0) {
                 otherLogoUrls = await uploadFilesForEvent(formData.otherLogoFiles, eventId, 'logo');
+            }
+
+            if (formData.otherFlyerFiles.length > 0) {
+                otherFlyerUrls = await uploadFilesForEvent(formData.otherFlyerFiles, eventId, 'flyer');
             }
 
             // Process invoices with file uploads
@@ -358,6 +373,7 @@ export default function EventRequestModal({ onClose, editingRequest, onSuccess }
                 photographyNeeded: formData.photographyNeeded,
                 requiredLogos: formData.requiredLogos,
                 otherLogos: finalOtherLogoUrls,
+                otherFlyerFiles: [...(formData.existingOtherFlyerFiles || []), ...otherFlyerUrls],
                 advertisingFormat: formData.advertisingFormat,
                 additionalSpecifications: formData.additionalSpecifications,
                 hasRoomBooking: formData.hasRoomBooking,

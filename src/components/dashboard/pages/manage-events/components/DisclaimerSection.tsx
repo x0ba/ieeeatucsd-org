@@ -24,11 +24,12 @@ export default function DisclaimerSection() {
                     <div className="flex items-start space-x-3">
                         <Clock className="w-5 h-5 text-blue-600 mt-1" />
                         <div>
-                            <h4 className="font-semibold text-blue-800 mb-2">Timing Requirements</h4>
+                            <h4 className="font-semibold text-blue-800 mb-2">Submission Deadlines</h4>
                             <ul className="text-sm text-blue-700 space-y-1">
-                                <li>• Submit requests at least 2 weeks before your event</li>
-                                <li>• Graphics requests need 1 week minimum lead time</li>
-                                <li>• AS funding requests require 3 weeks minimum</li>
+                                <li>• <strong>AS Funding requires submission 5 weeks before the event date</strong></li>
+                                <li>• <strong>VC Operations requires submission 7 business weeks before the event date if you want AS Funding (for Food or Flyers)</strong></li>
+                                <li>• <strong>VC Operations requires submission 4 weeks before the event date without AS Funding (for Food or Flyers)</strong></li>
+                                <li>• <strong>Check Slack for updated dates for submission</strong></li>
                                 <li>• Room bookings should be secured before submitting</li>
                             </ul>
                         </div>

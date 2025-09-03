@@ -154,6 +154,19 @@ export const validateLogistics = (
     return { isValid: false, errors, errorMessage };
   }
 
+  // Validate that attendance is a positive integer
+  const attendanceValue = parseInt(formData.expectedAttendance);
+  if (
+    isNaN(attendanceValue) ||
+    attendanceValue <= 0 ||
+    !Number.isInteger(attendanceValue) ||
+    formData.expectedAttendance.includes(".")
+  ) {
+    errorMessage =
+      "Expected attendance must be a positive integer (no decimals or negative numbers)";
+    return { isValid: false, errors, errorMessage };
+  }
+
   // Food/drinks validation
   if (
     formData.servingFoodDrinks === undefined ||

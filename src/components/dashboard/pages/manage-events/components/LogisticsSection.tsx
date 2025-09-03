@@ -129,10 +129,23 @@ export default function LogisticsSection({
                 <input
                     type="number"
                     min="1"
+                    step="1"
                     value={formData.expectedAttendance}
-                    onChange={(e) => onInputChange('expectedAttendance', e.target.value)}
+                    onChange={(e) => {
+                        // Only allow positive integers
+                        const value = e.target.value;
+                        if (value === '' || (/^\d+$/.test(value) && parseInt(value) > 0)) {
+                            onInputChange('expectedAttendance', value);
+                        }
+                    }}
+                    onKeyDown={(e) => {
+                        // Prevent decimal point, minus sign, and 'e' (scientific notation)
+                        if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                            e.preventDefault();
+                        }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter expected number of attendees"
+                    placeholder="Enter expected number of attendees (positive integer only)"
                 />
 
                 {attendance > 0 && (
