@@ -71,6 +71,13 @@ export const extractFileName = (url: string) => {
   }
 };
 
+// Local date formatting helpers to avoid UTC-induced off-by-one issues
+const pad2 = (n: number) => n.toString().padStart(2, "0");
+const formatLocalDate = (d: Date) =>
+  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const formatLocalDateTime = (d: Date) =>
+  `${formatLocalDate(d)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
 export const safeGetTimeString = (timestamp: any) => {
   try {
     if (!timestamp) return "";
@@ -88,7 +95,8 @@ export const safeGetDateString = (timestamp: any) => {
     if (!timestamp) return "";
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     if (isNaN(date.getTime())) return "";
-    return date.toISOString().split("T")[0];
+    // Use local date to avoid UTC off-by-one
+    return formatLocalDate(date);
   } catch (error) {
     console.warn("Error parsing date:", error);
     return "";
@@ -100,7 +108,8 @@ export const safeGetDateTimeString = (timestamp: any) => {
     if (!timestamp) return "";
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     if (isNaN(date.getTime())) return "";
-    return date.toISOString().slice(0, 16); // Format for datetime-local input
+    // Use local date-time to avoid UTC shifting
+    return formatLocalDateTime(date);
   } catch (error) {
     console.warn("Error parsing datetime:", error);
     return "";
@@ -112,7 +121,15 @@ export const createSafeDateTime = (date: string, time: string) => {
     if (!date || !time) {
       throw new Error("Date and time are required");
     }
-    const dateTime = new Date(`${date}T${time}`);
+    const [y, m, d] = date.split("-").map((v) => parseInt(v, 10));
+    const [hh, mm] = time.split(":").map((v) => parseInt(v, 10));
+    if (!y || !m || !d || isNaN(y) || isNaN(m) || isNaN(d)) {
+      throw new Error("Invalid date format");
+    }
+    const hours = isNaN(hh) ? 0 : hh;
+    const minutes = isNaN(mm) ? 0 : mm;
+    // Construct local Date to avoid timezone offset issues
+    const dateTime = new Date(y, m - 1, d, hours, minutes, 0, 0);
     if (isNaN(dateTime.getTime())) {
       throw new Error("Invalid date/time combination");
     }
@@ -126,7 +143,11 @@ export const createSafeDateTime = (date: string, time: string) => {
 export const createSafeDisplayDateTime = (date: string, time: string) => {
   try {
     if (!date || !time) return null;
-    const dateTime = new Date(`${date}T${time}`);
+    const [y, m, d] = date.split("-").map((v) => parseInt(v, 10));
+    const [hh, mm] = time.split(":").map((v) => parseInt(v, 10));
+    const hours = isNaN(hh) ? 0 : hh;
+    const minutes = isNaN(mm) ? 0 : mm;
+    const dateTime = new Date(y, m - 1, d, hours, minutes, 0, 0);
     if (isNaN(dateTime.getTime())) return null;
     return dateTime;
   } catch (error) {
