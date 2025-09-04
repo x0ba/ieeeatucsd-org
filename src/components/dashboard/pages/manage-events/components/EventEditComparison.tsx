@@ -61,6 +61,38 @@ export default function EventEditComparison({
     debounceMs: 300
   });
 
+  // Local-only date helpers to avoid UTC shifts
+  const pad2 = (n: number) => n.toString().padStart(2, '0');
+  const toLocalYMD = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  const parseDateLooseLocal = (val: any): Date | null => {
+    if (!val) return null;
+    try {
+      if (val.toDate) {
+        return val.toDate();
+      }
+      if (typeof val === 'string') {
+        // YYYY-MM-DD (treat as local date)
+        const m = val.match(/^\d{4}-\d{2}-\d{2}$/);
+        if (m) {
+          const [y, mth, d] = val.split('-').map((v) => parseInt(v, 10));
+          return new Date(y, mth - 1, d, 0, 0, 0, 0);
+        }
+        // YYYY-MM-DDTHH:mm
+        const m2 = val.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/);
+        if (m2) {
+          const [datePart, timePart] = val.split('T');
+          const [y, mth, d] = datePart.split('-').map((v) => parseInt(v, 10));
+          const [hh, mm] = timePart.split(':').map((v) => parseInt(v, 10));
+          return new Date(y, mth - 1, d, hh, mm || 0, 0, 0);
+        }
+      }
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? null : d;
+    } catch {
+      return null;
+    }
+  };
+
   const formatValue = (value: any, type: string): string => {
     // Handle null and undefined
     if (value === null || value === undefined) return 'Not specified';
@@ -79,38 +111,23 @@ export default function EventEditComparison({
       case 'boolean':
         return value ? 'Yes' : 'No';
       case 'date':
-        // Handle empty string for dates
         if (value === '') return 'Not specified';
-        try {
-          const date = value.toDate ? value.toDate() : new Date(value);
-          // Check if date is valid
-          if (isNaN(date.getTime())) return 'Not specified';
-          return date.toLocaleDateString('en-US', {
-            weekday: 'short',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          });
-        } catch {
-          return 'Not specified';
-        }
+        const d = parseDateLooseLocal(value);
+        if (!d) return 'Not specified';
+        return d.toLocaleDateString('en-US', {
+          weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+        });
       case 'array':
-        if (Array.isArray(value)) {
-          return value.length > 0 ? value.join(', ') : 'Not specified';
-        }
+        if (Array.isArray(value)) return value.length > 0 ? value.join(', ') : 'Not specified';
         return String(value);
       case 'object':
-        if (typeof value === 'object') {
-          return JSON.stringify(value, null, 2);
-        }
+        if (typeof value === 'object') return JSON.stringify(value, null, 2);
         return String(value);
       case 'number':
-        // Handle number values properly
         if (value === '' || value === null || value === undefined) return 'Not specified';
         const numValue = Number(value);
         return isNaN(numValue) ? 'Not specified' : String(numValue);
       default:
-        // Handle string values properly - don't treat empty string as "Not specified" unless it's truly empty
         if (value === '') return 'Not specified';
         const stringValue = String(value).trim();
         return stringValue === '' ? 'Not specified' : stringValue;
@@ -140,9 +157,26 @@ export default function EventEditComparison({
       case 'date':
         if (!value || value === '') return null;
         try {
-          const date = value.toDate ? value.toDate() : new Date(value);
-          if (isNaN(date.getTime())) return null;
-          return date.toISOString();
+          if (value.toDate) {
+            const d = value.toDate();
+            return d.getTime();
+          }
+          if (typeof value === 'string') {
+            const ymd = value.match(/^\d{4}-\d{2}-\d{2}$/);
+            if (ymd) {
+              const [y, m, d] = value.split('-').map(v => parseInt(v, 10));
+              return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+            }
+            const ymdhm = value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/);
+            if (ymdhm) {
+              const [datePart, timePart] = value.split('T');
+              const [y, m, d] = datePart.split('-').map(v => parseInt(v, 10));
+              const [hh, mm] = timePart.split(':').map(v => parseInt(v, 10));
+              return new Date(y, m - 1, d, hh, mm || 0, 0, 0).getTime();
+            }
+          }
+          const dnum = new Date(value).getTime();
+          return isNaN(dnum) ? null : dnum;
         } catch {
           return null;
         }

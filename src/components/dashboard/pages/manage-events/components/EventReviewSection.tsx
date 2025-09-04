@@ -87,8 +87,20 @@ export default function EventReviewSection({
   const formatFormDateTime = (date: string, time: string) => {
     if (!date || !time) return 'Not specified';
     try {
-      const dateTime = new Date(`${date}T${time}`);
-      return dateTime.toLocaleString('en-US', {
+      // Build local Date to avoid timezone shifts and reject invalid inputs
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return 'Invalid date';
+      const [yStr, mStr, dStr] = date.split('-');
+      const [hhStr, mmStr] = time.split(':');
+      const y = Number(yStr), m = Number(mStr), d = Number(dStr);
+      const hh = Number(hhStr), mm = Number(mmStr);
+      if (m < 1 || m > 12 || d < 1 || d > 31 || hh < 0 || hh > 23 || mm < 0 || mm > 59) return 'Invalid date';
+      const dateTime = new Date(y, m - 1, d, hh, mm, 0, 0);
+      if (
+        isNaN(dateTime.getTime()) ||
+        dateTime.getFullYear() !== y ||
+        dateTime.getMonth() !== (m - 1) ||
+        dateTime.getDate() !== d
+      ) return 'Invalid date'; return dateTime.toLocaleString('en-US', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
