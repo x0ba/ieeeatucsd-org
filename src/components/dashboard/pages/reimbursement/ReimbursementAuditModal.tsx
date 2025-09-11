@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, XCircle, CreditCard, MessageCircle, Upload, Calendar, Building, UserCheck } from 'lucide-react';
+import { X, Check, XCircle, CreditCard, MessageCircle, Upload, Calendar, Building, UserCheck, User as UserIcon } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Label } from '../../../ui/label';
 import { Textarea } from '../../../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db, auth } from '../../../../firebase/client';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { db, auth, storage } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 interface ReimbursementAuditModalProps {
@@ -26,6 +27,9 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
     const [executives, setExecutives] = useState<any[]>([]);
     const [selectedAuditor, setSelectedAuditor] = useState('');
     const [currentUserName, setCurrentUserName] = useState('');
+    const [submitterName, setSubmitterName] = useState<string>('');
+    const [submitterZelle, setSubmitterZelle] = useState<string>('');
+    const [isDragging, setIsDragging] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -36,6 +40,25 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
                         setCurrentUserName(userData.name || userData.email || 'Unknown User');
+                    }
+                }
+
+                // Fetch submitter's name and Zelle info
+                if (reimbursement?.submittedBy) {
+                    try {
+                        const submitterDoc = await getDoc(doc(db, 'users', reimbursement.submittedBy));
+                        if (submitterDoc.exists()) {
+                            const submitterData: any = submitterDoc.data();
+                            setSubmitterName(submitterData.name || submitterData.email || reimbursement.submittedBy);
+                            setSubmitterZelle(submitterData.zelleInformation || '');
+                        } else {
+                            setSubmitterName(reimbursement.submittedBy);
+                            setSubmitterZelle('');
+                        }
+                    } catch (e) {
+                        // Fallbacks if fetching submitter fails
+                        setSubmitterName(reimbursement.submittedBy);
+                        setSubmitterZelle('');
                     }
                 }
 
@@ -55,7 +78,34 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
         };
 
         fetchData();
-    }, [action, user]);
+    }, [action, user, reimbursement?.submittedBy]);
+
+    // Support pasting an image/PDF into the modal to attach as confirmation
+    useEffect(() => {
+        const onPaste = (e: ClipboardEvent) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.kind === 'file') {
+                    const file = item.getAsFile();
+                    if (!file) continue;
+                    const isAllowed = file.type.startsWith('image/') || file.type === 'application/pdf';
+                    const underLimit = file.size <= 10 * 1024 * 1024; // 10MB
+                    if (isAllowed && underLimit) {
+                        setPaymentInfo(prev => ({ ...prev, photoAttachment: file }));
+                        // prevent default paste behavior if we consumed a file
+                        e.preventDefault();
+                        break;
+                    }
+                }
+            }
+        };
+        document.addEventListener('paste', onPaste);
+        return () => document.removeEventListener('paste', onPaste);
+    }, []);
+
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -72,10 +122,36 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
             case 'approve_paid':
                 newStatus = 'paid';
                 if (!note) note = 'Request approved and marked as paid';
-                payment = {
-                    confirmationNumber: paymentInfo.confirmationNumber,
-                    photoAttachment: paymentInfo.photoAttachment ? paymentInfo.photoAttachment.name : null
-                };
+                // If a confirmation file is provided, upload to Firebase Storage
+                try {
+                    setIsUploading(true);
+                    let photoUrl: string | null = null;
+                    let storagePath: string | undefined = undefined;
+                    if (paymentInfo.photoAttachment) {
+                        const file = paymentInfo.photoAttachment;
+                        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                        const path = `reimbursements/paymentConfirmations/${reimbursement.id}/${Date.now()}_${safeName}`;
+                        const storageRef = ref(storage, path);
+                        const uploadTask = uploadBytesResumable(storageRef, file);
+                        await new Promise<void>((resolve, reject) => {
+                            uploadTask.on('state_changed', undefined, reject, () => resolve());
+                        });
+                        photoUrl = await getDownloadURL(storageRef);
+                        storagePath = storageRef.fullPath;
+                    }
+                    payment = {
+                        confirmationNumber: paymentInfo.confirmationNumber,
+                        photoAttachment: photoUrl,
+                        storagePath,
+                    };
+                } catch (err) {
+                    console.error('Failed to upload confirmation file:', err);
+                    alert('Failed to upload the payment confirmation file. Please try again.');
+                    setIsUploading(false);
+                    return;
+                } finally {
+                    setIsUploading(false);
+                }
                 break;
             case 'decline':
                 newStatus = 'declined';
@@ -184,6 +260,14 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                             <div className="flex items-center space-x-2">
                                 <Calendar className="w-4 h-4 text-gray-400" />
                                 <span>Amount: <span className="font-bold text-green-600">${reimbursement.totalAmount?.toFixed(2)}</span></span>
+                            </div>
+                            <div className="flex items-center space-x-2 col-span-2 md:col-span-1">
+                                <UserIcon className="w-4 h-4 text-gray-400" />
+                                <span>Submitted By: <span className="font-medium">{submitterName || 'Unknown User'}</span></span>
+                            </div>
+                            <div className="flex items-center space-x-2 col-span-2 md:col-span-1">
+                                <CreditCard className="w-4 h-4 text-gray-400" />
+                                <span>Zelle: <span className="font-medium">{submitterZelle || 'Not provided'}</span></span>
                             </div>
                         </div>
                         <div className="mt-3">
@@ -340,7 +424,39 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                                 <Label className="text-sm font-medium text-gray-700">
                                     Payment Confirmation Photo
                                 </Label>
-                                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-emerald-300 border-dashed rounded-md">
+                                <div
+                                    className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${isDragging ? 'border-emerald-500 bg-emerald-50' : 'border-emerald-300'}`}
+                                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+                                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsDragging(false);
+                                        const dt = e.dataTransfer;
+                                        if (!dt) return;
+                                        let file: File | null = null;
+                                        if (dt.files && dt.files.length > 0) {
+                                            file = dt.files[0];
+                                        } else if (dt.items && dt.items.length > 0) {
+                                            const item = dt.items[0];
+                                            if (item.kind === 'file') file = item.getAsFile();
+                                        }
+                                        if (file) {
+                                            const isAllowed = file.type.startsWith('image/') || file.type === 'application/pdf';
+                                            const underLimit = file.size <= 10 * 1024 * 1024; // 10MB
+                                            if (!isAllowed) {
+                                                alert('Please drop an image or PDF file.');
+                                                return;
+                                            }
+                                            if (!underLimit) {
+                                                alert('File is too large. Max 10MB.');
+                                                return;
+                                            }
+                                            setPaymentInfo(prev => ({ ...prev, photoAttachment: file }));
+                                        }
+                                    }}
+                                >
                                     <div className="space-y-1 text-center">
                                         <Upload className="mx-auto h-12 w-12 text-emerald-400" />
                                         <div className="flex text-sm text-emerald-600">
@@ -356,11 +472,11 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                                                     accept="image/*,.pdf"
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0];
-                                                        if (file) setPaymentInfo({ ...paymentInfo, photoAttachment: file });
+                                                        if (file) setPaymentInfo(prev => ({ ...prev, photoAttachment: file }));
                                                     }}
                                                 />
                                             </label>
-                                            <p className="pl-1">or drag and drop</p>
+                                            <p className="pl-1">or drag & drop / paste</p>
                                         </div>
                                         <p className="text-xs text-emerald-500">PNG, JPG, PDF up to 10MB</p>
                                         {paymentInfo.photoAttachment && (
@@ -403,7 +519,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                         </Button>
                         <Button
                             type="submit"
-                            disabled={(action === 'decline' && !auditNote.trim()) || (action === 'request_audit' && !selectedAuditor)}
+                            disabled={isUploading || (action === 'decline' && !auditNote.trim()) || (action === 'request_audit' && !selectedAuditor)}
                             className={
                                 action === 'approve'
                                     ? 'bg-green-600 hover:bg-green-700'
@@ -416,15 +532,17 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                                                 : 'bg-blue-600 hover:bg-blue-700'
                             }
                         >
-                            {action === 'review' && 'Add Note'}
-                            {action === 'approve' && 'Approve (Not Paid)'}
-                            {action === 'decline' && 'Decline Request'}
-                            {action === 'approve_paid' && 'Approve & Mark Paid'}
-                            {action === 'request_audit' && 'Send Audit Request'}
+                            {isUploading ? 'Uploading...' : (
+                                action === 'review' ? 'Add Note' :
+                                action === 'approve' ? 'Approve (Not Paid)' :
+                                action === 'decline' ? 'Decline Request' :
+                                action === 'approve_paid' ? 'Approve & Mark Paid' :
+                                action === 'request_audit' ? 'Send Audit Request' : 'Submit'
+                            )}
                         </Button>
                     </div>
                 </form>
             </div>
         </div>
     );
-} 
+}
