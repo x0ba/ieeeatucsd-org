@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Check, XCircle, CreditCard, MessageCircle, Upload, Calendar, Building, UserCheck, User as UserIcon } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
@@ -30,6 +30,8 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
     const [submitterName, setSubmitterName] = useState<string>('');
     const [submitterZelle, setSubmitterZelle] = useState<string>('');
     const [isDragging, setIsDragging] = useState<boolean>(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -104,6 +106,17 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
         document.addEventListener('paste', onPaste);
         return () => document.removeEventListener('paste', onPaste);
     }, []);
+
+    // Build/cleanup preview URL for images
+    useEffect(() => {
+        if (paymentInfo.photoAttachment && paymentInfo.photoAttachment.type.startsWith('image/')) {
+            const url = URL.createObjectURL(paymentInfo.photoAttachment);
+            setPreviewUrl(url);
+            return () => URL.revokeObjectURL(url);
+        } else {
+            setPreviewUrl(null);
+        }
+    }, [paymentInfo.photoAttachment]);
 
     const [isUploading, setIsUploading] = useState(false);
 
@@ -425,7 +438,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                                     Payment Confirmation Photo
                                 </Label>
                                 <div
-                                    className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${isDragging ? 'border-emerald-500 bg-emerald-50' : 'border-emerald-300'}`}
+                                    className={`group mt-1 flex flex-col items-center justify-center px-6 pt-6 pb-6 border-2 border-dashed rounded-xl transition-colors ${isDragging ? 'border-emerald-500 bg-emerald-50' : 'border-emerald-200 hover:border-emerald-300 bg-white'}`}
                                     onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
                                     onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
                                     onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }}
@@ -457,15 +470,20 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                                         }
                                     }}
                                 >
-                                    <div className="space-y-1 text-center">
-                                        <Upload className="mx-auto h-12 w-12 text-emerald-400" />
-                                        <div className="flex text-sm text-emerald-600">
+                                    <div className="w-full max-w-xl text-center">
+                                        <div className={`mx-auto h-16 w-16 rounded-full flex items-center justify-center ${isDragging ? 'bg-emerald-100' : 'bg-emerald-50'} border border-emerald-100`}>
+                                            <Upload className="h-8 w-8 text-emerald-500" />
+                                        </div>
+                                        <h5 className="mt-3 text-sm font-semibold text-gray-900">Drop, paste, or browse</h5>
+                                        <p className="text-xs text-gray-500">PNG, JPG, or PDF up to 10MB</p>
+                                        <div className="mt-3 flex items-center justify-center gap-2">
                                             <label
                                                 htmlFor="paymentPhoto"
-                                                className="relative cursor-pointer bg-white rounded-md font-medium text-emerald-600 hover:text-emerald-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-emerald-500"
+                                                className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                                             >
-                                                <span>Upload a file</span>
+                                                Browse files
                                                 <input
+                                                    ref={fileInputRef}
                                                     id="paymentPhoto"
                                                     type="file"
                                                     className="sr-only"
@@ -476,13 +494,37 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                                                     }}
                                                 />
                                             </label>
-                                            <p className="pl-1">or drag & drop / paste</p>
+                                            <span className="text-xs text-gray-500">or drag & drop / paste</span>
                                         </div>
-                                        <p className="text-xs text-emerald-500">PNG, JPG, PDF up to 10MB</p>
+
                                         {paymentInfo.photoAttachment && (
-                                            <p className="text-sm text-emerald-600 mt-2">
-                                                ✓ {paymentInfo.photoAttachment.name}
-                                            </p>
+                                            <div className="mt-4 text-left w-full">
+                                                <div className="p-3 border rounded-lg bg-white flex items-center gap-3 justify-between">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        {previewUrl ? (
+                                                            <img src={previewUrl} alt="Preview" className="h-14 w-14 object-cover rounded-md border" />
+                                                        ) : (
+                                                            <div className="h-14 w-14 rounded-md border flex items-center justify-center bg-gray-50">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor" className="h-6 w-6 text-gray-400"><path d="M6 2h9l5 5v15a0 0 0 0 1 0 0H6a0 0 0 0 1 0 0V2Z"/><path d="M14 2v6h6"/></svg>
+                                                            </div>
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-medium text-gray-900 truncate">{paymentInfo.photoAttachment.name}</p>
+                                                            <p className="text-xs text-gray-500">{Math.round(paymentInfo.photoAttachment.size / 1024)} KB</p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setPaymentInfo(prev => ({ ...prev, photoAttachment: null }));
+                                                            if (fileInputRef.current) fileInputRef.current.value = '';
+                                                        }}
+                                                        className="text-xs px-2 py-1 rounded-md border bg-white hover:bg-gray-50 text-gray-700"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
