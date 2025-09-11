@@ -123,7 +123,7 @@ export function Sidebar({ currentPath = '' }: SidebarComponentProps) {
     const filteredCategories = currentUserRole ? navigationCategories.filter(canAccessCategory) : [];
 
     const NavigationSkeleton = () => (
-        <nav className={`mt-6 pb-6 overflow-y-auto ${isCollapsed ? 'px-2' : 'px-4'}`}>
+        <nav className={`mt-6 pb-6 ${isCollapsed ? 'px-2' : 'px-4'}`}>
             {/* Member Actions skeleton */}
             <div className="mb-8">
                 {!isCollapsed && <Skeleton className="h-3 w-24 mb-3 ml-3" />}
@@ -170,7 +170,7 @@ export function Sidebar({ currentPath = '' }: SidebarComponentProps) {
     );
 
     return (
-        <div className={`hidden lg:block bg-white shadow-lg h-full transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}>
+        <div className={`hidden lg:block bg-white shadow-lg h-full transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'} flex flex-col`}> 
             {/* Logo and Collapse Button */}
             <div className={`border-b border-gray-200 ${isCollapsed ? 'p-3' : 'p-6'}`}>
                 {isCollapsed ? (
@@ -219,9 +219,11 @@ export function Sidebar({ currentPath = '' }: SidebarComponentProps) {
 
             {/* Navigation */}
             {isLoading ? (
-                <NavigationSkeleton />
+                <div className="mt-6 pb-6 flex-1 min-h-0 overflow-y-auto">
+                    <NavigationSkeleton />
+                </div>
             ) : (
-                <nav className={`mt-6 pb-6 overflow-y-auto ${isCollapsed ? 'px-2' : 'px-4'}`}>
+                <nav className={`mt-6 pb-6 flex-1 min-h-0 overflow-y-auto ${isCollapsed ? 'px-2' : 'px-4'}`}>
                     {filteredCategories.map((category, categoryIndex) => (
                         <div key={categoryIndex} className="mb-8">
                             {!isCollapsed && (
@@ -237,7 +239,7 @@ export function Sidebar({ currentPath = '' }: SidebarComponentProps) {
                                             <div className="relative group">
                                                 <a
                                                     href={item.href}
-                                                    className={`flex items-center text-sm font-medium rounded-lg transition-colors ${isCollapsed
+                                                    className={`flex w-full items-center text-sm font-medium rounded-lg transition-colors ${isCollapsed
                                                         ? 'justify-center px-2 py-3'
                                                         : 'px-3 py-2'
                                                         } ${isActive

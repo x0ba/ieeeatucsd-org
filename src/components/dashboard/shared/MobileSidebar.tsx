@@ -249,7 +249,7 @@ export function MobileSidebar({ currentPath = '', isOpen, onClose }: MobileSideb
                                                     <a
                                                         href={item.href}
                                                         onClick={handleNavClick}
-                                                        className={`flex items-center p-4 text-base font-medium rounded-lg transition-colors min-h-[44px] ${isActive
+                                                        className={`flex w-full items-center p-4 text-base font-medium rounded-lg transition-colors min-h-[44px] ${isActive
                                                             ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-600'
                                                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                                             }`}
