@@ -235,7 +235,7 @@ export default function DashboardHeader({
     }, []);
 
     return (
-        <header className="hidden md:block bg-white shadow-sm border-b border-gray-200 px-4 md:px-6 py-4">
+        <header className="hidden lg:block bg-white shadow-sm border-b border-gray-200 px-4 md:px-6 py-4">
             <div className="flex items-center gap-4">
                 {/* Title Section */}
                 <div className="flex-shrink-0">
