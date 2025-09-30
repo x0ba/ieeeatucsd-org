@@ -7,7 +7,6 @@ import {
     LogOut,
     Users,
     DollarSign,
-    Database,
     Trophy,
     Banknote,
     FileText,
@@ -18,6 +17,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { auth } from '../../../firebase/client';
 import { Skeleton } from '../../ui/skeleton';
+import { Separator } from '../../ui/separator';
 import type { NavigationCategory, SidebarProps } from './types/navigation';
 import type { UserRole } from './types/firestore';
 import { NAVIGATION_PATHS } from './types/navigation';
@@ -149,14 +149,14 @@ export function MobileSidebar({ currentPath = '', isOpen, onClose }: MobileSideb
     }, [isOpen]);
 
     const NavigationSkeleton = () => (
-        <div className="px-6 pb-6 overflow-y-auto">
+        <div className="px-6 pb-6">
             {/* Member Actions skeleton */}
-            <div className="mb-8">
+            <div className="mb-6">
                 <Skeleton className="h-4 w-24 mb-4" />
                 <ul className="space-y-2">
-                    {[1, 2, 3].map((itemIndex) => (
+                    {[1, 2, 3, 4].map((itemIndex) => (
                         <li key={itemIndex}>
-                            <div className="flex items-center p-4">
+                            <div className="flex items-center p-4 min-h-[52px]">
                                 <Skeleton className="w-6 h-6 mr-4" />
                                 <Skeleton className="h-5 w-20" />
                             </div>
@@ -165,26 +165,32 @@ export function MobileSidebar({ currentPath = '', isOpen, onClose }: MobileSideb
                 </ul>
             </div>
 
+            <Separator className="my-4" />
+
             {/* Generic loading section */}
-            <div className="mb-8">
-                <Skeleton className="h-4 w-16 mb-4" />
+            <div className="mb-6">
+                <Skeleton className="h-4 w-20 mb-4" />
                 <ul className="space-y-2">
-                    <li>
-                        <div className="flex items-center p-4">
-                            <Skeleton className="w-6 h-6 mr-4" />
-                            <Skeleton className="h-5 w-16" />
-                        </div>
-                    </li>
+                    {[1, 2, 3].map((itemIndex) => (
+                        <li key={itemIndex}>
+                            <div className="flex items-center p-4 min-h-[52px]">
+                                <Skeleton className="w-6 h-6 mr-4" />
+                                <Skeleton className="h-5 w-16" />
+                            </div>
+                        </li>
+                    ))}
                 </ul>
             </div>
 
+            <Separator className="my-4" />
+
             {/* Account actions skeleton */}
-            <div className="mb-8">
+            <div className="mb-6">
                 <Skeleton className="h-4 w-16 mb-4" />
                 <ul className="space-y-2">
                     {[1, 2].map((itemIndex) => (
                         <li key={itemIndex}>
-                            <div className="flex items-center p-4">
+                            <div className="flex items-center p-4 min-h-[52px]">
                                 <Skeleton className="w-6 h-6 mr-4" />
                                 <Skeleton className="h-5 w-16" />
                             </div>
@@ -209,60 +215,71 @@ export function MobileSidebar({ currentPath = '', isOpen, onClose }: MobileSideb
             {/* Sidebar */}
             <div className={`relative flex flex-col w-80 max-w-[85vw] bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}>
-                {/* Header with close button */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <div className="flex items-center">
+                {/* Header with close button - Fixed */}
+                <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-gray-200">
+                    <a href="/dashboard/overview" className="flex items-center group" onClick={handleNavClick}>
                         <div className="w-8 h-8 flex items-center justify-center">
                             <img
                                 src="/logos/blue_logo_only.svg"
                                 alt="IEEE UCSD Logo"
-                                className="w-8 h-8"
+                                className="w-8 h-8 transition-transform group-hover:scale-105"
                             />
                         </div>
                         <span className="ml-3 text-xl font-bold text-gray-800">IEEE UCSD</span>
-                    </div>
+                    </a>
                     <button
                         onClick={onClose}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                         aria-label="Close menu"
                     >
                         <X className="w-6 h-6" />
                     </button>
                 </div>
 
-                {/* Navigation */}
+                {/* Navigation - Scrollable Area */}
                 <div className="flex-1 overflow-y-auto">
                     {isLoading ? (
                         <NavigationSkeleton />
                     ) : (
-                        <nav className="mt-6 px-6 pb-6">
+                        <nav className="px-5 py-4">
                             {filteredCategories.map((category, categoryIndex) => (
-                                <div key={categoryIndex} className="mb-8">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-                                        {category.title}
-                                    </h3>
-                                    <ul className="space-y-2">
-                                        {category.items.map((item, index) => {
-                                            const isActive = isActiveRoute(item.href);
-                                            return (
-                                                <li key={index}>
-                                                    <a
-                                                        href={item.href}
-                                                        onClick={handleNavClick}
-                                                        className={`flex w-full items-center p-4 text-base font-medium rounded-lg transition-colors min-h-[44px] ${isActive
-                                                            ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-600'
-                                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                                            }`}
-                                                    >
-                                                        <item.icon className={`w-6 h-6 mr-4 ${isActive ? 'text-blue-600' : 'text-gray-400'
-                                                            }`} />
-                                                        {item.label}
-                                                    </a>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-                                </div>
+                                <React.Fragment key={categoryIndex}>
+                                    <div className="mb-6">
+                                        <h3 className="px-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                                            {category.title}
+                                        </h3>
+                                        <ul className="space-y-1.5">
+                                            {category.items.map((item, index) => {
+                                                const isActive = isActiveRoute(item.href);
+                                                return (
+                                                    <li key={index}>
+                                                        <a
+                                                            href={item.href}
+                                                            onClick={handleNavClick}
+                                                            className={`flex w-full items-center px-4 py-3 text-base font-medium rounded-lg transition-all duration-200 min-h-[52px] ${isActive
+                                                                ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-100'
+                                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2'
+                                                                }`}
+                                                            aria-current={isActive ? 'page' : undefined}
+                                                        >
+                                                            <item.icon className={`w-6 h-6 mr-4 flex-shrink-0 transition-colors ${isActive ? 'text-blue-600' : 'text-gray-400'
+                                                                }`} />
+                                                            <span className="flex-1">{item.label}</span>
+                                                            {isActive && (
+                                                                <div className="w-1.5 h-6 bg-blue-600 rounded-full ml-2" />
+                                                            )}
+                                                        </a>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </div>
+
+                                    {/* Add separator between categories, except after the last one */}
+                                    {categoryIndex < filteredCategories.length - 1 && (
+                                        <Separator className="my-4" />
+                                    )}
+                                </React.Fragment>
                             ))}
                         </nav>
                     )}
