@@ -12,7 +12,8 @@ import {
     FileText,
     ChevronLeft,
     ChevronRight,
-    MessageSquare
+    MessageSquare,
+    Link as LinkIcon
 } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
@@ -32,6 +33,7 @@ const navigationCategories: NavigationCategory[] = [
         title: "Member Actions",
         items: [
             { icon: Home, label: 'Overview', href: NAVIGATION_PATHS.OVERVIEW },
+            { icon: LinkIcon, label: 'Links', href: NAVIGATION_PATHS.LINKS },
             { icon: Calendar, label: 'Events', href: NAVIGATION_PATHS.EVENTS },
             { icon: CreditCard, label: 'Reimbursement', href: NAVIGATION_PATHS.REIMBURSEMENT },
             { icon: Trophy, label: 'Leaderboard', href: NAVIGATION_PATHS.LEADERBOARD },

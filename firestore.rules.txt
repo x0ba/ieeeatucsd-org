@@ -326,6 +326,19 @@ service cloud.firestore {
         ];
     }
 
+    // Links collection - Officers can manage, all members can read
+    match /links/{linkId} {
+      // Allow all authenticated users to read links
+      allow read: if request.auth != null;
+
+      // Allow officers to create, update, and delete links
+      allow create, update, delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'General Officer', 'Executive Officer', 'Administrator'
+        ];
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write, delete: if false;

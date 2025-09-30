@@ -270,6 +270,22 @@ export interface Constitution {
 
 // Removed collaboration session interface
 
+export interface Link {
+  id: string;
+  url: string; // Required - the destination URL
+  title: string; // Required - display name
+  category: string; // Required - for organization/filtering
+  description?: string; // Optional - short description
+  iconUrl?: string; // Optional - Firebase Storage URL for icon/photo
+  publishDate?: Timestamp; // Optional - link becomes visible after this date
+  expireDate?: Timestamp; // Optional - link becomes hidden after this date
+  createdAt: Timestamp; // Required - for sorting (reverse chronological)
+  createdBy: string; // User ID who created it
+  lastModified?: Timestamp; // When last updated
+  lastModifiedBy?: string; // User ID who last modified
+  order?: number; // Optional - for manual ordering within category
+}
+
 export interface ConstitutionAuditEntry {
   id: string;
   constitutionId: string;

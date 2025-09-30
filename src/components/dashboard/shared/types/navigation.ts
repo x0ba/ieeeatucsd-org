@@ -39,6 +39,7 @@ export const NAVIGATION_PATHS = {
   EVENTS: "/dashboard/events",
   REIMBURSEMENT: "/dashboard/reimbursement",
   LEADERBOARD: "/dashboard/leaderboard",
+  LINKS: "/dashboard/links",
   MANAGE_EVENTS: "/dashboard/manage-events",
   MANAGE_REIMBURSEMENTS: "/dashboard/manage-reimbursements",
   FUND_DEPOSITS: "/dashboard/fund-deposits",

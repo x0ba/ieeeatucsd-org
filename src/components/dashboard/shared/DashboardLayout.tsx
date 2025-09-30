@@ -34,6 +34,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
     const getPageTitle = (path: string): string => {
         const pathMap: { [key: string]: string } = {
             '/dashboard/overview': 'Overview',
+            '/dashboard/links': 'Links',
             '/dashboard/events': 'Events',
             '/dashboard/reimbursement': 'Reimbursement',
             '/dashboard/leaderboard': 'Leaderboard',
