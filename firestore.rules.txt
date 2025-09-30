@@ -4,12 +4,17 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Users collection - only Executive Officers can update/delete, users can create/read their own
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow read: if request.auth != null &&
+      // Allow users to read their own document (this must come first to avoid circular dependency)
+      allow read, get: if request.auth != null && request.auth.uid == userId;
+
+      // Allow officers to read any user document
+      allow read, get: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
           'General Officer', 'Executive Officer', 'Administrator'
         ];
+
+      // Allow officers to list all users
       allow list: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
@@ -75,8 +80,8 @@ service cloud.firestore {
 
     // Events collection
     match /events/{eventId} {
-      allow read: if request.auth != null && resource.data.published == true;
-      allow list: if request.auth != null && resource.data.published == true;
+      allow read: if resource.data.published == true;
+      allow list: if resource.data.published == true;
       allow read: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
@@ -293,6 +298,32 @@ service cloud.firestore {
           request.resource.data.userId == request.auth.uid;
         allow update, delete: if false;
       }
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Allow users to read their own notifications
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // Allow users to list their own notifications
+      allow list: if request.auth != null && request.auth.uid == resource.data.userId;
+
+      // Allow users to update their own notifications (e.g., mark as read)
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // Allow officers to create notifications for any user
+      allow create: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'General Officer', 'Executive Officer', 'Administrator'
+        ];
+
+      // Allow officers to delete any notification
+      allow delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'General Officer', 'Executive Officer', 'Administrator'
+        ];
     }
 
     // Default deny
