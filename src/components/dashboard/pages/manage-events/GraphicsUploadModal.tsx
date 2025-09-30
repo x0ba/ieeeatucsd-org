@@ -5,6 +5,7 @@ import { app, auth } from '../../../../firebase/client';
 import { EventAuditService } from '../../shared/services/eventAuditService';
 import type { EventFileChange } from '../../shared/types/firestore';
 import EnhancedFileViewer from './components/EnhancedFileViewer';
+import FilePreviewModal from './components/FilePreviewModal';
 import { extractPRRequirements } from './utils/prRequirementsUtils';
 import { uploadFilesForEvent } from './utils/fileUploadUtils';
 
@@ -19,6 +20,7 @@ export default function GraphicsUploadModal({ request, onClose, onSuccess }: Gra
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [prRequirementsConfirmed, setPrRequirementsConfirmed] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
     const db = getFirestore(app);
 
@@ -57,10 +59,11 @@ export default function GraphicsUploadModal({ request, onClose, onSuccess }: Gra
             // Upload the selected files using event-based structure
             const uploadedUrls = await uploadFilesForEvent(files, request.id, 'graphics');
 
-            // Update event request with new file URLs
+            // Update event request with new file URLs and mark as completed
             const existingGraphicsFiles = request.graphicsFiles || [];
             const updateData: any = {
                 graphicsFiles: [...existingGraphicsFiles, ...uploadedUrls],
+                graphicsCompleted: true,
                 updatedAt: new Date()
             };
 
@@ -288,8 +291,8 @@ export default function GraphicsUploadModal({ request, onClose, onSuccess }: Gra
                                         url={fileUrl}
                                         filename={fileUrl.split('/').pop()?.split('_').slice(1).join('_') || `Graphics File ${index + 1}`}
                                         eventRequestId={request.id}
-                                        showPRRequirements={true}
-                                        prRequirements={extractPRRequirements(request)}
+                                        onPreview={setSelectedFile}
+                                        showPRRequirements={false}
                                         className="bg-green-50 border-green-200"
                                     />
                                 ))}
@@ -326,6 +329,14 @@ export default function GraphicsUploadModal({ request, onClose, onSuccess }: Gra
                     </div>
                 </div>
             </div>
+
+            {/* File Preview Modal */}
+            {selectedFile && (
+                <FilePreviewModal
+                    url={selectedFile}
+                    onClose={() => setSelectedFile(null)}
+                />
+            )}
         </div>
     );
-} 
+}
