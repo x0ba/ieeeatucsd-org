@@ -10,6 +10,7 @@ import type { Link } from "../../shared/types/firestore";
 export default function LinksContent() {
   const {
     links,
+    visibleLinks,
     allLinks,
     loading,
     error,
@@ -31,14 +32,14 @@ export default function LinksContent() {
   >(null);
   const [deletingLinkId, setDeletingLinkId] = useState<string | null>(null);
 
-  // Calculate link counts by category
+  // Calculate link counts by category (using visibleLinks to respect date visibility)
   const linkCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    allLinks.forEach((link) => {
+    visibleLinks.forEach((link) => {
       counts[link.category] = (counts[link.category] || 0) + 1;
     });
     return counts;
-  }, [allLinks]);
+  }, [visibleLinks]);
 
   const handleAddLink = () => {
     setEditingLink(null);
@@ -66,6 +67,8 @@ export default function LinksContent() {
     category: string;
     description?: string;
     iconUrl?: string;
+    publishDate?: any;
+    expireDate?: any;
   }) => {
     if (editingLink) {
       await updateLink(editingLink.id, linkData);
@@ -224,6 +227,7 @@ export default function LinksContent() {
         onSave={handleSaveLink}
         editingLink={editingLink}
         loading={loading}
+        allLinks={allLinks}
       />
     </div>
   );

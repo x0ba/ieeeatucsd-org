@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { X, Upload, Trash2, ExternalLink, Plus } from "lucide-react";
 import type { Link } from "../../../shared/types/firestore";
 import { PRESET_CATEGORIES } from "../utils/linkPermissions";
@@ -14,9 +14,12 @@ interface LinkModalProps {
     category: string;
     description?: string;
     iconUrl?: string;
+    publishDate?: Timestamp | null;
+    expireDate?: Timestamp | null;
   }) => void;
   editingLink: (Link & { id: string }) | null;
   loading?: boolean;
+  allLinks?: (Link & { id: string })[]; // All existing links for extracting custom categories
 }
 
 export default function LinkModal({
@@ -25,6 +28,7 @@ export default function LinkModal({
   onSave,
   editingLink,
   loading = false,
+  allLinks = [],
 }: LinkModalProps) {
   const [formData, setFormData] = useState({
     url: "",
@@ -43,6 +47,30 @@ export default function LinkModal({
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState("");
 
+  // Extract unique custom categories from existing links and merge with presets
+  const availableCategories = useMemo(() => {
+    // Get all unique categories from existing links
+    const existingCategories = new Set(
+      allLinks.map((link) => link.category).filter(Boolean)
+    );
+
+    // Convert preset categories to a Set for deduplication
+    const presetSet = new Set(PRESET_CATEGORIES);
+
+    // Find custom categories (those not in presets)
+    const customCategories = Array.from(existingCategories).filter(
+      (cat) => !presetSet.has(cat as any)
+    );
+
+    // Combine presets with custom categories and sort alphabetically
+    const combined = [
+      ...PRESET_CATEGORIES,
+      ...customCategories.sort((a, b) => a.localeCompare(b)),
+    ];
+
+    return combined;
+  }, [allLinks]);
+
   // Helper to convert Timestamp to datetime-local string
   const timestampToDatetimeLocal = (timestamp?: any): string => {
     if (!timestamp) return "";
@@ -58,21 +86,21 @@ export default function LinkModal({
   // Initialize form data when editing
   useEffect(() => {
     if (editingLink) {
-      const isPreset = PRESET_CATEGORIES.includes(
-        editingLink.category as any
-      );
+      // Check if the category exists in available categories (presets + existing custom)
+      const categoryExists = availableCategories.includes(editingLink.category);
+
       setFormData({
         url: editingLink.url,
         title: editingLink.title,
-        category: isPreset ? editingLink.category : "custom",
+        category: categoryExists ? editingLink.category : "custom",
         description: editingLink.description || "",
         iconUrl: editingLink.iconUrl || "",
         publishDate: timestampToDatetimeLocal(editingLink.publishDate),
         expireDate: timestampToDatetimeLocal(editingLink.expireDate),
       });
       setIconPreview(editingLink.iconUrl || "");
-      setIsCustomCategory(!isPreset);
-      setCustomCategoryInput(isPreset ? "" : editingLink.category);
+      setIsCustomCategory(!categoryExists);
+      setCustomCategoryInput(categoryExists ? "" : editingLink.category);
     } else {
       setFormData({
         url: "",
@@ -89,7 +117,7 @@ export default function LinkModal({
     }
     setIconFile(null);
     setErrors({});
-  }, [editingLink, isOpen]);
+  }, [editingLink, isOpen, availableCategories]);
 
   const validateUrl = (url: string): boolean => {
     try {
@@ -201,15 +229,21 @@ export default function LinkModal({
         saveData.iconUrl = iconUrl;
       }
 
-      // Convert datetime-local strings to Timestamps
+      // Convert datetime-local strings to Timestamps or null if cleared
       if (formData.publishDate) {
         saveData.publishDate = Timestamp.fromDate(
           new Date(formData.publishDate)
         );
+      } else if (editingLink && editingLink.publishDate) {
+        // If editing and the field was cleared, explicitly set to null
+        saveData.publishDate = null;
       }
 
       if (formData.expireDate) {
         saveData.expireDate = Timestamp.fromDate(new Date(formData.expireDate));
+      } else if (editingLink && editingLink.expireDate) {
+        // If editing and the field was cleared, explicitly set to null
+        saveData.expireDate = null;
       }
 
       onSave(saveData);
@@ -335,11 +369,23 @@ export default function LinkModal({
                     }`}
                   disabled={loading || uploadingIcon}
                 >
+                  {/* Preset Categories */}
                   {PRESET_CATEGORIES.map((category) => (
                     <option key={category} value={category}>
                       {category}
                     </option>
                   ))}
+
+                  {/* Custom Categories from existing links */}
+                  {availableCategories
+                    .filter((cat) => !PRESET_CATEGORIES.includes(cat as any))
+                    .map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+
+                  {/* Option to create new custom category */}
                   <option value="custom">+ Create Custom Category</option>
                 </select>
 

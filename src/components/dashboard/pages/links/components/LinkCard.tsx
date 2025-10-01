@@ -5,9 +5,12 @@ import {
   Trash2,
   Calendar,
   Link as LinkIcon,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 import type { Link } from "../../../shared/types/firestore";
 import { getCategoryColor } from "../utils/linkPermissions";
+import { Timestamp } from "firebase/firestore";
 
 interface LinkCardProps {
   link: Link & { id: string };
@@ -34,10 +37,27 @@ export default function LinkCard({
     });
   };
 
+  const formatDateTime = (timestamp: any) => {
+    if (!timestamp) return "";
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
   const handleLinkClick = (e: React.MouseEvent) => {
     // Allow the link to open in a new tab
     e.stopPropagation();
   };
+
+  // Check publish/expire status (for officers)
+  const now = Timestamp.now();
+  const isScheduled = link.publishDate && link.publishDate.toMillis() > now.toMillis();
+  const isExpired = link.expireDate && link.expireDate.toMillis() < now.toMillis();
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow p-4 h-full flex flex-col">
@@ -85,6 +105,24 @@ export default function LinkCard({
         <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">
           {link.description}
         </p>
+      )}
+
+      {/* Status Badges (for officers only) */}
+      {canManage && (isScheduled || isExpired) && (
+        <div className="mb-3 space-y-1">
+          {isScheduled && (
+            <div className="flex items-center gap-1.5 text-xs bg-yellow-50 text-yellow-700 px-2 py-1 rounded">
+              <Clock className="w-3 h-3" />
+              <span>Scheduled: {formatDateTime(link.publishDate)}</span>
+            </div>
+          )}
+          {isExpired && (
+            <div className="flex items-center gap-1.5 text-xs bg-red-50 text-red-700 px-2 py-1 rounded">
+              <AlertCircle className="w-3 h-3" />
+              <span>Expired: {formatDateTime(link.expireDate)}</span>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Footer */}

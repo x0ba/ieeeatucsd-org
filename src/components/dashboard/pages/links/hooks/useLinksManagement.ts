@@ -10,6 +10,7 @@ import {
   doc,
   getDoc,
   Timestamp,
+  deleteField,
 } from "firebase/firestore";
 import { db, auth } from "../../../../../firebase/client";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -22,6 +23,8 @@ export interface LinkFormData {
   category: string;
   description?: string;
   iconUrl?: string;
+  publishDate?: Timestamp | null;
+  expireDate?: Timestamp | null;
 }
 
 export function useLinksManagement() {
@@ -87,8 +90,8 @@ export function useLinksManagement() {
     return () => unsubscribe();
   }, []);
 
-  // Filter links based on search and category
-  const filteredLinks = useMemo(() => {
+  // Filter links by date visibility only (for category counts)
+  const visibleLinks = useMemo(() => {
     const now = Timestamp.now();
 
     return links.filter((link) => {
@@ -106,6 +109,13 @@ export function useLinksManagement() {
         }
       }
 
+      return true;
+    });
+  }, [links, currentUserRole]);
+
+  // Filter links based on search and category
+  const filteredLinks = useMemo(() => {
+    return visibleLinks.filter((link) => {
       const matchesSearch =
         searchTerm === "" ||
         link.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -117,7 +127,7 @@ export function useLinksManagement() {
 
       return matchesSearch && matchesCategory;
     });
-  }, [links, searchTerm, categoryFilter, currentUserRole]);
+  }, [visibleLinks, searchTerm, categoryFilter]);
 
   // Create a new link
   const createLink = async (linkData: LinkFormData) => {
@@ -153,6 +163,12 @@ export function useLinksManagement() {
       if (linkData.iconUrl) {
         newLink.iconUrl = linkData.iconUrl;
       }
+      if (linkData.publishDate) {
+        newLink.publishDate = linkData.publishDate;
+      }
+      if (linkData.expireDate) {
+        newLink.expireDate = linkData.expireDate;
+      }
 
       await addDoc(collection(db, "links"), newLink);
       setSuccess("Link created successfully!");
@@ -181,7 +197,12 @@ export function useLinksManagement() {
       setLoading(true);
       setError(null);
 
-      // Build the update object, omitting undefined fields
+      // Get the existing link to check what fields need to be cleared
+      const linkRef = doc(db, "links", linkId);
+      const linkDoc = await getDoc(linkRef);
+      const existingLink = linkDoc.data() as Link;
+
+      // Build the update object
       const updateData: any = {
         url: linkData.url,
         title: linkData.title,
@@ -190,15 +211,35 @@ export function useLinksManagement() {
         lastModifiedBy: user.uid,
       };
 
-      // Only add optional fields if they have values
+      // Handle optional fields - add, update, or delete
+      // Description
       if (linkData.description) {
         updateData.description = linkData.description;
-      }
-      if (linkData.iconUrl) {
-        updateData.iconUrl = linkData.iconUrl;
+      } else if (existingLink.description) {
+        updateData.description = deleteField();
       }
 
-      const linkRef = doc(db, "links", linkId);
+      // Icon URL
+      if (linkData.iconUrl) {
+        updateData.iconUrl = linkData.iconUrl;
+      } else if (existingLink.iconUrl) {
+        updateData.iconUrl = deleteField();
+      }
+
+      // Publish Date - explicitly handle null to clear the field
+      if (linkData.publishDate) {
+        updateData.publishDate = linkData.publishDate;
+      } else if (linkData.publishDate === null && existingLink.publishDate) {
+        updateData.publishDate = deleteField();
+      }
+
+      // Expire Date - explicitly handle null to clear the field
+      if (linkData.expireDate) {
+        updateData.expireDate = linkData.expireDate;
+      } else if (linkData.expireDate === null && existingLink.expireDate) {
+        updateData.expireDate = deleteField();
+      }
+
       await updateDoc(linkRef, updateData);
 
       setSuccess("Link updated successfully!");
@@ -250,6 +291,7 @@ export function useLinksManagement() {
   return {
     // Data
     links: filteredLinks,
+    visibleLinks, // Links filtered by date visibility only (for category counts)
     allLinks: links,
     currentUserRole,
 
