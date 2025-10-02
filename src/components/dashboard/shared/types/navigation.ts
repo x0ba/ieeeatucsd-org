@@ -46,6 +46,7 @@ export const NAVIGATION_PATHS = {
   SLACK_ACCESS: "/dashboard/slack-access",
   MANAGE_USERS: "/dashboard/manage-users",
   CONSTITUTION_BUILDER: "/dashboard/constitution-builder",
+  RESUME_DATABASE: "/dashboard/sponsors/resume-database",
   SETTINGS: "/dashboard/settings",
   SIGNOUT: "/dashboard/signout",
   GET_STARTED: "/dashboard/get-started",

@@ -44,6 +44,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
             '/dashboard/slack-access': 'Slack Access',
             '/dashboard/manage-users': 'Manage Users',
             '/dashboard/constitution-builder': 'Constitution Builder',
+            '/dashboard/sponsors/resume-database': 'Resume Database',
             '/dashboard/settings': 'Settings',
             '/dashboard': 'Dashboard',
         };

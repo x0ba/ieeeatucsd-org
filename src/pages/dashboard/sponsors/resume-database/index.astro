@@ -1,0 +1,23 @@
+---
+import DashboardLayout from "../../../../components/dashboard/shared/DashboardLayout.tsx";
+import ResumeDatabaseContent from "../../../../components/dashboard/pages/sponsors/ResumeDatabaseContent.tsx";
+import { NAVIGATION_PATHS } from "../../../../components/dashboard/shared/types/navigation";
+
+const title = "Resume Database - Dashboard";
+const currentPath = NAVIGATION_PATHS.RESUME_DATABASE;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+</head>
+<body>
+    <DashboardLayout currentPath={currentPath} client:load>
+        <ResumeDatabaseContent client:load />
+    </DashboardLayout>
+</body>
+</html>
+

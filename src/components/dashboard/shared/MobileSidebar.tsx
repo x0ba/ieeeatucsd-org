@@ -12,7 +12,8 @@ import {
     FileText,
     X,
     MessageSquare,
-    Link as LinkIcon
+    Link as LinkIcon,
+    Briefcase
 } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
@@ -56,6 +57,13 @@ const navigationCategories: NavigationCategory[] = [
             { icon: DollarSign, label: 'Manage Reimbursements', href: NAVIGATION_PATHS.MANAGE_REIMBURSEMENTS },
             { icon: Users, label: 'Manage Users', href: NAVIGATION_PATHS.MANAGE_USERS },
             { icon: FileText, label: 'Constitution Builder', href: NAVIGATION_PATHS.CONSTITUTION_BUILDER },
+        ]
+    },
+    {
+        title: "Sponsors",
+        requiresRole: ['Sponsor', 'Administrator'],
+        items: [
+            { icon: Briefcase, label: 'Resume Database', href: NAVIGATION_PATHS.RESUME_DATABASE },
         ]
     },
     {

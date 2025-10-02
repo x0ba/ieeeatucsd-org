@@ -17,6 +17,12 @@ service firebase.storage {
         ];
     }
 
+    function isSponsor() {
+      return request.auth != null &&
+        exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'Sponsor';
+    }
+
     // Helper: check if user owns the event request (eventId can be event_request ID or actual event ID)
     function isEventRequestOwner(eventId) {
       return request.auth != null && (
@@ -50,6 +56,9 @@ service firebase.storage {
     // Legacy user-based paths (kept during migration period)
     match /resumes/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow sponsors and administrators to read all resumes
+      allow read: if request.auth != null &&
+        (isSponsor() || isOfficer());
     }
 
     match /invoices/{userId}/{allPaths=**} {
