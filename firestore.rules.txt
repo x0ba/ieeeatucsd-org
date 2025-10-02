@@ -349,6 +349,19 @@ service cloud.firestore {
         ];
     }
 
+    // Sponsor Domains collection - only Administrators can manage
+    match /sponsorDomains/{domainId} {
+      // Only Administrators can read sponsor domains
+      allow read, list: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator';
+
+      // Only Administrators can create, update, and delete sponsor domains
+      allow create, update, delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator';
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write, delete: if false;

@@ -1,0 +1,23 @@
+---
+import DashboardLayout from "../../../../components/dashboard/shared/DashboardLayout.tsx";
+import SponsorInformation from "../../../../components/dashboard/pages/sponsors/SponsorInformation.tsx";
+import { NAVIGATION_PATHS } from "../../../../components/dashboard/shared/types/navigation";
+
+const title = "Sponsor Information - Dashboard";
+const currentPath = NAVIGATION_PATHS.SPONSOR_INFORMATION;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+</head>
+<body>
+    <DashboardLayout currentPath={currentPath} client:load>
+        <SponsorInformation client:load />
+    </DashboardLayout>
+</body>
+</html>
+

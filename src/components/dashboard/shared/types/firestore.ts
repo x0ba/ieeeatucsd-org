@@ -9,6 +9,8 @@ export type UserRole =
   | "Sponsor"
   | "Administrator";
 
+export type SponsorTier = "Bronze" | "Silver" | "Gold" | "Platinum" | "Diamond";
+
 export interface User {
   email: string;
   emailVisibility: boolean;
@@ -50,6 +52,9 @@ export interface User {
   hasIEEEEmail?: boolean; // whether the user has created an IEEE email
   ieeeEmail?: string; // the user's IEEE email address
   ieeeEmailCreatedAt?: Timestamp; // when the IEEE email was created
+  sponsorTier?: SponsorTier; // sponsor tier level (for Sponsor role)
+  sponsorOrganization?: string; // sponsor organization name (for Sponsor role)
+  autoAssignedSponsor?: boolean; // whether the user was auto-assigned as sponsor via domain matching
 }
 
 export interface PublicProfile {
@@ -236,6 +241,16 @@ export interface Receipt {
 export interface Sponsor {
   userId: string;
   company: string;
+}
+
+export interface SponsorDomain {
+  domain: string; // Email domain (e.g., "@tsmc.com", "@qualcomm.com")
+  organizationName: string; // Sponsor organization name
+  sponsorTier: SponsorTier; // Sponsor tier level
+  createdAt: Timestamp;
+  createdBy: string; // User ID who created this domain mapping
+  lastModified?: Timestamp;
+  lastModifiedBy?: string; // User ID who last modified this domain mapping
 }
 
 export interface ConstitutionSection {

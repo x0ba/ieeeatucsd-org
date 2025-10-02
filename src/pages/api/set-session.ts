@@ -19,6 +19,31 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     // Verify the ID token
     const decoded = await adminAuth.verifyIdToken(idToken);
 
+    // Check for sponsor domain auto-assignment
+    let sponsorDomainData = null;
+    if (decoded.email) {
+      try {
+        const emailDomain = "@" + decoded.email.split("@")[1];
+        const sponsorDomainsRef = db.collection("sponsorDomains");
+        const domainQuery = await sponsorDomainsRef
+          .where("domain", "==", emailDomain.toLowerCase())
+          .limit(1)
+          .get();
+
+        if (!domainQuery.empty) {
+          sponsorDomainData = domainQuery.docs[0].data();
+          console.log("Sponsor domain match found:", {
+            domain: emailDomain,
+            organization: sponsorDomainData?.organizationName,
+            tier: sponsorDomainData?.sponsorTier,
+          });
+        }
+      } catch (error) {
+        console.error("Error checking sponsor domains:", error);
+        // Continue with normal flow if sponsor domain check fails
+      }
+    }
+
     // Process invite if provided
     let inviteData = null;
     if (inviteId) {
@@ -67,6 +92,29 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const userRef = db.doc(`users/${decoded.uid}`);
     const userSnap = await userRef.get();
     if (!userSnap.exists) {
+      // Determine role: sponsor domain takes precedence over invite
+      let userRole = "Member";
+      let userPosition = undefined;
+      let sponsorTier = undefined;
+      let sponsorOrganization = undefined;
+      let autoAssignedSponsor = false;
+
+      if (sponsorDomainData) {
+        // Auto-assign as sponsor based on domain
+        userRole = "Sponsor";
+        sponsorTier = sponsorDomainData.sponsorTier;
+        sponsorOrganization = sponsorDomainData.organizationName;
+        autoAssignedSponsor = true;
+        console.log("Auto-assigning user as sponsor:", {
+          tier: sponsorTier,
+          organization: sponsorOrganization,
+        });
+      } else if (inviteData?.role) {
+        // Use role from invite
+        userRole = inviteData.role;
+        userPosition = inviteData.position;
+      }
+
       const userData = {
         email: decoded.email || "",
         emailVisibility: true,
@@ -83,8 +131,11 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         accessibilitySettings: {},
         signedUp: false,
         requestedEmail: false,
-        role: inviteData?.role || "Member", // Use role from invite or default to Member
-        ...(inviteData?.position && { position: inviteData.position }),
+        role: userRole,
+        ...(userPosition && { position: userPosition }),
+        ...(sponsorTier && { sponsorTier }),
+        ...(sponsorOrganization && { sponsorOrganization }),
+        ...(autoAssignedSponsor && { autoAssignedSponsor }),
         ...(inviteData && { invitedBy: inviteData.createdBy || "system" }),
         ...(inviteData && { inviteAccepted: new Date() }),
         status: "active",
@@ -95,14 +146,36 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       console.log("Creating user with data:", {
         role: userData.role,
         position: userData.position,
+        sponsorTier: userData.sponsorTier,
+        sponsorOrganization: userData.sponsorOrganization,
       });
       await userRef.set(userData);
     } else {
       // Update existing user's last login and sign-in method
-      await userRef.update({
+      const updateData: any = {
         lastLogin: new Date(),
         ...(signInMethod && { signInMethod }),
-      });
+      };
+
+      // Check if existing user should be upgraded to sponsor based on domain
+      const existingUserData = userSnap.data();
+      if (
+        sponsorDomainData &&
+        existingUserData?.role !== "Sponsor" &&
+        existingUserData?.role !== "Administrator"
+      ) {
+        // Auto-upgrade existing user to sponsor
+        updateData.role = "Sponsor";
+        updateData.sponsorTier = sponsorDomainData.sponsorTier;
+        updateData.sponsorOrganization = sponsorDomainData.organizationName;
+        updateData.autoAssignedSponsor = true;
+        console.log("Auto-upgrading existing user to sponsor:", {
+          tier: sponsorDomainData.sponsorTier,
+          organization: sponsorDomainData.organizationName,
+        });
+      }
+
+      await userRef.update(updateData);
     }
 
     // Create session cookie
@@ -119,7 +192,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       path: "/",
     });
 
-    // Officers with roles should go to overview, others to get-started if not signed up
+    // Officers and sponsors should go to overview, others to get-started if not signed up
     const userData = userSnap.exists ? userSnap.data() : null;
     const isOfficer =
       userData?.role &&
@@ -129,8 +202,9 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         "Member at Large",
         "Past Officer",
       ].includes(userData.role);
+    const isSponsor = userData?.role === "Sponsor";
     const target =
-      userData?.signedUp || isOfficer
+      userData?.signedUp || isOfficer || isSponsor
         ? "/dashboard/overview"
         : "/dashboard/get-started";
     return redirect(target);

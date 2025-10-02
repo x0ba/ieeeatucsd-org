@@ -1,4 +1,4 @@
-import type { UserRole } from "../../../shared/types/firestore";
+import type { UserRole, SponsorTier } from "../../../shared/types/firestore";
 
 export interface UserModalData {
   id?: string;
@@ -17,6 +17,10 @@ export interface UserModalData {
   ieeeEmail?: string;
   ieeeEmailCreatedAt?: any;
   ieeeEmailStatus?: "active" | "disabled";
+  // Sponsor fields
+  sponsorTier?: SponsorTier;
+  sponsorOrganization?: string;
+  autoAssignedSponsor?: boolean;
 }
 
 export interface InviteModalData {
