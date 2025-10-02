@@ -80,6 +80,7 @@ const navigationCategories: NavigationCategory[] = [
 export function Sidebar({ currentPath = '' }: SidebarComponentProps) {
     const [user, userLoading] = useAuthState(auth);
     const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+    const [sponsorTier, setSponsorTier] = useState<string | null>(null);
     const [isLoadingRole, setIsLoadingRole] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(() => {
         // Load collapsed state from localStorage
@@ -117,6 +118,7 @@ export function Sidebar({ currentPath = '' }: SidebarComponentProps) {
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
                         setCurrentUserRole(userData.role || 'Member');
+                        setSponsorTier(userData.sponsorTier || null);
                     } else {
                         setCurrentUserRole('Member');
                     }
@@ -270,6 +272,13 @@ export function Sidebar({ currentPath = '' }: SidebarComponentProps) {
                                 )}
                                 <ul className="space-y-1">
                                     {category.items.map((item, index) => {
+                                        // Hide Resume Database for Bronze tier sponsors
+                                        if (item.href === NAVIGATION_PATHS.RESUME_DATABASE &&
+                                            currentUserRole === 'Sponsor' &&
+                                            sponsorTier === 'Bronze') {
+                                            return null;
+                                        }
+
                                         const isActive = isActiveRoute(item.href);
                                         return (
                                             <li key={index}>

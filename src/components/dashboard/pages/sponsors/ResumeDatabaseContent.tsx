@@ -22,6 +22,7 @@ interface UserWithResume extends Partial<FirestoreUser> {
 export default function ResumeDatabaseContent() {
     const [user] = useAuthState(auth);
     const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+    const [sponsorTier, setSponsorTier] = useState<string | null>(null);
     const [users, setUsers] = useState<UserWithResume[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<UserWithResume[]>([]);
     const [loading, setLoading] = useState(true);
@@ -33,7 +34,7 @@ export default function ResumeDatabaseContent() {
     const [showResumeModal, setShowResumeModal] = useState(false);
     const [selectedUserForModal, setSelectedUserForModal] = useState<UserWithResume | null>(null);
 
-    // Fetch current user role
+    // Fetch current user role and sponsor tier
     useEffect(() => {
         if (!user) return;
 
@@ -43,6 +44,7 @@ export default function ResumeDatabaseContent() {
                 if (!userDoc.empty) {
                     const userData = userDoc.docs[0].data();
                     setCurrentUserRole(userData.role || 'Member');
+                    setSponsorTier(userData.sponsorTier || null);
                 }
             } catch (error) {
                 console.error('Error fetching user role:', error);
@@ -205,7 +207,7 @@ export default function ResumeDatabaseContent() {
     };
 
     // Check if user has access
-    if (currentUserRole && !SponsorPermissionService.hasSponsorAccess(currentUserRole)) {
+    if (currentUserRole && !SponsorPermissionService.hasSponsorAccess(currentUserRole, sponsorTier as any)) {
         return (
             <div className="flex-1 overflow-auto">
                 <DashboardHeader
@@ -218,7 +220,11 @@ export default function ResumeDatabaseContent() {
                             <AlertCircle className="h-8 w-8 text-red-600" />
                             <div className="ml-4">
                                 <h3 className="text-lg font-semibold text-red-800">Access Restricted</h3>
-                                <p className="text-red-700">Only Sponsors and Administrators can access the resume database.</p>
+                                <p className="text-red-700">
+                                    {currentUserRole === 'Sponsor' && sponsorTier === 'Bronze'
+                                        ? 'Bronze tier sponsors do not have access to the resume database. Please upgrade to Silver tier or above.'
+                                        : 'Only Silver tier (or above) Sponsors and Administrators can access the resume database.'}
+                                </p>
                             </div>
                         </div>
                     </div>
