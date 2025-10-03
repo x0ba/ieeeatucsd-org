@@ -24,6 +24,7 @@ import type {
 import { UserFilteringService } from "../utils/userFiltering";
 import { UserPermissionService } from "../utils/userPermissions";
 import { PublicProfileService } from "../../../shared/services/publicProfile";
+import { normalizeMajorName } from "../../../../../utils/majorNormalization";
 
 export const useUserManagement = () => {
   const [user, userLoading, userError] = useAuthState(auth);
@@ -167,6 +168,10 @@ export const useUserManagement = () => {
       }
 
       const userRef = doc(db, "users", userData.id);
+
+      // Normalize major name before saving
+      const normalizedMajor = normalizeMajorName(userData.major);
+
       const updateData: any = {
         name: userData.name,
         role: userData.role,
@@ -174,7 +179,7 @@ export const useUserManagement = () => {
         status: userData.status,
         pid: userData.pid || "",
         memberId: userData.memberId || "",
-        major: userData.major || "",
+        major: normalizedMajor || "",
         graduationYear: userData.graduationYear || null,
         updatedAt: new Date(),
       };

@@ -7,6 +7,7 @@ import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, onAuth
 import type { User } from '../../shared/types/firestore';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { Skeleton } from '../../../ui/skeleton';
+import { normalizeMajorName } from '../../../../utils/majorNormalization';
 
 export default function SettingsContent() {
     const [userData, setUserData] = useState<User | null>(null);
@@ -98,6 +99,10 @@ export default function SettingsContent() {
 
         try {
             const userRef = doc(db, 'users', auth.currentUser.uid);
+
+            // Normalize major name before saving
+            const normalizedMajor = normalizeMajorName(profileData.major);
+
             const updateData: Partial<User> = {
                 name: profileData.name,
             };
@@ -106,8 +111,8 @@ export default function SettingsContent() {
             if (profileData.pid) {
                 updateData.pid = profileData.pid;
             }
-            if (profileData.major) {
-                updateData.major = profileData.major;
+            if (normalizedMajor) {
+                updateData.major = normalizedMajor;
             }
             if (profileData.graduationYear) {
                 updateData.graduationYear = parseInt(profileData.graduationYear);
@@ -131,8 +136,8 @@ export default function SettingsContent() {
             };
 
             // Only add optional fields if they have values
-            if (profileData.major) {
-                publicProfileData.major = profileData.major;
+            if (normalizedMajor) {
+                publicProfileData.major = normalizedMajor;
             }
             if (profileData.graduationYear) {
                 publicProfileData.graduationYear = parseInt(profileData.graduationYear);

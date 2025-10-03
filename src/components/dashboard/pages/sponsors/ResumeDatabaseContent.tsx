@@ -1,12 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db, auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { AlertCircle, Search, FileText, Users, GraduationCap, Briefcase, Filter, X, CheckSquare, Square, Download } from 'lucide-react';
+import { AlertCircle, Search, FileText, Users, GraduationCap, Briefcase, Filter, X, CheckSquare, Square, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { User as FirestoreUser, UserRole } from '../../shared/types/firestore';
 import { SponsorPermissionService } from './utils/sponsorPermissions';
 import DashboardHeader from '../../shared/DashboardHeader';
 import JSZip from 'jszip';
+import {
+    normalizeMajorName,
+    getUniqueNormalizedMajors,
+    getMajorNormalizationMap
+} from '../../../../utils/majorNormalization';
 
 interface UserWithResume extends Partial<FirestoreUser> {
     id: string;
@@ -33,6 +38,10 @@ export default function ResumeDatabaseContent() {
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
     const [showResumeModal, setShowResumeModal] = useState(false);
     const [selectedUserForModal, setSelectedUserForModal] = useState<UserWithResume | null>(null);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     // Fetch current user role and sponsor tier
     useEffect(() => {
@@ -88,22 +97,41 @@ export default function ResumeDatabaseContent() {
         fetchUsers();
     }, [user, currentUserRole]);
 
+    // Memoize major normalization map for efficient lookups
+    const majorNormalizationMap = useMemo(() => {
+        const allMajors = users.map(u => u.major).filter((m): m is string => !!m);
+        return getMajorNormalizationMap(allMajors, 0.8);
+    }, [users]);
+
+    // Get normalized major for a user
+    const getNormalizedMajor = (major: string | undefined): string => {
+        if (!major) return '';
+        const normalized = normalizeMajorName(major);
+        return majorNormalizationMap.get(normalized) || normalized;
+    };
+
     // Filter users based on search and filters
     useEffect(() => {
         let filtered = [...users];
 
-        // Search filter
+        // Search filter - search against normalized major names
         if (searchTerm) {
-            filtered = filtered.filter(u =>
-                u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                u.major?.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            filtered = filtered.filter(u => {
+                const normalizedMajor = getNormalizedMajor(u.major);
+                return (
+                    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    normalizedMajor.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            });
         }
 
-        // Major filter
+        // Major filter - compare normalized major names
         if (selectedMajor !== 'all') {
-            filtered = filtered.filter(u => u.major === selectedMajor);
+            filtered = filtered.filter(u => {
+                const normalizedMajor = getNormalizedMajor(u.major);
+                return normalizedMajor === selectedMajor;
+            });
         }
 
         // Officer status filter
@@ -116,17 +144,49 @@ export default function ResumeDatabaseContent() {
         }
 
         setFilteredUsers(filtered);
-    }, [searchTerm, selectedMajor, selectedOfficerStatus, users]);
+        setCurrentPage(1); // Reset to first page when filters change
+    }, [searchTerm, selectedMajor, selectedOfficerStatus, users, majorNormalizationMap]);
 
-    // Get unique majors for filter
-    const uniqueMajors = Array.from(new Set(users.map(u => u.major).filter(Boolean))).sort();
+    // Get unique normalized majors for filter dropdown
+    const uniqueMajors = useMemo(() => {
+        return getUniqueNormalizedMajors(users.map(u => u.major), 0.8);
+    }, [users]);
+
+    // Pagination calculations
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+    // Pagination handlers
+    const goToPage = (page: number) => {
+        setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const goToPreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
 
     // Selection handlers
     const handleSelectAll = () => {
-        if (selectedUsers.size === filteredUsers.length) {
-            setSelectedUsers(new Set());
+        if (selectedUsers.size === paginatedUsers.length && paginatedUsers.every(u => selectedUsers.has(u.id))) {
+            // Deselect all on current page
+            const newSelected = new Set(selectedUsers);
+            paginatedUsers.forEach(u => newSelected.delete(u.id));
+            setSelectedUsers(newSelected);
         } else {
-            setSelectedUsers(new Set(filteredUsers.map(u => u.id)));
+            // Select all on current page
+            const newSelected = new Set(selectedUsers);
+            paginatedUsers.forEach(u => newSelected.add(u.id));
+            setSelectedUsers(newSelected);
         }
     };
 
@@ -387,7 +447,7 @@ export default function ResumeDatabaseContent() {
                                                     onClick={handleSelectAll}
                                                     className="flex items-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700"
                                                 >
-                                                    {selectedUsers.size === filteredUsers.length && filteredUsers.length > 0 ? (
+                                                    {paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.has(u.id)) ? (
                                                         <CheckSquare className="w-5 h-5" />
                                                     ) : (
                                                         <Square className="w-5 h-5" />
@@ -412,7 +472,7 @@ export default function ResumeDatabaseContent() {
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredUsers.map((user) => (
+                                        {paginatedUsers.map((user) => (
                                             <tr
                                                 key={user.id}
                                                 className="hover:bg-gray-50 cursor-pointer transition-colors"
@@ -448,8 +508,8 @@ export default function ResumeDatabaseContent() {
                                                     className="px-6 py-4 whitespace-nowrap"
                                                     onClick={() => handleRowClick(user)}
                                                 >
-                                                    <div className="text-sm text-gray-900 max-w-[200px] truncate" title={user.major || 'N/A'}>
-                                                        {user.major || 'N/A'}
+                                                    <div className="text-sm text-gray-900 max-w-[200px] truncate" title={getNormalizedMajor(user.major) || 'N/A'}>
+                                                        {getNormalizedMajor(user.major) || 'N/A'}
                                                     </div>
                                                 </td>
                                                 <td
@@ -476,6 +536,97 @@ export default function ResumeDatabaseContent() {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                                    <div className="flex items-center justify-between">
+                                        {/* Results info */}
+                                        <div className="flex items-center space-x-4">
+                                            <p className="text-sm text-gray-700">
+                                                Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                                                <span className="font-medium">{Math.min(endIndex, filteredUsers.length)}</span> of{' '}
+                                                <span className="font-medium">{filteredUsers.length}</span> results
+                                            </p>
+
+                                            {/* Items per page selector */}
+                                            <div className="flex items-center space-x-2">
+                                                <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
+                                                    Per page:
+                                                </label>
+                                                <select
+                                                    id="itemsPerPage"
+                                                    value={itemsPerPage}
+                                                    onChange={(e) => {
+                                                        setItemsPerPage(Number(e.target.value));
+                                                        setCurrentPage(1);
+                                                    }}
+                                                    className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value={10}>10</option>
+                                                    <option value={25}>25</option>
+                                                    <option value={50}>50</option>
+                                                    <option value={100}>100</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Page navigation */}
+                                        <div className="flex items-center space-x-2">
+                                            <button
+                                                onClick={goToPreviousPage}
+                                                disabled={currentPage === 1}
+                                                className={`p-2 rounded-lg transition-colors ${currentPage === 1
+                                                        ? 'text-gray-400 cursor-not-allowed'
+                                                        : 'text-gray-700 hover:bg-gray-200'
+                                                    }`}
+                                            >
+                                                <ChevronLeft className="w-5 h-5" />
+                                            </button>
+
+                                            {/* Page numbers */}
+                                            <div className="flex items-center space-x-1">
+                                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                                    let pageNum;
+                                                    if (totalPages <= 5) {
+                                                        pageNum = i + 1;
+                                                    } else if (currentPage <= 3) {
+                                                        pageNum = i + 1;
+                                                    } else if (currentPage >= totalPages - 2) {
+                                                        pageNum = totalPages - 4 + i;
+                                                    } else {
+                                                        pageNum = currentPage - 2 + i;
+                                                    }
+
+                                                    return (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => goToPage(pageNum)}
+                                                            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
+                                                                    ? 'bg-blue-600 text-white'
+                                                                    : 'text-gray-700 hover:bg-gray-200'
+                                                                }`}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            <button
+                                                onClick={goToNextPage}
+                                                disabled={currentPage === totalPages}
+                                                className={`p-2 rounded-lg transition-colors ${currentPage === totalPages
+                                                        ? 'text-gray-400 cursor-not-allowed'
+                                                        : 'text-gray-700 hover:bg-gray-200'
+                                                    }`}
+                                            >
+                                                <ChevronRight className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </>
                 )}
@@ -489,7 +640,7 @@ export default function ResumeDatabaseContent() {
                                 <div>
                                     <h2 className="text-2xl font-bold text-gray-900">{selectedUserForModal.name}</h2>
                                     <p className="text-sm text-gray-600 mt-1">
-                                        {selectedUserForModal.email} • {selectedUserForModal.major || 'N/A'} • Class of {selectedUserForModal.graduationYear || 'N/A'}
+                                        {selectedUserForModal.email} • {getNormalizedMajor(selectedUserForModal.major) || 'N/A'} • Class of {selectedUserForModal.graduationYear || 'N/A'}
                                     </p>
                                 </div>
                                 <button

@@ -5,6 +5,7 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/
 import { app } from '../../../../firebase/client';
 import { User, GraduationCap, CreditCard, Upload, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { PublicProfileService } from '../../shared/services/publicProfile';
+import { normalizeMajorName } from '../../../../utils/majorNormalization';
 
 interface Question {
     id: string;
@@ -159,10 +160,13 @@ export default function GetStartedContent() {
 
             const userRef = doc(db, 'users', auth.currentUser?.uid || '');
 
+            // Normalize major name before saving
+            const normalizedMajor = normalizeMajorName(answers.major);
+
             // Prepare update data (avoid undefined values)
             const updateData: any = {
                 pid: answers.pid,
-                major: answers.major,
+                major: normalizedMajor,
                 graduationYear: answers.graduationYear,
                 signedUp: true,
                 joinDate: new Date(), // Set join date when completing getting started
@@ -196,8 +200,8 @@ export default function GetStartedContent() {
             };
 
             // Add optional fields if they exist
-            if (answers.major) {
-                publicProfileData.major = answers.major;
+            if (normalizedMajor) {
+                publicProfileData.major = normalizedMajor;
             }
             if (answers.graduationYear) {
                 publicProfileData.graduationYear = answers.graduationYear;
