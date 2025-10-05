@@ -388,7 +388,7 @@ export default function EventRequestModal({ onClose, editingRequest, onSuccess }
                 invoiceVendor: processedInvoices.length > 0 ? processedInvoices[0].vendor : '',
                 invoiceFile: processedInvoices.length > 0 ? processedInvoices[0].invoiceFile : '',
                 status: editingRequest ? editingRequest.status : 'submitted',
-                requestedUser: auth.currentUser?.uid || '',
+                requestedUser: editingRequest ? editingRequest.requestedUser : (auth.currentUser?.uid || ''),
                 createdAt: editingRequest ? editingRequest.createdAt : new Date(),
                 updatedAt: new Date()
             };
