@@ -10,6 +10,8 @@ import EventReviewSection from './components/EventReviewSection';
 import { extractPRRequirements, hasPRRequirements } from './utils/prRequirementsUtils';
 import EventEditComparison from './components/EventEditComparison';
 import { truncateFilename } from './utils/filenameUtils';
+import { canApproveOrPublish } from './utils/permissionUtils';
+import type { UserRole } from '../../shared/types/firestore';
 
 interface EventViewModalProps {
     request: {
@@ -791,18 +793,22 @@ export default function EventViewModal({ request, users, onClose, onSuccess }: E
                                         </div>
                                         <div>
                                             <label className="text-sm font-medium text-gray-700 block">Status</label>
-                                            <div className="mt-1">
-                                                <select
-                                                    value={request.status}
-                                                    onChange={(e) => handleStatusChange(e.target.value)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                >
-                                                    <option value="submitted">Submitted</option>
-                                                    <option value="needs_review">Needs Review</option>
-                                                    <option value="approved">Approved</option>
-                                                    <option value="declined">Declined</option>
-                                                </select>
-                                            </div>
+                                            {canApproveOrPublish(currentUserRole as UserRole) ? (
+                                                <div className="mt-1">
+                                                    <select
+                                                        value={request.status}
+                                                        onChange={(e) => handleStatusChange(e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    >
+                                                        <option value="submitted">Submitted</option>
+                                                        <option value="needs_review">Needs Review</option>
+                                                        <option value="approved">Approved</option>
+                                                        <option value="declined">Declined</option>
+                                                    </select>
+                                                </div>
+                                            ) : (
+                                                <p className="text-gray-900 capitalize mt-1">{request.status.replace('_', ' ')}</p>
+                                            )}
                                         </div>
                                         {request.declinedReason && (
                                             <div>

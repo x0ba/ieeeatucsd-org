@@ -27,14 +27,15 @@ export const canEditEvent = (
   if (currentUserRole === "General Officer") {
     return (
       request.requestedUser === currentUserId &&
-      ["submitted", "pending"].includes(request.status)
+      ["submitted", "pending", "needs_review"].includes(request.status)
     );
   }
 
   // Any user (including Members) can edit their own event requests
+  // but only if the status is 'submitted' or 'needs_review'
   // This matches the Firestore security rule: allow read, update, delete if request.auth.uid == resource.data.requestedUser
   if (request.requestedUser === currentUserId) {
-    return true;
+    return ["submitted", "needs_review"].includes(request.status);
   }
 
   return false;
@@ -60,14 +61,15 @@ export const canDeleteEvent = (
   if (currentUserRole === "General Officer") {
     return (
       request.requestedUser === currentUserId &&
-      ["submitted", "pending"].includes(request.status)
+      ["submitted", "pending", "needs_review"].includes(request.status)
     );
   }
 
   // Any user (including Members) can delete their own event requests
+  // but only if the status is 'submitted' or 'needs_review'
   // This matches the Firestore security rule: allow read, update, delete if request.auth.uid == resource.data.requestedUser
   if (request.requestedUser === currentUserId) {
-    return true;
+    return ["submitted", "needs_review"].includes(request.status);
   }
 
   return false;
