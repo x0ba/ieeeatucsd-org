@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Calendar, Bell, User, Plus, Filter, DollarSign, Receipt, Clock, CheckCircle, XCircle, AlertCircle, FileText, Eye } from 'lucide-react';
+import { Search, Calendar, Bell, User, Plus, Filter, DollarSign, Receipt, Clock, CheckCircle, XCircle, AlertCircle, FileText, Eye, Sparkles } from 'lucide-react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
 import DashboardHeader from '../../shared/DashboardHeader';
 import ReimbursementRequestModal from './ReimbursementRequestModal';
+import ReimbursementWizardModal from './ReimbursementWizardModal';
 import ReimbursementDetailModal from './ReimbursementDetailModal';
 import { ReimbursementListSkeleton, MetricCardSkeleton } from '../../../ui/loading';
 
@@ -76,6 +77,7 @@ export default function ReimbursementContent() {
     const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isWizardOpen, setIsWizardOpen] = useState(false);
     const [selectedReimbursement, setSelectedReimbursement] = useState<Reimbursement | null>(null);
     const [viewReimbursement, setViewReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -107,14 +109,37 @@ export default function ReimbursementContent() {
         if (!user) return;
 
         try {
-            // Process expenses, ensuring receipt data is properly stored
-            const processedExpenses = data.expenses.map((expense: any) => ({
-                ...expense,
-                // Store the full receipt object with URL, name, size, and type
-                receipt: expense.receipt || null
-            }));
+            // Handle both old format (expenses) and new format (receipts)
+            let processedExpenses = null;
+            let processedReceipts = null;
 
-            console.log('Processing reimbursement submission with expenses:', processedExpenses);
+            if (data.expenses) {
+                // Old format - process expenses
+                processedExpenses = data.expenses.map((expense: any) => ({
+                    ...expense,
+                    receipt: expense.receipt || null
+                }));
+            }
+
+            if (data.receipts) {
+                // New format - process receipts with AI-parsed data
+                processedReceipts = data.receipts.map((receipt: any) => ({
+                    id: receipt.id,
+                    vendorName: receipt.vendorName,
+                    location: receipt.location,
+                    dateOfPurchase: receipt.dateOfPurchase,
+                    lineItems: receipt.lineItems,
+                    receiptFile: receipt.receiptFile,
+                    notes: receipt.notes,
+                    subtotal: receipt.subtotal,
+                    tax: receipt.tax || 0,
+                    tip: receipt.tip || 0,
+                    shipping: receipt.shipping || 0,
+                    total: receipt.total
+                }));
+            }
+
+            console.log('Processing reimbursement submission:', { processedExpenses, processedReceipts });
 
             const docRef = await addDoc(collection(db, 'reimbursements'), {
                 title: data.title,
@@ -127,7 +152,8 @@ export default function ReimbursementContent() {
                 businessPurpose: data.businessPurpose,
                 location: data.location,
                 vendor: data.vendor,
-                expenses: processedExpenses,
+                ...(processedExpenses && { expenses: processedExpenses }),
+                ...(processedReceipts && { receipts: processedReceipts }),
                 additionalInfo: data.additionalInfo,
                 submittedAt: Timestamp.now(),
                 auditNotes: [],
@@ -211,12 +237,20 @@ export default function ReimbursementContent() {
                     <div className="flex items-center justify-between mb-4 md:mb-6">
                         <div className="flex items-center space-x-3">
                             <button
+                                onClick={() => setIsWizardOpen(true)}
+                                className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg min-h-[44px] text-sm md:text-base"
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                <span className="hidden sm:inline">New Request (AI-Powered)</span>
+                                <span className="sm:hidden">New (AI)</span>
+                            </button>
+                            <button
                                 onClick={() => setIsModalOpen(true)}
-                                className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px] text-sm md:text-base"
+                                className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] text-sm md:text-base"
                             >
                                 <Plus className="w-4 h-4" />
-                                <span className="hidden sm:inline">New Request</span>
-                                <span className="sm:hidden">New</span>
+                                <span className="hidden sm:inline">Manual Entry</span>
+                                <span className="sm:hidden">Manual</span>
                             </button>
                         </div>
                     </div>
@@ -382,6 +416,12 @@ export default function ReimbursementContent() {
             </main>
 
             {/* Modals */}
+            <ReimbursementWizardModal
+                isOpen={isWizardOpen}
+                onClose={() => setIsWizardOpen(false)}
+                onSubmit={handleSubmitReimbursement}
+            />
+
             <ReimbursementRequestModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
