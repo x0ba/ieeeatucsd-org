@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Check, XCircle, CreditCard, MessageCircle, Upload, Calendar, Building, UserCheck, User as UserIcon } from 'lucide-react';
-import { Button } from '../../../ui/button';
-import { Input } from '../../../ui/input';
-import { Label } from '../../../ui/label';
-import { Textarea } from '../../../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Button, Input, Textarea, Select, SelectItem } from '@heroui/react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, auth, storage } from '../../../../firebase/client';
@@ -311,7 +307,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
 
                     {/* Action Selection */}
                     <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-3 block">Choose Action</Label>
+                        <label className="text-sm font-medium text-gray-700 mb-3 block">Choose Action</label>
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                             <button
                                 type="button"
@@ -386,20 +382,20 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                     {/* Executive Selection for Audit Request */}
                     {action === 'request_audit' && (
                         <div>
-                            <Label className="text-sm font-medium text-gray-700">
+                            <label className="text-sm font-medium text-gray-700">
                                 Select Executive for Audit *
-                            </Label>
-                            <Select value={selectedAuditor} onValueChange={setSelectedAuditor}>
-                                <SelectTrigger className="w-full mt-1">
-                                    <SelectValue placeholder="Choose an executive officer to audit this request" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {executives.map((exec) => (
-                                        <SelectItem key={exec.id} value={exec.id}>
-                                            {exec.name || exec.email} - {exec.position || 'Executive Officer'}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
+                            </label>
+                            <Select
+                                selectedKeys={selectedAuditor ? [selectedAuditor] : []}
+                                onSelectionChange={(keys) => setSelectedAuditor(Array.from(keys)[0] as string)}
+                                placeholder="Choose an executive officer to audit this request"
+                                className="w-full mt-1"
+                            >
+                                {executives.map((exec) => (
+                                    <SelectItem key={exec.id}>
+                                        {exec.name || exec.email} - {exec.position || 'Executive Officer'}
+                                    </SelectItem>
+                                ))}
                             </Select>
                             {action === 'request_audit' && !selectedAuditor && (
                                 <p className="mt-1 text-sm text-red-600">Please select an executive to audit this request</p>
@@ -409,12 +405,12 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
 
                     {/* Audit Note */}
                     <div>
-                        <Label htmlFor="auditNote" className="text-sm font-medium text-gray-700">
+                        <label htmlFor="auditNote" className="text-sm font-medium text-gray-700">
                             {action === 'decline' ? 'Reason for Decline *' :
                                 action === 'approve' ? 'Approval Notes' :
                                     action === 'request_audit' ? 'Request Message' :
                                         'Audit Notes'}
-                        </Label>
+                        </label>
                         <Textarea
                             id="auditNote"
                             value={auditNote}
@@ -442,9 +438,9 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                             <h4 className="font-medium text-emerald-900">Payment Confirmation</h4>
 
                             <div>
-                                <Label htmlFor="confirmationNumber" className="text-sm font-medium text-gray-700">
+                                <label htmlFor="confirmationNumber" className="text-sm font-medium text-gray-700">
                                     Confirmation Number *
-                                </Label>
+                                </label>
                                 <Input
                                     id="confirmationNumber"
                                     value={paymentInfo.confirmationNumber}
@@ -455,9 +451,9 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                             </div>
 
                             <div>
-                                <Label className="text-sm font-medium text-gray-700">
+                                <label className="text-sm font-medium text-gray-700">
                                     Payment Confirmation Photo
-                                </Label>
+                                </label>
                                 <div
                                     className={`group mt-1 flex flex-col items-center justify-center px-6 pt-6 pb-6 border-2 border-dashed rounded-xl transition-colors ${isDragging ? 'border-emerald-500 bg-emerald-50' : 'border-emerald-200 hover:border-emerald-300 bg-white'}`}
                                     onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
@@ -575,7 +571,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                     <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="bordered"
                             onClick={onClose}
                         >
                             Cancel
@@ -583,16 +579,16 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                         <Button
                             type="submit"
                             disabled={isUploading || (action === 'decline' && !auditNote.trim()) || (action === 'request_audit' && !selectedAuditor)}
-                            className={
+                            color={
                                 action === 'approve'
-                                    ? 'bg-green-600 hover:bg-green-700'
+                                    ? 'success'
                                     : action === 'decline'
-                                        ? 'bg-red-600 hover:bg-red-700'
+                                        ? 'danger'
                                         : action === 'approve_paid'
-                                            ? 'bg-emerald-600 hover:bg-emerald-700'
+                                            ? 'success'
                                             : action === 'request_audit'
-                                                ? 'bg-purple-600 hover:bg-purple-700'
-                                                : 'bg-blue-600 hover:bg-blue-700'
+                                                ? 'secondary'
+                                                : 'primary'
                             }
                         >
                             {isUploading ? 'Uploading...' : (

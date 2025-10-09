@@ -1,10 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, Trash2, Plus, DollarSign, Calendar, MapPin, FileText, Building, CreditCard, CheckCircle } from 'lucide-react';
-import { Button } from '../../../ui/button';
-import { Input } from '../../../ui/input';
-import { Label } from '../../../ui/label';
-import { Textarea } from '../../../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Button, Input, Textarea, Select, SelectItem } from '@heroui/react';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../../../firebase/client';
 
@@ -216,9 +212,9 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
                     {/* Basic Information */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="md:col-span-2">
-                            <Label htmlFor="title" className="text-sm font-medium text-gray-700">
+                            <label htmlFor="title" className="text-sm font-medium text-gray-700">
                                 Request Title <span className="text-red-500">*</span>
-                            </Label>
+                            </label>
                             <Input
                                 id="title"
                                 value={formData.title}
@@ -230,26 +226,26 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
                         </div>
 
                         <div>
-                            <Label htmlFor="department" className="text-sm font-medium text-gray-700">
+                            <label htmlFor="department" className="text-sm font-medium text-gray-700">
                                 Department <span className="text-red-500">*</span>
-                            </Label>
-                            <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
-                                <SelectTrigger className={errors.department ? 'border-red-500' : ''}>
-                                    <SelectValue placeholder="Select department" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {DEPARTMENTS.map((dept) => (
-                                        <SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
+                            </label>
+                            <Select
+                                selectedKeys={formData.department ? [formData.department] : []}
+                                onSelectionChange={(keys) => setFormData({ ...formData, department: Array.from(keys)[0] as string })}
+                                placeholder="Select department"
+                                className={errors.department ? 'border-red-500' : ''}
+                            >
+                                {DEPARTMENTS.map((dept) => (
+                                    <SelectItem key={dept.value}>{dept.label}</SelectItem>
+                                ))}
                             </Select>
                             {errors.department && <p className="mt-1 text-sm text-red-600">{errors.department}</p>}
                         </div>
 
                         <div>
-                            <Label htmlFor="dateOfPurchase" className="text-sm font-medium text-gray-700">
+                            <label htmlFor="dateOfPurchase" className="text-sm font-medium text-gray-700">
                                 Date of Purchase <span className="text-red-500">*</span>
-                            </Label>
+                            </label>
                             <Input
                                 id="dateOfPurchase"
                                 type="date"
@@ -261,26 +257,26 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
                         </div>
 
                         <div>
-                            <Label htmlFor="paymentMethod" className="text-sm font-medium text-gray-700">
+                            <label htmlFor="paymentMethod" className="text-sm font-medium text-gray-700">
                                 Payment Method <span className="text-red-500">*</span>
-                            </Label>
-                            <Select value={formData.paymentMethod} onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}>
-                                <SelectTrigger className={errors.paymentMethod ? 'border-red-500' : ''}>
-                                    <SelectValue placeholder="How did you pay?" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {PAYMENT_METHODS.map((method) => (
-                                        <SelectItem key={method} value={method}>{method}</SelectItem>
-                                    ))}
-                                </SelectContent>
+                            </label>
+                            <Select
+                                selectedKeys={formData.paymentMethod ? [formData.paymentMethod] : []}
+                                onSelectionChange={(keys) => setFormData({ ...formData, paymentMethod: Array.from(keys)[0] as string })}
+                                placeholder="How did you pay?"
+                                className={errors.paymentMethod ? 'border-red-500' : ''}
+                            >
+                                {PAYMENT_METHODS.map((method) => (
+                                    <SelectItem key={method}>{method}</SelectItem>
+                                ))}
                             </Select>
                             {errors.paymentMethod && <p className="mt-1 text-sm text-red-600">{errors.paymentMethod}</p>}
                         </div>
 
                         <div>
-                            <Label htmlFor="vendor" className="text-sm font-medium text-gray-700">
+                            <label htmlFor="vendor" className="text-sm font-medium text-gray-700">
                                 Vendor/Merchant
-                            </Label>
+                            </label>
                             <Input
                                 id="vendor"
                                 value={formData.vendor}
@@ -290,9 +286,9 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
                         </div>
 
                         <div>
-                            <Label htmlFor="location" className="text-sm font-medium text-gray-700">
+                            <label htmlFor="location" className="text-sm font-medium text-gray-700">
                                 Location
-                            </Label>
+                            </label>
                             <Input
                                 id="location"
                                 value={formData.location}
@@ -302,9 +298,9 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
                         </div>
 
                         <div className="md:col-span-2">
-                            <Label htmlFor="businessPurpose" className="text-sm font-medium text-gray-700">
+                            <label htmlFor="businessPurpose" className="text-sm font-medium text-gray-700">
                                 Organization Purpose <span className="text-red-500">*</span>
-                            </Label>
+                            </label>
                             <p className="text-xs text-gray-500 mb-2">Explain how this expense relates to the organization and benefits IEEE UCSD</p>
                             <Textarea
                                 id="businessPurpose"
@@ -328,7 +324,7 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
                             <Button
                                 type="button"
                                 onClick={addExpense}
-                                variant="outline"
+                                variant="bordered"
                                 size="sm"
                                 className="flex items-center space-x-2"
                             >
@@ -346,7 +342,7 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
                                             <Button
                                                 type="button"
                                                 onClick={() => removeExpense(expense.id)}
-                                                variant="ghost"
+                                                variant="light"
                                                 size="sm"
                                                 className="text-red-600 hover:text-red-800"
                                             >
@@ -359,21 +355,18 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
                                         {/* Category and Amount in a row */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <Label className="text-sm font-medium text-gray-700">
+                                                <label className="text-sm font-medium text-gray-700">
                                                     Category <span className="text-red-500">*</span>
-                                                </Label>
+                                                </label>
                                                 <Select
-                                                    value={expense.category}
-                                                    onValueChange={(value) => updateExpense(expense.id, 'category', value)}
+                                                    selectedKeys={expense.category ? [expense.category] : []}
+                                                    onSelectionChange={(keys) => updateExpense(expense.id, 'category', Array.from(keys)[0] as string)}
+                                                    placeholder="Select category"
+                                                    className={errors[`expense_${expense.id}_category`] ? 'border-red-500' : ''}
                                                 >
-                                                    <SelectTrigger className={errors[`expense_${expense.id}_category`] ? 'border-red-500' : ''}>
-                                                        <SelectValue placeholder="Select category" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {EXPENSE_CATEGORIES.map((category) => (
-                                                            <SelectItem key={category} value={category}>{category}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
+                                                    {EXPENSE_CATEGORIES.map((category) => (
+                                                        <SelectItem key={category}>{category}</SelectItem>
+                                                    ))}
                                                 </Select>
                                                 {errors[`expense_${expense.id}_category`] && (
                                                     <p className="mt-1 text-sm text-red-600">{errors[`expense_${expense.id}_category`]}</p>
@@ -381,15 +374,15 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
                                             </div>
 
                                             <div>
-                                                <Label className="text-sm font-medium text-gray-700">
+                                                <label className="text-sm font-medium text-gray-700">
                                                     Amount <span className="text-red-500">*</span>
-                                                </Label>
+                                                </label>
                                                 <div className="relative">
                                                     <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                                     <Input
                                                         type="number"
                                                         step="0.01"
-                                                        value={expense.amount === 0 ? '' : expense.amount}
+                                                        value={expense.amount === 0 ? '' : expense.amount.toString()}
                                                         onChange={(e) => updateExpense(expense.id, 'amount', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                                                         placeholder="0.00"
                                                         className={`pl-10 ${errors[`expense_${expense.id}_amount`] ? 'border-red-500' : ''}`}
@@ -403,9 +396,9 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
 
                                         {/* Description full width */}
                                         <div>
-                                            <Label className="text-sm font-medium text-gray-700">
+                                            <label className="text-sm font-medium text-gray-700">
                                                 Description <span className="text-red-500">*</span>
-                                            </Label>
+                                            </label>
                                             <Textarea
                                                 value={expense.description}
                                                 onChange={(e) => updateExpense(expense.id, 'description', e.target.value)}
@@ -420,9 +413,9 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
 
                                         {/* Receipt upload full width */}
                                         <div>
-                                            <Label className="text-sm font-medium text-gray-700">
+                                            <label className="text-sm font-medium text-gray-700">
                                                 Receipt <span className="text-red-500">*</span>
-                                            </Label>
+                                            </label>
                                             <div
                                                 className={`mt-1 border-2 border-dashed rounded-md transition-colors h-32 ${expense.receipt
                                                     ? 'border-green-300 bg-green-50'
@@ -536,9 +529,9 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
 
                     {/* Additional Information */}
                     <div>
-                        <Label htmlFor="additionalInfo" className="text-sm font-medium text-gray-700">
+                        <label htmlFor="additionalInfo" className="text-sm font-medium text-gray-700">
                             Additional Information
-                        </Label>
+                        </label>
                         <Textarea
                             id="additionalInfo"
                             value={formData.additionalInfo}
@@ -552,14 +545,14 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
                     <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="bordered"
                             onClick={onClose}
                         >
                             Cancel
                         </Button>
                         <Button
                             type="submit"
-                            className="bg-blue-600 hover:bg-blue-700"
+                            color="primary"
                         >
                             Submit Request
                         </Button>
