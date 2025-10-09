@@ -141,16 +141,37 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                     let photoUrl: string | null = null;
                     let storagePath: string | undefined = undefined;
                     if (paymentInfo.photoAttachment) {
+                        // Ensure user is authenticated before upload
+                        if (!user || !user.uid) {
+                            throw new Error('User not authenticated');
+                        }
+
+                        // Get fresh auth token
+                        const idToken = await user.getIdToken();
+
                         const file = paymentInfo.photoAttachment;
                         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
                         const path = `reimbursements/paymentConfirmations/${reimbursement.id}/${Date.now()}_${safeName}`;
-                        const storageRef = ref(storage, path);
-                        const uploadTask = uploadBytesResumable(storageRef, file);
-                        await new Promise<void>((resolve, reject) => {
-                            uploadTask.on('state_changed', undefined, reject, () => resolve());
+
+                        // Upload using Firebase Storage REST API with explicit auth token
+                        const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/ieee-at-uc-san-diego.firebasestorage.app/o?name=${encodeURIComponent(path)}&uploadType=media`;
+
+                        const response = await fetch(uploadUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${idToken}`,
+                                'Content-Type': file.type,
+                            },
+                            body: file,
                         });
-                        photoUrl = await getDownloadURL(storageRef);
-                        storagePath = storageRef.fullPath;
+
+                        if (!response.ok) {
+                            throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+                        }
+
+                        const uploadResult = await response.json();
+                        photoUrl = `https://firebasestorage.googleapis.com/v0/b/ieee-at-uc-san-diego.firebasestorage.app/o/${encodeURIComponent(path)}?alt=media`;
+                        storagePath = path;
                     }
                     payment = {
                         confirmationNumber: paymentInfo.confirmationNumber,
@@ -505,7 +526,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                                                             <img src={previewUrl} alt="Preview" className="h-14 w-14 object-cover rounded-md border" />
                                                         ) : (
                                                             <div className="h-14 w-14 rounded-md border flex items-center justify-center bg-gray-50">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor" className="h-6 w-6 text-gray-400"><path d="M6 2h9l5 5v15a0 0 0 0 1 0 0H6a0 0 0 0 1 0 0V2Z"/><path d="M14 2v6h6"/></svg>
+                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor" className="h-6 w-6 text-gray-400"><path d="M6 2h9l5 5v15a0 0 0 0 1 0 0H6a0 0 0 0 1 0 0V2Z" /><path d="M14 2v6h6" /></svg>
                                                             </div>
                                                         )}
                                                         <div className="min-w-0">
@@ -576,10 +597,10 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                         >
                             {isUploading ? 'Uploading...' : (
                                 action === 'review' ? 'Add Note' :
-                                action === 'approve' ? 'Approve (Not Paid)' :
-                                action === 'decline' ? 'Decline Request' :
-                                action === 'approve_paid' ? 'Approve & Mark Paid' :
-                                action === 'request_audit' ? 'Send Audit Request' : 'Submit'
+                                    action === 'approve' ? 'Approve (Not Paid)' :
+                                        action === 'decline' ? 'Decline Request' :
+                                            action === 'approve_paid' ? 'Approve & Mark Paid' :
+                                                action === 'request_audit' ? 'Send Audit Request' : 'Submit'
                             )}
                         </Button>
                     </div>

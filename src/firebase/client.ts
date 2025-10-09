@@ -16,7 +16,7 @@ const firebaseConfig = {
     firebaseEnv.authDomain || `${firebaseEnv.projectId}.firebaseapp.com`,
   projectId: firebaseEnv.projectId,
   storageBucket:
-    firebaseEnv.storageBucket || `${firebaseEnv.projectId}.appspot.com`,
+    firebaseEnv.storageBucket || `${firebaseEnv.projectId}.firebasestorage.app`,
   messagingSenderId: firebaseEnv.messagingSenderId,
   appId: firebaseEnv.appId,
 };
