@@ -206,7 +206,6 @@ export interface Officer {
 export interface Reimbursement {
   title: string;
   totalAmount: number;
-  dateOfPurchase: Timestamp;
   paymentMethod: string;
   status: "submitted" | "declined" | "approved" | "paid";
   submittedBy: string;
@@ -224,9 +223,46 @@ export interface Reimbursement {
     completedAt?: Timestamp;
   }[];
   requiresExecutiveOverride?: boolean;
+
+  // New multi-receipt structure
+  receipts?: Receipt[];
+
+  // Legacy fields for backward compatibility
+  dateOfPurchase?: Timestamp; // Keep for legacy support
+  expenses?: LegacyExpense[]; // Legacy expense structure
+}
+
+// Legacy expense structure for backward compatibility
+export interface LegacyExpense {
+  id: string;
+  description: string;
+  category: string;
+  amount: number;
+  receipt?: { url: string; name: string; size: number; type: string };
+}
+
+export interface LineItem {
+  id: string;
+  description: string;
+  category: string;
+  amount: number;
 }
 
 export interface Receipt {
+  id: string;
+  vendorName: string;
+  location: string;
+  dateOfPurchase: Timestamp;
+  lineItems: LineItem[];
+  receiptFile?: string; // Firebase Storage URL
+  notes?: string;
+  subtotal: number;
+  tax?: number;
+  total: number;
+}
+
+// Legacy receipt structure for backward compatibility
+export interface LegacyReceipt {
   file: string;
   createdBy: string;
   itemizedExpenses: { description: string; category: string; amount: number }[];

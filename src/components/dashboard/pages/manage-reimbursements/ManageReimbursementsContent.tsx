@@ -523,7 +523,12 @@ export default function ManageReimbursementsContent() {
                                                     <div>
                                                         <div className="text-sm font-medium text-gray-900">{reimbursement.title}</div>
                                                         <div className="text-sm text-gray-500">{reimbursement.businessPurpose.substring(0, 60)}...</div>
-                                                        <div className="text-xs text-gray-400 mt-1">{reimbursement.expenses.length} expense{reimbursement.expenses.length > 1 ? 's' : ''}</div>
+                                                        <div className="text-xs text-gray-400 mt-1">
+                                                            {reimbursement.receipts
+                                                                ? `${reimbursement.receipts.length} receipt${reimbursement.receipts.length > 1 ? 's' : ''}`
+                                                                : `${reimbursement.expenses?.length || 0} expense${(reimbursement.expenses?.length || 0) > 1 ? 's' : ''}`
+                                                            }
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">

@@ -223,9 +223,10 @@ service cloud.firestore {
         ];
       allow create: if request.auth != null &&
         request.auth.uid == request.resource.data.submittedBy &&
-        request.resource.data.keys().hasAll(['title', 'totalAmount', 'status', 'submittedBy', 'department', 'businessPurpose', 'expenses', 'submittedAt']) &&
+        request.resource.data.keys().hasAll(['title', 'totalAmount', 'status', 'submittedBy', 'department', 'businessPurpose', 'submittedAt']) &&
         request.resource.data.submittedBy == request.auth.uid &&
-        request.resource.data.status == 'submitted';
+        request.resource.data.status == 'submitted' &&
+        (request.resource.data.keys().hasAny(['expenses']) || request.resource.data.keys().hasAny(['receipts']));
     }
 
     // Logs collection

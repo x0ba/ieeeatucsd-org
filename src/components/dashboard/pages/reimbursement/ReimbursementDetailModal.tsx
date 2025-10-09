@@ -102,130 +102,207 @@ export default function ReimbursementDetailModal({ reimbursement, onClose }: Rei
                         <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{reimbursement.businessPurpose}</p>
                     </div>
 
-                    {/* Expenses */}
+                    {/* Expenses/Reimbursements */}
                     <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-4">Itemized Expenses</h4>
+                        <h4 className="text-md font-medium text-gray-900 mb-4">
+                            {reimbursement.receipts ? 'Receipts' : 'Itemized Expenses'}
+                        </h4>
                         <div className="space-y-3">
-                            {reimbursement.expenses?.map((expense: any, index: number) => (
-                                <div key={expense.id || index} className="border border-gray-200 rounded-lg p-4">
-                                    <div className="flex items-start justify-between mb-2 gap-4">
-                                        <h5 className="font-medium text-gray-900 break-words flex-1 min-w-0">{expense.description}</h5>
-                                        <span className="text-lg font-bold text-gray-900 flex-shrink-0">${expense.amount?.toFixed(2)}</span>
-                                    </div>
-                                    <div className="text-sm text-gray-600 mb-3">
-                                        <span>Category: {expense.category}</span>
-                                    </div>
-                                    {expense.receipt && (
-                                        // Support multiple receipt data formats
-                                        expense.receipt.url ||
-                                        expense.receipt.downloadURL ||
-                                        (typeof expense.receipt === 'string' && expense.receipt.startsWith('http')) ||
-                                        expense.receipt
-                                    ) && (
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                                    <div className="flex items-center space-x-2 min-w-0 flex-1">
-                                                        <File className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                                        <span className="text-sm font-medium text-blue-900">Receipt Available</span>
-                                                        {expense.receipt.name && (
-                                                            <span className="text-xs text-blue-600 truncate">({expense.receipt.name})</span>
-                                                        )}
+                            {reimbursement.receipts ? (
+                                // New multi-receipt format
+                                reimbursement.receipts.map((receipt: any, receiptIndex: number) => (
+                                    <div key={receipt.id || receiptIndex} className="border border-gray-200 rounded-lg p-4">
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div>
+                                                <h5 className="font-medium text-gray-900">{receipt.vendorName}</h5>
+                                                <div className="text-sm text-gray-600 space-y-1">
+                                                    <p><strong>Location:</strong> {receipt.location || 'N/A'}</p>
+                                                    <p><strong>Date:</strong> {receipt.dateOfPurchase ? new Date(receipt.dateOfPurchase).toLocaleDateString() : 'N/A'}</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-lg font-bold text-gray-900">${receipt.total?.toFixed(2)}</span>
+                                        </div>
+
+                                        {/* Line Items */}
+                                        <div className="mb-3">
+                                            <h6 className="text-sm font-medium text-gray-700 mb-2">Line Items:</h6>
+                                            <div className="space-y-1">
+                                                {receipt.lineItems?.map((item: any, itemIndex: number) => (
+                                                    <div key={item.id || itemIndex} className="flex justify-between text-sm">
+                                                        <span>{item.description} ({item.category})</span>
+                                                        <span>${item.amount?.toFixed(2)}</span>
                                                     </div>
-                                                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
-                                                        <button
-                                                            onClick={async () => {
-                                                                try {
-                                                                    // Support multiple receipt data formats
-                                                                    let url = expense.receipt.url ||
-                                                                        expense.receipt.downloadURL ||
-                                                                        (typeof expense.receipt === 'string' && expense.receipt.startsWith('http') ? expense.receipt : null);
+                                                ))}
+                                            </div>
+                                        </div>
 
-                                                                    console.log('Receipt data:', expense.receipt);
-                                                                    console.log('Initial URL:', url);
+                                        {/* Receipt totals */}
+                                        <div className="text-sm text-gray-600 border-t pt-2">
+                                            <div className="flex justify-between">
+                                                <span>Subtotal:</span>
+                                                <span>${receipt.subtotal?.toFixed(2) || '0.00'}</span>
+                                            </div>
+                                            {receipt.tax > 0 && (
+                                                <div className="flex justify-between">
+                                                    <span>Tax:</span>
+                                                    <span>${receipt.tax?.toFixed(2)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between font-medium">
+                                                <span>Total:</span>
+                                                <span>${receipt.total?.toFixed(2)}</span>
+                                            </div>
+                                        </div>
 
-                                                                    // If we don't have a URL but have a filename, try to construct Firebase URL
-                                                                    if (!url && expense.receipt) {
-                                                                        const filename = expense.receipt.name || expense.receipt;
-                                                                        if (filename && typeof filename === 'string' && !filename.startsWith('http')) {
-                                                                            console.log('Attempting to construct Firebase URL from filename:', filename);
+                                        {/* Receipt Image */}
+                                        {receipt.receiptFile && (
+                                            <div className="mt-3 pt-3 border-t">
+                                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                                    <div className="flex items-center space-x-2">
+                                                        <FileText className="w-4 h-4 text-blue-600" />
+                                                        <span className="text-sm font-medium text-blue-900">Receipt Image Available</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => window.open(receipt.receiptFile, '_blank')}
+                                                        className="mt-2 flex items-center justify-center space-x-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                        <span>View Receipt</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
 
-                                                                            // Try to construct Firebase Storage URL
-                                                                            // This requires getting a new download URL from Firebase
-                                                                            try {
-                                                                                const { ref, getDownloadURL } = await import('firebase/storage');
-                                                                                const { storage } = await import('../../../../firebase/client');
+                                        {/* Notes */}
+                                        {receipt.notes && (
+                                            <div className="mt-3 pt-3 border-t">
+                                                <p className="text-sm text-gray-600">{receipt.notes}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                // Legacy single-expense format
+                                reimbursement.expenses?.map((expense: any, index: number) => (
+                                    <div key={expense.id || index} className="border border-gray-200 rounded-lg p-4">
+                                        <div className="flex items-start justify-between mb-2 gap-4">
+                                            <h5 className="font-medium text-gray-900 break-words flex-1 min-w-0">{expense.description}</h5>
+                                            <span className="text-lg font-bold text-gray-900 flex-shrink-0">${expense.amount?.toFixed(2)}</span>
+                                        </div>
+                                        <div className="text-sm text-gray-600 mb-3">
+                                            <span>Category: {expense.category}</span>
+                                        </div>
+                                        {expense.receipt && (
+                                            // Support multiple receipt data formats
+                                            expense.receipt.url ||
+                                            expense.receipt.downloadURL ||
+                                            (typeof expense.receipt === 'string' && expense.receipt.startsWith('http')) ||
+                                            expense.receipt
+                                        ) && (
+                                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                        <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                                            <File className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                                            <span className="text-sm font-medium text-blue-900">Receipt Available</span>
+                                                            {expense.receipt.name && (
+                                                                <span className="text-xs text-blue-600 truncate">({expense.receipt.name})</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+                                                            <button
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        // Support multiple receipt data formats
+                                                                        let url = expense.receipt.url ||
+                                                                            expense.receipt.downloadURL ||
+                                                                            (typeof expense.receipt === 'string' && expense.receipt.startsWith('http') ? expense.receipt : null);
 
-                                                                                // Try different possible paths where the file might be stored
-                                                                                const possiblePaths = [
-                                                                                    `reimbursements/${reimbursement.submittedBy}/${filename}`,
-                                                                                    `reimbursements/${reimbursement.submittedBy}/${Date.now()}_${filename}`,
-                                                                                    filename
-                                                                                ];
+                                                                        console.log('Receipt data:', expense.receipt);
+                                                                        console.log('Initial URL:', url);
 
-                                                                                for (const path of possiblePaths) {
-                                                                                    try {
-                                                                                        const storageRef = ref(storage, path);
-                                                                                        url = await getDownloadURL(storageRef);
-                                                                                        console.log('Successfully constructed URL:', url);
-                                                                                        break;
-                                                                                    } catch (e) {
-                                                                                        console.log(`Failed to get URL for path: ${path}`);
+                                                                        // If we don't have a URL but have a filename, try to construct Firebase URL
+                                                                        if (!url && expense.receipt) {
+                                                                            const filename = expense.receipt.name || expense.receipt;
+                                                                            if (filename && typeof filename === 'string' && !filename.startsWith('http')) {
+                                                                                console.log('Attempting to construct Firebase URL from filename:', filename);
+
+                                                                                // Try to construct Firebase Storage URL
+                                                                                // This requires getting a new download URL from Firebase
+                                                                                try {
+                                                                                    const { ref, getDownloadURL } = await import('firebase/storage');
+                                                                                    const { storage } = await import('../../../../firebase/client');
+
+                                                                                    // Try different possible paths where the file might be stored
+                                                                                    const possiblePaths = [
+                                                                                        `reimbursements/${reimbursement.submittedBy}/${filename}`,
+                                                                                        `reimbursements/${reimbursement.submittedBy}/${Date.now()}_${filename}`,
+                                                                                        filename
+                                                                                    ];
+
+                                                                                    for (const path of possiblePaths) {
+                                                                                        try {
+                                                                                            const storageRef = ref(storage, path);
+                                                                                            url = await getDownloadURL(storageRef);
+                                                                                            console.log('Successfully constructed URL:', url);
+                                                                                            break;
+                                                                                        } catch (e) {
+                                                                                            console.log(`Failed to get URL for path: ${path}`);
+                                                                                        }
                                                                                     }
+                                                                                } catch (storageError) {
+                                                                                    console.error('Error constructing Firebase URL:', storageError);
                                                                                 }
-                                                                            } catch (storageError) {
-                                                                                console.error('Error constructing Firebase URL:', storageError);
                                                                             }
                                                                         }
-                                                                    }
 
-                                                                    if (url && typeof url === 'string' && url.startsWith('http')) {
-                                                                        window.open(url, '_blank');
-                                                                    } else {
-                                                                        console.error('Unable to resolve receipt URL');
-                                                                        alert(`Unable to open receipt. The receipt may have been uploaded with an older system or there may be an issue with the file storage. Receipt data: ${JSON.stringify(expense.receipt)}`);
+                                                                        if (url && typeof url === 'string' && url.startsWith('http')) {
+                                                                            window.open(url, '_blank');
+                                                                        } else {
+                                                                            console.error('Unable to resolve receipt URL');
+                                                                            alert(`Unable to open receipt. The receipt may have been uploaded with an older system or there may be an issue with the file storage. Receipt data: ${JSON.stringify(expense.receipt)}`);
+                                                                        }
+                                                                    } catch (error) {
+                                                                        console.error('Error opening receipt:', error);
+                                                                        alert('An error occurred while trying to open the receipt. Please try again.');
                                                                     }
-                                                                } catch (error) {
-                                                                    console.error('Error opening receipt:', error);
-                                                                    alert('An error occurred while trying to open the receipt. Please try again.');
-                                                                }
-                                                            }}
-                                                            className="flex items-center justify-center space-x-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors min-h-[44px] flex-1 sm:flex-initial"
-                                                            title="View receipt"
-                                                        >
-                                                            <Eye className="w-4 h-4" />
-                                                            <span>View</span>
-                                                        </button>
-                                                        <a
-                                                            href={expense.receipt.url ||
-                                                                expense.receipt.downloadURL ||
-                                                                (typeof expense.receipt === 'string' && expense.receipt.startsWith('http') ? expense.receipt : null) ||
-                                                                expense.receipt}
-                                                            download={expense.receipt.name || 'receipt'}
-                                                            className="flex items-center justify-center space-x-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors min-h-[44px] flex-1 sm:flex-initial"
-                                                            title="Download receipt"
-                                                        >
-                                                            <Download className="w-4 h-4" />
-                                                            <span>Download</span>
-                                                        </a>
+                                                                }}
+                                                                className="flex items-center justify-center space-x-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors min-h-[44px] flex-1 sm:flex-initial"
+                                                                title="View receipt"
+                                                            >
+                                                                <Eye className="w-4 h-4" />
+                                                                <span>View</span>
+                                                            </button>
+                                                            <a
+                                                                href={expense.receipt.url ||
+                                                                    expense.receipt.downloadURL ||
+                                                                    (typeof expense.receipt === 'string' && expense.receipt.startsWith('http') ? expense.receipt : null) ||
+                                                                    expense.receipt}
+                                                                download={expense.receipt.name || 'receipt'}
+                                                                className="flex items-center justify-center space-x-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors min-h-[44px] flex-1 sm:flex-initial"
+                                                                title="Download receipt"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                                <span>Download</span>
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        )}
-                                    {(!expense.receipt || (
-                                        !expense.receipt.url &&
-                                        !expense.receipt.downloadURL &&
-                                        !(typeof expense.receipt === 'string' && expense.receipt.startsWith('http')) &&
-                                        !expense.receipt
-                                    )) && (
-                                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                                <div className="flex items-center space-x-2">
-                                                    <FileText className="w-4 h-4 text-gray-400" />
-                                                    <span className="text-sm text-gray-500">No receipt attached</span>
+                                            )}
+                                        {(!expense.receipt || (
+                                            !expense.receipt.url &&
+                                            !expense.receipt.downloadURL &&
+                                            !(typeof expense.receipt === 'string' && expense.receipt.startsWith('http')) &&
+                                            !expense.receipt
+                                        )) && (
+                                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                                    <div className="flex items-center space-x-2">
+                                                        <FileText className="w-4 h-4 text-gray-400" />
+                                                        <span className="text-sm text-gray-500">No receipt attached</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
-                                </div>
-                            ))}
+                                            )}
+                                    </div>
+                                )))}
                         </div>
                     </div>
 
