@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Calendar, Building, CreditCard, FileText, MapPin, User, Download, Eye, File, Image } from 'lucide-react';
+import { X, Calendar, Building, CreditCard, FileText, MapPin, User, Download, Eye, File, Image, CheckCircle } from 'lucide-react';
 
 interface ReimbursementDetailModalProps {
     reimbursement: any;
@@ -234,6 +234,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose }: Rei
 
                                                                                     // Try different possible paths where the file might be stored
                                                                                     const possiblePaths = [
+                                                                                        `receipts/${reimbursement.submittedBy}/${filename}`,
                                                                                         `reimbursements/${reimbursement.submittedBy}/${filename}`,
                                                                                         `reimbursements/${reimbursement.submittedBy}/${Date.now()}_${filename}`,
                                                                                         filename
@@ -311,6 +312,128 @@ export default function ReimbursementDetailModal({ reimbursement, onClose }: Rei
                         <div>
                             <h4 className="text-md font-medium text-gray-900 mb-2">Additional Information</h4>
                             <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{reimbursement.additionalInfo}</p>
+                        </div>
+                    )}
+
+                    {/* Payment Confirmation Details */}
+                    {reimbursement.status === 'paid' && reimbursement.paymentConfirmation && (
+                        <div>
+                            <h4 className="text-md font-medium text-gray-900 mb-4">Payment Confirmation</h4>
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <div className="space-y-3">
+                                    <div className="flex items-center space-x-2">
+                                        <CheckCircle className="w-5 h-5 text-green-600" />
+                                        <span className="text-sm font-medium text-green-900">Payment Confirmed</span>
+                                    </div>
+                                    {reimbursement.paymentConfirmation.confirmationNumber && (
+                                        <div className="text-sm">
+                                            <span className="text-gray-600">Confirmation Number: </span>
+                                            <span className="font-mono text-gray-900">{reimbursement.paymentConfirmation.confirmationNumber}</span>
+                                        </div>
+                                    )}
+                                    {reimbursement.paymentConfirmation.paidByName && reimbursement.paymentConfirmation.paidAt && (
+                                        <div className="text-sm">
+                                            <span className="text-gray-600">Paid by: </span>
+                                            <span className="text-gray-900">{reimbursement.paymentConfirmation.paidByName}</span>
+                                            <span className="text-gray-500 ml-2">on {new Date(reimbursement.paymentConfirmation.paidAt?.toDate ? reimbursement.paymentConfirmation.paidAt.toDate() : reimbursement.paymentConfirmation.paidAt).toLocaleDateString()}</span>
+                                        </div>
+                                    )}
+                                    {reimbursement.paymentConfirmation.photoAttachment && (
+                                        <div className="mt-3">
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        // Always use getDownloadURL to get a fresh URL with proper authentication token
+                                                        const { ref, getDownloadURL } = await import('firebase/storage');
+                                                        const { storage } = await import('../../../../firebase/client');
+
+                                                        let storagePath = reimbursement.paymentConfirmation.storagePath;
+
+                                                        // If we don't have a storage path, try to extract it from the photoAttachment URL
+                                                        if (!storagePath && reimbursement.paymentConfirmation.photoAttachment) {
+                                                            try {
+                                                                // Extract path from Firebase Storage URL
+                                                                // URL format: https://firebasestorage.googleapis.com/v0/b/bucket/o/path?alt=media
+                                                                const urlObj = new URL(reimbursement.paymentConfirmation.photoAttachment);
+                                                                if (urlObj.hostname === 'firebasestorage.googleapis.com') {
+                                                                    storagePath = decodeURIComponent(urlObj.pathname.split('/o/')[1].split('?')[0]);
+                                                                }
+                                                            } catch (e) {
+                                                                console.warn('Could not extract path from photoAttachment URL');
+                                                            }
+                                                        }
+
+                                                        if (!storagePath) {
+                                                            console.error('No storage path available for payment confirmation');
+                                                            alert('Unable to find the payment confirmation file path.');
+                                                            return;
+                                                        }
+
+                                                        console.log('Payment confirmation access attempt:', {
+                                                            reimbursementId: reimbursement.id,
+                                                            reimbursementData: {
+                                                                submittedBy: reimbursement.submittedBy,
+                                                                status: reimbursement.status
+                                                            },
+                                                            storagePath,
+                                                            paymentConfirmation: reimbursement.paymentConfirmation
+                                                        });
+
+                                                        let storageRef = ref(storage, storagePath);
+                                                        let url;
+
+                                                        try {
+                                                            url = await getDownloadURL(storageRef);
+                                                        } catch (error) {
+                                                            // If file not found in new location, try the old location for backward compatibility
+                                                            if (storagePath.startsWith('payment-confirmations/')) {
+                                                                const oldPath = storagePath.replace('payment-confirmations/', 'reimbursements/paymentConfirmations/');
+                                                                console.log('File not found in new location, trying old location:', oldPath);
+                                                                storageRef = ref(storage, oldPath);
+                                                                url = await getDownloadURL(storageRef);
+                                                            } else {
+                                                                throw error;
+                                                            }
+                                                        }
+
+                                                        if (url && typeof url === 'string' && url.startsWith('http')) {
+                                                            window.open(url, '_blank');
+                                                        } else {
+                                                            console.error('Unable to resolve payment confirmation URL');
+                                                            alert('Unable to open payment confirmation. There may be an issue with the file storage.');
+                                                        }
+                                                    } catch (error) {
+                                                        console.error('Error opening payment confirmation:', error);
+                                                        alert(`An error occurred while trying to open the payment confirmation: ${error instanceof Error ? error.message : String(error)}`);
+                                                    }
+                                                }}
+                                                className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                                            >
+                                                <Image className="w-4 h-4" />
+                                                <span>View Payment Confirmation</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Declined Reason */}
+                    {reimbursement.status === 'declined' && reimbursement.auditNotes && reimbursement.auditNotes.length > 0 && (
+                        <div>
+                            <h4 className="text-md font-medium text-gray-900 mb-4">Reason for Decline</h4>
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                <div className="space-y-3">
+                                    <div className="flex items-center space-x-2">
+                                        <X className="w-5 h-5 text-red-600" />
+                                        <span className="text-sm font-medium text-red-900">Request Declined</span>
+                                    </div>
+                                    <div className="text-sm text-red-800">
+                                        {reimbursement.auditNotes[reimbursement.auditNotes.length - 1]?.note}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 

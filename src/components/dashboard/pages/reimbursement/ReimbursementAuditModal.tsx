@@ -147,7 +147,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
 
                         const file = paymentInfo.photoAttachment;
                         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-                        const path = `reimbursements/paymentConfirmations/${reimbursement.id}/${Date.now()}_${safeName}`;
+                        const path = `payment-confirmations/${reimbursement.id}/${Date.now()}_${safeName}`;
 
                         // Upload using Firebase Storage REST API with explicit auth token
                         const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/ieee-at-uc-san-diego.firebasestorage.app/o?name=${encodeURIComponent(path)}&uploadType=media`;

@@ -80,7 +80,7 @@ export default function ReceiptUploadStep({ receipts, setReceipts, errors, setEr
 
             // Upload file to Firebase Storage
             const fileName = `${Date.now()}_${file.name}`;
-            const storageRef = ref(storage, `reimbursements/${auth.currentUser?.uid}/${fileName}`);
+            const storageRef = ref(storage, `receipts/${auth.currentUser?.uid}/${fileName}`);
 
             const uploadTask = uploadBytesResumable(storageRef, file);
             await new Promise((resolve, reject) => {

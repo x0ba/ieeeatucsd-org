@@ -91,9 +91,8 @@ service firebase.storage {
         (request.auth.uid == userId || isOfficer() || canSubmitEvents());
     }
 
-    // Payment confirmations - specific rule for the paymentConfirmations subfolder
-    // This must come BEFORE the general reimbursements rule to match first
-    match /reimbursements/paymentConfirmations/{reimbursementId}/{fileName} {
+    // Payment confirmations - separate folder for payment confirmation files
+    match /payment-confirmations/{reimbursementId}/{fileName} {
       // Only Executive Officers and Administrators can upload payment confirmations when marking reimbursements as paid
       allow write: if request.auth != null && isExecutiveOrAdmin();
 
@@ -104,7 +103,13 @@ service firebase.storage {
       );
     }
 
-    // General reimbursement files (receipts, etc.)
+    // Receipt files - organized by user ID for uploads, reimbursement ID for access
+    match /receipts/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null &&
+        (request.auth.uid == userId || isOfficer() || canSubmitEvents());
+    }
+
+    // Legacy reimbursement files (for backward compatibility)
     match /reimbursements/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null &&
         (request.auth.uid == userId || isOfficer() || canSubmitEvents());
