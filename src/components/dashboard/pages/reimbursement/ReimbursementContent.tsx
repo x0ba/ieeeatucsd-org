@@ -238,7 +238,7 @@ export default function ReimbursementContent() {
                         <div className="flex items-center space-x-3">
                             <button
                                 onClick={() => setIsWizardOpen(true)}
-                                className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg min-h-[44px] text-sm md:text-base"
+                                className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-md hover:shadow-lg min-h-[44px] text-sm md:text-base"
                             >
                                 <Sparkles className="w-4 h-4" />
                                 <span className="hidden sm:inline">New Request (AI-Powered)</span>
