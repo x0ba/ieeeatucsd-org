@@ -1,17 +1,10 @@
 import type { APIRoute } from "astro";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  Timestamp,
-} from "firebase/firestore";
 import { getFirestore } from "firebase-admin/firestore";
 import { app } from "../../firebase/server";
 
 const db = getFirestore(app);
 
-export const GET: APIRoute = async ({ params, request }) => {
+export const GET: APIRoute = async ({ request }) => {
   try {
     const url = new URL(request.url);
     const slug = url.searchParams.get("slug");
@@ -26,13 +19,9 @@ export const GET: APIRoute = async ({ params, request }) => {
       );
     }
 
-    // Query for the link with the matching shortUrl
-    const linksQuery = query(
-      collection(db, "links"),
-      where("shortUrl", "==", slug),
-    );
-
-    const querySnapshot = await getDocs(linksQuery);
+    // Query for the link with the matching shortUrl using Firebase Admin SDK
+    const linksRef = db.collection("links");
+    const querySnapshot = await linksRef.where("shortUrl", "==", slug).get();
 
     if (querySnapshot.empty) {
       return new Response(JSON.stringify({ error: "Link not found" }), {
@@ -45,28 +34,31 @@ export const GET: APIRoute = async ({ params, request }) => {
     const linkData = linkDoc.data();
 
     // Check publish/expire dates
-    const now = Timestamp.now();
+    const now = new Date();
 
-    // Check if link is published
-    if (
-      linkData.publishDate &&
-      linkData.publishDate.toMillis() > now.toMillis()
-    ) {
-      return new Response(JSON.stringify({ error: "Link not yet published" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+    // Check if link is published (publishDate is in the future)
+    if (linkData.publishDate) {
+      const publishDate = linkData.publishDate.toDate();
+      if (publishDate > now) {
+        return new Response(
+          JSON.stringify({ error: "Link not yet published" }),
+          {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
     }
 
-    // Check if link is expired
-    if (
-      linkData.expireDate &&
-      linkData.expireDate.toMillis() < now.toMillis()
-    ) {
-      return new Response(JSON.stringify({ error: "Link has expired" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+    // Check if link is expired (expireDate is in the past)
+    if (linkData.expireDate) {
+      const expireDate = linkData.expireDate.toDate();
+      if (expireDate < now) {
+        return new Response(JSON.stringify({ error: "Link has expired" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Return the link data
