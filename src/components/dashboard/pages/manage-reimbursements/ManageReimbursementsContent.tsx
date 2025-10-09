@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Calendar, Bell, User, Filter, Edit, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, FileText, MessageCircle, Eye, CreditCard, Check, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Search, Calendar, Bell, User, Filter, Edit, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, MessageCircle, Eye, CreditCard, Check, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, Timestamp, addDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -351,10 +351,6 @@ export default function ManageReimbursementsContent() {
                     <option value="paid">Paid</option>
                     <option value="declined">Declined</option>
                 </select>
-                <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    <FileText className="w-4 h-4" />
-                    <span>Export Report</span>
-                </button>
             </DashboardHeader>
 
             {/* Manage Reimbursements Content */}

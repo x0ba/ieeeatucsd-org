@@ -14,6 +14,12 @@ interface UserTableProps {
     currentUserId?: string;
 }
 
+// Utility function to truncate majors
+const truncateMajor = (major: string, maxLength: number = 20) => {
+    if (!major || major.length <= maxLength) return major;
+    return major.substring(0, maxLength) + '...';
+};
+
 export default function UserTable({
     users,
     sortConfig,
@@ -23,10 +29,10 @@ export default function UserTable({
     permissions,
     currentUserId
 }: UserTableProps) {
-    const SortableHeader = ({ field, children, className = "" }: { 
-        field: string; 
-        children: React.ReactNode; 
-        className?: string 
+    const SortableHeader = ({ field, children, className = "" }: {
+        field: string;
+        children: React.ReactNode;
+        className?: string
     }) => (
         <th
             className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors ${className}`}
@@ -131,7 +137,7 @@ export default function UserTable({
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900">{user.position || '-'}</div>
                                     {user.major && (
-                                        <div className="text-sm text-gray-500">{user.major}</div>
+                                        <div className="text-sm text-gray-500" title={user.major}>{truncateMajor(user.major)}</div>
                                     )}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -160,7 +166,7 @@ export default function UserTable({
                                                 <Edit className="w-4 h-4" />
                                             </button>
                                         )}
-                                        
+
                                         {permissions.canDeleteUser(user) && (
                                             <button
                                                 onClick={() => onDeleteUser(user.id)}
@@ -170,9 +176,9 @@ export default function UserTable({
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         )}
-                                        
+
                                         {permissions.isOAuthUser(user.id) && (
-                                            <span 
+                                            <span
                                                 className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
                                                 title="OAuth user - password cannot be changed"
                                             >

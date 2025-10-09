@@ -26,15 +26,12 @@ export default function LeaderboardContent() {
     const [currentUserRank, setCurrentUserRank] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [debugInfo, setDebugInfo] = useState<string>('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5); // Show 5 users per page
     const [totalUsersCount, setTotalUsersCount] = useState<number>(0);
 
     useEffect(() => {
         // Set up real-time listener for public profiles leaderboard
-        console.log('Setting up leaderboard listener...');
-
         try {
             // Query for all users (no limit for pagination)
             const publicProfilesQuery = query(
@@ -48,18 +45,13 @@ export default function LeaderboardContent() {
             // Get total count (non-real-time, just once)
             getCountFromServer(totalCountQuery).then((snapshot) => {
                 setTotalUsersCount(snapshot.data().count);
-                console.log('Total users count:', snapshot.data().count);
             }).catch((error) => {
                 console.error('Error getting total count:', error);
             });
 
             const unsubscribe = onSnapshot(publicProfilesQuery, (snapshot) => {
-                console.log('Leaderboard snapshot received:', snapshot.size, 'documents');
-                setDebugInfo(`Found ${snapshot.size} documents in public_profiles collection`);
-
                 const users = snapshot.docs.map((doc, index) => {
                     const data = doc.data();
-                    console.log('Profile data:', doc.id, data);
 
                     return {
                         id: doc.id,
@@ -73,13 +65,8 @@ export default function LeaderboardContent() {
                     };
                 }) as LeaderboardUser[];
 
-                console.log('Processed leaderboard users:', users.length, users);
-
                 // Only filter out users with invalid names, but keep users with 0 points
                 const validUsers = users.filter(u => u.name && u.name !== 'Unknown User' && u.name.trim() !== '');
-
-                console.log('Valid users after filtering:', validUsers.length, validUsers);
-                setDebugInfo(prev => `${prev}. After filtering: ${validUsers.length} valid users`);
 
                 setLeaderboardData(validUsers);
 
@@ -87,7 +74,6 @@ export default function LeaderboardContent() {
                 if (user) {
                     const currentUser = validUsers.find(u => u.id === user.uid);
                     setCurrentUserRank(currentUser?.rank || 0);
-                    console.log('Current user rank:', currentUser?.rank || 0);
                 }
 
                 setLoading(false);
@@ -98,7 +84,6 @@ export default function LeaderboardContent() {
             });
 
             return () => {
-                console.log('Cleaning up leaderboard listener');
                 unsubscribe();
             };
         } catch (error) {
@@ -178,6 +163,12 @@ export default function LeaderboardContent() {
 
     const stats = getTotalStats();
 
+    // Utility function to truncate majors
+    const truncateMajor = (major: string, maxLength: number = 20) => {
+        if (!major || major.length <= maxLength) return major;
+        return major.substring(0, maxLength) + '...';
+    };
+
     return (
         <div className="flex-1 overflow-auto">
             <DashboardHeader
@@ -189,15 +180,6 @@ export default function LeaderboardContent() {
             />
 
             <main className="p-4 md:p-6">
-                {/* Debug Info */}
-                {debugInfo && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 md:mb-6">
-                        <p className="text-sm text-blue-800">
-                            <strong>Debug:</strong> {debugInfo}
-                        </p>
-                    </div>
-                )}
-
                 <div className="grid grid-cols-1 gap-4 md:gap-6">
                     {/* Stats Overview */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -383,7 +365,7 @@ export default function LeaderboardContent() {
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="text-sm text-gray-500">{member.major || member.position}</div>
+                                                            <div className="text-sm text-gray-500" title={member.major || member.position}>{truncateMajor(member.major || member.position)}</div>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -392,7 +374,7 @@ export default function LeaderboardContent() {
                                                     <div className="text-xs text-gray-500">points</div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{member.major || 'N/A'}</div>
+                                                    <div className="text-sm text-gray-900" title={member.major || 'N/A'}>{truncateMajor(member.major || 'N/A')}</div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm text-gray-900">{member.graduationYear || 'N/A'}</div>

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getFirestore, doc, updateDoc } from 'firebase/firestore';
+import { Pagination } from '@heroui/react';
 import { useUserManagement } from './hooks/useUserManagement';
 import type { UserModalData, InviteModalData } from './types/UserManagementTypes';
 import { UserManagementTableSkeleton, MetricCardSkeleton } from '../../../ui/loading';
@@ -52,6 +53,22 @@ export default function ManageUsersContent() {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showAddMemberModal, setShowAddMemberModal] = useState(false);
     const [editingUser, setEditingUser] = useState<UserModalData | null>(null);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10); // Show 10 users per page
+
+    // Reset pagination when filters or sorting change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filters, sortConfig]);
+
+    // Pagination calculations
+    const totalItems = filteredUsers.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
     // Handle user actions
     const handleEditUser = (user: any) => {
@@ -334,7 +351,7 @@ export default function ManageUsersContent() {
 
                 {/* Users Table */}
                 <UserTable
-                    users={filteredUsers}
+                    users={paginatedUsers}
                     sortConfig={sortConfig}
                     onSort={updateSort}
                     onEditUser={handleEditUser}
@@ -342,6 +359,29 @@ export default function ManageUsersContent() {
                     permissions={permissions}
                     currentUserId={currentUser?.id}
                 />
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                                <p className="text-sm text-gray-700">
+                                    Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                                    <span className="font-medium">{Math.min(endIndex, totalItems)}</span> of{' '}
+                                    <span className="font-medium">{totalItems}</span> results
+                                </p>
+                            </div>
+                            <Pagination
+                                total={totalPages}
+                                page={currentPage}
+                                onChange={setCurrentPage}
+                                showControls
+                                showShadow
+                                color="primary"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* User Modal */}
                 <UserModal
