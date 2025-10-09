@@ -52,18 +52,18 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
             if (receipts.length === 0) {
                 newErrors.receipts = 'At least one receipt is required';
             } else {
-                receipts.forEach((receipt, index) => {
+                receipts.forEach((receipt) => {
                     if (!receipt.vendorName.trim()) {
-                        newErrors[`receipt_${index}_vendor`] = 'Vendor name is required';
+                        newErrors[`receipt_${receipt.id}_vendor`] = 'Vendor name is required';
                     }
                     if (!receipt.dateOfPurchase) {
-                        newErrors[`receipt_${index}_date`] = 'Date is required';
+                        newErrors[`receipt_${receipt.id}_date`] = 'Date is required';
                     }
                     if (!receipt.receiptFile?.url) {
-                        newErrors[`receipt_${index}_file`] = 'Receipt image is required';
+                        newErrors[`receipt_${receipt.id}_file`] = 'Receipt image is required';
                     }
                     if (receipt.lineItems.length === 0) {
-                        newErrors[`receipt_${index}_items`] = 'At least one line item is required';
+                        newErrors[`receipt_${receipt.id}_items`] = 'At least one line item is required';
                     }
                 });
             }
@@ -147,13 +147,12 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
                         {STEPS.map((step, index) => (
                             <React.Fragment key={step.id}>
                                 <div className="flex items-center">
-                                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors ${
-                                        currentStep > step.id
+                                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors ${currentStep > step.id
                                             ? 'bg-green-500 border-green-500 text-white'
                                             : currentStep === step.id
-                                            ? 'bg-blue-500 border-blue-500 text-white'
-                                            : 'bg-white border-gray-300 text-gray-500'
-                                    }`}>
+                                                ? 'bg-blue-500 border-blue-500 text-white'
+                                                : 'bg-white border-gray-300 text-gray-500'
+                                        }`}>
                                         {currentStep > step.id ? (
                                             <Check className="w-5 h-5" />
                                         ) : (
@@ -161,18 +160,16 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
                                         )}
                                     </div>
                                     <div className="ml-3 hidden md:block">
-                                        <p className={`text-sm font-medium ${
-                                            currentStep >= step.id ? 'text-gray-900' : 'text-gray-500'
-                                        }`}>
+                                        <p className={`text-sm font-medium ${currentStep >= step.id ? 'text-gray-900' : 'text-gray-500'
+                                            }`}>
                                             {step.name}
                                         </p>
                                         <p className="text-xs text-gray-500">{step.description}</p>
                                     </div>
                                 </div>
                                 {index < STEPS.length - 1 && (
-                                    <div className={`flex-1 h-0.5 mx-4 ${
-                                        currentStep > step.id ? 'bg-green-500' : 'bg-gray-300'
-                                    }`} />
+                                    <div className={`flex-1 h-0.5 mx-4 ${currentStep > step.id ? 'bg-green-500' : 'bg-gray-300'
+                                        }`} />
                                 )}
                             </React.Fragment>
                         ))}
@@ -216,9 +213,9 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
                     >
                         Cancel
                     </Button>
-                    
+
                     <div className="flex-1" />
-                    
+
                     <div className="flex items-center space-x-3">
                         {currentStep > 1 && (
                             <Button
@@ -229,7 +226,7 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
                                 Back
                             </Button>
                         )}
-                        
+
                         {currentStep < STEPS.length ? (
                             <Button
                                 color="primary"

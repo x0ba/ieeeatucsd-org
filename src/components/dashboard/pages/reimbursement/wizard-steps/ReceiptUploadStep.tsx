@@ -89,14 +89,17 @@ export default function ReceiptUploadStep({ receipts, setReceipts, errors, setEr
 
             const downloadURL = await getDownloadURL(storageRef);
 
+            // Create receipt file object
+            const receiptFileObj = {
+                url: downloadURL,
+                name: file.name,
+                size: file.size,
+                type: file.type
+            };
+
             // Update receipt with file info
             updateReceipt(receiptId, {
-                receiptFile: {
-                    url: downloadURL,
-                    name: file.name,
-                    size: file.size,
-                    type: file.type
-                }
+                receiptFile: receiptFileObj
             });
 
             setUploadingFiles(prev => {
@@ -105,8 +108,8 @@ export default function ReceiptUploadStep({ receipts, setReceipts, errors, setEr
                 return newSet;
             });
 
-            // Automatically trigger AI parsing
-            await parseReceiptWithAI(receiptId, downloadURL);
+            // Automatically trigger AI parsing, passing the receipt file to preserve it
+            await parseReceiptWithAI(receiptId, downloadURL, receiptFileObj);
 
         } catch (error) {
             console.error('Error uploading file:', error);
@@ -122,7 +125,7 @@ export default function ReceiptUploadStep({ receipts, setReceipts, errors, setEr
         }
     };
 
-    const parseReceiptWithAI = async (receiptId: string, imageUrl: string) => {
+    const parseReceiptWithAI = async (receiptId: string, imageUrl: string, receiptFile?: { url: string; name: string; size: number; type: string }) => {
         try {
             setParsingReceipts(prev => new Set(prev).add(receiptId));
             setParseResults(prev => ({ ...prev, [receiptId]: { success: false, message: 'Parsing receipt...' } }));
@@ -151,7 +154,8 @@ export default function ReceiptUploadStep({ receipts, setReceipts, errors, setEr
             }
 
             // Update receipt with parsed data
-            updateReceipt(receiptId, {
+            // Explicitly preserve receiptFile if it was passed in
+            const updates: Partial<ReimbursementReceipt> = {
                 vendorName: parsedData.vendorName || '',
                 location: parsedData.location || '',
                 dateOfPurchase: parsedData.dateOfPurchase || '',
@@ -173,7 +177,14 @@ export default function ReceiptUploadStep({ receipts, setReceipts, errors, setEr
                 tip: parseFloat(parsedData.tip) || 0,
                 shipping: parseFloat(parsedData.shipping) || 0,
                 total: parseFloat(parsedData.total) || 0
-            });
+            };
+
+            // Preserve receiptFile if provided
+            if (receiptFile) {
+                updates.receiptFile = receiptFile;
+            }
+
+            updateReceipt(receiptId, updates);
 
             setParseResults(prev => ({
                 ...prev,
@@ -184,11 +195,9 @@ export default function ReceiptUploadStep({ receipts, setReceipts, errors, setEr
             }));
 
             // Clear any previous errors
-            setErrors(prev => {
-                const newErrors = { ...prev };
-                delete newErrors[`receipt_${receiptId}_parse`];
-                return newErrors;
-            });
+            const newErrors = { ...errors };
+            delete newErrors[`receipt_${receiptId}_parse`];
+            setErrors(newErrors);
 
         } catch (error) {
             console.error('Error parsing receipt:', error);
@@ -240,7 +249,7 @@ export default function ReceiptUploadStep({ receipts, setReceipts, errors, setEr
                 <Button
                     color="primary"
                     variant="bordered"
-                    onClick={addReceipt}
+                    onPress={addReceipt}
                     startContent={<Plus className="w-4 h-4" />}
                     size="sm"
                 >
