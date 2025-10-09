@@ -22,23 +22,12 @@ export default defineConfig({
     mode: "standalone",
   }),
 
+  server: {
+    host: true,
+    port: process.env.PORT ? Number(process.env.PORT) : 4321,
+  },
   // Define environment variables that should be available to client components
   vite: {
-    define: {
-      "import.meta.env.LOGTO_APP_ID": JSON.stringify(process.env.LOGTO_APP_ID),
-      "import.meta.env.LOGTO_APP_SECRET": JSON.stringify(
-        process.env.LOGTO_APP_SECRET,
-      ),
-      "import.meta.env.LOGTO_ENDPOINT": JSON.stringify(
-        process.env.LOGTO_ENDPOINT,
-      ),
-      "import.meta.env.LOGTO_TOKEN_ENDPOINT": JSON.stringify(
-        process.env.LOGTO_TOKEN_ENDPOINT,
-      ),
-      "import.meta.env.LOGTO_API_ENDPOINT": JSON.stringify(
-        process.env.LOGTO_API_ENDPOINT,
-      ),
-    },
     resolve: {
       dedupe: ["react", "react-dom"],
     },
