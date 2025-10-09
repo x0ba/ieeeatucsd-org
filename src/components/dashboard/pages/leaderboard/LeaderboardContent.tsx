@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, Award, Crown, TrendingUp, Users, Star } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { Pagination } from '@heroui/react';
+import { collection, query, orderBy, onSnapshot, limit, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
@@ -26,16 +27,31 @@ export default function LeaderboardContent() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [debugInfo, setDebugInfo] = useState<string>('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(5); // Show 5 users per page
+    const [totalUsersCount, setTotalUsersCount] = useState<number>(0);
 
     useEffect(() => {
         // Set up real-time listener for public profiles leaderboard
         console.log('Setting up leaderboard listener...');
 
         try {
+            // Query for all users (no limit for pagination)
             const publicProfilesQuery = query(
                 collection(db, 'public_profiles'),
                 orderBy('points', 'desc')
             );
+
+            // Separate query to get total count of all users
+            const totalCountQuery = collection(db, 'public_profiles');
+
+            // Get total count (non-real-time, just once)
+            getCountFromServer(totalCountQuery).then((snapshot) => {
+                setTotalUsersCount(snapshot.data().count);
+                console.log('Total users count:', snapshot.data().count);
+            }).catch((error) => {
+                console.error('Error getting total count:', error);
+            });
 
             const unsubscribe = onSnapshot(publicProfilesQuery, (snapshot) => {
                 console.log('Leaderboard snapshot received:', snapshot.size, 'documents');
@@ -102,6 +118,13 @@ export default function LeaderboardContent() {
         }
     });
 
+    // Pagination calculations
+    const totalItems = filteredData.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedData = filteredData.slice(startIndex, endIndex);
+
     const topThree = filteredData.slice(0, 3);
     const restOfLeaderboard = filteredData.slice(3);
 
@@ -145,10 +168,10 @@ export default function LeaderboardContent() {
     };
 
     const getTotalStats = () => {
-        const totalUsers = leaderboardData.length;
-        const totalPoints = leaderboardData.reduce((sum, user) => sum + user.points, 0);
+        const totalUsers = filteredData.length;
+        const totalPoints = filteredData.reduce((sum, user) => sum + user.points, 0);
         const avgPoints = totalUsers > 0 ? Math.round(totalPoints / totalUsers) : 0;
-        const topPerformer = leaderboardData[0];
+        const topPerformer = filteredData[0];
 
         return { totalUsers, totalPoints, avgPoints, topPerformer };
     };
@@ -329,7 +352,7 @@ export default function LeaderboardContent() {
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredData.map((member) => (
+                                        {paginatedData.map((member) => (
                                             <tr
                                                 key={member.id}
                                                 className={`hover:bg-gray-50 ${member.id === user?.uid ? 'bg-blue-50' : ''}`}
@@ -389,6 +412,29 @@ export default function LeaderboardContent() {
                                 </table>
                             )}
                         </div>
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-4">
+                                        <p className="text-sm text-gray-700">
+                                            Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                                            <span className="font-medium">{Math.min(endIndex, totalItems)}</span> of{' '}
+                                            <span className="font-medium">{totalItems}</span> results
+                                        </p>
+                                    </div>
+                                    <Pagination
+                                        total={totalPages}
+                                        page={currentPage}
+                                        onChange={setCurrentPage}
+                                        showControls
+                                        showShadow
+                                        color="primary"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
