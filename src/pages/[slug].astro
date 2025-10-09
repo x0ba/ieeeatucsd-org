@@ -1,0 +1,62 @@
+---
+// Dynamic route for shortened URLs (e.g., /meeting, /zoom-link)
+export const prerender = false; // This route needs to be server-side rendered
+
+export async function GET({ params, redirect }) {
+  const { slug } = params;
+
+  // Skip if this is a known route (prevent conflicts)
+  const knownRoutes = [
+    "board",
+    "dashboard",
+    "events",
+    "find",
+    "join",
+    "projects",
+    "reimbursement",
+    "status-images",
+    "api",
+    "404",
+  ];
+
+  if (knownRoutes.includes(slug)) {
+    return new Response(null, {
+      status: 404,
+      headers: { "Content-Type": "text/html" },
+    });
+  }
+
+  try {
+    // Call our API endpoint to get the link data
+    const response = await fetch(
+      `/api/get-link-by-slug?slug=${encodeURIComponent(slug)}`,
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return new Response(null, {
+          status: 404,
+          headers: { "Content-Type": "text/html" },
+        });
+      }
+      throw new Error(`API responded with status ${response.status}`);
+    }
+
+    const linkData = await response.json();
+
+    // Redirect to the actual URL
+    return redirect(linkData.url, 302);
+  } catch (error) {
+    console.error("Error handling shortened URL redirect:", error);
+    return new Response(null, {
+      status: 500,
+      headers: { "Content-Type": "text/html" },
+    });
+  }
+}
+
+export async function POST({ params, redirect }) {
+  // Handle POST requests the same way as GET
+  return GET({ params, redirect });
+}
+---

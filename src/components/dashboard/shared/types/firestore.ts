@@ -328,6 +328,7 @@ export interface Link {
   category: string; // Required - for organization/filtering
   description?: string; // Optional - short description
   iconUrl?: string; // Optional - Firebase Storage URL for icon/photo
+  shortUrl?: string; // Optional - shortened URL slug (e.g., "meeting" for /url/meeting)
   publishDate?: Timestamp; // Optional - link becomes visible after this date
   expireDate?: Timestamp; // Optional - link becomes hidden after this date
   createdAt: Timestamp; // Required - for sorting (reverse chronological)

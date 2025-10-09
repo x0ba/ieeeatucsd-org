@@ -23,6 +23,7 @@ export interface LinkFormData {
   category: string;
   description?: string;
   iconUrl?: string;
+  shortUrl?: string;
   publishDate?: Timestamp | null;
   expireDate?: Timestamp | null;
 }
@@ -163,6 +164,9 @@ export function useLinksManagement() {
       if (linkData.iconUrl) {
         newLink.iconUrl = linkData.iconUrl;
       }
+      if (linkData.shortUrl) {
+        newLink.shortUrl = linkData.shortUrl;
+      }
       if (linkData.publishDate) {
         newLink.publishDate = linkData.publishDate;
       }
@@ -224,6 +228,13 @@ export function useLinksManagement() {
         updateData.iconUrl = linkData.iconUrl;
       } else if (existingLink.iconUrl) {
         updateData.iconUrl = deleteField();
+      }
+
+      // Short URL
+      if (linkData.shortUrl) {
+        updateData.shortUrl = linkData.shortUrl;
+      } else if (existingLink.shortUrl) {
+        updateData.shortUrl = deleteField();
       }
 
       // Publish Date - explicitly handle null to clear the field

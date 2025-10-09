@@ -14,6 +14,7 @@ interface LinkModalProps {
     category: string;
     description?: string;
     iconUrl?: string;
+    shortUrl?: string;
     publishDate?: Timestamp | null;
     expireDate?: Timestamp | null;
   }) => void;
@@ -36,6 +37,7 @@ export default function LinkModal({
     category: "General",
     description: "",
     iconUrl: "",
+    shortUrl: "",
     publishDate: "",
     expireDate: "",
   });
@@ -95,6 +97,7 @@ export default function LinkModal({
         category: categoryExists ? editingLink.category : "custom",
         description: editingLink.description || "",
         iconUrl: editingLink.iconUrl || "",
+        shortUrl: editingLink.shortUrl || "",
         publishDate: timestampToDatetimeLocal(editingLink.publishDate),
         expireDate: timestampToDatetimeLocal(editingLink.expireDate),
       });
@@ -108,6 +111,7 @@ export default function LinkModal({
         category: "General",
         description: "",
         iconUrl: "",
+        shortUrl: "",
         publishDate: "",
         expireDate: "",
       });
@@ -177,6 +181,26 @@ export default function LinkModal({
       newErrors.title = "Title is required";
     }
 
+    // Validate short URL
+    if (formData.shortUrl.trim()) {
+      const slug = formData.shortUrl.trim().toLowerCase();
+      if (!/^[a-z0-9-]+$/.test(slug)) {
+        newErrors.shortUrl = "Short URL must contain only lowercase letters, numbers, and hyphens";
+      } else if (slug.length < 2) {
+        newErrors.shortUrl = "Short URL must be at least 2 characters";
+      } else if (slug.length > 50) {
+        newErrors.shortUrl = "Short URL must be less than 50 characters";
+      } else {
+        // Check for uniqueness (only if not editing or if slug changed)
+        const existingLinkWithSlug = allLinks.find(link =>
+          link.shortUrl === slug && (!editingLink || link.id !== editingLink.id)
+        );
+        if (existingLinkWithSlug) {
+          newErrors.shortUrl = "This short URL is already taken";
+        }
+      }
+    }
+
     // Validate category
     const finalCategory = isCustomCategory
       ? customCategoryInput.trim()
@@ -225,6 +249,11 @@ export default function LinkModal({
         saveData.description = description;
       }
 
+      const shortUrl = formData.shortUrl.trim();
+      if (shortUrl) {
+        saveData.shortUrl = shortUrl;
+      }
+
       if (iconUrl) {
         saveData.iconUrl = iconUrl;
       }
@@ -255,6 +284,7 @@ export default function LinkModal({
         category: "General",
         description: "",
         iconUrl: "",
+        shortUrl: "",
         publishDate: "",
         expireDate: "",
       });
@@ -343,6 +373,37 @@ export default function LinkModal({
               />
               {errors.title && (
                 <p className="text-sm text-red-600 mt-1">{errors.title}</p>
+              )}
+            </div>
+
+            {/* Short URL */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Short URL (Optional)
+              </label>
+              <div className="relative">
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm rounded-l-lg">
+                    ieeeatucsd.org/
+                  </span>
+                  <input
+                    type="text"
+                    value={formData.shortUrl}
+                    onChange={(e) =>
+                      setFormData({ ...formData, shortUrl: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })
+                    }
+                    placeholder="meeting, zoom-link, etc."
+                    className={`flex-1 px-3 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.shortUrl ? "border-red-500" : "border-gray-300"
+                      }`}
+                    disabled={loading || uploadingIcon}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Create a custom shortened URL. Only lowercase letters, numbers, and hyphens allowed.
+              </p>
+              {errors.shortUrl && (
+                <p className="text-sm text-red-600 mt-1">{errors.shortUrl}</p>
               )}
             </div>
 
