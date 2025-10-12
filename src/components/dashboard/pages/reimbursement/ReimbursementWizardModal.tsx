@@ -96,10 +96,16 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
 
         const totalAmount = receipts.reduce((sum, receipt) => sum + (receipt.total || 0), 0);
 
+        // Use the earliest date from receipts as the main dateOfPurchase, fallback to current date
+        const earliestDate = receipts
+            .map(receipt => receipt.dateOfPurchase ? new Date(receipt.dateOfPurchase) : new Date())
+            .sort((a, b) => a.getTime() - b.getTime())[0];
+
         const reimbursementData = {
             ...formData,
             receipts: formattedReceipts,
             totalAmount,
+            dateOfPurchase: earliestDate.toISOString(),
             status: 'submitted',
             submittedAt: new Date().toISOString()
         };
@@ -148,10 +154,10 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
                             <React.Fragment key={step.id}>
                                 <div className="flex items-center">
                                     <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors ${currentStep > step.id
-                                            ? 'bg-green-500 border-green-500 text-white'
-                                            : currentStep === step.id
-                                                ? 'bg-blue-500 border-blue-500 text-white'
-                                                : 'bg-white border-gray-300 text-gray-500'
+                                        ? 'bg-green-500 border-green-500 text-white'
+                                        : currentStep === step.id
+                                            ? 'bg-blue-500 border-blue-500 text-white'
+                                            : 'bg-white border-gray-300 text-gray-500'
                                         }`}>
                                         {currentStep > step.id ? (
                                             <Check className="w-5 h-5" />

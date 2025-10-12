@@ -1,12 +1,19 @@
-import React from 'react';
-import { X, Calendar, Building, CreditCard, FileText, MapPin, User, Download, Eye, File, Image, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Calendar, Building, CreditCard, FileText, MapPin, User, Download, Eye, File, Image, CheckCircle, Trash2 } from 'lucide-react';
+import type { UserRole } from '../../shared/types/firestore';
 
 interface ReimbursementDetailModalProps {
     reimbursement: any;
     onClose: () => void;
+    userRole?: UserRole;
+    onDeleteReimbursement?: (reimbursementId: string) => Promise<void>;
 }
 
-export default function ReimbursementDetailModal({ reimbursement, onClose }: ReimbursementDetailModalProps) {
+export default function ReimbursementDetailModal({ reimbursement, onClose, userRole, onDeleteReimbursement }: ReimbursementDetailModalProps) {
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    const isAdmin = userRole === 'Administrator';
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'submitted':
@@ -41,18 +48,66 @@ export default function ReimbursementDetailModal({ reimbursement, onClose }: Rei
         }
     };
 
+    const handleDeleteReimbursement = async () => {
+        if (!onDeleteReimbursement) return;
+
+        setIsDeleting(true);
+        try {
+            await onDeleteReimbursement(reimbursement.id);
+            onClose(); // Close modal after successful deletion
+        } catch (error) {
+            console.error('Error deleting reimbursement:', error);
+            alert('Failed to delete reimbursement. Please try again.');
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteConfirm(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[calc(100vh-1rem)] md:max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200">
                     <h2 className="text-lg md:text-xl font-semibold text-gray-900 truncate pr-4">Reimbursement Details</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center flex-shrink-0"
-                        aria-label="Close modal"
-                    >
-                        <X className="w-5 h-5 md:w-6 md:h-6" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                        {/* Delete button for administrators */}
+                        {isAdmin && onDeleteReimbursement && (
+                            showDeleteConfirm ? (
+                                <div className="flex items-center space-x-2 bg-red-50 border border-red-200 rounded-lg p-2">
+                                    <span className="text-xs text-red-700">Delete this reimbursement?</span>
+                                    <button
+                                        onClick={handleDeleteReimbursement}
+                                        disabled={isDeleting}
+                                        className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors disabled:opacity-50"
+                                    >
+                                        {isDeleting ? 'Deleting...' : 'Yes'}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowDeleteConfirm(false)}
+                                        disabled={isDeleting}
+                                        className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300 transition-colors disabled:opacity-50"
+                                    >
+                                        No
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                    title="Delete reimbursement"
+                                >
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                            )
+                        )}
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center flex-shrink-0"
+                            aria-label="Close modal"
+                        >
+                            <X className="w-5 h-5 md:w-6 md:h-6" />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-4 md:p-6 space-y-4 md:space-y-6">

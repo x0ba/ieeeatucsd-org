@@ -1,6 +1,6 @@
 import React from 'react';
 import { Input, Textarea, Select, SelectItem, Button } from '@heroui/react';
-import { Upload, Loader2, CheckCircle, AlertTriangle, Plus, Trash2, DollarSign } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, AlertTriangle, Plus, Trash2, DollarSign, Eye } from 'lucide-react';
 import { EXPENSE_CATEGORIES, type ReimbursementReceipt, type LineItem } from '../types';
 
 interface ReceiptFormProps {
@@ -126,8 +126,34 @@ export default function ReceiptForm({
                             onFileUpload(receipt.id, files[0]);
                         }
                     }}
+                    onPaste={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const items = e.clipboardData?.items;
+                        if (!items) return;
+
+                        for (let i = 0; i < items.length; i++) {
+                            const item = items[i];
+                            if (item.type.indexOf('image') === 0) {
+                                const file = item.getAsFile();
+                                if (file) {
+                                    // Create a more descriptive filename for pasted images
+                                    const timestamp = Date.now();
+                                    const extension = file.type.split('/')[1] || 'png';
+                                    const newFile = new File([file], `pasted-receipt-${timestamp}.${extension}`, {
+                                        type: file.type,
+                                        lastModified: Date.now()
+                                    });
+                                    onFileUpload(receipt.id, newFile);
+                                    break; // Only handle the first image
+                                }
+                            }
+                        }
+                    }}
                     role="region"
                     aria-label="Receipt file upload area"
+                    tabIndex={0}
                 >
                     {isUploading ? (
                         <div className="h-32 flex items-center justify-center">
@@ -140,22 +166,33 @@ export default function ReceiptForm({
                         <div className="h-32 flex items-center justify-center">
                             <div className="text-center">
                                 <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                                <p className="text-sm font-medium text-green-700">{receipt.receiptFile.name}</p>
-                                <p className="text-xs text-green-600">Uploaded successfully</p>
-                                <div className="mt-2 space-x-2">
-                                    <label className="inline-block text-xs text-blue-600 hover:text-blue-500 cursor-pointer underline">
-                                        Replace
-                                        <input
-                                            type="file"
-                                            className="sr-only"
-                                            accept="image/png,image/jpeg,image/jpg"
-                                            aria-label="Replace receipt file"
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) onFileUpload(receipt.id, file);
-                                            }}
-                                        />
-                                    </label>
+                                <p className="text-sm font-medium text-green-700 truncate max-w-[200px]" title={receipt.receiptFile.name}>{receipt.receiptFile.name}</p>
+                                <p className="text-xs text-green-600 mb-2">Uploaded successfully</p>
+                                <div className="text-xs text-gray-500 space-y-1">
+                                    <p className="text-center">Drag and drop or paste to replace</p>
+                                    <div className="flex items-center justify-center space-x-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => window.open(receipt.receiptFile.url, '_blank')}
+                                            className="text-blue-600 hover:text-blue-500 underline"
+                                        >
+                                            View
+                                        </button>
+                                        <span className="text-gray-400">•</span>
+                                        <label className="inline-block text-blue-600 hover:text-blue-500 cursor-pointer underline">
+                                            Replace
+                                            <input
+                                                type="file"
+                                                className="sr-only"
+                                                accept="image/png,image/jpeg,image/jpg"
+                                                aria-label="Replace receipt file"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) onFileUpload(receipt.id, file);
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -176,7 +213,7 @@ export default function ReceiptForm({
                                         }}
                                     />
                                 </label>
-                                <p className="text-xs text-gray-500 mt-1">or drag and drop</p>
+                                <p className="text-xs text-gray-500 mt-1">or drag and drop or paste</p>
                                 <p className="text-xs text-gray-500">PNG or JPG up to 10MB</p>
                             </div>
                         </div>

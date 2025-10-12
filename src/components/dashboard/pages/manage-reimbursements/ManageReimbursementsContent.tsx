@@ -20,7 +20,8 @@ interface Reimbursement {
     submittedBy: string;
     department: string;
     businessPurpose: string;
-    expenses: any[];
+    expenses?: any[];
+    receipts?: any[];
     submittedAt: any;
     additionalInfo?: string;
     auditNotes?: { note: string; createdBy: string; timestamp: any; }[];
@@ -256,6 +257,22 @@ export default function ManageReimbursementsContent() {
             await updateDoc(doc(db, 'reimbursements', reimbursementId), updateData);
         } catch (error) {
             console.error('Error updating reimbursement:', error);
+        }
+    };
+
+    const deleteReimbursement = async (reimbursementId: string) => {
+        if (!user || currentUserRole !== 'Administrator') {
+            console.error('Unauthorized: Only administrators can delete reimbursements');
+            return;
+        }
+
+        try {
+            const { deleteDoc } = await import('firebase/firestore');
+            await deleteDoc(doc(db, 'reimbursements', reimbursementId));
+            console.log('Reimbursement deleted successfully');
+        } catch (error) {
+            console.error('Error deleting reimbursement:', error);
+            throw error;
         }
     };
 
@@ -626,6 +643,8 @@ export default function ManageReimbursementsContent() {
                     <ReimbursementDetailModal
                         reimbursement={selectedReimbursement}
                         onClose={() => setSelectedReimbursement(null)}
+                        userRole={currentUserRole || undefined}
+                        onDeleteReimbursement={deleteReimbursement}
                     />
                 )
             }

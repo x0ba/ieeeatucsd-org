@@ -243,7 +243,7 @@ export default function ReceiptUploadStep({ receipts, setReceipts, errors, setEr
                 <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Receipt Upload & AI Parsing</h3>
                     <p className="text-sm text-gray-600">
-                        Upload receipt images and let AI automatically extract the information.
+                        Upload receipt images (or paste them directly) and let AI automatically extract the information.
                     </p>
                 </div>
                 <Button

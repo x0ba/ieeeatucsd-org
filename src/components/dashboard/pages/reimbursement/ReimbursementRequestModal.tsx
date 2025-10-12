@@ -346,10 +346,16 @@ export default function ReimbursementRequestModal({ isOpen, onClose, onSubmit }:
             total: receipt.total
         }));
 
+        // Use the earliest date from receipts as the main dateOfPurchase, fallback to current date
+        const earliestDate = receipts
+            .map(receipt => receipt.dateOfPurchase ? new Date(receipt.dateOfPurchase) : new Date())
+            .sort((a, b) => a.getTime() - b.getTime())[0];
+
         const reimbursementData = {
             ...formData,
             receipts: formattedReceipts,
             totalAmount: getTotalAmount(),
+            dateOfPurchase: earliestDate.toISOString(),
             status: 'submitted',
             submittedAt: new Date().toISOString()
         };
@@ -711,6 +717,34 @@ Return only valid JSON with this exact structure:
                                                         handleReceiptUpload(receipt.id, files[0]);
                                                     }
                                                 }}
+                                                onPaste={async (e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+
+                                                    const items = e.clipboardData?.items;
+                                                    if (!items) return;
+
+                                                    for (let i = 0; i < items.length; i++) {
+                                                        const item = items[i];
+                                                        if (item.type.indexOf('image') === 0) {
+                                                            const file = item.getAsFile();
+                                                            if (file) {
+                                                                // Create a more descriptive filename for pasted images
+                                                                const timestamp = Date.now();
+                                                                const extension = file.type.split('/')[1] || 'png';
+                                                                const newFile = new File([file], `pasted-receipt-${timestamp}.${extension}`, {
+                                                                    type: file.type,
+                                                                    lastModified: Date.now()
+                                                                });
+                                                                handleReceiptUpload(receipt.id, newFile);
+                                                                break; // Only handle the first image
+                                                            }
+                                                        }
+                                                    }
+                                                }}
+                                                role="region"
+                                                aria-label="Receipt file upload area"
+                                                tabIndex={0}
                                             >
                                                 {uploadingFiles.has(receipt.id) ? (
                                                     <div className="h-full flex items-center justify-center">
@@ -725,33 +759,45 @@ Return only valid JSON with this exact structure:
                                                             <div className="flex items-center justify-center mb-2">
                                                                 <CheckCircle className="w-8 h-8 text-green-600" />
                                                             </div>
-                                                            <p className="text-sm font-medium text-green-700">{receipt.receiptFile.name}</p>
-                                                            <p className="text-xs text-green-600">Receipt uploaded successfully</p>
-                                                            <p className="text-xs text-gray-500">{(receipt.receiptFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                                                            <div className="mt-2 space-x-2">
-                                                                <label
-                                                                    htmlFor={`receipt-file-${receipt.id}`}
-                                                                    className="inline-block text-xs text-blue-600 hover:text-blue-500 cursor-pointer underline"
-                                                                >
-                                                                    Replace file
-                                                                    <input
-                                                                        id={`receipt-file-${receipt.id}`}
-                                                                        type="file"
-                                                                        className="sr-only"
-                                                                        accept="image/*,.pdf"
-                                                                        onChange={(e) => {
-                                                                            const file = e.target.files?.[0];
-                                                                            if (file) handleReceiptUpload(receipt.id, file);
-                                                                        }}
-                                                                    />
-                                                                </label>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => updateReceipt(receipt.id, 'receiptFile', undefined)}
-                                                                    className="text-xs text-red-600 hover:text-red-800 underline"
-                                                                >
-                                                                    Remove
-                                                                </button>
+                                                            <p className="text-sm font-medium text-green-700 truncate max-w-[200px]" title={receipt.receiptFile.name}>{receipt.receiptFile.name}</p>
+                                                            <p className="text-xs text-green-600 mb-1">Receipt uploaded successfully</p>
+                                                            <p className="text-xs text-gray-500 mb-2">{(receipt.receiptFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                            <div className="text-xs text-gray-500 space-y-1">
+                                                                <p className="text-center">Drag and drop or paste to replace</p>
+                                                                <div className="flex flex-wrap items-center justify-center gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => receipt.receiptFile && window.open(receipt.receiptFile.url, '_blank')}
+                                                                        className="text-blue-600 hover:text-blue-500 underline"
+                                                                    >
+                                                                        View
+                                                                    </button>
+                                                                    <span className="text-gray-400 hidden sm:inline">•</span>
+                                                                    <label
+                                                                        htmlFor={`receipt-file-${receipt.id}`}
+                                                                        className="text-blue-600 hover:text-blue-500 cursor-pointer underline"
+                                                                    >
+                                                                        Replace
+                                                                        <input
+                                                                            id={`receipt-file-${receipt.id}`}
+                                                                            type="file"
+                                                                            className="sr-only"
+                                                                            accept="image/*,.pdf"
+                                                                            onChange={(e) => {
+                                                                                const file = e.target.files?.[0];
+                                                                                if (file) handleReceiptUpload(receipt.id, file);
+                                                                            }}
+                                                                        />
+                                                                    </label>
+                                                                    <span className="text-gray-400 hidden sm:inline">•</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => updateReceipt(receipt.id, 'receiptFile', undefined)}
+                                                                        className="text-red-600 hover:text-red-800 underline"
+                                                                    >
+                                                                        Remove
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -776,7 +822,7 @@ Return only valid JSON with this exact structure:
                                                                         }}
                                                                     />
                                                                 </label>
-                                                                <p className="pl-1">or drag and drop</p>
+                                                                <p className="pl-1">or drag and drop or paste</p>
                                                             </div>
                                                             <p className="text-xs text-gray-500 mt-1">PNG, JPG, PDF up to 10MB</p>
                                                         </div>

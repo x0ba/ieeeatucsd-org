@@ -19,7 +19,8 @@ interface Reimbursement {
     submittedBy: string;
     department: string;
     businessPurpose: string;
-    expenses: any[];
+    expenses?: any[];
+    receipts?: any[];
     submittedAt: any;
     additionalInfo?: string;
 }
@@ -150,8 +151,8 @@ export default function ReimbursementContent() {
                 submittedBy: user.uid,
                 department: data.department,
                 businessPurpose: data.businessPurpose,
-                location: data.location,
-                vendor: data.vendor,
+                ...(data.location && { location: data.location }),
+                ...(data.vendor && { vendor: data.vendor }),
                 ...(processedExpenses && { expenses: processedExpenses }),
                 ...(processedReceipts && { receipts: processedReceipts }),
                 additionalInfo: data.additionalInfo,
@@ -353,7 +354,12 @@ export default function ReimbursementContent() {
                                             <div className="grid grid-cols-1 gap-2 text-sm text-gray-500 mb-4">
                                                 <div className="break-words">Submitted: {reimbursement.submittedAt?.toDate ? reimbursement.submittedAt.toDate().toLocaleDateString() : new Date(reimbursement.submittedAt).toLocaleDateString()}</div>
                                                 <div className="capitalize break-words">Department: {reimbursement.department}</div>
-                                                <div>{reimbursement.expenses.length} expense{reimbursement.expenses.length > 1 ? 's' : ''}</div>
+                                                <div>
+                                                    {reimbursement.receipts
+                                                        ? `${reimbursement.receipts.length} receipt${reimbursement.receipts.length > 1 ? 's' : ''}`
+                                                        : `${reimbursement.expenses?.length || 0} expense${(reimbursement.expenses?.length || 0) > 1 ? 's' : ''}`
+                                                    }
+                                                </div>
                                             </div>
 
                                             <div className="flex items-center justify-between">
@@ -385,7 +391,12 @@ export default function ReimbursementContent() {
                                                         <span>•</span>
                                                         <span className="capitalize">{reimbursement.department}</span>
                                                         <span>•</span>
-                                                        <span>{reimbursement.expenses.length} expense{reimbursement.expenses.length > 1 ? 's' : ''}</span>
+                                                        <span>
+                                                            {reimbursement.receipts
+                                                                ? `${reimbursement.receipts.length} receipt${reimbursement.receipts.length > 1 ? 's' : ''}`
+                                                                : `${reimbursement.expenses?.length || 0} expense${(reimbursement.expenses?.length || 0) > 1 ? 's' : ''}`
+                                                            }
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
