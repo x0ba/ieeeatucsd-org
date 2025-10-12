@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Calendar, Bell, User, Filter, Edit, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, MessageCircle, Eye, CreditCard, Check, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, Timestamp, addDoc, getDoc } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { Calendar, User, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, MessageCircle, Eye, CreditCard, ChevronUp, ChevronDown, ChevronsUpDown, Trash2 } from 'lucide-react';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, Timestamp, getDoc } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
+import { Card, CardHeader, CardBody, Button, Chip, Select, SelectItem, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import DashboardHeader from '../../shared/DashboardHeader';
-import ReimbursementDetailModal from '../reimbursement/ReimbursementDetailModal';
-import ReimbursementAuditModal from '../reimbursement/ReimbursementAuditModal';
+import ReimbursementModal from '../reimbursement/ReimbursementModal';
 import type { UserRole } from '../../shared/types/firestore';
 import { PublicProfileService } from '../../shared/services/publicProfile';
-import { MetricCardSkeleton, TableSkeleton } from '../../../ui/loading';
+import { TableSkeleton } from '../../../ui/loading';
 
 interface Reimbursement {
     id: string;
@@ -44,18 +44,20 @@ interface Reimbursement {
     };
 }
 
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: string): "default" | "primary" | "secondary" | "success" | "warning" | "danger" => {
     switch (status) {
         case 'submitted':
-            return 'bg-yellow-100 text-yellow-800';
+            return 'warning';
+        case 'under_review':
+            return 'primary';
         case 'approved':
-            return 'bg-green-100 text-green-800';
+            return 'success';
         case 'paid':
-            return 'bg-emerald-100 text-emerald-800';
+            return 'success';
         case 'declined':
-            return 'bg-red-100 text-red-800';
+            return 'danger';
         default:
-            return 'bg-gray-100 text-gray-800';
+            return 'default';
     }
 };
 
@@ -101,6 +103,8 @@ export default function ManageReimbursementsContent() {
     const [sortField, setSortField] = useState<string>('submittedAt');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; reimbursement: Reimbursement | null }>({ isOpen: false, reimbursement: null });
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -260,20 +264,32 @@ export default function ManageReimbursementsContent() {
         }
     };
 
-    const deleteReimbursement = async (reimbursementId: string) => {
-        if (!user || currentUserRole !== 'Administrator') {
+    const handleDeleteClick = (reimbursement: Reimbursement) => {
+        setDeleteConfirmation({ isOpen: true, reimbursement });
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteConfirmation.reimbursement || !user || currentUserRole !== 'Administrator') {
             console.error('Unauthorized: Only administrators can delete reimbursements');
             return;
         }
 
+        setIsDeleting(true);
         try {
             const { deleteDoc } = await import('firebase/firestore');
-            await deleteDoc(doc(db, 'reimbursements', reimbursementId));
+            await deleteDoc(doc(db, 'reimbursements', deleteConfirmation.reimbursement.id));
             console.log('Reimbursement deleted successfully');
+            setDeleteConfirmation({ isOpen: false, reimbursement: null });
         } catch (error) {
             console.error('Error deleting reimbursement:', error);
-            throw error;
+            alert('Failed to delete reimbursement. Please try again.');
+        } finally {
+            setIsDeleting(false);
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteConfirmation({ isOpen: false, reimbursement: null });
     };
 
     const filteredReimbursements = reimbursements.filter(reimbursement => {
@@ -357,17 +373,24 @@ export default function ManageReimbursementsContent() {
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
             >
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <Select
+                    label="Filter by Status"
+                    placeholder="Select status"
+                    selectedKeys={[statusFilter]}
+                    onSelectionChange={(keys) => {
+                        const selected = Array.from(keys)[0] as string;
+                        setStatusFilter(selected || 'all');
+                    }}
+                    className="w-48"
+                    size="sm"
+                    variant="bordered"
                 >
-                    <option value="all">All Status</option>
-                    <option value="submitted">Submitted</option>
-                    <option value="approved">Approved (Not Paid)</option>
-                    <option value="paid">Paid</option>
-                    <option value="declined">Declined</option>
-                </select>
+                    <SelectItem key="all">All Status</SelectItem>
+                    <SelectItem key="submitted">Submitted</SelectItem>
+                    <SelectItem key="approved">Approved (Not Paid)</SelectItem>
+                    <SelectItem key="paid">Paid</SelectItem>
+                    <SelectItem key="declined">Declined</SelectItem>
+                </Select>
             </DashboardHeader>
 
             {/* Manage Reimbursements Content */}
@@ -376,288 +399,391 @@ export default function ManageReimbursementsContent() {
 
 
                     {/* Reimbursement Management Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                         {loading ? (
                             <>
-                                <MetricCardSkeleton />
-                                <MetricCardSkeleton />
-                                <MetricCardSkeleton />
-                                <MetricCardSkeleton />
+                                <Card className="w-full">
+                                    <CardBody className="p-6">
+                                        <Skeleton className="rounded-lg">
+                                            <div className="h-20 rounded-lg bg-default-300"></div>
+                                        </Skeleton>
+                                    </CardBody>
+                                </Card>
+                                <Card className="w-full">
+                                    <CardBody className="p-6">
+                                        <Skeleton className="rounded-lg">
+                                            <div className="h-20 rounded-lg bg-default-300"></div>
+                                        </Skeleton>
+                                    </CardBody>
+                                </Card>
+                                <Card className="w-full">
+                                    <CardBody className="p-6">
+                                        <Skeleton className="rounded-lg">
+                                            <div className="h-20 rounded-lg bg-default-300"></div>
+                                        </Skeleton>
+                                    </CardBody>
+                                </Card>
+                                <Card className="w-full">
+                                    <CardBody className="p-6">
+                                        <Skeleton className="rounded-lg">
+                                            <div className="h-20 rounded-lg bg-default-300"></div>
+                                        </Skeleton>
+                                    </CardBody>
+                                </Card>
                             </>
                         ) : (
                             <>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">Total Requests</p>
-                                            <p className="text-2xl font-bold text-gray-900">{stats.totalRequests}</p>
+                                <Card className="w-full" shadow="sm">
+                                    <CardBody className="p-6">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex flex-col gap-1">
+                                                <p className="text-sm text-default-500">Total Requests</p>
+                                                <p className="text-2xl font-semibold text-default-900">{stats.totalRequests}</p>
+                                            </div>
+                                            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-50 rounded-full flex items-center justify-center">
+                                                <Receipt className="w-6 h-6 text-primary-600" />
+                                            </div>
                                         </div>
-                                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                            <Receipt className="w-6 h-6 text-blue-600" />
+                                    </CardBody>
+                                </Card>
+                                <Card className="w-full" shadow="sm">
+                                    <CardBody className="p-6">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex flex-col gap-1">
+                                                <p className="text-sm text-default-500">Pending Review</p>
+                                                <p className="text-2xl font-semibold text-warning-600">{stats.pendingReview}</p>
+                                            </div>
+                                            <div className="w-12 h-12 bg-warning-100 dark:bg-warning-50 rounded-full flex items-center justify-center">
+                                                <Clock className="w-6 h-6 text-warning-600" />
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">Pending Review</p>
-                                            <p className="text-2xl font-bold text-yellow-600">{stats.pendingReview}</p>
+                                    </CardBody>
+                                </Card>
+                                <Card className="w-full" shadow="sm">
+                                    <CardBody className="p-6">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex flex-col gap-1">
+                                                <p className="text-sm text-default-500">Total Amount</p>
+                                                <p className="text-2xl font-semibold text-success-600">${stats.totalAmount.toFixed(2)}</p>
+                                            </div>
+                                            <div className="w-12 h-12 bg-success-100 dark:bg-success-50 rounded-full flex items-center justify-center">
+                                                <DollarSign className="w-6 h-6 text-success-600" />
+                                            </div>
                                         </div>
-                                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                            <Clock className="w-6 h-6 text-yellow-600" />
+                                    </CardBody>
+                                </Card>
+                                <Card className="w-full" shadow="sm">
+                                    <CardBody className="p-6">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex flex-col gap-1">
+                                                <p className="text-sm text-default-500">This Month</p>
+                                                <p className="text-2xl font-semibold text-secondary-600">{stats.thisMonth}</p>
+                                            </div>
+                                            <div className="w-12 h-12 bg-secondary-100 dark:bg-secondary-50 rounded-full flex items-center justify-center">
+                                                <Calendar className="w-6 h-6 text-secondary-600" />
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">Total Amount</p>
-                                            <p className="text-2xl font-bold text-green-600">${stats.totalAmount.toFixed(2)}</p>
-                                        </div>
-                                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                            <DollarSign className="w-6 h-6 text-green-600" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">This Month</p>
-                                            <p className="text-2xl font-bold text-purple-600">{stats.thisMonth}</p>
-                                        </div>
-                                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                            <Calendar className="w-6 h-6 text-purple-600" />
-                                        </div>
-                                    </div>
-                                </div>
+                                    </CardBody>
+                                </Card>
                             </>
                         )}
                     </div>
 
                     {/* Reimbursement Requests Table */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                        <div className="px-6 py-4 border-b border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-900">All Reimbursement Requests</h2>
-                        </div>
-                        <div className="overflow-x-auto">
-                            {loading ? (
-                                <TableSkeleton rows={5} columns={7} />
-                            ) : (
-                                <table className="w-full">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                <button
-                                                    onClick={() => handleSort('title')}
-                                                    className="flex items-center hover:text-gray-700 transition-colors"
-                                                >
-                                                    Request
-                                                    {sortField === 'title' ? (
-                                                        sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                                                    ) : (
-                                                        <ChevronsUpDown className="w-4 h-4 ml-1 opacity-50" />
-                                                    )}
-                                                </button>
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                <button
-                                                    onClick={() => handleSort('submittedBy')}
-                                                    className="flex items-center hover:text-gray-700 transition-colors"
-                                                >
-                                                    Submitted By
-                                                    {sortField === 'submittedBy' ? (
-                                                        sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                                                    ) : (
-                                                        <ChevronsUpDown className="w-4 h-4 ml-1 opacity-50" />
-                                                    )}
-                                                </button>
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                <button
-                                                    onClick={() => handleSort('totalAmount')}
-                                                    className="flex items-center hover:text-gray-700 transition-colors"
-                                                >
-                                                    Amount
-                                                    {sortField === 'totalAmount' ? (
-                                                        sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                                                    ) : (
-                                                        <ChevronsUpDown className="w-4 h-4 ml-1 opacity-50" />
-                                                    )}
-                                                </button>
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                <button
-                                                    onClick={() => handleSort('submittedAt')}
-                                                    className="flex items-center hover:text-gray-700 transition-colors"
-                                                >
-                                                    Date
-                                                    {sortField === 'submittedAt' ? (
-                                                        sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                                                    ) : (
-                                                        <ChevronsUpDown className="w-4 h-4 ml-1 opacity-50" />
-                                                    )}
-                                                </button>
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                <button
-                                                    onClick={() => handleSort('status')}
-                                                    className="flex items-center hover:text-gray-700 transition-colors"
-                                                >
-                                                    Status
-                                                    {sortField === 'status' ? (
-                                                        sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                                                    ) : (
-                                                        <ChevronsUpDown className="w-4 h-4 ml-1 opacity-50" />
-                                                    )}
-                                                </button>
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                <button
-                                                    onClick={() => handleSort('department')}
-                                                    className="flex items-center hover:text-gray-700 transition-colors"
-                                                >
-                                                    Department
-                                                    {sortField === 'department' ? (
-                                                        sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                                                    ) : (
-                                                        <ChevronsUpDown className="w-4 h-4 ml-1 opacity-50" />
-                                                    )}
-                                                </button>
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Actions
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredReimbursements.map((reimbursement) => (
-                                            <tr key={reimbursement.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div>
-                                                        <div className="text-sm font-medium text-gray-900">{reimbursement.title}</div>
-                                                        <div className="text-sm text-gray-500">{reimbursement.businessPurpose.substring(0, 60)}...</div>
-                                                        <div className="text-xs text-gray-400 mt-1">
-                                                            {reimbursement.receipts
-                                                                ? `${reimbursement.receipts.length} receipt${reimbursement.receipts.length > 1 ? 's' : ''}`
-                                                                : `${reimbursement.expenses?.length || 0} expense${(reimbursement.expenses?.length || 0) > 1 ? 's' : ''}`
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div>
-                                                        <div className="text-sm font-medium text-gray-900">{userNames[reimbursement.submittedBy] || (loading ? 'Loading...' : 'Unknown User')}</div>
-                                                        <div className="text-sm text-gray-500">Submitted by</div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-bold text-gray-900">${reimbursement.totalAmount.toFixed(2)}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{reimbursement.submittedAt?.toDate ? reimbursement.submittedAt.toDate().toLocaleDateString() : new Date(reimbursement.submittedAt).toLocaleDateString()}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className={`inline-flex items-center space-x-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(reimbursement.status)}`}>
-                                                        {getStatusIcon(reimbursement.status)}
-                                                        <span>{getStatusDisplayName(reimbursement.status)}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full capitalize">
-                                                        {reimbursement.department}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <div className="flex items-center justify-end space-x-2">
-                                                        {reimbursement.status === 'submitted' && (
-                                                            <>
-                                                                {canPerformOfficerActions() && (
-                                                                    <>
-                                                                        <button
-                                                                            onClick={() => setAuditReimbursement(reimbursement)}
-                                                                            className="text-blue-600 hover:text-blue-900"
-                                                                            title="Request Audit"
-                                                                        >
-                                                                            <User className="w-4 h-4" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => setAuditReimbursement(reimbursement)}
-                                                                            className="text-green-600 hover:text-green-900"
-                                                                            title="Approve"
-                                                                        >
-                                                                            <CheckCircle className="w-4 h-4" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => setAuditReimbursement(reimbursement)}
-                                                                            className="text-red-600 hover:text-red-900"
-                                                                            title="Decline"
-                                                                        >
-                                                                            <XCircle className="w-4 h-4" />
-                                                                        </button>
-                                                                    </>
-                                                                )}
-                                                            </>
+                    <Card className="w-full" shadow="sm">
+                        <CardHeader className="flex flex-col items-start px-6 py-4">
+                            <h2 className="text-lg font-semibold">All Reimbursement Requests</h2>
+                        </CardHeader>
+                        <CardBody className="p-0">
+                            <div className="overflow-x-auto">
+                                {loading ? (
+                                    <TableSkeleton rows={5} columns={6} />
+                                ) : (
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <button
+                                                        onClick={() => handleSort('title')}
+                                                        className="flex items-center hover:text-gray-700 transition-colors"
+                                                    >
+                                                        Request
+                                                        {sortField === 'title' ? (
+                                                            sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                                                        ) : (
+                                                            <ChevronsUpDown className="w-4 h-4 ml-1 opacity-50" />
                                                         )}
-                                                        {reimbursement.status === 'approved' && canPerformOfficerActions() && (
-                                                            <button
-                                                                onClick={() => setAuditReimbursement(reimbursement)}
-                                                                className="text-emerald-600 hover:text-emerald-900"
-                                                                title="Mark as Paid"
-                                                            >
-                                                                <CreditCard className="w-4 h-4" />
-                                                            </button>
+                                                    </button>
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <button
+                                                        onClick={() => handleSort('totalAmount')}
+                                                        className="flex items-center hover:text-gray-700 transition-colors"
+                                                    >
+                                                        Amount
+                                                        {sortField === 'totalAmount' ? (
+                                                            sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                                                        ) : (
+                                                            <ChevronsUpDown className="w-4 h-4 ml-1 opacity-50" />
                                                         )}
-                                                        {canPerformOfficerActions() && (
-                                                            <button
-                                                                onClick={() => setAuditReimbursement(reimbursement)}
-                                                                className="text-blue-600 hover:text-blue-900"
-                                                                title="Add Note"
-                                                            >
-                                                                <MessageCircle className="w-4 h-4" />
-                                                            </button>
+                                                    </button>
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <button
+                                                        onClick={() => handleSort('submittedAt')}
+                                                        className="flex items-center hover:text-gray-700 transition-colors"
+                                                    >
+                                                        Date
+                                                        {sortField === 'submittedAt' ? (
+                                                            sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                                                        ) : (
+                                                            <ChevronsUpDown className="w-4 h-4 ml-1 opacity-50" />
                                                         )}
-                                                        <button
-                                                            onClick={() => setSelectedReimbursement(reimbursement)}
-                                                            className="text-blue-600 hover:text-blue-900"
-                                                            title="View Details"
-                                                        >
-                                                            <Eye className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
+                                                    </button>
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <button
+                                                        onClick={() => handleSort('status')}
+                                                        className="flex items-center hover:text-gray-700 transition-colors"
+                                                    >
+                                                        Status
+                                                        {sortField === 'status' ? (
+                                                            sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                                                        ) : (
+                                                            <ChevronsUpDown className="w-4 h-4 ml-1 opacity-50" />
+                                                        )}
+                                                    </button>
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <button
+                                                        onClick={() => handleSort('department')}
+                                                        className="flex items-center hover:text-gray-700 transition-colors"
+                                                    >
+                                                        Department
+                                                        {sortField === 'department' ? (
+                                                            sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                                                        ) : (
+                                                            <ChevronsUpDown className="w-4 h-4 ml-1 opacity-50" />
+                                                        )}
+                                                    </button>
+                                                </th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Actions
+                                                </th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            )}
-                        </div>
-                    </div>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {filteredReimbursements.map((reimbursement) => (
+                                                <tr key={reimbursement.id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="max-w-xs">
+                                                            <div className="text-sm font-medium text-gray-900 truncate" title={reimbursement.title}>
+                                                                {reimbursement.title}
+                                                            </div>
+                                                            <div className="text-sm text-gray-500 truncate" title={reimbursement.businessPurpose}>
+                                                                {reimbursement.businessPurpose}
+                                                            </div>
+                                                            <div className="text-xs text-gray-400 mt-1">
+                                                                {reimbursement.receipts
+                                                                    ? `${reimbursement.receipts.length} receipt${reimbursement.receipts.length > 1 ? 's' : ''}`
+                                                                    : `${reimbursement.expenses?.length || 0} expense${(reimbursement.expenses?.length || 0) > 1 ? 's' : ''}`
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-bold text-gray-900">${reimbursement.totalAmount.toFixed(2)}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-900">{reimbursement.submittedAt?.toDate ? reimbursement.submittedAt.toDate().toLocaleDateString() : new Date(reimbursement.submittedAt).toLocaleDateString()}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <Chip
+                                                            color={getStatusColor(reimbursement.status)}
+                                                            variant="flat"
+                                                            size="sm"
+                                                            startContent={getStatusIcon(reimbursement.status)}
+                                                        >
+                                                            {getStatusDisplayName(reimbursement.status)}
+                                                        </Chip>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <Chip
+                                                            variant="flat"
+                                                            size="sm"
+                                                            className="capitalize"
+                                                        >
+                                                            {reimbursement.department}
+                                                        </Chip>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            {reimbursement.status === 'submitted' && (
+                                                                <>
+                                                                    {canPerformOfficerActions() && (
+                                                                        <>
+                                                                            <Button
+                                                                                isIconOnly
+                                                                                size="sm"
+                                                                                variant="light"
+                                                                                color="primary"
+                                                                                onPress={() => setAuditReimbursement(reimbursement)}
+                                                                                aria-label="Request Audit"
+                                                                            >
+                                                                                <User className="w-4 h-4" />
+                                                                            </Button>
+                                                                            <Button
+                                                                                isIconOnly
+                                                                                size="sm"
+                                                                                variant="light"
+                                                                                color="success"
+                                                                                onPress={() => setAuditReimbursement(reimbursement)}
+                                                                                aria-label="Approve"
+                                                                            >
+                                                                                <CheckCircle className="w-4 h-4" />
+                                                                            </Button>
+                                                                            <Button
+                                                                                isIconOnly
+                                                                                size="sm"
+                                                                                variant="light"
+                                                                                color="danger"
+                                                                                onPress={() => setAuditReimbursement(reimbursement)}
+                                                                                aria-label="Decline"
+                                                                            >
+                                                                                <XCircle className="w-4 h-4" />
+                                                                            </Button>
+                                                                        </>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                            {reimbursement.status === 'approved' && canPerformOfficerActions() && (
+                                                                <Button
+                                                                    isIconOnly
+                                                                    size="sm"
+                                                                    variant="light"
+                                                                    color="success"
+                                                                    onPress={() => setAuditReimbursement(reimbursement)}
+                                                                    aria-label="Mark as Paid"
+                                                                >
+                                                                    <CreditCard className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
+                                                            {canPerformOfficerActions() && (
+                                                                <Button
+                                                                    isIconOnly
+                                                                    size="sm"
+                                                                    variant="light"
+                                                                    color="primary"
+                                                                    onPress={() => setAuditReimbursement(reimbursement)}
+                                                                    aria-label="Add Note"
+                                                                >
+                                                                    <MessageCircle className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
+                                                            {currentUserRole === 'Administrator' && (
+                                                                <Button
+                                                                    isIconOnly
+                                                                    size="sm"
+                                                                    variant="light"
+                                                                    color="danger"
+                                                                    onPress={() => handleDeleteClick(reimbursement)}
+                                                                    aria-label="Delete Reimbursement"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                isIconOnly
+                                                                size="sm"
+                                                                variant="light"
+                                                                color="primary"
+                                                                onPress={() => setSelectedReimbursement(reimbursement)}
+                                                                aria-label="View Details"
+                                                            >
+                                                                <Eye className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </CardBody>
+                    </Card>
 
 
                 </div>
             </main >
 
-            {/* Modals */}
+            {/* Unified Modal */}
             {
-                selectedReimbursement && (
-                    <ReimbursementDetailModal
-                        reimbursement={selectedReimbursement}
-                        onClose={() => setSelectedReimbursement(null)}
+                (selectedReimbursement || auditReimbursement) && (
+                    <ReimbursementModal
+                        reimbursement={selectedReimbursement || auditReimbursement}
+                        onClose={() => {
+                            setSelectedReimbursement(null);
+                            setAuditReimbursement(null);
+                        }}
                         userRole={currentUserRole || undefined}
-                        onDeleteReimbursement={deleteReimbursement}
+                        onUpdate={updateReimbursementStatus}
+                        canPerformOfficerActions={canPerformOfficerActions()}
                     />
                 )
             }
 
-            {
-                auditReimbursement && (
-                    <ReimbursementAuditModal
-                        reimbursement={auditReimbursement}
-                        onClose={() => setAuditReimbursement(null)}
-                        onUpdate={updateReimbursementStatus}
-                    />
-                )
-            }
+            {/* Delete Confirmation Modal */}
+            <Modal
+                isOpen={deleteConfirmation.isOpen}
+                onClose={handleDeleteCancel}
+                size="md"
+            >
+                <ModalContent>
+                    <ModalHeader className="flex flex-col gap-1">
+                        <h2 className="text-xl font-semibold text-danger">Delete Reimbursement</h2>
+                    </ModalHeader>
+                    <ModalBody>
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="w-6 h-6 text-danger flex-shrink-0 mt-1" />
+                            <div>
+                                <p className="text-gray-900 font-medium mb-2">
+                                    Are you sure you want to delete this reimbursement?
+                                </p>
+                                {deleteConfirmation.reimbursement && (
+                                    <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                                        <p className="text-sm font-medium text-gray-900">
+                                            {deleteConfirmation.reimbursement.title}
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                            Amount: ${deleteConfirmation.reimbursement.totalAmount.toFixed(2)}
+                                        </p>
+                                    </div>
+                                )}
+                                <p className="text-sm text-gray-600">
+                                    This action cannot be undone. The reimbursement and all associated data will be permanently deleted.
+                                </p>
+                            </div>
+                        </div>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button
+                            variant="flat"
+                            onPress={handleDeleteCancel}
+                            isDisabled={isDeleting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            color="danger"
+                            onPress={handleDeleteConfirm}
+                            isLoading={isDeleting}
+                        >
+                            Delete
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </div >
     );
 } 

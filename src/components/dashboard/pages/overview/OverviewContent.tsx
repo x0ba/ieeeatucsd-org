@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, CreditCard, Users, Award, TrendingUp, Clock, CheckCircle, DollarSign, Plus, Eye, BarChart3 } from 'lucide-react';
+import { Card, CardHeader, CardBody, CardFooter, Button, Chip, Avatar, Divider, Skeleton } from '@heroui/react';
 import { collection, query, where, orderBy, limit, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
 import DashboardHeader from '../../shared/DashboardHeader';
 import type { User as UserType } from '../../shared/types/firestore';
-import { MetricCardSkeleton, EventCardSkeleton, ListSkeleton, EventListSkeleton } from '../../../ui/loading';
 
 interface UserStats {
     totalPoints: number;
@@ -234,190 +234,366 @@ export default function OverviewContent() {
                 showSearch={false}
             />
 
-            <main className="p-4 md:p-6">
-                <div className="grid grid-cols-1 gap-4 md:gap-6">
+            <main className="p-4 md:p-6 lg:p-8">
+                <div className="grid grid-cols-1 gap-6 md:gap-8 max-w-7xl mx-auto">
                     {/* Welcome Banner */}
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg p-4 md:p-6 text-white">
-                        <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                                <h2 className="text-lg md:text-2xl font-bold mb-2">Welcome back, {userData?.name?.split(' ')[0] || 'Member'}!</h2>
-                                <p className="text-sm md:text-base text-blue-100">You have {userStats.totalPoints} points and have attended {userStats.eventsAttended} events.</p>
-                            </div>
-                            <div className="hidden md:block ml-4">
-                                <div className="w-16 h-16 md:w-20 md:h-20 bg-white/20 rounded-full flex items-center justify-center">
-                                    <Award className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                    <Card
+                        className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 border-none"
+                        shadow="lg"
+                    >
+                        <CardBody className="p-6 md:p-8">
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    <Avatar
+                                        icon={<Award className="w-6 h-6" />}
+                                        className="bg-white/20 text-white hidden sm:flex flex-shrink-0"
+                                        size="lg"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <h2 className="text-xl md:text-3xl font-bold text-white mb-2 leading-tight">
+                                            Welcome back, {userData?.name?.split(' ')[0] || 'Member'}!
+                                        </h2>
+                                        <p className="text-sm md:text-base text-blue-100 leading-relaxed">
+                                            You have <span className="font-semibold text-white">{userStats.totalPoints} points</span> and have attended{' '}
+                                            <span className="font-semibold text-white">{userStats.eventsAttended} events</span>.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="hidden lg:flex items-center justify-center">
+                                    <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                                        <Award className="w-10 h-10 text-white" />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </CardBody>
+                    </Card>
 
                     {/* Stats Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                         {loading ? (
                             <>
-                                <MetricCardSkeleton />
-                                <MetricCardSkeleton />
-                                <MetricCardSkeleton />
-                                <MetricCardSkeleton />
+                                {[...Array(4)].map((_, i) => (
+                                    <Card key={i} className="w-full" shadow="sm">
+                                        <CardBody className="p-6">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex-1 space-y-3">
+                                                    <Skeleton className="w-24 h-4 rounded-lg" />
+                                                    <Skeleton className="w-16 h-8 rounded-lg" />
+                                                    <Skeleton className="w-20 h-3 rounded-lg" />
+                                                </div>
+                                                <Skeleton className="w-12 h-12 rounded-full" />
+                                            </div>
+                                        </CardBody>
+                                    </Card>
+                                ))}
                             </>
                         ) : (
                             <>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Total Points</p>
-                                            <p className="text-xl md:text-2xl font-bold text-gray-900">{userStats.totalPoints}</p>
+                                <Card className="w-full hover:shadow-md transition-shadow" shadow="sm" isPressable>
+                                    <CardBody className="p-6">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-gray-600 mb-1">Total Points</p>
+                                                <p className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 leading-tight">
+                                                    {userStats.totalPoints}
+                                                </p>
+                                            </div>
+                                            <Avatar
+                                                icon={<Award className="w-6 h-6" />}
+                                                className="bg-yellow-100 text-yellow-600 flex-shrink-0"
+                                                size="lg"
+                                            />
                                         </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                            <Award className="w-5 h-5 md:w-6 md:h-6 text-yellow-600" />
-                                        </div>
-                                    </div>
-                                </div>
+                                    </CardBody>
+                                </Card>
 
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Events Attended</p>
-                                            <p className="text-xl md:text-2xl font-bold text-gray-900">{userStats.eventsAttended}</p>
+                                <Card className="w-full hover:shadow-md transition-shadow" shadow="sm" isPressable>
+                                    <CardBody className="p-6">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-gray-600 mb-1">Events Attended</p>
+                                                <p className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 leading-tight">
+                                                    {userStats.eventsAttended}
+                                                </p>
+                                            </div>
+                                            <Avatar
+                                                icon={<Calendar className="w-6 h-6" />}
+                                                className="bg-blue-100 text-blue-600 flex-shrink-0"
+                                                size="lg"
+                                            />
                                         </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                            <Calendar className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
-                                        </div>
-                                    </div>
-                                </div>
+                                    </CardBody>
+                                </Card>
 
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Reimbursements</p>
-                                            <p className="text-xl md:text-2xl font-bold text-gray-900">{userStats.reimbursementsSubmitted}</p>
-                                            <p className="text-xs text-gray-500">{userStats.reimbursementsApproved} approved</p>
+                                <Card className="w-full hover:shadow-md transition-shadow" shadow="sm" isPressable>
+                                    <CardBody className="p-6">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-gray-600 mb-1">Reimbursements</p>
+                                                <p className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 leading-tight">
+                                                    {userStats.reimbursementsSubmitted}
+                                                </p>
+                                                <p className="text-xs text-gray-500 leading-relaxed">
+                                                    {userStats.reimbursementsApproved} approved
+                                                </p>
+                                            </div>
+                                            <Avatar
+                                                icon={<DollarSign className="w-6 h-6" />}
+                                                className="bg-green-100 text-green-600 flex-shrink-0"
+                                                size="lg"
+                                            />
                                         </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                            <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
-                                        </div>
-                                    </div>
-                                </div>
+                                    </CardBody>
+                                </Card>
 
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Member Rank</p>
-                                            <p className="text-xl md:text-2xl font-bold text-gray-900">#{userStats.rank || 'N/A'}</p>
-                                            <p className="text-xs text-gray-500">of {userStats.totalMembers} members</p>
+                                <Card className="w-full hover:shadow-md transition-shadow" shadow="sm" isPressable>
+                                    <CardBody className="p-6">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-gray-600 mb-1">Member Rank</p>
+                                                <p className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 leading-tight">
+                                                    #{userStats.rank || 'N/A'}
+                                                </p>
+                                                <p className="text-xs text-gray-500 leading-relaxed">
+                                                    of {userStats.totalMembers} members
+                                                </p>
+                                            </div>
+                                            <Avatar
+                                                icon={<TrendingUp className="w-6 h-6" />}
+                                                className="bg-purple-100 text-purple-600 flex-shrink-0"
+                                                size="lg"
+                                            />
                                         </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                            <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
-                                        </div>
-                                    </div>
-                                </div>
+                                    </CardBody>
+                                </Card>
                             </>
                         )}
                     </div>
 
                     {/* Quick Actions */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                        <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                            {quickActions.map((action, index) => (
-                                <a
-                                    key={index}
-                                    href={action.href}
-                                    className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors min-h-[60px] touch-manipulation"
-                                >
-                                    <div className={`w-10 h-10 ${action.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                                        <action.icon className="w-5 h-5" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-gray-900 text-sm md:text-base">{action.title}</p>
-                                        <p className="text-xs md:text-sm text-gray-500 truncate">{action.description}</p>
-                                    </div>
-                                </a>
-                            ))}
-                        </div>
-                    </div>
+                    <Card className="w-full" shadow="sm">
+                        <CardHeader className="pb-0 pt-6 px-6">
+                            <h2 className="text-lg md:text-xl font-bold text-gray-900">Quick Actions</h2>
+                        </CardHeader>
+                        <CardBody className="p-6 pt-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {quickActions.map((action, index) => {
+                                    const IconComponent = action.icon;
+
+                                    return (
+                                        <Card
+                                            key={index}
+                                            as="a"
+                                            href={action.href}
+                                            isPressable
+                                            isHoverable
+                                            className="border border-gray-200 h-full"
+                                            shadow="none"
+                                        >
+                                            <CardBody className="p-5 flex items-start justify-start">
+                                                <div className="flex items-start gap-4 w-full">
+                                                    <div className="flex-shrink-0 mt-0.5">
+                                                        <Avatar
+                                                            icon={<IconComponent className="w-5 h-5" />}
+                                                            className={action.color}
+                                                            size="md"
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 flex flex-col gap-1">
+                                                        <p className="font-semibold text-gray-900 text-sm md:text-base leading-snug">
+                                                            {action.title}
+                                                        </p>
+                                                        <p className="text-xs md:text-sm text-gray-500 leading-relaxed">
+                                                            {action.description}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </CardBody>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        </CardBody>
+                    </Card>
 
                     {/* Two Column Layout */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                         {/* Upcoming Events */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-base md:text-lg font-semibold text-gray-900">Upcoming Events</h2>
-                                <a href="/dashboard/events" className="text-sm text-blue-600 hover:text-blue-800 min-h-[44px] flex items-center">
+                        <Card className="w-full" shadow="sm">
+                            <CardHeader className="pb-0 pt-6 px-6 flex justify-between items-center">
+                                <h2 className="text-lg md:text-xl font-bold text-gray-900">Upcoming Events</h2>
+                                <Button
+                                    as="a"
+                                    href="/dashboard/events"
+                                    variant="light"
+                                    color="primary"
+                                    size="sm"
+                                    className="font-medium"
+                                >
                                     View all →
-                                </a>
-                            </div>
-                            {loading ? (
-                                <EventListSkeleton items={3} />
-                            ) : upcomingEvents.length === 0 ? (
-                                <div className="text-center py-6 md:py-8">
-                                    <Calendar className="mx-auto h-10 w-10 md:h-12 md:w-12 text-gray-400 mb-3 md:mb-4" />
-                                    <p className="text-sm md:text-base text-gray-500">No upcoming events</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {upcomingEvents.slice(0, 3).map((event: any) => (
-                                        <div key={event.id} className="flex items-center space-x-3 p-3 border border-gray-100 rounded-lg">
-                                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                <Calendar className="w-5 h-5 text-blue-600" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-medium text-gray-900 text-sm md:text-base truncate">{event.eventName}</p>
-                                                <p className="text-xs md:text-sm text-gray-500">
-                                                    {event.startDate?.toDate ? event.startDate.toDate().toLocaleDateString() : 'TBD'}
-                                                </p>
-                                            </div>
-                                            <div className="text-right flex-shrink-0">
-                                                <p className="text-xs md:text-sm text-green-600 font-medium">+{event.pointsToReward || 0} pts</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                                </Button>
+                            </CardHeader>
+                            <CardBody className="p-6 pt-4">
+                                {loading ? (
+                                    <div className="space-y-3">
+                                        {[...Array(3)].map((_, i) => (
+                                            <Card key={i} className="w-full border border-gray-100" shadow="none">
+                                                <CardBody className="p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <Skeleton className="w-12 h-12 rounded-lg" />
+                                                        <div className="flex-1 space-y-2">
+                                                            <Skeleton className="w-3/4 h-4 rounded-lg" />
+                                                            <Skeleton className="w-1/2 h-3 rounded-lg" />
+                                                        </div>
+                                                        <Skeleton className="w-16 h-6 rounded-full" />
+                                                    </div>
+                                                </CardBody>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                ) : upcomingEvents.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <Avatar
+                                            icon={<Calendar className="w-8 h-8" />}
+                                            className="bg-gray-100 text-gray-400 mx-auto mb-4"
+                                            size="lg"
+                                        />
+                                        <p className="text-base text-gray-500 leading-relaxed">No upcoming events</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {upcomingEvents.slice(0, 3).map((event: any) => (
+                                            <Card key={event.id} className="w-full border border-gray-100" shadow="none" isPressable>
+                                                <CardBody className="p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <Avatar
+                                                            icon={<Calendar className="w-5 h-5" />}
+                                                            className="bg-blue-100 text-blue-600 flex-shrink-0"
+                                                            size="md"
+                                                        />
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-semibold text-gray-900 text-sm md:text-base truncate leading-tight mb-1">
+                                                                {event.eventName}
+                                                            </p>
+                                                            <p className="text-xs md:text-sm text-gray-500 leading-relaxed">
+                                                                {event.startDate?.toDate ? event.startDate.toDate().toLocaleDateString() : 'TBD'}
+                                                            </p>
+                                                        </div>
+                                                        <Chip
+                                                            color="success"
+                                                            variant="flat"
+                                                            size="sm"
+                                                            className="flex-shrink-0"
+                                                        >
+                                                            +{event.pointsToReward || 0} pts
+                                                        </Chip>
+                                                    </div>
+                                                </CardBody>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardBody>
+                        </Card>
 
                         {/* Recent Activity */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                            <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
-                            {loading ? (
-                                <ListSkeleton items={3} variant="detailed" showIcon={true} showMetadata={true} />
-                            ) : recentActivity.length === 0 ? (
-                                <div className="text-center py-6 md:py-8">
-                                    <Clock className="mx-auto h-10 w-10 md:h-12 md:w-12 text-gray-400 mb-3 md:mb-4" />
-                                    <p className="text-sm md:text-base text-gray-500">No recent activity</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {recentActivity.map((activity) => (
-                                        <div key={activity.id} className="flex items-center space-x-3 p-3 border border-gray-100 rounded-lg">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${activity.type === 'event' ? 'bg-blue-100' :
-                                                activity.type === 'reimbursement' ? 'bg-green-100' :
-                                                    'bg-yellow-100'
-                                                }`}>
-                                                {activity.type === 'event' && <Calendar className="w-4 h-4 text-blue-600" />}
-                                                {activity.type === 'reimbursement' && <DollarSign className="w-4 h-4 text-green-600" />}
-                                                {activity.type === 'achievement' && <Award className="w-4 h-4 text-yellow-600" />}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-medium text-gray-900 text-sm md:text-base truncate">{activity.title}</p>
-                                                <p className="text-xs md:text-sm text-gray-500 truncate">{activity.description}</p>
-                                                <p className="text-xs text-gray-400">
-                                                    {activity.date?.toDate ? activity.date.toDate().toLocaleDateString() : 'Recently'}
-                                                </p>
-                                            </div>
-                                            {activity.points && (
-                                                <div className="text-right flex-shrink-0">
-                                                    <p className="text-xs md:text-sm text-green-600 font-medium">+{activity.points} pts</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        <Card className="w-full" shadow="sm">
+                            <CardHeader className="pb-0 pt-6 px-6">
+                                <h2 className="text-lg md:text-xl font-bold text-gray-900">Recent Activity</h2>
+                            </CardHeader>
+                            <CardBody className="p-6 pt-4">
+                                {loading ? (
+                                    <div className="space-y-3">
+                                        {[...Array(3)].map((_, i) => (
+                                            <Card key={i} className="w-full border border-gray-100" shadow="none">
+                                                <CardBody className="p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <Skeleton className="w-10 h-10 rounded-full" />
+                                                        <div className="flex-1 space-y-2">
+                                                            <Skeleton className="w-3/4 h-4 rounded-lg" />
+                                                            <Skeleton className="w-full h-3 rounded-lg" />
+                                                            <Skeleton className="w-1/3 h-3 rounded-lg" />
+                                                        </div>
+                                                    </div>
+                                                </CardBody>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                ) : recentActivity.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <Avatar
+                                            icon={<Clock className="w-8 h-8" />}
+                                            className="bg-gray-100 text-gray-400 mx-auto mb-4"
+                                            size="lg"
+                                        />
+                                        <p className="text-base text-gray-500 leading-relaxed">No recent activity</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {recentActivity.map((activity) => {
+                                            const activityConfig = {
+                                                event: {
+                                                    icon: Calendar,
+                                                    bgColor: 'bg-blue-100',
+                                                    iconColor: 'text-blue-600'
+                                                },
+                                                reimbursement: {
+                                                    icon: DollarSign,
+                                                    bgColor: 'bg-green-100',
+                                                    iconColor: 'text-green-600'
+                                                },
+                                                achievement: {
+                                                    icon: Award,
+                                                    bgColor: 'bg-yellow-100',
+                                                    iconColor: 'text-yellow-600'
+                                                }
+                                            };
+
+                                            const config = activityConfig[activity.type];
+                                            const IconComponent = config.icon;
+
+                                            return (
+                                                <Card key={activity.id} className="w-full border border-gray-100" shadow="none" isPressable>
+                                                    <CardBody className="p-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar
+                                                                icon={<IconComponent className="w-4 h-4" />}
+                                                                className={`${config.bgColor} ${config.iconColor} flex-shrink-0`}
+                                                                size="sm"
+                                                            />
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-semibold text-gray-900 text-sm md:text-base truncate leading-tight mb-1">
+                                                                    {activity.title}
+                                                                </p>
+                                                                <p className="text-xs md:text-sm text-gray-500 truncate leading-relaxed mb-1">
+                                                                    {activity.description}
+                                                                </p>
+                                                                <p className="text-xs text-gray-400 leading-relaxed">
+                                                                    {activity.date?.toDate ? activity.date.toDate().toLocaleDateString() : 'Recently'}
+                                                                </p>
+                                                            </div>
+                                                            {activity.points && (
+                                                                <Chip
+                                                                    color="success"
+                                                                    variant="flat"
+                                                                    size="sm"
+                                                                    className="flex-shrink-0"
+                                                                >
+                                                                    +{activity.points} pts
+                                                                </Chip>
+                                                            )}
+                                                        </div>
+                                                    </CardBody>
+                                                </Card>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </CardBody>
+                        </Card>
                     </div>
                 </div>
             </main>
         </div>
     );
-} 
+}
