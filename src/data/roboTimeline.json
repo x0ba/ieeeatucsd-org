@@ -1,34 +1,42 @@
 [
   {
-    "week": "Fall W1",
-    "description": " RoboCup Info Session\nApplication Open"
+    "week": "Sep 25, 2025",
+    "description": "Applications Open (6 AM)"
   },
   {
-    "week": "Fall W2",
-    "description": "Application Close\nInterview Scheduled"
+    "week": "Oct 1, 2025",
+    "description": "Info Session 7–8 PM, Jacobs Hall 2512"
   },
   {
-    "week": "Fall W3",
-    "description": "Member Placements Finalized"
+    "week": "Oct 10, 2025",
+    "description": "Applications Close (11:59 PM)"
   },
   {
-    "week": "Winter W6",
-    "description": "Team Qualification Material Submission Deadline"
+    "week": "Oct 15–21, 2025",
+    "description": "Interviews for New Members"
   },
   {
-    "week": "Winter W-Final",
-    "description": "Preliminary Team Qualification Results"
+    "week": "Oct 24, 2025",
+    "description": "Final Decision Release (8 PM)"
   },
   {
-    "week": "Spring W3",
-    "description": "Final Team Qualification Results"
+    "week": "Late Oct / Early Nov 2025",
+    "description": "All-Hands Meeting & Onboarding"
   },
   {
-    "week": "Spring W7",
-    "description": "Robofest Showcase"
+    "week": "Early Feb 2026",
+    "description": "Team Qualification Material Deadline"
   },
   {
-    "week": "Mid July",
-    "description": "RoboCup 2025 International Competition"
+    "week": "Mid Mar 2026",
+    "description": "Preliminary Qualification Results"
+  },
+  {
+    "week": "Mid Apr 2026",
+    "description": "Final Qualification Results"
+  },
+  {
+    "week": "Early Jul 2026",
+    "description": "RoboCup 2026 @ South Korea"
   }
 ]
