@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Check, XCircle, CreditCard, MessageCircle, Upload, Calendar, Building, UserCheck, User as UserIcon } from 'lucide-react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Select, SelectItem, Chip, Spacer } from '@heroui/react';
+import { Check, XCircle, CreditCard, MessageCircle, Upload, Calendar, Building, UserCheck, User as UserIcon } from 'lucide-react';
+import { Modal, ModalContent, ModalHeader, ModalBody, Button, Input, Textarea, Select, SelectItem, Chip, Spacer } from '@heroui/react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, auth, storage } from '../../../../firebase/client';
+import { db, auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 interface ReimbursementAuditModalProps {
@@ -146,28 +145,31 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                         const idToken = await user.getIdToken();
 
                         const file = paymentInfo.photoAttachment;
-                        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-                        const path = `payment-confirmations/${reimbursement.id}/${Date.now()}_${safeName}`;
 
-                        // Upload using Firebase Storage REST API with explicit auth token
-                        const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/ieee-at-uc-san-diego.firebasestorage.app/o?name=${encodeURIComponent(path)}&uploadType=media`;
+                        // Create FormData for multipart upload
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('reimbursementId', reimbursement.id);
 
-                        const response = await fetch(uploadUrl, {
+                        // Upload using server-side API endpoint with Admin SDK
+                        const response = await fetch('/api/upload-payment-confirmation', {
                             method: 'POST',
                             headers: {
                                 'Authorization': `Bearer ${idToken}`,
-                                'Content-Type': file.type,
                             },
-                            body: file,
+                            body: formData,
                         });
 
                         if (!response.ok) {
-                            throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || `Upload failed: ${response.status} ${response.statusText}`);
                         }
 
-                        const uploadResult = await response.json();
-                        photoUrl = `https://firebasestorage.googleapis.com/v0/b/ieee-at-uc-san-diego.firebasestorage.app/o/${encodeURIComponent(path)}?alt=media`;
-                        storagePath = path;
+                        const result = await response.json();
+                        photoUrl = result.downloadUrl;
+                        storagePath = result.storagePath;
+
+                        console.log('Payment confirmation uploaded successfully:', { photoUrl, storagePath });
                     }
                     payment = {
                         confirmationNumber: paymentInfo.confirmationNumber,
@@ -176,7 +178,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                     };
                 } catch (err) {
                     console.error('Failed to upload confirmation file:', err);
-                    alert('Failed to upload the payment confirmation file. Please try again.');
+                    alert(`Failed to upload the payment confirmation file: ${err instanceof Error ? err.message : 'Unknown error'}`);
                     setIsUploading(false);
                     return;
                 } finally {

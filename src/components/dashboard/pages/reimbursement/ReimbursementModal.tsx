@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Calendar, Building, CreditCard, MapPin, Eye, CheckCircle, MessageCircle, Upload, UserCheck, User as UserIcon, XCircle, Receipt } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Chip, Input, Textarea, Select, SelectItem, Spacer, Divider, Card, CardHeader, CardBody, Tabs, Tab } from '@heroui/react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, auth, storage } from '../../../../firebase/client';
+import { db, auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import type { UserRole } from '../../shared/types/firestore';
 
@@ -217,25 +216,55 @@ export default function ReimbursementModal({
                     }
 
                     let photoUrl = '';
+                    let storagePath = '';
                     if (paymentInfo.photoAttachment) {
-                        const storageRef = ref(storage, `payment-confirmations/${reimbursement.id}/${Date.now()}_${paymentInfo.photoAttachment.name}`);
-                        const uploadTask = uploadBytesResumable(storageRef, paymentInfo.photoAttachment);
+                        try {
+                            // Ensure user is authenticated before upload
+                            if (!user || !user.uid) {
+                                throw new Error('User not authenticated');
+                            }
 
-                        await new Promise((resolve, reject) => {
-                            uploadTask.on('state_changed',
-                                null,
-                                reject,
-                                async () => {
-                                    photoUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                                    resolve(photoUrl);
-                                }
-                            );
-                        });
+                            // Get fresh auth token
+                            const idToken = await user.getIdToken();
+
+                            const file = paymentInfo.photoAttachment;
+
+                            // Create FormData for multipart upload
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            formData.append('reimbursementId', reimbursement.id);
+
+                            // Upload using server-side API endpoint with Admin SDK
+                            const response = await fetch('/api/upload-payment-confirmation', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${idToken}`,
+                                },
+                                body: formData,
+                            });
+
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.error || `Upload failed: ${response.status} ${response.statusText}`);
+                            }
+
+                            const result = await response.json();
+                            photoUrl = result.downloadUrl;
+                            storagePath = result.storagePath;
+
+                            console.log('Payment confirmation uploaded successfully:', { photoUrl, storagePath });
+                        } catch (err) {
+                            console.error('Failed to upload confirmation file:', err);
+                            alert(`Failed to upload the payment confirmation file: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                            setIsUploading(false);
+                            return;
+                        }
                     }
 
                     payment = {
                         confirmationNumber: paymentInfo.confirmationNumber,
                         photoAttachment: photoUrl,
+                        storagePath,
                         paidAt: new Date(),
                         paidBy: user?.uid,
                         paidByName: currentUserName
