@@ -110,7 +110,7 @@ export default function ReimbursementModal({
                         if (submitterDoc.exists()) {
                             const submitterData: any = submitterDoc.data();
                             setSubmitterName(submitterData.name || submitterData.email || reimbursement.submittedBy);
-                            setSubmitterZelle(submitterData.zelleEmail || submitterData.zellePhone || '');
+                            setSubmitterZelle(submitterData.zelleInformation || '');
                         }
                     } catch (error) {
                         console.error('Error fetching submitter data:', error);
