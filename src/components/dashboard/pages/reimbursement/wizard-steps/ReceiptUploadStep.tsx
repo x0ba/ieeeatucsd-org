@@ -5,6 +5,8 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../../../../firebase/client';
 import type { ReimbursementReceipt } from '../types';
 import ReceiptForm from './ReceiptForm';
+import { useGlobalImagePaste } from '../../../shared/hooks/useGlobalImagePaste';
+import { usePasteNotification } from '../../../shared/components/PasteNotification';
 
 interface ReceiptUploadStepProps {
     receipts: ReimbursementReceipt[];
@@ -18,6 +20,23 @@ export default function ReceiptUploadStep({ receipts, setReceipts, errors, setEr
     const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
     const [parsingReceipts, setParsingReceipts] = useState<Set<string>>(new Set());
     const [parseResults, setParseResults] = useState<Record<string, { success: boolean; message: string }>>({});
+
+    // Paste notification
+    const { showPasteNotification, PasteNotificationComponent } = usePasteNotification('Receipt image pasted');
+
+    // Global image paste handler - paste image to active receipt tab
+    useGlobalImagePaste({
+        modalType: 'reimbursement-wizard',
+        enabled: true,
+        onImagePaste: (file) => {
+            if (activeReceiptTab) {
+                handleReceiptUpload(activeReceiptTab, file);
+            }
+        },
+        onPasteSuccess: () => {
+            showPasteNotification();
+        }
+    });
 
     const addReceipt = () => {
         const newReceiptId = Date.now().toString();
@@ -238,73 +257,76 @@ export default function ReceiptUploadStep({ receipts, setReceipts, errors, setEr
     }, []);
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Receipt Upload & AI Parsing</h3>
-                    <p className="text-sm text-gray-600">
-                        Upload receipt images (or paste them directly) and let AI automatically extract the information.
-                    </p>
-                </div>
-                <Button
-                    color="primary"
-                    variant="bordered"
-                    onPress={addReceipt}
-                    startContent={<Plus className="w-4 h-4" />}
-                    size="sm"
-                >
-                    Add Receipt
-                </Button>
-            </div>
-
-            {errors.receipts && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <p className="text-sm text-red-700">{errors.receipts}</p>
-                </div>
-            )}
-
-            <Tabs
-                selectedKey={activeReceiptTab}
-                onSelectionChange={(key) => setActiveReceiptTab(key as string)}
-                className="w-full"
-            >
-                {receipts.map((receipt, index) => (
-                    <Tab
-                        key={receipt.id}
-                        title={
-                            <div className="flex items-center space-x-2">
-                                <Receipt className="w-4 h-4" />
-                                <span>Receipt {index + 1}</span>
-                                {receipts.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            removeReceipt(receipt.id);
-                                        }}
-                                        className="ml-2 text-red-500 hover:text-red-700"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                )}
-                            </div>
-                        }
+        <>
+            {PasteNotificationComponent}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Receipt Upload & AI Parsing</h3>
+                        <p className="text-sm text-gray-600">
+                            Upload receipt images (or paste them directly) and let AI automatically extract the information.
+                        </p>
+                    </div>
+                    <Button
+                        color="primary"
+                        variant="bordered"
+                        onPress={addReceipt}
+                        startContent={<Plus className="w-4 h-4" />}
+                        size="sm"
                     >
-                        <div className="p-4 border border-gray-200 rounded-lg mt-4">
-                            <ReceiptForm
-                                receipt={receipt}
-                                updateReceipt={updateReceipt}
-                                errors={errors}
-                                uploadingFiles={uploadingFiles}
-                                parsingReceipts={parsingReceipts}
-                                parseResults={parseResults}
-                                onFileUpload={handleReceiptUpload}
-                            />
-                        </div>
-                    </Tab>
-                ))}
-            </Tabs>
-        </div>
+                        Add Receipt
+                    </Button>
+                </div>
+
+                {errors.receipts && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <p className="text-sm text-red-700">{errors.receipts}</p>
+                    </div>
+                )}
+
+                <Tabs
+                    selectedKey={activeReceiptTab}
+                    onSelectionChange={(key) => setActiveReceiptTab(key as string)}
+                    className="w-full"
+                >
+                    {receipts.map((receipt, index) => (
+                        <Tab
+                            key={receipt.id}
+                            title={
+                                <div className="flex items-center space-x-2">
+                                    <Receipt className="w-4 h-4" />
+                                    <span>Receipt {index + 1}</span>
+                                    {receipts.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeReceipt(receipt.id);
+                                            }}
+                                            className="ml-2 text-red-500 hover:text-red-700"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </div>
+                            }
+                        >
+                            <div className="p-4 border border-gray-200 rounded-lg mt-4">
+                                <ReceiptForm
+                                    receipt={receipt}
+                                    updateReceipt={updateReceipt}
+                                    errors={errors}
+                                    uploadingFiles={uploadingFiles}
+                                    parsingReceipts={parsingReceipts}
+                                    parseResults={parseResults}
+                                    onFileUpload={handleReceiptUpload}
+                                />
+                            </div>
+                        </Tab>
+                    ))}
+                </Tabs>
+            </div>
+        </>
     );
 }
 

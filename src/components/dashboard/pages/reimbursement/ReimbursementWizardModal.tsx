@@ -5,6 +5,7 @@ import BasicInfoStep from './wizard-steps/BasicInfoStep';
 import ReceiptUploadStep from './wizard-steps/ReceiptUploadStep';
 import ReviewStep from './wizard-steps/ReviewStep';
 import type { ReimbursementFormData, ReimbursementReceipt } from './types';
+import { useModalRegistration } from '../../shared/contexts/ModalContext';
 
 interface ReimbursementWizardModalProps {
     isOpen: boolean;
@@ -29,6 +30,9 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
     });
     const [receipts, setReceipts] = useState<ReimbursementReceipt[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
+
+    // Register modal with global context
+    useModalRegistration('reimbursement-wizard', isOpen);
 
     const handleNext = () => {
         if (validateCurrentStep()) {
