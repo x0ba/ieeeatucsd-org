@@ -211,21 +211,64 @@ service cloud.firestore {
 
     // Reimbursements collection
     match /reimbursements/{reimbursementId} {
+      // Users can read and delete their own reimbursements
       allow read, delete: if request.auth != null &&
         request.auth.uid == resource.data.submittedBy;
+
+      // Users can update their own reimbursements only if status is 'submitted'
+      // They cannot modify paymentConfirmation field
       allow update: if request.auth != null &&
         request.auth.uid == resource.data.submittedBy &&
-        resource.data.status == 'submitted';
+        resource.data.status == 'submitted' &&
+        !request.resource.data.keys().hasAny(['paymentConfirmation']);
+
+      // Executive Officers and Administrators have full read, update, delete access
       allow read, update, delete: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
           'Executive Officer', 'Administrator'
         ];
+
+      // Users can create reimbursements with required fields
+      // They cannot set paymentConfirmation on creation
       allow create: if request.auth != null &&
         request.auth.uid == request.resource.data.submittedBy &&
-        request.resource.data.keys().hasAll(['title', 'totalAmount', 'status', 'submittedBy', 'department', 'businessPurpose', 'expenses', 'submittedAt']) &&
+        request.resource.data.keys().hasAll(['title', 'totalAmount', 'status', 'submittedBy', 'department', 'businessPurpose', 'submittedAt']) &&
         request.resource.data.submittedBy == request.auth.uid &&
-        request.resource.data.status == 'submitted';
+        request.resource.data.status == 'submitted' &&
+        (request.resource.data.keys().hasAny(['expenses']) || request.resource.data.keys().hasAny(['receipts'])) &&
+        !request.resource.data.keys().hasAny(['paymentConfirmation']);
+
+      // PAYMENT CONFIRMATION RULES
+      // Only Executive Officers and Administrators can add/update payment confirmations
+      allow update: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'Executive Officer', 'Administrator'
+        ] &&
+        // Ensure they're only adding/updating the paymentConfirmation field when marking as paid
+        request.resource.data.status == 'paid' &&
+        request.resource.data.keys().hasAny(['paymentConfirmation']) &&
+        // Validate paymentConfirmation structure
+        request.resource.data.paymentConfirmation.keys().hasAll(['paidBy', 'paidAt']) &&
+        request.resource.data.paymentConfirmation.paidBy == request.auth.uid &&
+        // Ensure paidAt is a timestamp
+        request.resource.data.paymentConfirmation.paidAt is timestamp;
+
+      // Users can read payment confirmations on their own reimbursements when status is 'paid'
+      allow read: if request.auth != null &&
+        request.auth.uid == resource.data.submittedBy &&
+        resource.data.status == 'paid' &&
+        resource.data.keys().hasAny(['paymentConfirmation']);
+
+      // General Officers can read payment confirmations (for transparency)
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'General Officer', 'Executive Officer', 'Administrator'
+        ] &&
+        resource.data.status == 'paid' &&
+        resource.data.keys().hasAny(['paymentConfirmation']);
     }
 
     // Logs collection

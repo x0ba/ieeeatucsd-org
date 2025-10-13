@@ -1,5 +1,6 @@
 import React from 'react';
 import { Users, UserCheck, Shield, GraduationCap } from 'lucide-react';
+import { Card, CardBody, Avatar, Skeleton } from '@heroui/react';
 import type { UserStats } from '../types/UserManagementTypes';
 
 interface UserStatsCardsProps {
@@ -12,17 +13,17 @@ export default function UserStatsCards({ stats, loading = false }: UserStatsCard
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {[...Array(4)].map((_, i) => (
-                    <div key={i} className="bg-white rounded-lg shadow p-6">
-                        <div className="animate-pulse">
-                            <div className="flex items-center">
-                                <div className="w-8 h-8 bg-gray-200 rounded"></div>
-                                <div className="ml-4">
-                                    <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                                    <div className="h-6 bg-gray-200 rounded w-12"></div>
+                    <Card key={i} shadow="sm" className="rounded-lg">
+                        <CardBody className="p-6">
+                            <div className="flex items-center gap-4">
+                                <Skeleton className="w-12 h-12 rounded-lg" />
+                                <div className="flex-1 space-y-2">
+                                    <Skeleton className="h-4 w-20 rounded-md" />
+                                    <Skeleton className="h-6 w-12 rounded-md" />
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </CardBody>
+                    </Card>
                 ))}
             </div>
         );
@@ -64,17 +65,22 @@ export default function UserStatsCards({ stats, loading = false }: UserStatsCard
             {statCards.map((stat, index) => {
                 const IconComponent = stat.icon;
                 return (
-                    <div key={index} className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center">
-                            <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                                <IconComponent className={`w-6 h-6 ${stat.color}`} />
+                    <Card key={index} shadow="sm" className="rounded-lg">
+                        <CardBody className="p-6">
+                            <div className="flex items-center gap-4">
+                                <Avatar
+                                    icon={<IconComponent className="w-6 h-6" />}
+                                    className={`${stat.bgColor} ${stat.color}`}
+                                    size="lg"
+                                    radius="lg"
+                                />
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                                </div>
                             </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                            </div>
-                        </div>
-                    </div>
+                        </CardBody>
+                    </Card>
                 );
             })}
         </div>

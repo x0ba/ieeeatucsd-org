@@ -92,6 +92,7 @@ export default function MarketingSection({
                                         // Convert File[] to FileList-like object
                                         if (Array.isArray(files)) {
                                             const fileList = {
+                                                length: files.length,
                                                 item: (index: number) => files[index] || null,
                                                 ...files
                                             } as FileList;
@@ -144,6 +145,7 @@ export default function MarketingSection({
                                     // Convert File[] to FileList-like object
                                     if (Array.isArray(files)) {
                                         const fileList = {
+                                            length: files.length,
                                             item: (index: number) => files[index] || null,
                                             ...files
                                         } as FileList;

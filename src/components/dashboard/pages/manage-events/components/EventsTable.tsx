@@ -1,5 +1,6 @@
 import React from 'react';
-import { Edit, Trash2, Eye, FileText, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Edit, Trash2, Eye, ChevronUp, ChevronDown, ChevronsUpDown, MapPin, Calendar } from 'lucide-react';
+import { Button, Chip, Tooltip, Checkbox } from '@heroui/react';
 import { getStatusColor, getStatusIcon } from '../utils/statusUtils';
 import { canEditEvent as checkCanEditEvent, canDeleteEvent as checkCanDeleteEvent, canManageGraphics } from '../utils/permissionUtils';
 import type { UserRole } from '../../../shared/types/firestore';
@@ -28,7 +29,6 @@ interface EventsTableProps {
     onSort: (column: string) => void;
     onViewRequest: (request: EventRequest) => void;
     onEditRequest: (request: EventRequest) => void;
-    onFileManagement: (request: EventRequest) => void;
     onDeleteRequest: (requestId: string, eventName: string) => void;
     onGraphicsToggle: (requestId: string, isCompleted: boolean) => void;
     getUserName: (userId: string) => string;
@@ -42,22 +42,21 @@ export function EventsTable({
     onSort,
     onViewRequest,
     onEditRequest,
-    onFileManagement,
     onDeleteRequest,
     onGraphicsToggle,
     getUserName
 }: EventsTableProps) {
     const SortableHeader = ({ field, children }: { field: string; children: React.ReactNode }) => (
         <th
-            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+            className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
             onClick={() => onSort(field)}
         >
             <div className="flex items-center gap-1">
                 <span>{children}</span>
                 {(sortBy === `${field}-asc` || sortBy === `${field}-desc`) ? (
-                    sortBy === `${field}-asc` ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    sortBy === `${field}-asc` ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
                 ) : (
-                    <ChevronsUpDown className="w-4 h-4 opacity-50" />
+                    <ChevronsUpDown className="w-3.5 h-3.5 opacity-50" />
                 )}
             </div>
         </th>
@@ -66,23 +65,54 @@ export function EventsTable({
     const canEditEvent = (request: EventRequest) => checkCanEditEvent(request, currentUserId, currentUserRole);
     const canDeleteEvent = (request: EventRequest) => checkCanDeleteEvent(request, currentUserId, currentUserRole);
 
+    // Helper to format date
+    const formatDate = (timestamp: any) => {
+        if (!timestamp) return 'No date';
+        const date = timestamp?.toDate?.() || new Date(timestamp);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    // Helper to truncate text
+    const truncateText = (text: string, maxLength: number) => {
+        if (!text) return '';
+        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    };
+
+    // Helper to get status chip color
+    const getChipColor = (status: string): "success" | "primary" | "warning" | "danger" | "default" => {
+        switch (status) {
+            case 'approved':
+                return 'success';
+            case 'submitted':
+                return 'primary';
+            case 'pending':
+            case 'needs_review':
+                return 'warning';
+            case 'declined':
+            case 'rejected':
+                return 'danger';
+            default:
+                return 'default';
+        }
+    };
+
     return (
-        <table className="w-full">
-            <thead className="bg-gray-50">
+        <table className="w-full text-xs">
+            <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                    <SortableHeader field="name">Event</SortableHeader>
-                    <SortableHeader field="date">Date & Location</SortableHeader>
+                    <SortableHeader field="name">Event Details</SortableHeader>
+                    <SortableHeader field="date">Date</SortableHeader>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                        Location
+                    </th>
                     <SortableHeader field="status">Status</SortableHeader>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
                         Requirements
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Graphics Status
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                        Submitted By
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Submitted By & Date
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                     </th>
                 </tr>
@@ -90,128 +120,167 @@ export function EventsTable({
             <tbody className="bg-white divide-y divide-gray-200">
                 {eventRequests.map((request) => {
                     const StatusIcon = getStatusIcon(request.status);
-                    
+
                     return (
-                        <tr key={request.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                                <div>
-                                    <div className="text-sm font-medium text-gray-900">{request.name}</div>
-                                    <div className="text-sm text-gray-500 truncate max-w-xs">
-                                        {request.eventDescription}
+                        <tr key={request.id} className="hover:bg-gray-50 transition-colors">
+                            {/* Event Details Column */}
+                            <td className="px-3 py-2">
+                                <div className="max-w-[180px]">
+                                    <Tooltip content={request.name} delay={500}>
+                                        <div className="text-xs font-semibold text-gray-900 truncate">
+                                            {truncateText(request.name, 25)}
+                                        </div>
+                                    </Tooltip>
+                                    <Tooltip content={request.eventDescription} delay={500}>
+                                        <div className="text-xs text-gray-500 truncate mt-0.5">
+                                            {truncateText(request.eventDescription, 35)}
+                                        </div>
+                                    </Tooltip>
+                                    {/* Show location on mobile */}
+                                    <div className="lg:hidden flex items-center gap-1 mt-1 text-xs text-gray-400">
+                                        <MapPin className="w-3 h-3" />
+                                        <span className="truncate">{truncateText(request.location, 20)}</span>
                                     </div>
                                 </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                                <div>
-                                    <div className="text-sm text-gray-900">
-                                        {request.startDateTime?.toDate?.()?.toLocaleDateString() || 'No date'}
+
+                            {/* Date Column */}
+                            <td className="px-3 py-2 whitespace-nowrap">
+                                <div className="flex items-center gap-1 text-xs text-gray-900">
+                                    <Calendar className="w-3 h-3 text-gray-400" />
+                                    <span>{formatDate(request.startDateTime)}</span>
+                                </div>
+                            </td>
+
+                            {/* Location Column (hidden on mobile) */}
+                            <td className="px-3 py-2 hidden lg:table-cell">
+                                <Tooltip content={request.location} delay={500}>
+                                    <div className="flex items-center gap-1 max-w-[120px]">
+                                        <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                                        <span className="text-xs text-gray-700 truncate">{truncateText(request.location, 20)}</span>
                                     </div>
-                                    <div className="text-sm text-gray-500">{request.location}</div>
+                                </Tooltip>
+                            </td>
+
+                            {/* Status Column */}
+                            <td className="px-3 py-2">
+                                <div className="inline-flex">
+                                    <Chip
+                                        color={getChipColor(request.status)}
+                                        variant="flat"
+                                        size="sm"
+                                        startContent={<StatusIcon className="w-3 h-3 flex-shrink-0" />}
+                                        classNames={{
+                                            base: "h-6 gap-1",
+                                            content: "text-xs capitalize px-1.5"
+                                        }}
+                                    >
+                                        {request.status.replace('_', ' ')}
+                                    </Chip>
                                 </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                                <div className={`inline-flex items-center space-x-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(request.status)}`}>
-                                    <StatusIcon className="w-4 h-4" />
-                                    <span className="capitalize">{request.status}</span>
-                                </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex space-x-2">
+                            {/* Requirements Column (hidden on smaller screens) */}
+                            <td className="px-3 py-2 hidden xl:table-cell">
+                                <div className="flex flex-col gap-1">
                                     {request.needsGraphics && (
-                                        <span className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
-                                            Graphics
-                                        </span>
+                                        <div
+                                            className="flex items-center gap-1.5 cursor-pointer select-none"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                if (canManageGraphics(currentUserRole)) {
+                                                    onGraphicsToggle(request.id, request.graphicsCompleted || false);
+                                                }
+                                            }}
+                                        >
+                                            <div className="pointer-events-none">
+                                                <Checkbox
+                                                    size="sm"
+                                                    isSelected={request.graphicsCompleted}
+                                                    isDisabled={!canManageGraphics(currentUserRole)}
+                                                    isReadOnly
+                                                    classNames={{
+                                                        wrapper: "after:bg-secondary after:text-secondary-foreground"
+                                                    }}
+                                                />
+                                            </div>
+                                            <span className="text-xs text-gray-700">Graphics</span>
+                                        </div>
                                     )}
                                     {request.needsAsFunding && (
-                                        <span className="inline-flex px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
+                                        <Chip
+                                            color="success"
+                                            variant="flat"
+                                            size="sm"
+                                            className="text-xs h-5"
+                                        >
                                             Funding
-                                        </span>
+                                        </Chip>
                                     )}
                                     {!request.needsGraphics && !request.needsAsFunding && (
                                         <span className="text-xs text-gray-400">None</span>
                                     )}
                                 </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                                {request.needsGraphics ? (
-                                    <div className="flex items-center space-x-2">
-                                        {canManageGraphics(currentUserRole) ? (
-                                            <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={request.graphicsCompleted || false}
-                                                    onChange={(e) => onGraphicsToggle(request.id, e.target.checked)}
-                                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                                />
-                                                <span className="text-sm text-gray-700">
-                                                    {request.graphicsCompleted ? 'Completed' : 'Mark Complete'}
-                                                </span>
-                                            </label>
-                                        ) : (
-                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${request.graphicsCompleted
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-yellow-100 text-yellow-800'
-                                                }`}>
-                                                {request.graphicsCompleted ? 'Completed' : 'Pending'}
-                                            </span>
-                                        )}
-                                        {request.graphicsFiles && request.graphicsFiles.length > 0 && (
-                                            <span className="text-xs text-blue-600">
-                                                {request.graphicsFiles.length} file(s)
-                                            </span>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="bg-gray-100 px-2 py-1 rounded">
-                                        <span className="text-xs text-gray-500">No graphics needed</span>
-                                    </div>
-                                )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+
+                            {/* Submitted By Column (hidden on mobile) */}
+                            <td className="px-3 py-2 hidden md:table-cell">
                                 <div>
-                                    <div className="text-sm font-medium text-gray-900">
+                                    <div className="text-xs font-medium text-gray-900">
                                         {getUserName(request.requestedUser)}
                                     </div>
-                                    <div className="text-sm text-gray-500">
-                                        {request.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown'}
+                                    <div className="text-xs text-gray-500">
+                                        {formatDate(request.createdAt)}
                                     </div>
                                 </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div className="flex items-center justify-end space-x-2">
-                                    <button
-                                        onClick={() => onViewRequest(request)}
-                                        className="text-green-600 hover:text-green-900"
-                                        title="View Request"
-                                    >
-                                        <Eye className="w-4 h-4" />
-                                    </button>
-                                    {canEditEvent(request) && (
-                                        <button
-                                            onClick={() => onFileManagement(request)}
-                                            className="text-purple-600 hover:text-purple-900"
-                                            title="Manage Files"
+                            {/* Actions Column */}
+                            <td className="px-3 py-2 whitespace-nowrap text-right">
+                                <div className="flex items-center justify-end gap-0.5">
+                                    <Tooltip content="View Details" delay={300}>
+                                        <Button
+                                            isIconOnly
+                                            size="sm"
+                                            variant="light"
+                                            color="success"
+                                            onPress={() => onViewRequest(request)}
+                                            aria-label="View Request"
+                                            className="min-w-unit-8 w-8 h-8"
                                         >
-                                            <FileText className="w-4 h-4" />
-                                        </button>
-                                    )}
+                                            <Eye className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </Tooltip>
+
                                     {canEditEvent(request) && (
-                                        <button
-                                            onClick={() => onEditRequest(request)}
-                                            className="text-blue-600 hover:text-blue-900"
-                                            title="Edit Request"
-                                        >
-                                            <Edit className="w-4 h-4" />
-                                        </button>
+                                        <Tooltip content="Edit Event" delay={300}>
+                                            <Button
+                                                isIconOnly
+                                                size="sm"
+                                                variant="light"
+                                                color="primary"
+                                                onPress={() => onEditRequest(request)}
+                                                aria-label="Edit Request"
+                                                className="min-w-unit-8 w-8 h-8"
+                                            >
+                                                <Edit className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </Tooltip>
                                     )}
+
                                     {canDeleteEvent(request) && (
-                                        <button
-                                            onClick={() => onDeleteRequest(request.id, request.name)}
-                                            className="text-red-600 hover:text-red-900"
-                                            title="Delete Request"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <Tooltip content="Delete Event" delay={300}>
+                                            <Button
+                                                isIconOnly
+                                                size="sm"
+                                                variant="light"
+                                                color="danger"
+                                                onPress={() => onDeleteRequest(request.id, request.name)}
+                                                aria-label="Delete Request"
+                                                className="min-w-unit-8 w-8 h-8"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </Tooltip>
                                     )}
                                 </div>
                             </td>

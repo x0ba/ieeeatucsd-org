@@ -43,6 +43,9 @@ interface ImportMetaEnv {
   readonly LOGTO_API_ENDPOINT: string;
   readonly LOGTO_USERINFO_ENDPOINT: string;
   readonly API_BASE_URL: string;
+
+  // OpenRouter Configuration
+  readonly OPENROUTER_API_KEY: string;
 }
 
 interface ImportMeta {

@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar.tsx';
 import { MobileSidebar } from './MobileSidebar.tsx';
 import MobileHeader from './MobileHeader.tsx';
 import { auth } from '../../../firebase/client';
+import { ModalProvider } from './contexts/ModalContext.tsx';
 
 interface DashboardLayoutProps {
     children?: ReactNode;
@@ -52,32 +53,34 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-gray-50">
-            {/* Desktop Sidebar */}
-            <Sidebar currentPath={currentPath} />
+        <ModalProvider>
+            <div className="flex h-screen overflow-hidden bg-gray-50">
+                {/* Desktop Sidebar */}
+                <Sidebar currentPath={currentPath} />
 
-            {/* Mobile Sidebar */}
-            <MobileSidebar
-                currentPath={currentPath}
-                isOpen={isMobileMenuOpen}
-                onClose={handleMobileMenuClose}
-            />
-
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                {/* Mobile Header */}
-                <MobileHeader
-                    title={getPageTitle(currentPath || '')}
-                    onMenuToggle={handleMobileMenuToggle}
-                    isMenuOpen={isMobileMenuOpen}
+                {/* Mobile Sidebar */}
+                <MobileSidebar
+                    currentPath={currentPath}
+                    isOpen={isMobileMenuOpen}
+                    onClose={handleMobileMenuClose}
                 />
 
-                {/* Page Content - Independent Scroll Container */}
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                    {children || <DefaultContent />}
+                {/* Main Content Area */}
+                <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                    {/* Mobile Header */}
+                    <MobileHeader
+                        title={getPageTitle(currentPath || '')}
+                        onMenuToggle={handleMobileMenuToggle}
+                        isMenuOpen={isMobileMenuOpen}
+                    />
+
+                    {/* Page Content - Independent Scroll Container */}
+                    <div className="flex-1 min-h-0 overflow-y-auto">
+                        {children || <DefaultContent />}
+                    </div>
                 </div>
             </div>
-        </div>
+        </ModalProvider>
     );
 }
 

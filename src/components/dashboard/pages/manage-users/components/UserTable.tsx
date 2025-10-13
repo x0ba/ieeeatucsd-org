@@ -1,5 +1,6 @@
 import React from 'react';
-import { Edit, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react';
+import { Edit, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Avatar, Tooltip, Card } from '@heroui/react';
 import type { User as FirestoreUser } from '../../../shared/types/firestore';
 import type { SortConfig, UserPermissions } from '../types/UserManagementTypes';
 import { UserDisplayService } from '../utils/userFiltering';
@@ -14,6 +15,12 @@ interface UserTableProps {
     currentUserId?: string;
 }
 
+// Utility function to truncate majors
+const truncateMajor = (major: string, maxLength: number = 20) => {
+    if (!major || major.length <= maxLength) return major;
+    return major.substring(0, maxLength) + '...';
+};
+
 export default function UserTable({
     users,
     sortConfig,
@@ -23,42 +30,18 @@ export default function UserTable({
     permissions,
     currentUserId
 }: UserTableProps) {
-    const SortableHeader = ({ field, children, className = "" }: { 
-        field: string; 
-        children: React.ReactNode; 
-        className?: string 
-    }) => (
-        <th
-            className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors ${className}`}
-            onClick={() => onSort(field)}
-        >
-            <div className="flex items-center gap-1">
-                {children}
-                {sortConfig.field === field ? (
-                    sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                ) : (
-                    <ChevronsUpDown className="w-4 h-4 opacity-50" />
-                )}
-            </div>
-        </th>
-    );
-
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'active':
-                return <CheckCircle className="w-4 h-4" />;
-            case 'inactive':
-                return <Clock className="w-4 h-4" />;
-            case 'suspended':
-                return <XCircle className="w-4 h-4" />;
-            default:
-                return <AlertCircle className="w-4 h-4" />;
+    const getSortIcon = (field: string) => {
+        if (sortConfig.field === field) {
+            return sortConfig.direction === 'asc' ?
+                <ChevronUp className="w-3.5 h-3.5" /> :
+                <ChevronDown className="w-3.5 h-3.5" />;
         }
+        return null; // Don't show icon for non-active columns
     };
 
     if (users.length === 0) {
         return (
-            <div className="bg-white rounded-lg shadow">
+            <Card shadow="sm" className="rounded-lg">
                 <div className="p-8 text-center">
                     <div className="text-gray-400 mb-4">
                         <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,124 +51,182 @@ export default function UserTable({
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
                     <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
                 </div>
-            </div>
+            </Card>
         );
     }
 
     return (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <SortableHeader field="name">Name</SortableHeader>
-                            <SortableHeader field="email">Email</SortableHeader>
-                            <SortableHeader field="role">Role</SortableHeader>
-                            <SortableHeader field="position">Position</SortableHeader>
-                            <SortableHeader field="status">Status</SortableHeader>
-                            <SortableHeader field="points">Points</SortableHeader>
-                            <SortableHeader field="joinDate">Join Date</SortableHeader>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {users.map((user) => (
-                            <tr key={user.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0 h-10 w-10">
-                                            <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                                                <span className="text-sm font-medium text-gray-700">
-                                                    {user.name?.charAt(0)?.toUpperCase() || '?'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="ml-4">
-                                            <div className="text-sm font-medium text-gray-900">
-                                                {user.name || 'No name'}
-                                                {user.id === currentUserId && (
-                                                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                        You
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {user.pid && (
-                                                <div className="text-sm text-gray-500">PID: {user.pid}</div>
+        <Card shadow="sm" className="rounded-lg overflow-hidden">
+            <Table
+                aria-label="Users table"
+                shadow="none"
+                classNames={{
+                    wrapper: "p-0",
+                    th: "bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider py-3",
+                    td: "py-3"
+                }}
+            >
+                <TableHeader>
+                    <TableColumn
+                        key="name"
+                        className="cursor-pointer hover:bg-gray-100 transition-colors align-middle"
+                        onClick={() => onSort('name')}
+                    >
+                        <span className="inline-flex items-center gap-1">
+                            Name {getSortIcon('name')}
+                        </span>
+                    </TableColumn>
+                    <TableColumn
+                        key="email"
+                        className="cursor-pointer hover:bg-gray-100 transition-colors align-middle"
+                        onClick={() => onSort('email')}
+                    >
+                        <span className="inline-flex items-center gap-1">
+                            Email {getSortIcon('email')}
+                        </span>
+                    </TableColumn>
+                    <TableColumn
+                        key="role"
+                        className="cursor-pointer hover:bg-gray-100 transition-colors align-middle"
+                        onClick={() => onSort('role')}
+                    >
+                        <span className="inline-flex items-center gap-1">
+                            Role {getSortIcon('role')}
+                        </span>
+                    </TableColumn>
+                    <TableColumn
+                        key="position"
+                        className="cursor-pointer hover:bg-gray-100 transition-colors align-middle"
+                        onClick={() => onSort('position')}
+                    >
+                        <span className="inline-flex items-center gap-1">
+                            Position {getSortIcon('position')}
+                        </span>
+                    </TableColumn>
+                    <TableColumn
+                        key="points"
+                        className="cursor-pointer hover:bg-gray-100 transition-colors align-middle"
+                        onClick={() => onSort('points')}
+                    >
+                        <span className="inline-flex items-center gap-1">
+                            Points {getSortIcon('points')}
+                        </span>
+                    </TableColumn>
+                    <TableColumn
+                        key="joinDate"
+                        className="cursor-pointer hover:bg-gray-100 transition-colors align-middle"
+                        onClick={() => onSort('joinDate')}
+                    >
+                        <span className="inline-flex items-center gap-1">
+                            Join Date {getSortIcon('joinDate')}
+                        </span>
+                    </TableColumn>
+                    <TableColumn key="actions" className="align-middle">
+                        Actions
+                    </TableColumn>
+                </TableHeader>
+                <TableBody>
+                    {users.map((user) => (
+                        <TableRow key={user.id} className="hover:bg-gray-50">
+                            <TableCell>
+                                <div className="flex items-center gap-3">
+                                    <Avatar
+                                        name={user.name?.charAt(0)?.toUpperCase() || '?'}
+                                        className="bg-gray-300 text-gray-700"
+                                        size="md"
+                                        radius="full"
+                                    />
+                                    <div>
+                                        <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                                            {user.name || 'No name'}
+                                            {user.id === currentUserId && (
+                                                <Chip
+                                                    color="primary"
+                                                    variant="flat"
+                                                    size="sm"
+                                                    className="rounded-full"
+                                                >
+                                                    You
+                                                </Chip>
                                             )}
                                         </div>
+                                        {user.pid && (
+                                            <div className="text-sm text-gray-500">PID: {user.pid}</div>
+                                        )}
                                     </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">{user.email}</div>
-                                    {user.memberId && (
-                                        <div className="text-sm text-gray-500">ID: {user.memberId}</div>
-                                    )}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${UserDisplayService.getRoleColor(user.role)}`}>
-                                        {user.role}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">{user.position || '-'}</div>
-                                    {user.major && (
-                                        <div className="text-sm text-gray-500">{user.major}</div>
-                                    )}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${UserDisplayService.getStatusColor(user.status)}`}>
-                                        {getStatusIcon(user.status)}
-                                        <span className="ml-1">{user.status}</span>
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {user.points || 0}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <div className="text-sm text-gray-900">{user.email}</div>
+                                {user.memberId && (
+                                    <div className="text-sm text-gray-500">ID: {user.memberId}</div>
+                                )}
+                            </TableCell>
+                            <TableCell>
+                                <Chip
+                                    className={`${UserDisplayService.getRoleColor(user.role)} rounded-full`}
+                                    size="sm"
+                                    variant="flat"
+                                >
+                                    {user.role}
+                                </Chip>
+                            </TableCell>
+                            <TableCell>
+                                <div className="text-sm text-gray-900">{user.position || '-'}</div>
+                                {user.major && (
+                                    <Tooltip content={user.major}>
+                                        <div className="text-sm text-gray-500">{truncateMajor(user.major)}</div>
+                                    </Tooltip>
+                                )}
+                            </TableCell>
+                            <TableCell>
+                                <div className="text-sm text-gray-900">{user.points || 0}</div>
+                            </TableCell>
+                            <TableCell>
+                                <div className="text-sm text-gray-500">
                                     {user.joinDate ? user.joinDate.toDate().toLocaleDateString() : '-'}
-                                    {user.graduationYear && (
-                                        <div className="text-xs">Grad: {user.graduationYear}</div>
-                                    )}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div className="flex items-center gap-2">
-                                        {(permissions.canEditUserRole(user) || permissions.canEditUserPosition(user)) && (
-                                            <button
-                                                onClick={() => onEditUser(user)}
-                                                className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                                                title="Edit user"
+                                </div>
+                                {user.graduationYear && (
+                                    <div className="text-xs text-gray-400">Grad: {user.graduationYear}</div>
+                                )}
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                    {(permissions.canEditUserRole(user) || permissions.canEditUserPosition(user)) && (
+                                        <Tooltip content="Edit user">
+                                            <Button
+                                                isIconOnly
+                                                size="sm"
+                                                variant="light"
+                                                color="primary"
+                                                onPress={() => onEditUser(user)}
+                                                className="rounded-md"
                                             >
                                                 <Edit className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                        
-                                        {permissions.canDeleteUser(user) && (
-                                            <button
-                                                onClick={() => onDeleteUser(user.id)}
-                                                className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                                                title="Delete user"
+                                            </Button>
+                                        </Tooltip>
+                                    )}
+
+                                    {permissions.canDeleteUser(user) && (
+                                        <Tooltip content="Delete user">
+                                            <Button
+                                                isIconOnly
+                                                size="sm"
+                                                variant="light"
+                                                color="danger"
+                                                onPress={() => onDeleteUser(user.id)}
+                                                className="rounded-md"
                                             >
                                                 <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                        
-                                        {permissions.isOAuthUser(user.id) && (
-                                            <span 
-                                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
-                                                title="OAuth user - password cannot be changed"
-                                            >
-                                                OAuth
-                                            </span>
-                                        )}
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                                            </Button>
+                                        </Tooltip>
+                                    )}
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </Card>
     );
 }
