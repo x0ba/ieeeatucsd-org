@@ -259,11 +259,7 @@ export default function OverviewContent() {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="hidden lg:flex items-center justify-center">
-                                    <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                                        <Award className="w-10 h-10 text-white" />
-                                    </div>
-                                </div>
+
                             </div>
                         </CardBody>
                     </Card>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
+import { Card, CardHeader, CardBody, Button } from '@heroui/react';
 import { auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { EventManagementStats } from './EventManagementStats';
@@ -30,6 +31,8 @@ interface EventRequest {
     needsAsFunding?: boolean;
     graphicsCompleted?: boolean;
     graphicsFiles?: string[];
+    flyersNeeded?: boolean;
+    flyersCompleted?: boolean;
     [key: string]: any;
 }
 
@@ -162,14 +165,15 @@ export default function ManageEventsContent() {
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-3 mb-4 md:mb-6">
                         {canCreateEvent(currentUserRole) && (
-                            <button
-                                onClick={() => setShowEventRequestModal(true)}
-                                className="flex items-center justify-center space-x-2 px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px] text-sm md:text-base"
+                            <Button
+                                color="primary"
+                                startContent={<Plus className="w-4 h-4" />}
+                                onPress={() => setShowEventRequestModal(true)}
+                                className="min-h-[44px]"
                             >
-                                <Plus className="w-4 h-4" />
                                 <span className="hidden sm:inline">Request an Event</span>
                                 <span className="sm:hidden">Request</span>
-                            </button>
+                            </Button>
                         )}
                     </div>
 
@@ -189,44 +193,49 @@ export default function ManageEventsContent() {
                     )}
 
                     {/* Event Requests Table */}
-                    <div key={currentUserRole} className="bg-white rounded-lg shadow-sm border border-gray-200">
-                        <div className="px-4 md:px-6 py-4 border-b border-gray-200">
-                            <h2 className="text-base md:text-lg font-semibold text-gray-900">Event Requests ({sortedEventRequests.length})</h2>
-                        </div>
-                        <div className="overflow-x-auto table-mobile-scroll">
-                            {loading ? (
-                                <TableSkeleton rows={5} columns={7} />
-                            ) : paginatedEventRequests.length === 0 ? (
-                                <div className="p-6 text-center">
-                                    <p className="text-gray-500">
-                                        {sortedEventRequests.length === 0 ? 'No event requests found' : 'No events match the current filters'}
-                                    </p>
-                                    {sortedEventRequests.length > 0 && (
-                                        <button
-                                            onClick={handleClearFilters}
-                                            className="mt-2 text-blue-600 hover:text-blue-800 underline"
-                                        >
-                                            Clear filters
-                                        </button>
-                                    )}
-                                </div>
-                            ) : (
-                                <EventsTable
-                                    eventRequests={paginatedEventRequests}
-                                    sortBy={sortBy}
-                                    currentUserRole={currentUserRole}
-                                    currentUserId={user?.uid}
-                                    onSort={handleSort}
-                                    onViewRequest={handleViewRequest}
-                                    onEditRequest={handleEditRequest}
-                                    onFileManagement={handleFileManagement}
-                                    onDeleteRequest={handleDeleteRequest}
-                                    onGraphicsToggle={handleGraphicsToggle}
-                                    getUserName={getUserName}
-                                />
-                            )}
-                        </div>
-                    </div>
+                    <Card key={currentUserRole} shadow="sm" className="border border-gray-200">
+                        <CardHeader className="flex flex-col items-start px-4 md:px-6 py-4">
+                            <h2 className="text-base md:text-lg font-semibold text-gray-900">
+                                Event Requests ({sortedEventRequests.length})
+                            </h2>
+                        </CardHeader>
+                        <CardBody className="p-0">
+                            <div className="overflow-x-auto">
+                                {loading ? (
+                                    <TableSkeleton rows={5} columns={7} />
+                                ) : paginatedEventRequests.length === 0 ? (
+                                    <div className="p-6 text-center">
+                                        <p className="text-gray-500">
+                                            {sortedEventRequests.length === 0 ? 'No event requests found' : 'No events match the current filters'}
+                                        </p>
+                                        {sortedEventRequests.length > 0 && (
+                                            <Button
+                                                variant="light"
+                                                color="primary"
+                                                onPress={handleClearFilters}
+                                                className="mt-2"
+                                            >
+                                                Clear filters
+                                            </Button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <EventsTable
+                                        eventRequests={paginatedEventRequests}
+                                        sortBy={sortBy}
+                                        currentUserRole={currentUserRole}
+                                        currentUserId={user?.uid}
+                                        onSort={handleSort}
+                                        onViewRequest={handleViewRequest}
+                                        onEditRequest={handleEditRequest}
+                                        onDeleteRequest={handleDeleteRequest}
+                                        onGraphicsToggle={handleGraphicsToggle}
+                                        getUserName={getUserName}
+                                    />
+                                )}
+                            </div>
+                        </CardBody>
+                    </Card>
 
                     {/* Pagination Controls */}
                     {totalPages > 1 && (

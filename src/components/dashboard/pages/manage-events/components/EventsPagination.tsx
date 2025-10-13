@@ -1,4 +1,5 @@
 import React from 'react';
+import { Card, CardBody, Button } from '@heroui/react';
 
 interface EventsPaginationProps {
     currentPage: number;
@@ -22,45 +23,49 @@ export function EventsPagination({
     }
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-700">
-                    Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} events
-                </div>
-                <div className="flex items-center space-x-2">
-                    <button
-                        onClick={() => onPageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Previous
-                    </button>
-
-                    <div className="flex items-center space-x-1">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                            <button
-                                key={page}
-                                onClick={() => onPageChange(page)}
-                                className={`px-3 py-2 rounded-lg text-sm font-medium ${currentPage === page
-                                    ? 'bg-blue-600 text-white'
-                                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                    }`}
-                            >
-                                {page}
-                            </button>
-                        ))}
+        <Card shadow="sm" className="border border-gray-200">
+            <CardBody className="px-6 py-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="text-sm text-gray-700">
+                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} events
                     </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            size="sm"
+                            variant="bordered"
+                            onPress={() => onPageChange(currentPage - 1)}
+                            isDisabled={currentPage === 1}
+                        >
+                            Previous
+                        </Button>
 
-                    <button
-                        onClick={() => onPageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Next
-                    </button>
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <Button
+                                    key={page}
+                                    size="sm"
+                                    variant={currentPage === page ? "solid" : "bordered"}
+                                    color={currentPage === page ? "primary" : "default"}
+                                    onPress={() => onPageChange(page)}
+                                    className="min-w-[40px]"
+                                >
+                                    {page}
+                                </Button>
+                            ))}
+                        </div>
+
+                        <Button
+                            size="sm"
+                            variant="bordered"
+                            onPress={() => onPageChange(currentPage + 1)}
+                            isDisabled={currentPage === totalPages}
+                        >
+                            Next
+                        </Button>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </CardBody>
+        </Card>
     );
 }
 
