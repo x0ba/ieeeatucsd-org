@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Spacer, Card, CardBody, Spinner } from '@heroui/react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../../../../firebase/client';
 import type { UserRole } from '../../../shared/types/firestore';
@@ -88,132 +89,137 @@ export default function AddMemberModal({
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            size="2xl"
+            scrollBehavior="inside"
+            classNames={{
+                base: "rounded-lg",
+                header: "border-b border-gray-200",
+                body: "py-6",
+                footer: "border-t border-gray-200"
+            }}
+        >
+            <ModalContent>
+                <ModalHeader>
                     <h3 className="text-lg font-medium text-gray-900">Promote User</h3>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600"
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
-                </div>
+                </ModalHeader>
 
-                <div className="p-6 space-y-4">
+                <ModalBody className="space-y-4">
                     {/* Search Users */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Search Users
-                        </label>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <input
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search by name or email..."
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                    </div>
+                    <Input
+                        type="text"
+                        label="Search Users"
+                        placeholder="Search by name or email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        startContent={<Search className="w-4 h-4 text-gray-400" />}
+                        classNames={{
+                            inputWrapper: "rounded-lg"
+                        }}
+                    />
 
                     {/* Users List */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Select User
                         </label>
-                        <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
-                            {isLoading ? (
-                                <div className="p-4 text-center text-gray-500">Loading users...</div>
-                            ) : filteredMembers.length === 0 ? (
-                                <div className="p-4 text-center text-gray-500">
-                                    {searchTerm ? 'No users found matching your search.' : 'No users available to promote.'}
-                                </div>
-                            ) : (
-                                filteredMembers.map(member => (
-                                    <div
-                                        key={member.id}
-                                        onClick={() => setSelectedMember(member)}
-                                        className={`p-3 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${selectedMember?.id === member.id
-                                            ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-500 ring-inset'
-                                            : ''
-                                            }`}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <div className="font-medium text-gray-900">{member.name}</div>
-                                                <div className="text-sm text-gray-500">{member.email}</div>
-                                                <div className="text-xs text-gray-400">Current role: {member.role}</div>
-                                            </div>
-                                            {selectedMember?.id === member.id && (
-                                                <div className="text-blue-600">
-                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                    </svg>
-                                                </div>
-                                            )}
-                                        </div>
+                        <Card shadow="sm" className="rounded-lg max-h-64 overflow-y-auto">
+                            <CardBody className="p-0">
+                                {isLoading ? (
+                                    <div className="p-8 flex justify-center">
+                                        <Spinner size="lg" />
                                     </div>
-                                ))
-                            )}
-                        </div>
+                                ) : filteredMembers.length === 0 ? (
+                                    <div className="p-8 text-center text-gray-500">
+                                        {searchTerm ? 'No users found matching your search.' : 'No users available to promote.'}
+                                    </div>
+                                ) : (
+                                    filteredMembers.map(member => (
+                                        <div
+                                            key={member.id}
+                                            onClick={() => setSelectedMember(member)}
+                                            className={`p-4 border-b border-gray-200 last:border-b-0 cursor-pointer hover:bg-gray-50 transition-colors ${selectedMember?.id === member.id
+                                                ? 'bg-primary-50 border-primary-200'
+                                                : ''
+                                                }`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <div className="font-medium text-gray-900">{member.name}</div>
+                                                    <div className="text-sm text-gray-500">{member.email}</div>
+                                                    <div className="text-xs text-gray-400">Current role: {member.role}</div>
+                                                </div>
+                                                {selectedMember?.id === member.id && (
+                                                    <div className="text-primary">
+                                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </CardBody>
+                        </Card>
                     </div>
 
                     {/* Role and Position Selection */}
                     {selectedMember && (
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    New Role
-                                </label>
-                                <select
-                                    value={newRole}
-                                    onChange={(e) => setNewRole(e.target.value as UserRole)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    {availableRoles.filter(role => role !== 'Member').map(role => (
-                                        <option key={role} value={role}>{role}</option>
-                                    ))}
-                                </select>
-                            </div>
+                        <>
+                            <Select
+                                label="New Role"
+                                selectedKeys={[newRole]}
+                                onChange={(e) => setNewRole(e.target.value as UserRole)}
+                                classNames={{
+                                    trigger: "rounded-lg"
+                                }}
+                            >
+                                {availableRoles.filter(role => role !== 'Member').map(role => (
+                                    <SelectItem key={role} value={role}>
+                                        {role}
+                                    </SelectItem>
+                                ))}
+                            </Select>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Position
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newPosition}
-                                    onChange={(e) => setNewPosition(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="e.g., Treasurer, Secretary"
-                                />
-                            </div>
-
-                            <div className="flex justify-end space-x-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                                >
-                                    {loading ? 'Promoting...' : 'Promote User'}
-                                </button>
-                            </div>
-                        </form>
+                            <Input
+                                type="text"
+                                label="Position"
+                                placeholder="e.g., Treasurer, Secretary"
+                                value={newPosition}
+                                onChange={(e) => setNewPosition(e.target.value)}
+                                classNames={{
+                                    inputWrapper: "rounded-lg"
+                                }}
+                            />
+                        </>
                     )}
-                </div>
-            </div>
-        </div>
+                </ModalBody>
+
+                <ModalFooter>
+                    <Button
+                        variant="flat"
+                        onPress={onClose}
+                        className="rounded-lg"
+                    >
+                        Cancel
+                    </Button>
+                    <Spacer />
+                    {selectedMember && (
+                        <Button
+                            color="success"
+                            onPress={handleSubmit}
+                            isLoading={loading}
+                            className="rounded-lg"
+                        >
+                            {loading ? 'Promoting...' : 'Promote User'}
+                        </Button>
+                    )}
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
     );
 }
