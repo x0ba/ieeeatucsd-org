@@ -84,7 +84,7 @@ export function EventsTable({
             case 'approved':
                 return 'success';
             case 'submitted':
-                return 'primary';
+                return 'default';
             case 'pending':
             case 'needs_review':
                 return 'warning';
@@ -171,8 +171,8 @@ export function EventsTable({
                                         size="sm"
                                         startContent={<StatusIcon className="w-3 h-3 flex-shrink-0" />}
                                         classNames={{
-                                            base: "h-6 gap-1",
-                                            content: "text-xs capitalize px-1.5"
+                                            base: "h-6 ",
+                                            content: "text-xs capitalize px-1"
                                         }}
                                     >
                                         {request.status.replace('_', ' ')}

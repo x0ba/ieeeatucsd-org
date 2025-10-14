@@ -8,6 +8,7 @@ export type ModalType =
   | "fund-deposit-edit"
   | "event-graphics"
   | "event-file-management"
+  | "event-request"
   | null;
 
 interface UseGlobalImagePasteOptions {

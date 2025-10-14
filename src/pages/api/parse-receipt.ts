@@ -4,6 +4,11 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const { imageUrl } = await request.json();
 
+    console.log(
+      "[parse-receipt] Received imageUrl:",
+      imageUrl?.substring(0, 100),
+    );
+
     if (!imageUrl) {
       return new Response(JSON.stringify({ error: "Missing image URL" }), {
         status: 400,
@@ -11,19 +16,87 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // Get OpenRouter API key from environment
     const apiKey = import.meta.env.OPENROUTER_API_KEY;
 
     if (!apiKey) {
       console.error("OPENROUTER_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "AI service not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } },
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
       );
     }
 
-    // Prepare the prompt for receipt parsing
-    const systemPrompt = `You are a receipt parsing assistant. Extract information from receipt images and return ONLY valid JSON with no additional text or markdown formatting.
+    // Fetch the file from Firebase Storage (if applicable) and convert to base64 data URL
+    let finalUrl = imageUrl;
+    let contentType: string | undefined;
+
+    const isFirebaseUrl = imageUrl.includes("firebasestorage.googleapis.com");
+    console.log("[parse-receipt] Is Firebase URL:", isFirebaseUrl);
+
+    if (isFirebaseUrl) {
+      try {
+        console.log("[parse-receipt] Fetching file from Firebase Storage...");
+        const fileResponse = await fetch(imageUrl);
+
+        console.log(
+          "[parse-receipt] Fetch response status:",
+          fileResponse.status,
+        );
+
+        if (!fileResponse.ok) {
+          const errorText = await fileResponse.text();
+          console.error("[parse-receipt] Fetch failed:", errorText);
+          throw new Error(
+            `Failed to fetch file: ${fileResponse.status} ${fileResponse.statusText}`,
+          );
+        }
+
+        contentType = fileResponse.headers.get("content-type") || undefined;
+        console.log("[parse-receipt] Content type:", contentType);
+
+        const arrayBuffer = await fileResponse.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64 = buffer.toString("base64");
+
+        // Use detected contentType; fall back to image/jpeg if unknown
+        const dataMime = contentType ?? "image/jpeg";
+        finalUrl = `data:${dataMime};base64,${base64}`;
+
+        console.log(
+          "[parse-receipt] Data URL prefix:",
+          finalUrl.substring(0, 50),
+        );
+      } catch (error) {
+        console.error(
+          "[parse-receipt] Error fetching Firebase Storage file:",
+          error,
+        );
+        return new Response(
+          JSON.stringify({
+            error: "Failed to fetch file from storage",
+            details: error instanceof Error ? error.message : "Unknown error",
+          }),
+          { status: 500, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    // Determine if this is a PDF
+    const isPdf =
+      (contentType && /application\/pdf/i.test(contentType)) ||
+      /\.pdf(?:\?|#|$)/i.test(imageUrl);
+
+    console.log("[parse-receipt] isPdf:", isPdf);
+
+    console.log(
+      "[parse-receipt] Sending to AI with URL length:",
+      finalUrl.length,
+    );
+
+    const systemPrompt = `You are a receipt parsing assistant. Extract information from receipt images and PDF documents and return ONLY valid JSON with no additional text or markdown formatting.
 
 Required JSON structure:
 {
@@ -54,9 +127,44 @@ Rules:
 - Subtotal should be the sum of line items before tax
 - Total should be subtotal + tax + tip + shipping`;
 
-    const userPrompt = `Please analyze this receipt image and extract all information according to the JSON schema provided.`;
+    const userPrompt = `Please analyze this receipt (image or PDF) and extract all information according to the JSON schema provided.`;
 
-    // Call OpenRouter API
+    // Build content with correct modality
+    const contentParts: any[] = [
+      { type: "text", text: userPrompt },
+      ...(isPdf
+        ? [
+            {
+              type: "file",
+              file: {
+                filename: "receipt.pdf",
+                // OpenRouter accepts either a direct URL or a base64 data URL here
+                file_data: finalUrl,
+              },
+            },
+          ]
+        : [
+            {
+              type: "image_url",
+              image_url: { url: finalUrl },
+            },
+          ]),
+    ];
+
+    // Optional: Explicitly configure PDF engine for better OCR of scanned receipts
+    // Remove or change engine if you prefer defaults
+    const plugins = isPdf
+      ? [
+          {
+            id: "file-parser",
+            pdf: {
+              // 'mistral-ocr' is robust for scanned/image-based PDFs. 'pdf-text' is free for text-based PDFs.
+              engine: "mistral-ocr",
+            },
+          },
+        ]
+      : undefined;
+
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
       {
@@ -68,28 +176,12 @@ Rules:
           "X-Title": "IEEE UCSD Reimbursement System",
         },
         body: JSON.stringify({
-          model: "openai/gpt-4o-mini",
+          model: "openai/gpt-5-nano",
           messages: [
-            {
-              role: "system",
-              content: systemPrompt,
-            },
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: userPrompt,
-                },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: imageUrl,
-                  },
-                },
-              ],
-            },
+            { role: "system", content: systemPrompt },
+            { role: "user", content: contentParts },
           ],
+          ...(plugins ? { plugins } : {}),
           response_format: { type: "json_object" },
           temperature: 0.1,
           max_tokens: 2000,
@@ -114,20 +206,19 @@ Rules:
 
     const data = await response.json();
 
-    // Extract the parsed content
     const content = data.choices?.[0]?.message?.content;
-
     if (!content) {
       return new Response(
         JSON.stringify({ error: "No content returned from AI" }),
-        { status: 500, headers: { "Content-Type": "application/json" } },
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
       );
     }
 
-    // Parse the JSON response
     let parsedData;
     try {
-      // Remove markdown code blocks if present
       const cleanContent = content
         .replace(/```json\n?/g, "")
         .replace(/```\n?/g, "")
@@ -144,8 +235,6 @@ Rules:
       );
     }
 
-    // Validate and normalize the parsed data
-    // Only vendorName, dateOfPurchase, and lineItems are truly required
     const normalizedData = {
       vendorName: parsedData.vendorName || "Unknown Vendor",
       location: parsedData.location || "",
@@ -161,17 +250,7 @@ Rules:
       total: parsedData.total || 0,
     };
 
-    // Validate critical fields
-    if (
-      !normalizedData.vendorName ||
-      normalizedData.vendorName === "Unknown Vendor"
-    ) {
-      console.warn("Missing vendor name in parsed data");
-    }
-
     if (!normalizedData.lineItems || normalizedData.lineItems.length === 0) {
-      console.warn("No line items found in parsed data");
-      // Create a default line item with the total
       normalizedData.lineItems = [
         {
           description: "Receipt Total",
@@ -181,7 +260,6 @@ Rules:
       ];
     }
 
-    // Ensure line items have required fields
     normalizedData.lineItems = normalizedData.lineItems.map(
       (item: any, index: number) => ({
         description: item.description || `Item ${index + 1}`,
@@ -190,13 +268,12 @@ Rules:
       }),
     );
 
-    // Return the parsed data
     return new Response(
-      JSON.stringify({
-        success: true,
-        data: normalizedData,
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
+      JSON.stringify({ success: true, data: normalizedData }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
     );
   } catch (error) {
     console.error("Error in parse-receipt API:", error);
