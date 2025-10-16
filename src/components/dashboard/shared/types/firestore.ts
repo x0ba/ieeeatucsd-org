@@ -206,7 +206,6 @@ export interface Officer {
 export interface Reimbursement {
   title: string;
   totalAmount: number;
-  dateOfPurchase: Timestamp;
   paymentMethod: string;
   status: "submitted" | "declined" | "approved" | "paid";
   submittedBy: string;
@@ -224,9 +223,46 @@ export interface Reimbursement {
     completedAt?: Timestamp;
   }[];
   requiresExecutiveOverride?: boolean;
+
+  // New multi-receipt structure
+  receipts?: Receipt[];
+
+  // Legacy fields for backward compatibility
+  dateOfPurchase?: Timestamp; // Keep for legacy support
+  expenses?: LegacyExpense[]; // Legacy expense structure
+}
+
+// Legacy expense structure for backward compatibility
+export interface LegacyExpense {
+  id: string;
+  description: string;
+  category: string;
+  amount: number;
+  receipt?: { url: string; name: string; size: number; type: string };
+}
+
+export interface LineItem {
+  id: string;
+  description: string;
+  category: string;
+  amount: number;
 }
 
 export interface Receipt {
+  id: string;
+  vendorName: string;
+  location: string;
+  dateOfPurchase: Timestamp;
+  lineItems: LineItem[];
+  receiptFile?: string; // Firebase Storage URL
+  notes?: string;
+  subtotal: number;
+  tax?: number;
+  total: number;
+}
+
+// Legacy receipt structure for backward compatibility
+export interface LegacyReceipt {
   file: string;
   createdBy: string;
   itemizedExpenses: { description: string; category: string; amount: number }[];
@@ -292,6 +328,7 @@ export interface Link {
   category: string; // Required - for organization/filtering
   description?: string; // Optional - short description
   iconUrl?: string; // Optional - Firebase Storage URL for icon/photo
+  shortUrl?: string; // Optional - shortened URL slug (e.g., "meeting" for /url/meeting)
   publishDate?: Timestamp; // Optional - link becomes visible after this date
   expireDate?: Timestamp; // Optional - link becomes hidden after this date
   createdAt: Timestamp; // Required - for sorting (reverse chronological)
@@ -343,4 +380,86 @@ export interface ConstitutionAuditLog {
   totalEntries: number;
   createdAt: Timestamp;
   lastUpdated: Timestamp;
+}
+
+// Onboarding Types
+export type InvitationStatus = "pending" | "accepted" | "declined" | "expired";
+
+export type GoogleGroup =
+  | "executive-officers@ieeeatucsd.org"
+  | "general-officers@ieeeatucsd.org"
+  | "past-officers@ieeeatucsd.org";
+
+export interface OfficerInvitation {
+  id?: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  position: string;
+  status: InvitationStatus;
+  invitedBy: string; // uid of the executive who sent the invitation
+  invitedAt: Timestamp;
+  acceptedAt?: Timestamp;
+  declinedAt?: Timestamp;
+  expiresAt: Timestamp; // 7 days from invitedAt
+  message?: string; // Custom message for the invitation
+  acceptanceDeadline?: string; // Human-readable deadline (e.g., "end of March 15th")
+  leaderName?: string; // Team Lead / Vice Chair / Mentor name
+  googleGroupAssigned?: boolean; // Whether user has been added to Google Group
+  googleGroup?: GoogleGroup; // Which Google Group they were added to
+  permissionsGranted?: boolean; // Whether officer permissions have been granted
+  onboardingEmailSent?: boolean; // Whether onboarding email was sent after acceptance
+  resentAt?: Timestamp; // When the invitation was last resent
+  lastSentAt?: Timestamp; // Timestamp of the most recent send (initial or resend)
+  roleGranted?: boolean; // Whether Firebase Auth custom claims were set for the role
+  roleGrantedAt?: Timestamp; // When the role was granted via custom claims
+  userCreatedOrUpdated?: boolean; // Whether the user document was created or updated in Firestore
+}
+
+export interface OnboardingEmailData {
+  name: string;
+  position: string;
+  role: UserRole;
+  leaderName?: string; // Vice Chair or mentor name
+  acceptanceDeadline?: string; // For invitation emails
+  customMessage?: string; // Additional custom message
+}
+
+export interface GoogleGroupAssignment {
+  userId: string;
+  email: string;
+  role: UserRole;
+  googleGroup: GoogleGroup;
+  assignedAt: Timestamp;
+  assignedBy: string; // uid of the executive who assigned
+  success: boolean;
+  error?: string;
+}
+
+export type EmailTemplateType =
+  | "onboarding-invitation"
+  | "onboarding-direct"
+  | "onboarding-acceptance";
+
+export interface EmailTemplate {
+  id?: string; // Document ID
+  templateId: EmailTemplateType; // Template identifier
+  templateName: string; // Human-readable name
+  subject: string; // Email subject line
+  body: string; // Email body with template variables
+  variables: string[]; // Array of supported variables (e.g., ["{NAME}", "{EMAIL}"])
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  updatedBy: string; // UID of user who last updated
+  isDefault: boolean; // Whether this is the default template
+}
+
+export interface EmailTemplateChange {
+  templateId: EmailTemplateType;
+  changedBy: string; // UID of user who made the change
+  changedAt: Timestamp;
+  previousBody: string;
+  newBody: string;
+  previousSubject: string;
+  newSubject: string;
 }

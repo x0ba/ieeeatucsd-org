@@ -1,182 +1,188 @@
-import React from 'react';
-import { Calendar, MapPin, FileText, DollarSign } from 'lucide-react';
-import type { EventFormData, FieldError } from '../types/EventRequestTypes';
-import { departmentOptions, eventTypes } from '../types/EventRequestTypes';
-import { generateEventCode, formatTimeTo12H } from '../utils/eventRequestUtils';
+import React from "react";
+import { Calendar, MapPin, FileText, DollarSign } from "lucide-react";
+import { Input, Textarea, Select, SelectItem, Button } from "@heroui/react";
+import type { EventFormData, FieldError } from "../types/EventRequestTypes";
+import { departmentOptions, eventTypes } from "../types/EventRequestTypes";
+import { generateEventCode, formatTimeTo12H } from "../utils/eventRequestUtils";
 
 interface BasicInformationSectionProps {
-    formData: EventFormData;
-    fieldErrors: FieldError;
-    onInputChange: (field: string, value: any) => void;
+  formData: EventFormData;
+  fieldErrors: FieldError;
+  onInputChange: (field: string, value: any) => void;
 }
 
 export default function BasicInformationSection({
-    formData,
-    fieldErrors,
-    onInputChange
+  formData,
+  fieldErrors,
+  onInputChange,
 }: BasicInformationSectionProps) {
-    return (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-6">
-                {/* Event Name */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        <FileText className="w-4 h-4 inline mr-2" />
-                        Event Name *
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => onInputChange('name', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${fieldErrors.name ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                        placeholder="Enter event name"
-                    />
-                </div>
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6">
+        {/* Event Name */}
+        <Input
+          type="text"
+          label="Event Name"
+          placeholder="Enter event name"
+          value={formData.name}
+          onValueChange={(value) => onInputChange("name", value)}
+          isRequired
+          isInvalid={!!fieldErrors.name}
+          errorMessage={fieldErrors.name && "Event name is required"}
+          startContent={<FileText className="w-4 h-4 text-gray-400" />}
+          classNames={{
+            label: "text-sm font-medium",
+          }}
+        />
 
-                {/* Location */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        <MapPin className="w-4 h-4 inline mr-2" />
-                        Location *
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.location}
-                        onChange={(e) => onInputChange('location', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${fieldErrors.location ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                        placeholder="Enter event location"
-                    />
-                </div>
+        {/* Location */}
+        <Input
+          type="text"
+          label="Location"
+          placeholder="Enter event location"
+          value={formData.location}
+          onValueChange={(value) => onInputChange("location", value)}
+          isRequired
+          isInvalid={!!fieldErrors.location}
+          errorMessage={fieldErrors.location && "Location is required"}
+          startContent={<MapPin className="w-4 h-4 text-gray-400" />}
+          classNames={{
+            label: "text-sm font-medium",
+          }}
+        />
 
-                {/* Date and Time */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            <Calendar className="w-4 h-4 inline mr-2" />
-                            Date *
-                        </label>
-                        <input
-                            type="date"
-                            value={formData.startDate}
-                            onChange={(e) => onInputChange('startDate', e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${fieldErrors.startDate ? 'border-red-500' : 'border-gray-300'
-                                }`}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Start Time *
-                        </label>
-                        <input
-                            type="time"
-                            value={formData.startTime}
-                            onChange={(e) => onInputChange('startTime', e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${fieldErrors.startTime ? 'border-red-500' : 'border-gray-300'
-                                }`}
-                        />
-                        {formData.startTime && (
-                            <p className="text-xs text-gray-500 mt-1">
-                                {formatTimeTo12H(formData.startTime)}
-                            </p>
-                        )}
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            End Time *
-                        </label>
-                        <input
-                            type="time"
-                            value={formData.endTime}
-                            onChange={(e) => onInputChange('endTime', e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${fieldErrors.endTime ? 'border-red-500' : 'border-gray-300'
-                                }`}
-                        />
-                        {formData.endTime && (
-                            <p className="text-xs text-gray-500 mt-1">
-                                {formatTimeTo12H(formData.endTime)}
-                            </p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Event Description */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Event Description *
-                    </label>
-                    <textarea
-                        value={formData.eventDescription}
-                        onChange={(e) => onInputChange('eventDescription', e.target.value)}
-                        rows={4}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${fieldErrors.eventDescription ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                        placeholder="Describe your event in detail"
-                    />
-                </div>
-
-                {/* Department */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Department
-                    </label>
-                    <select
-                        value={formData.department}
-                        onChange={(e) => onInputChange('department', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                        {departmentOptions.map(dept => (
-                            <option key={dept} value={dept}>{dept}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Event Code */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Event Code
-                    </label>
-                    <div className="flex space-x-2">
-                        <input
-                            type="text"
-                            value={formData.eventCode}
-                            onChange={(e) => onInputChange('eventCode', e.target.value)}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Enter or generate event code"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => onInputChange('eventCode', generateEventCode())}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                            Generate
-                        </button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                        This code will be used for event check-ins and point tracking
-                    </p>
-                </div>
-
-                {/* Points to Reward */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        <DollarSign className="w-4 h-4 inline mr-2" />
-                        Points to Reward
-                    </label>
-                    <input
-                        type="number"
-                        min="0"
-                        value={formData.pointsToReward}
-                        onChange={(e) => onInputChange('pointsToReward', parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter points to reward attendees"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                        Points that will be awarded to attendees for participating in this event
-                    </p>
-                </div>
-            </div>
+        {/* Date and Time */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Input
+              type="date"
+              label="Date"
+              value={formData.startDate}
+              onValueChange={(value) => onInputChange("startDate", value)}
+              isRequired
+              isInvalid={!!fieldErrors.startDate}
+              errorMessage={fieldErrors.startDate && "Date is required"}
+              startContent={<Calendar className="w-4 h-4 text-gray-400" />}
+              classNames={{
+                label: "text-sm font-medium",
+              }}
+            />
+          </div>
+          <div>
+            <Input
+              type="time"
+              label="Start Time"
+              value={formData.startTime}
+              onValueChange={(value) => onInputChange("startTime", value)}
+              isRequired
+              isInvalid={!!fieldErrors.startTime}
+              errorMessage={fieldErrors.startTime && "Start time is required"}
+              description={
+                formData.startTime && formatTimeTo12H(formData.startTime)
+              }
+              classNames={{
+                label: "text-sm font-medium",
+              }}
+            />
+          </div>
+          <div>
+            <Input
+              type="time"
+              label="End Time"
+              value={formData.endTime}
+              onValueChange={(value) => onInputChange("endTime", value)}
+              isRequired
+              isInvalid={!!fieldErrors.endTime}
+              errorMessage={fieldErrors.endTime && "End time is required"}
+              description={
+                formData.endTime && formatTimeTo12H(formData.endTime)
+              }
+              classNames={{
+                label: "text-sm font-medium",
+              }}
+            />
+          </div>
         </div>
-    );
+
+        {/* Event Description */}
+        <Textarea
+          label="Event Description"
+          placeholder="Describe your event in detail"
+          value={formData.eventDescription}
+          onValueChange={(value) => onInputChange("eventDescription", value)}
+          isRequired
+          isInvalid={!!fieldErrors.eventDescription}
+          errorMessage={
+            fieldErrors.eventDescription && "Event description is required"
+          }
+          minRows={4}
+          classNames={{
+            label: "text-sm font-medium",
+          }}
+        />
+
+        {/* Department */}
+        <Select
+          label="Department"
+          placeholder="Select department"
+          selectedKeys={[formData.department]}
+          onSelectionChange={(keys) => {
+            const selected = Array.from(keys)[0] as string;
+            onInputChange("department", selected);
+          }}
+          classNames={{
+            label: "text-sm font-medium",
+          }}
+        >
+          {departmentOptions.map((dept) => (
+            <SelectItem key={dept} value={dept}>
+              {dept}
+            </SelectItem>
+          ))}
+        </Select>
+
+        {/* Event Code */}
+        <div>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              label="Event Code"
+              placeholder="Enter or generate event code"
+              value={formData.eventCode}
+              onValueChange={(value) => onInputChange("eventCode", value)}
+              description="This code will be used for event check-ins and point tracking"
+              classNames={{
+                label: "text-sm font-medium",
+                base: "flex-1",
+              }}
+            />
+            <Button
+              color="primary"
+              onPress={() => onInputChange("eventCode", generateEventCode())}
+              className="mt-auto mb-6"
+            >
+              Generate
+            </Button>
+          </div>
+        </div>
+
+        {/* Points to Reward */}
+        <Input
+          type="number"
+          label="Points to Reward"
+          placeholder="Enter points to reward attendees"
+          value={formData.pointsToReward.toString()}
+          onValueChange={(value) =>
+            onInputChange("pointsToReward", parseInt(value) || 0)
+          }
+          min={0}
+          description="Points that will be awarded to attendees for participating in this event"
+          startContent={<DollarSign className="w-4 h-4 text-gray-400" />}
+          classNames={{
+            label: "text-sm font-medium",
+          }}
+        />
+      </div>
+    </div>
+  );
 }

@@ -22,21 +22,31 @@ export default defineConfig({
     mode: "standalone",
   }),
 
+  server: {
+    host: true,
+    port: process.env.PORT ? Number(process.env.PORT) : 4321,
+  },
   // Define environment variables that should be available to client components
   vite: {
     define: {
-      "import.meta.env.LOGTO_APP_ID": JSON.stringify(process.env.LOGTO_APP_ID),
-      "import.meta.env.LOGTO_APP_SECRET": JSON.stringify(
-        process.env.LOGTO_APP_SECRET,
+      // Firebase client config
+      "import.meta.env.PUBLIC_FIREBASE_WEB_API_KEY": JSON.stringify(
+        process.env.PUBLIC_FIREBASE_WEB_API_KEY,
       ),
-      "import.meta.env.LOGTO_ENDPOINT": JSON.stringify(
-        process.env.LOGTO_ENDPOINT,
+      "import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN": JSON.stringify(
+        process.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
       ),
-      "import.meta.env.LOGTO_TOKEN_ENDPOINT": JSON.stringify(
-        process.env.LOGTO_TOKEN_ENDPOINT,
+      "import.meta.env.PUBLIC_FIREBASE_PROJECT_ID": JSON.stringify(
+        process.env.PUBLIC_FIREBASE_PROJECT_ID,
       ),
-      "import.meta.env.LOGTO_API_ENDPOINT": JSON.stringify(
-        process.env.LOGTO_API_ENDPOINT,
+      "import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET": JSON.stringify(
+        process.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
+      ),
+      "import.meta.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID": JSON.stringify(
+        process.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      ),
+      "import.meta.env.PUBLIC_FIREBASE_APP_ID": JSON.stringify(
+        process.env.PUBLIC_FIREBASE_APP_ID,
       ),
     },
     resolve: {

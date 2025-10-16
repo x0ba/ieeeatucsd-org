@@ -107,6 +107,21 @@ export default function LinkCard({
         </p>
       )}
 
+      {/* Short URL */}
+      {link.shortUrl && (
+        <div className="mb-3">
+          <a
+            href={`/${link.shortUrl}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
+          >
+            <LinkIcon className="w-3 h-3" />
+            <span>ieeeatucsd.org/{link.shortUrl}</span>
+          </a>
+        </div>
+      )}
+
       {/* Status Badges (for officers only) */}
       {canManage && (isScheduled || isExpired) && (
         <div className="mb-3 space-y-1">

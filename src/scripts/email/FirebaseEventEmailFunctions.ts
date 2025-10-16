@@ -59,6 +59,7 @@ export async function sendFirebaseEventRequestSubmissionEmail(
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
+          timeZone: "America/Los_Angeles",
         });
       } catch (error) {
         return "Invalid date";
@@ -383,6 +384,7 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
+          timeZone: "America/Los_Angeles",
         });
       } catch (error) {
         return "Invalid date";
@@ -563,6 +565,7 @@ export async function sendFirebaseEventEditEmail(
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
+          timeZone: "America/Los_Angeles",
         });
       } catch (error) {
         return "Invalid date";

@@ -67,6 +67,7 @@ export default function LinksContent() {
     category: string;
     description?: string;
     iconUrl?: string;
+    shortUrl?: string;
     publishDate?: any;
     expireDate?: any;
   }) => {

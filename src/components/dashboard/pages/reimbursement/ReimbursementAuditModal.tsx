@@ -1,13 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Check, XCircle, CreditCard, MessageCircle, Upload, Calendar, Building, UserCheck, User as UserIcon } from 'lucide-react';
-import { Button } from '../../../ui/button';
-import { Input } from '../../../ui/input';
-import { Label } from '../../../ui/label';
-import { Textarea } from '../../../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/select';
+import { Check, XCircle, CreditCard, MessageCircle, Upload, Calendar, Building, UserCheck, User as UserIcon } from 'lucide-react';
+import { Modal, ModalContent, ModalHeader, ModalBody, Button, Input, Textarea, Select, SelectItem, Chip, Spacer } from '@heroui/react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, auth, storage } from '../../../../firebase/client';
+import { db, auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 interface ReimbursementAuditModalProps {
@@ -141,16 +136,40 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                     let photoUrl: string | null = null;
                     let storagePath: string | undefined = undefined;
                     if (paymentInfo.photoAttachment) {
+                        // Ensure user is authenticated before upload
+                        if (!user || !user.uid) {
+                            throw new Error('User not authenticated');
+                        }
+
+                        // Get fresh auth token
+                        const idToken = await user.getIdToken();
+
                         const file = paymentInfo.photoAttachment;
-                        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-                        const path = `reimbursements/paymentConfirmations/${reimbursement.id}/${Date.now()}_${safeName}`;
-                        const storageRef = ref(storage, path);
-                        const uploadTask = uploadBytesResumable(storageRef, file);
-                        await new Promise<void>((resolve, reject) => {
-                            uploadTask.on('state_changed', undefined, reject, () => resolve());
+
+                        // Create FormData for multipart upload
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('reimbursementId', reimbursement.id);
+
+                        // Upload using server-side API endpoint with Admin SDK
+                        const response = await fetch('/api/upload-payment-confirmation', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${idToken}`,
+                            },
+                            body: formData,
                         });
-                        photoUrl = await getDownloadURL(storageRef);
-                        storagePath = storageRef.fullPath;
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || `Upload failed: ${response.status} ${response.statusText}`);
+                        }
+
+                        const result = await response.json();
+                        photoUrl = result.downloadUrl;
+                        storagePath = result.storagePath;
+
+                        console.log('Payment confirmation uploaded successfully:', { photoUrl, storagePath });
                     }
                     payment = {
                         confirmationNumber: paymentInfo.confirmationNumber,
@@ -159,7 +178,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                     };
                 } catch (err) {
                     console.error('Failed to upload confirmation file:', err);
-                    alert('Failed to upload the payment confirmation file. Please try again.');
+                    alert(`Failed to upload the payment confirmation file: ${err instanceof Error ? err.message : 'Unknown error'}`);
                     setIsUploading(false);
                     return;
                 } finally {
@@ -222,369 +241,385 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
         onClose();
     };
 
-    const getStatusColor = (status: string) => {
+    const getStatusColor = (status: string): "default" | "primary" | "secondary" | "success" | "warning" | "danger" => {
         switch (status) {
             case 'submitted':
-                return 'bg-yellow-100 text-yellow-800';
+                return 'warning';
             case 'under_review':
-                return 'bg-blue-100 text-blue-800';
+                return 'primary';
             case 'approved':
-                return 'bg-green-100 text-green-800';
+                return 'success';
             case 'paid':
-                return 'bg-emerald-100 text-emerald-800';
+                return 'primary';
             case 'declined':
-                return 'bg-red-100 text-red-800';
+                return 'danger';
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'default';
         }
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <h2 className="text-xl font-semibold text-gray-900">Review Reimbursement</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
-                </div>
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            size="2xl"
+            scrollBehavior="inside"
+            classNames={{
+                base: "max-h-[90vh]",
+                body: "py-6",
+                header: "border-b border-divider",
+            }}
+        >
+            <ModalContent>
+                {(onModalClose) => (
+                    <>
+                        <ModalHeader className="flex flex-col gap-1">
+                            <h2 className="text-xl font-semibold">Review Reimbursement</h2>
+                        </ModalHeader>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    {/* Reimbursement Summary */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-lg font-medium text-gray-900">{reimbursement.title}</h3>
-                            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(reimbursement.status)}`}>
-                                {reimbursement.status === 'submitted' && 'Submitted'}
-                                {reimbursement.status === 'under_review' && 'Under Review'}
-                                {reimbursement.status === 'approved' && 'Approved (Not Paid)'}
-                                {reimbursement.status === 'paid' && 'Approved (Paid)'}
-                                {reimbursement.status === 'declined' && 'Declined'}
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div className="flex items-center space-x-2">
-                                <Building className="w-4 h-4 text-gray-400" />
-                                <span>Department: <span className="font-medium capitalize">{reimbursement.department}</span></span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Calendar className="w-4 h-4 text-gray-400" />
-                                <span>Amount: <span className="font-bold text-green-600">${reimbursement.totalAmount?.toFixed(2)}</span></span>
-                            </div>
-                            <div className="flex items-center space-x-2 col-span-2 md:col-span-1">
-                                <UserIcon className="w-4 h-4 text-gray-400" />
-                                <span>Submitted By: <span className="font-medium">{submitterName || 'Unknown User'}</span></span>
-                            </div>
-                            <div className="flex items-center space-x-2 col-span-2 md:col-span-1">
-                                <CreditCard className="w-4 h-4 text-gray-400" />
-                                <span>Zelle: <span className="font-medium">{submitterZelle || 'Not provided'}</span></span>
-                            </div>
-                        </div>
-                        <div className="mt-3">
-                            <p className="text-sm text-gray-600"><span className="font-medium">Organization Purpose:</span> {reimbursement.businessPurpose}</p>
-                        </div>
-                    </div>
-
-                    {/* Action Selection */}
-                    <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-3 block">Choose Action</Label>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setAction('review')}
-                                className={`p-3 border-2 rounded-lg text-center transition-colors ${action === 'review'
-                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                    : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                            >
-                                <MessageCircle className="w-5 h-5 mx-auto mb-1" />
-                                <span className="text-sm font-medium">Add Note</span>
-                            </button>
-
-                            {(reimbursement.status === 'submitted' || reimbursement.status === 'under_review') && (
-                                <button
-                                    type="button"
-                                    onClick={() => setAction('request_audit')}
-                                    className={`p-3 border-2 rounded-lg text-center transition-colors ${action === 'request_audit'
-                                        ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                        : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                >
-                                    <UserCheck className="w-5 h-5 mx-auto mb-1" />
-                                    <span className="text-sm font-medium">Request Audit</span>
-                                </button>
-                            )}
-
-                            {(reimbursement.status === 'submitted' || reimbursement.status === 'under_review') && (
-                                <button
-                                    type="button"
-                                    onClick={() => setAction('approve')}
-                                    className={`p-3 border-2 rounded-lg text-center transition-colors ${action === 'approve'
-                                        ? 'border-green-500 bg-green-50 text-green-700'
-                                        : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                >
-                                    <Check className="w-5 h-5 mx-auto mb-1" />
-                                    <span className="text-sm font-medium">Approve (Not Paid)</span>
-                                </button>
-                            )}
-
-                            {(reimbursement.status === 'submitted' || reimbursement.status === 'under_review' || reimbursement.status === 'approved') && (
-                                <button
-                                    type="button"
-                                    onClick={() => setAction('approve_paid')}
-                                    className={`p-3 border-2 rounded-lg text-center transition-colors ${action === 'approve_paid'
-                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                                        : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                >
-                                    <CreditCard className="w-5 h-5 mx-auto mb-1" />
-                                    <span className="text-sm font-medium">Approve & Pay</span>
-                                </button>
-                            )}
-
-                            {(reimbursement.status === 'submitted' || reimbursement.status === 'under_review') && (
-                                <button
-                                    type="button"
-                                    onClick={() => setAction('decline')}
-                                    className={`p-3 border-2 rounded-lg text-center transition-colors ${action === 'decline'
-                                        ? 'border-red-500 bg-red-50 text-red-700'
-                                        : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                >
-                                    <XCircle className="w-5 h-5 mx-auto mb-1" />
-                                    <span className="text-sm font-medium">Decline</span>
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Executive Selection for Audit Request */}
-                    {action === 'request_audit' && (
-                        <div>
-                            <Label className="text-sm font-medium text-gray-700">
-                                Select Executive for Audit *
-                            </Label>
-                            <Select value={selectedAuditor} onValueChange={setSelectedAuditor}>
-                                <SelectTrigger className="w-full mt-1">
-                                    <SelectValue placeholder="Choose an executive officer to audit this request" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {executives.map((exec) => (
-                                        <SelectItem key={exec.id} value={exec.id}>
-                                            {exec.name || exec.email} - {exec.position || 'Executive Officer'}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {action === 'request_audit' && !selectedAuditor && (
-                                <p className="mt-1 text-sm text-red-600">Please select an executive to audit this request</p>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Audit Note */}
-                    <div>
-                        <Label htmlFor="auditNote" className="text-sm font-medium text-gray-700">
-                            {action === 'decline' ? 'Reason for Decline *' :
-                                action === 'approve' ? 'Approval Notes' :
-                                    action === 'request_audit' ? 'Request Message' :
-                                        'Audit Notes'}
-                        </Label>
-                        <Textarea
-                            id="auditNote"
-                            value={auditNote}
-                            onChange={(e) => setAuditNote(e.target.value)}
-                            placeholder={
-                                action === 'decline'
-                                    ? 'Please provide a reason for declining this request...'
-                                    : action === 'approve'
-                                        ? 'Optional notes about the approval...'
-                                        : action === 'request_audit'
-                                            ? 'Optional message to include with the audit request...'
-                                            : 'Add any notes about this reimbursement...'
-                            }
-                            rows={4}
-                            className={action === 'decline' && !auditNote.trim() ? 'border-red-500' : ''}
-                        />
-                        {action === 'decline' && !auditNote.trim() && (
-                            <p className="mt-1 text-sm text-red-600">Please provide a reason for declining</p>
-                        )}
-                    </div>
-
-                    {/* Payment Information (only for 'approve_paid' action) */}
-                    {action === 'approve_paid' && (
-                        <div className="space-y-4 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                            <h4 className="font-medium text-emerald-900">Payment Confirmation</h4>
-
-                            <div>
-                                <Label htmlFor="confirmationNumber" className="text-sm font-medium text-gray-700">
-                                    Confirmation Number *
-                                </Label>
-                                <Input
-                                    id="confirmationNumber"
-                                    value={paymentInfo.confirmationNumber}
-                                    onChange={(e) => setPaymentInfo({ ...paymentInfo, confirmationNumber: e.target.value })}
-                                    placeholder="e.g., TXN123456789"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <Label className="text-sm font-medium text-gray-700">
-                                    Payment Confirmation Photo
-                                </Label>
-                                <div
-                                    className={`group mt-1 flex flex-col items-center justify-center px-6 pt-6 pb-6 border-2 border-dashed rounded-xl transition-colors ${isDragging ? 'border-emerald-500 bg-emerald-50' : 'border-emerald-200 hover:border-emerald-300 bg-white'}`}
-                                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
-                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
-                                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }}
-                                    onDrop={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setIsDragging(false);
-                                        const dt = e.dataTransfer;
-                                        if (!dt) return;
-                                        let file: File | null = null;
-                                        if (dt.files && dt.files.length > 0) {
-                                            file = dt.files[0];
-                                        } else if (dt.items && dt.items.length > 0) {
-                                            const item = dt.items[0];
-                                            if (item.kind === 'file') file = item.getAsFile();
-                                        }
-                                        if (file) {
-                                            const isAllowed = file.type.startsWith('image/') || file.type === 'application/pdf';
-                                            const underLimit = file.size <= 10 * 1024 * 1024; // 10MB
-                                            if (!isAllowed) {
-                                                alert('Please drop an image or PDF file.');
-                                                return;
-                                            }
-                                            if (!underLimit) {
-                                                alert('File is too large. Max 10MB.');
-                                                return;
-                                            }
-                                            setPaymentInfo(prev => ({ ...prev, photoAttachment: file }));
-                                        }
-                                    }}
-                                >
-                                    <div className="w-full max-w-xl text-center">
-                                        <div className={`mx-auto h-16 w-16 rounded-full flex items-center justify-center ${isDragging ? 'bg-emerald-100' : 'bg-emerald-50'} border border-emerald-100`}>
-                                            <Upload className="h-8 w-8 text-emerald-500" />
+                        <ModalBody>
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Reimbursement Summary */}
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-lg font-medium text-gray-900">{reimbursement.title}</h3>
+                                        <Chip
+                                            color={getStatusColor(reimbursement.status)}
+                                            variant="flat"
+                                            size="sm"
+                                        >
+                                            {reimbursement.status === 'submitted' && 'Submitted'}
+                                            {reimbursement.status === 'under_review' && 'Under Review'}
+                                            {reimbursement.status === 'approved' && 'Approved (Not Paid)'}
+                                            {reimbursement.status === 'paid' && 'Approved (Paid)'}
+                                            {reimbursement.status === 'declined' && 'Declined'}
+                                        </Chip>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div className="flex items-center space-x-2">
+                                            <Building className="w-4 h-4 text-gray-400" />
+                                            <span>Department: <span className="font-medium capitalize">{reimbursement.department}</span></span>
                                         </div>
-                                        <h5 className="mt-3 text-sm font-semibold text-gray-900">Drop, paste, or browse</h5>
-                                        <p className="text-xs text-gray-500">PNG, JPG, or PDF up to 10MB</p>
-                                        <div className="mt-3 flex items-center justify-center gap-2">
-                                            <label
-                                                htmlFor="paymentPhoto"
-                                                className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                                        <div className="flex items-center space-x-2">
+                                            <Calendar className="w-4 h-4 text-gray-400" />
+                                            <span>Amount: <span className="font-bold text-green-600">${reimbursement.totalAmount?.toFixed(2)}</span></span>
+                                        </div>
+                                        <div className="flex items-center space-x-2 col-span-2 md:col-span-1">
+                                            <UserIcon className="w-4 h-4 text-gray-400" />
+                                            <span>Submitted By: <span className="font-medium">{submitterName || 'Unknown User'}</span></span>
+                                        </div>
+                                        <div className="flex items-center space-x-2 col-span-2 md:col-span-1">
+                                            <CreditCard className="w-4 h-4 text-gray-400" />
+                                            <span>Zelle: <span className="font-medium">{submitterZelle || 'Not provided'}</span></span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3">
+                                        <p className="text-sm text-gray-600"><span className="font-medium">Organization Purpose:</span> {reimbursement.businessPurpose}</p>
+                                    </div>
+                                </div>
+
+                                {/* Action Selection */}
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 mb-3 block">Choose Action</label>
+                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setAction('review')}
+                                            className={`p-3 border-2 rounded-lg text-center transition-colors ${action === 'review'
+                                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                                : 'border-gray-200 hover:border-gray-300'
+                                                }`}
+                                        >
+                                            <MessageCircle className="w-5 h-5 mx-auto mb-1" />
+                                            <span className="text-sm font-medium">Add Note</span>
+                                        </button>
+
+                                        {(reimbursement.status === 'submitted' || reimbursement.status === 'under_review') && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setAction('request_audit')}
+                                                className={`p-3 border-2 rounded-lg text-center transition-colors ${action === 'request_audit'
+                                                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                                    }`}
                                             >
-                                                Browse files
-                                                <input
-                                                    ref={fileInputRef}
-                                                    id="paymentPhoto"
-                                                    type="file"
-                                                    className="sr-only"
-                                                    accept="image/*,.pdf"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) setPaymentInfo(prev => ({ ...prev, photoAttachment: file }));
-                                                    }}
-                                                />
-                                            </label>
-                                            <span className="text-xs text-gray-500">or drag & drop / paste</span>
-                                        </div>
+                                                <UserCheck className="w-5 h-5 mx-auto mb-1" />
+                                                <span className="text-sm font-medium">Request Audit</span>
+                                            </button>
+                                        )}
 
-                                        {paymentInfo.photoAttachment && (
-                                            <div className="mt-4 text-left w-full">
-                                                <div className="p-3 border rounded-lg bg-white flex items-center gap-3 justify-between">
-                                                    <div className="flex items-center gap-3 min-w-0">
-                                                        {previewUrl ? (
-                                                            <img src={previewUrl} alt="Preview" className="h-14 w-14 object-cover rounded-md border" />
-                                                        ) : (
-                                                            <div className="h-14 w-14 rounded-md border flex items-center justify-center bg-gray-50">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor" className="h-6 w-6 text-gray-400"><path d="M6 2h9l5 5v15a0 0 0 0 1 0 0H6a0 0 0 0 1 0 0V2Z"/><path d="M14 2v6h6"/></svg>
-                                                            </div>
-                                                        )}
-                                                        <div className="min-w-0">
-                                                            <p className="text-sm font-medium text-gray-900 truncate">{paymentInfo.photoAttachment.name}</p>
-                                                            <p className="text-xs text-gray-500">{Math.round(paymentInfo.photoAttachment.size / 1024)} KB</p>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setPaymentInfo(prev => ({ ...prev, photoAttachment: null }));
-                                                            if (fileInputRef.current) fileInputRef.current.value = '';
-                                                        }}
-                                                        className="text-xs px-2 py-1 rounded-md border bg-white hover:bg-gray-50 text-gray-700"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </div>
-                                            </div>
+                                        {(reimbursement.status === 'submitted' || reimbursement.status === 'under_review') && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setAction('approve')}
+                                                className={`p-3 border-2 rounded-lg text-center transition-colors ${action === 'approve'
+                                                    ? 'border-green-500 bg-green-50 text-green-700'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                                    }`}
+                                            >
+                                                <Check className="w-5 h-5 mx-auto mb-1" />
+                                                <span className="text-sm font-medium">Approve (Not Paid)</span>
+                                            </button>
+                                        )}
+
+                                        {(reimbursement.status === 'submitted' || reimbursement.status === 'under_review' || reimbursement.status === 'approved') && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setAction('approve_paid')}
+                                                className={`p-3 border-2 rounded-lg text-center transition-colors ${action === 'approve_paid'
+                                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                                    }`}
+                                            >
+                                                <CreditCard className="w-5 h-5 mx-auto mb-1" />
+                                                <span className="text-sm font-medium">Approve & Pay</span>
+                                            </button>
+                                        )}
+
+                                        {(reimbursement.status === 'submitted' || reimbursement.status === 'under_review') && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setAction('decline')}
+                                                className={`p-3 border-2 rounded-lg text-center transition-colors ${action === 'decline'
+                                                    ? 'border-red-500 bg-red-50 text-red-700'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                                    }`}
+                                            >
+                                                <XCircle className="w-5 h-5 mx-auto mb-1" />
+                                                <span className="text-sm font-medium">Decline</span>
+                                            </button>
                                         )}
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    )}
 
-                    {/* Existing Audit Notes */}
-                    {reimbursement.auditNotes && reimbursement.auditNotes.length > 0 && (
-                        <div>
-                            <h4 className="text-md font-medium text-gray-900 mb-3">Previous Audit Notes</h4>
-                            <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {reimbursement.auditNotes.map((note: any, index: number) => (
-                                    <div key={index} className="p-3 bg-gray-50 rounded-lg border">
-                                        <p className="text-sm text-gray-700">{note.note}</p>
-                                        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                                            <span>By: {note.createdBy}</span>
-                                            <span>{new Date(note.timestamp?.toDate()).toLocaleDateString()}</span>
+                                {/* Executive Selection for Audit Request */}
+                                {action === 'request_audit' && (
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">
+                                            Select Executive for Audit *
+                                        </label>
+                                        <Select
+                                            selectedKeys={selectedAuditor ? [selectedAuditor] : []}
+                                            onSelectionChange={(keys) => setSelectedAuditor(Array.from(keys)[0] as string)}
+                                            placeholder="Choose an executive officer to audit this request"
+                                            className="w-full mt-1"
+                                        >
+                                            {executives.map((exec) => (
+                                                <SelectItem key={exec.id}>
+                                                    {exec.name || exec.email} - {exec.position || 'Executive Officer'}
+                                                </SelectItem>
+                                            ))}
+                                        </Select>
+                                        {action === 'request_audit' && !selectedAuditor && (
+                                            <p className="mt-1 text-sm text-red-600">Please select an executive to audit this request</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Audit Note */}
+                                <div>
+                                    <label htmlFor="auditNote" className="text-sm font-medium text-gray-700">
+                                        {action === 'decline' ? 'Reason for Decline *' :
+                                            action === 'approve' ? 'Approval Notes' :
+                                                action === 'request_audit' ? 'Request Message' :
+                                                    'Audit Notes'}
+                                    </label>
+                                    <Textarea
+                                        id="auditNote"
+                                        value={auditNote}
+                                        onChange={(e) => setAuditNote(e.target.value)}
+                                        placeholder={
+                                            action === 'decline'
+                                                ? 'Please provide a reason for declining this request...'
+                                                : action === 'approve'
+                                                    ? 'Optional notes about the approval...'
+                                                    : action === 'request_audit'
+                                                        ? 'Optional message to include with the audit request...'
+                                                        : 'Add any notes about this reimbursement...'
+                                        }
+                                        rows={4}
+                                        className={action === 'decline' && !auditNote.trim() ? 'border-red-500' : ''}
+                                    />
+                                    {action === 'decline' && !auditNote.trim() && (
+                                        <p className="mt-1 text-sm text-red-600">Please provide a reason for declining</p>
+                                    )}
+                                </div>
+
+                                {/* Payment Information (only for 'approve_paid' action) */}
+                                {action === 'approve_paid' && (
+                                    <div className="space-y-4 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                                        <h4 className="font-medium text-emerald-900">Payment Confirmation</h4>
+
+                                        <div>
+                                            <label htmlFor="confirmationNumber" className="text-sm font-medium text-gray-700">
+                                                Confirmation Number *
+                                            </label>
+                                            <Input
+                                                id="confirmationNumber"
+                                                value={paymentInfo.confirmationNumber}
+                                                onChange={(e) => setPaymentInfo({ ...paymentInfo, confirmationNumber: e.target.value })}
+                                                placeholder="e.g., TXN123456789"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700">
+                                                Payment Confirmation Photo
+                                            </label>
+                                            <div
+                                                className={`group mt-1 flex flex-col items-center justify-center px-6 pt-6 pb-6 border-2 border-dashed rounded-xl transition-colors ${isDragging ? 'border-emerald-500 bg-emerald-50' : 'border-emerald-200 hover:border-emerald-300 bg-white'}`}
+                                                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+                                                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setIsDragging(false);
+                                                    const dt = e.dataTransfer;
+                                                    if (!dt) return;
+                                                    let file: File | null = null;
+                                                    if (dt.files && dt.files.length > 0) {
+                                                        file = dt.files[0];
+                                                    } else if (dt.items && dt.items.length > 0) {
+                                                        const item = dt.items[0];
+                                                        if (item.kind === 'file') file = item.getAsFile();
+                                                    }
+                                                    if (file) {
+                                                        const isAllowed = file.type.startsWith('image/') || file.type === 'application/pdf';
+                                                        const underLimit = file.size <= 10 * 1024 * 1024; // 10MB
+                                                        if (!isAllowed) {
+                                                            alert('Please drop an image or PDF file.');
+                                                            return;
+                                                        }
+                                                        if (!underLimit) {
+                                                            alert('File is too large. Max 10MB.');
+                                                            return;
+                                                        }
+                                                        setPaymentInfo(prev => ({ ...prev, photoAttachment: file }));
+                                                    }
+                                                }}
+                                            >
+                                                <div className="w-full max-w-xl text-center">
+                                                    <div className={`mx-auto h-16 w-16 rounded-full flex items-center justify-center ${isDragging ? 'bg-emerald-100' : 'bg-emerald-50'} border border-emerald-100`}>
+                                                        <Upload className="h-8 w-8 text-emerald-500" />
+                                                    </div>
+                                                    <h5 className="mt-3 text-sm font-semibold text-gray-900">Drop, paste, or browse</h5>
+                                                    <p className="text-xs text-gray-500">PNG, JPG, or PDF up to 10MB</p>
+                                                    <div className="mt-3 flex items-center justify-center gap-2">
+                                                        <label
+                                                            htmlFor="paymentPhoto"
+                                                            className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-medium shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                                                        >
+                                                            Browse files
+                                                            <input
+                                                                ref={fileInputRef}
+                                                                id="paymentPhoto"
+                                                                type="file"
+                                                                className="sr-only"
+                                                                accept="image/*,.pdf"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) setPaymentInfo(prev => ({ ...prev, photoAttachment: file }));
+                                                                }}
+                                                            />
+                                                        </label>
+                                                        <span className="text-xs text-gray-500">or drag & drop / paste</span>
+                                                    </div>
+
+                                                    {paymentInfo.photoAttachment && (
+                                                        <div className="mt-4 text-left w-full">
+                                                            <div className="p-3 border rounded-lg bg-white flex items-center gap-3 justify-between">
+                                                                <div className="flex items-center gap-3 min-w-0">
+                                                                    {previewUrl ? (
+                                                                        <img src={previewUrl} alt="Preview" className="h-14 w-14 object-cover rounded-md border" />
+                                                                    ) : (
+                                                                        <div className="h-14 w-14 rounded-md border flex items-center justify-center bg-gray-50">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor" className="h-6 w-6 text-gray-400"><path d="M6 2h9l5 5v15a0 0 0 0 1 0 0H6a0 0 0 0 1 0 0V2Z" /><path d="M14 2v6h6" /></svg>
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="min-w-0">
+                                                                        <p className="text-sm font-medium text-gray-900 truncate">{paymentInfo.photoAttachment.name}</p>
+                                                                        <p className="text-xs text-gray-500">{Math.round(paymentInfo.photoAttachment.size / 1024)} KB</p>
+                                                                    </div>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setPaymentInfo(prev => ({ ...prev, photoAttachment: null }));
+                                                                        if (fileInputRef.current) fileInputRef.current.value = '';
+                                                                    }}
+                                                                    className="text-xs px-2 py-1 rounded-md border bg-white hover:bg-gray-50 text-gray-700"
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                                )}
 
-                    {/* Form Actions */}
-                    <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={isUploading || (action === 'decline' && !auditNote.trim()) || (action === 'request_audit' && !selectedAuditor)}
-                            className={
-                                action === 'approve'
-                                    ? 'bg-green-600 hover:bg-green-700'
-                                    : action === 'decline'
-                                        ? 'bg-red-600 hover:bg-red-700'
-                                        : action === 'approve_paid'
-                                            ? 'bg-emerald-600 hover:bg-emerald-700'
-                                            : action === 'request_audit'
-                                                ? 'bg-purple-600 hover:bg-purple-700'
-                                                : 'bg-blue-600 hover:bg-blue-700'
-                            }
-                        >
-                            {isUploading ? 'Uploading...' : (
-                                action === 'review' ? 'Add Note' :
-                                action === 'approve' ? 'Approve (Not Paid)' :
-                                action === 'decline' ? 'Decline Request' :
-                                action === 'approve_paid' ? 'Approve & Mark Paid' :
-                                action === 'request_audit' ? 'Send Audit Request' : 'Submit'
-                            )}
-                        </Button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                                {/* Existing Audit Notes */}
+                                {reimbursement.auditNotes && reimbursement.auditNotes.length > 0 && (
+                                    <div>
+                                        <h4 className="text-md font-medium text-gray-900 mb-3">Previous Audit Notes</h4>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            {reimbursement.auditNotes.map((note: any, index: number) => (
+                                                <div key={index} className="p-3 bg-gray-50 rounded-lg border">
+                                                    <p className="text-sm text-gray-700">{note.note}</p>
+                                                    <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                                                        <span>By: {note.createdBy}</span>
+                                                        <span>{new Date(note.timestamp?.toDate()).toLocaleDateString()}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Form Actions */}
+                                <div className="flex items-center justify-end gap-2 pt-6 border-t border-gray-200">
+                                    <Button
+                                        type="button"
+                                        variant="light"
+                                        onPress={onModalClose}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Spacer />
+                                    <Button
+                                        type="submit"
+                                        isDisabled={isUploading || (action === 'decline' && !auditNote.trim()) || (action === 'request_audit' && !selectedAuditor)}
+                                        isLoading={isUploading}
+                                        color={
+                                            action === 'approve'
+                                                ? 'success'
+                                                : action === 'decline'
+                                                    ? 'danger'
+                                                    : action === 'approve_paid'
+                                                        ? 'success'
+                                                        : action === 'request_audit'
+                                                            ? 'secondary'
+                                                            : 'primary'
+                                        }
+                                    >
+                                        {isUploading ? 'Uploading...' : (
+                                            action === 'review' ? 'Add Note' :
+                                                action === 'approve' ? 'Approve (Not Paid)' :
+                                                    action === 'decline' ? 'Decline Request' :
+                                                        action === 'approve_paid' ? 'Approve & Mark Paid' :
+                                                            action === 'request_audit' ? 'Send Audit Request' : 'Submit'
+                                        )}
+                                    </Button>
+                                </div>
+                            </form>
+                        </ModalBody>
+                    </>
+                )}
+            </ModalContent>
+        </Modal>
     );
 }

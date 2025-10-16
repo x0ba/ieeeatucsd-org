@@ -15,7 +15,8 @@ import {
     MessageSquare,
     Link as LinkIcon,
     Briefcase,
-    Building2
+    Building2,
+    UserPlus
 } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';

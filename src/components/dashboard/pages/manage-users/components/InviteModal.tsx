@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea, Spacer } from '@heroui/react';
 import type { UserRole } from '../../../shared/types/firestore';
 import type { InviteModalData } from '../types/UserManagementTypes';
 
@@ -43,106 +43,105 @@ export default function InviteModal({
         onSave(formData);
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900">Invite Officer</h3>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600"
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Name
-                        </label>
-                        <input
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            size="md"
+            classNames={{
+                base: "rounded-lg",
+                header: "border-b border-gray-200",
+                body: "py-6",
+                footer: "border-t border-gray-200"
+            }}
+        >
+            <ModalContent>
+                <form onSubmit={handleSubmit}>
+                    <ModalHeader>
+                        <h3 className="text-lg font-medium text-gray-900">Invite Officer</h3>
+                    </ModalHeader>
+                    <ModalBody className="space-y-4">
+                        <Input
                             type="text"
+                            label="Name"
+                            placeholder="Enter name"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            required
+                            isRequired
+                            classNames={{
+                                inputWrapper: "rounded-lg"
+                            }}
                         />
-                    </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Email
-                        </label>
-                        <input
+                        <Input
                             type="email"
+                            label="Email"
+                            placeholder="Enter email"
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            required
+                            isRequired
+                            classNames={{
+                                inputWrapper: "rounded-lg"
+                            }}
                         />
-                    </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Role
-                        </label>
-                        <select
-                            value={formData.role}
+                        <Select
+                            label="Role"
+                            selectedKeys={[formData.role]}
                             onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            classNames={{
+                                trigger: "rounded-lg"
+                            }}
                         >
                             {availableRoles.filter(role => role !== 'Member').map(role => (
-                                <option key={role} value={role}>{role}</option>
+                                <SelectItem key={role} value={role}>
+                                    {role}
+                                </SelectItem>
                             ))}
-                        </select>
-                    </div>
+                        </Select>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Position
-                        </label>
-                        <input
+                        <Input
                             type="text"
+                            label="Position"
+                            placeholder="e.g., Treasurer, Secretary"
                             value={formData.position}
                             onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="e.g., Treasurer, Secretary"
+                            classNames={{
+                                inputWrapper: "rounded-lg"
+                            }}
                         />
-                    </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Message
-                        </label>
-                        <textarea
+                        <Textarea
+                            label="Message"
+                            placeholder="Enter invitation message"
                             value={formData.message}
                             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                            rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            minRows={3}
+                            classNames={{
+                                inputWrapper: "rounded-lg"
+                            }}
                         />
-                    </div>
-
-                    <div className="flex justify-end space-x-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button
+                            variant="flat"
+                            onPress={onClose}
+                            className="rounded-lg"
                         >
                             Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Spacer />
+                        <Button
                             type="submit"
-                            disabled={loading}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            color="primary"
+                            isLoading={loading}
+                            className="rounded-lg"
                         >
                             {loading ? 'Sending...' : 'Send Invite'}
-                        </button>
-                    </div>
+                        </Button>
+                    </ModalFooter>
                 </form>
-            </div>
-        </div>
+            </ModalContent>
+        </Modal>
     );
 }
