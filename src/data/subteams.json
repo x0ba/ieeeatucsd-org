@@ -1,39 +1,30 @@
 [
   {
-    "title": "Mechanical",
-    "list": [
-      "Design the mechanisms and structure of the robot",
-      "Model using CAD software",
-      "Evaluate materials and components through physical analysis and FEA",
-      "Fabricate parts through 3D-printing, laser cutting, and machining",
-      "Prototype and test subsystem designs"
-    ]
-  },
-  {
     "title": "Electrical",
     "list": [
-      "Design and manufacture robust power electronics operating at high voltages",
-      "Program FPGAs for precision motor control",
-      "Analyze and Simulate circuits using SPICE software",
-      "Create models and schematics using PCB software",
-      "Build, prototype, and test circuits in house"
-    ]
-  },
-  {
-    "title": "Embedded",
-    "list": [
-      "Interface microcontrollers to set up communication between peripherals using timers, interrupts, PWM, and RTOS",
-      "Program APIs for higher level software development",
-      "Establish PID control algorithms for accurate movement of robots",
-      "Collaborate with hardware to design and select electronics"
+      "Design PCBs for microcontrollers and power distribution",
+      "Develop high-voltage electronics for robot systems"
     ]
   },
   {
     "title": "AI",
     "list": [
-      "Design decision making algorithms using behavioral trees",
-      "Conduct testing with simulation",
-      "Use data provided by the RoboCup central vision server and Embedded"
+      "Develop gameplay strategies with Deep Learning and Machine Learning",
+      "Train and test models using robot soccer simulation"
+    ]
+  },
+  {
+    "title": "Mechanical",
+    "list": [
+      "Design the robot’s structure and mechanisms using CAD tools",
+      "Evaluate and refine mechanical designs through testing"
+    ]
+  },
+  {
+    "title": "Embedded",
+    "list": [
+      "Program microcontrollers for motor and sensor communication",
+      "Tune PID control for precise robot movement"
     ]
   }
 ]

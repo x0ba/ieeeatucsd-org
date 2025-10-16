@@ -7,25 +7,23 @@ import RoboTitle from "../../components/robocub/RoboTitle.astro";
 import Link from "next/link";
 import { Image } from "astro:assets";
 import roboborder from "../../images/roboborder.webp";
-import Join from "../../components/robocub/Join.astro";
-import Contacts from "../../components/robocub/Contacts.astro";
 import Subteams from "../../components/robocub/Subteams.astro";
 import Timeline from "../../components/qp/Timeline.astro";
 import Competition from "../../components/signal/Competition.astro";
 import roboTimeline from "../../data/roboTimeline.json";
 import roboLinks from "../../data/roboLinks.json";
+import Sponsors from "../../components/robocub/Sponsors.astro";
 ---
-
 <Layout>
     <Image
         src={roboborder}
         alt="JOIN US"
-        class="absolute left-[1vw] w-[4vw] top-[60vh]"
+        class="absolute left-[1vw] w-[4vw] top-[60vh] z-10"
     />
     <Image
         src={roboborder}
         alt="JOIN US"
-        class="absolute right-[1vw] w-[4vw] top-[60vh]"
+        class="absolute right-[1vw] w-[4vw] top-[60vh] z-10"
     />
     <RoboTitle />
     <About
@@ -47,14 +45,13 @@ import roboLinks from "../../data/roboLinks.json";
     </div>
     <Competition
         picture="/robocup.webp"
-        name="Preparing for RoboCup 2025"
-        description="Our team submitted this year’s qualification video to compete in the RoboCup 2025 International Competition held in Salvador, Brazil."
+        name="Preparing for RoboCup 2026"
+        description="Our team submitted this year’s qualification video to compete in the RoboCup 2026 International Competition held in Incheon, Korea."
         link="https://drive.google.com/file/d/1dX9MjNjK_A-GmBK_ELF-zYO38qwvRm0L/view?usp=drive_link"
         linktext = "Qualification Video"
     />
     <Subteams />
     <Timeline timeline={roboTimeline}/>
-    <Join />
     <Questions faq={roboFaq} />
-    <Contacts />
+    <Sponsors/>
 </Layout>
