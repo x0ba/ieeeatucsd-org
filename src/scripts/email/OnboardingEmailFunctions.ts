@@ -57,7 +57,7 @@ export async function sendInvitationEmail(
 
         <div style="background: #ffffff; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
           <p style="font-size: 16px; margin-bottom: 20px;">
-            I am excited to inform you that you have been elected to the IEEE at UCSD general board for the 2025-2026 academic year for the following position:
+            We are excited to inform you that you have been elected to the IEEE at UCSD general board for the 2025-2026 academic year for the following position:
           </p>
 
           <div style="background: #f7fafc; border-left: 4px solid #0A2463; padding: 15px; margin: 20px 0;">
