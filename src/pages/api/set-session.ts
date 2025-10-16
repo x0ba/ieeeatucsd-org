@@ -88,11 +88,31 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
       }
     }
 
+    // Check for accepted officer invitations (if user accepted before signing in)
+    let acceptedInvitation = null;
+    try {
+      const acceptedInvitesSnapshot = await db
+        .collection("officerInvitations")
+        .where("email", "==", decoded.email)
+        .where("status", "==", "accepted")
+        .limit(1)
+        .get();
+
+      if (!acceptedInvitesSnapshot.empty) {
+        acceptedInvitation = acceptedInvitesSnapshot.docs[0].data();
+        console.log(
+          `Found accepted officer invitation for ${decoded.email}: ${acceptedInvitation.role}`,
+        );
+      }
+    } catch (error) {
+      console.error("Error checking for accepted invitations:", error);
+    }
+
     // Create or ensure user document
     const userRef = db.doc(`users/${decoded.uid}`);
     const userSnap = await userRef.get();
     if (!userSnap.exists) {
-      // Determine role: sponsor domain takes precedence over invite
+      // Determine role: sponsor domain takes precedence, then accepted invitation, then invite
       let userRole = "Member";
       let userPosition = undefined;
       let sponsorTier = undefined;
@@ -108,6 +128,14 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         console.log("Auto-assigning user as sponsor:", {
           tier: sponsorTier,
           organization: sponsorOrganization,
+        });
+      } else if (acceptedInvitation?.role) {
+        // Use role from accepted officer invitation
+        userRole = acceptedInvitation.role;
+        userPosition = acceptedInvitation.position;
+        console.log("Using role from accepted invitation:", {
+          role: userRole,
+          position: userPosition,
         });
       } else if (inviteData?.role) {
         // Use role from invite
@@ -150,6 +178,21 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
         sponsorOrganization: userData.sponsorOrganization,
       });
       await userRef.set(userData);
+
+      // Set custom claims for the user's role
+      if (userRole && userRole !== "Member") {
+        try {
+          await adminAuth.setCustomUserClaims(decoded.uid, {
+            role: userRole,
+          });
+          console.log(`✅ Set custom claims for new user: role=${userRole}`);
+        } catch (claimsError) {
+          console.error(
+            "Error setting custom claims for new user:",
+            claimsError,
+          );
+        }
+      }
     } else {
       // Update existing user's last login and sign-in method
       const updateData: any = {
@@ -173,6 +216,38 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
           tier: sponsorDomainData.sponsorTier,
           organization: sponsorDomainData.organizationName,
         });
+      }
+
+      // Check if existing user has an accepted officer invitation
+      if (
+        acceptedInvitation &&
+        existingUserData?.role !== "Administrator" &&
+        existingUserData?.role !== acceptedInvitation.role
+      ) {
+        // Upgrade user to officer role from accepted invitation
+        updateData.role = acceptedInvitation.role;
+        updateData.position = acceptedInvitation.position;
+        updateData.invitedBy = acceptedInvitation.invitedBy;
+        updateData.inviteAccepted = new Date();
+        console.log("Upgrading existing user from accepted invitation:", {
+          role: acceptedInvitation.role,
+          position: acceptedInvitation.position,
+        });
+
+        // Set custom claims for the new role
+        try {
+          await adminAuth.setCustomUserClaims(decoded.uid, {
+            role: acceptedInvitation.role,
+          });
+          console.log(
+            `✅ Set custom claims for existing user: role=${acceptedInvitation.role}`,
+          );
+        } catch (claimsError) {
+          console.error(
+            "Error setting custom claims for existing user:",
+            claimsError,
+          );
+        }
       }
 
       await userRef.update(updateData);

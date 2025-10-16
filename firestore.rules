@@ -405,6 +405,60 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator';
     }
 
+    // Officer Invitations collection - for onboarding workflow
+    match /officerInvitations/{inviteId} {
+      // Allow Executive Officers and Administrators to create, read, update invitations
+      allow create, read, update, list: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'Executive Officer', 'Administrator'
+        ];
+
+      // Allow public read access for invitation acceptance page (by invite ID)
+      allow read: if true;
+
+      // Allow public update for accepting/declining invitations
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedAt', 'declinedAt', 'onboardingEmailSent', 'googleGroupAssigned', 'googleGroup', 'permissionsGranted']);
+
+      // Only Administrators can delete invitations
+      allow delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator';
+    }
+
+    // Direct Onboardings collection - for tracking direct onboarding records
+    match /directOnboardings/{onboardingId} {
+      // Allow Executive Officers and Administrators to create and read
+      allow create, read, list: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'Executive Officer', 'Administrator'
+        ];
+
+      // Only Administrators can update or delete
+      allow update, delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator';
+    }
+
+    // Google Group Assignments collection - for tracking Google Group additions
+    match /googleGroupAssignments/{assignmentId} {
+      // Allow Executive Officers and Administrators to read
+      allow read, list: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'Executive Officer', 'Administrator'
+        ];
+
+      // Allow server-side creation (no user auth required for API calls)
+      allow create: if true;
+
+      // Only Administrators can update or delete
+      allow update, delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator';
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write, delete: if false;

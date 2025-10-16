@@ -381,3 +381,57 @@ export interface ConstitutionAuditLog {
   createdAt: Timestamp;
   lastUpdated: Timestamp;
 }
+
+// Onboarding Types
+export type InvitationStatus = "pending" | "accepted" | "declined" | "expired";
+
+export type GoogleGroup =
+  | "executive-officers@ieeeatucsd.org"
+  | "general-officers@ieeeatucsd.org"
+  | "past-officers@ieeeatucsd.org";
+
+export interface OfficerInvitation {
+  id?: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  position: string;
+  status: InvitationStatus;
+  invitedBy: string; // uid of the executive who sent the invitation
+  invitedAt: Timestamp;
+  acceptedAt?: Timestamp;
+  declinedAt?: Timestamp;
+  expiresAt: Timestamp; // 7 days from invitedAt
+  message?: string; // Custom message for the invitation
+  acceptanceDeadline?: string; // Human-readable deadline (e.g., "end of March 15th")
+  leaderName?: string; // Team Lead / Vice Chair / Mentor name
+  googleGroupAssigned?: boolean; // Whether user has been added to Google Group
+  googleGroup?: GoogleGroup; // Which Google Group they were added to
+  permissionsGranted?: boolean; // Whether officer permissions have been granted
+  onboardingEmailSent?: boolean; // Whether onboarding email was sent after acceptance
+  resentAt?: Timestamp; // When the invitation was last resent
+  lastSentAt?: Timestamp; // Timestamp of the most recent send (initial or resend)
+  roleGranted?: boolean; // Whether Firebase Auth custom claims were set for the role
+  roleGrantedAt?: Timestamp; // When the role was granted via custom claims
+  userCreatedOrUpdated?: boolean; // Whether the user document was created or updated in Firestore
+}
+
+export interface OnboardingEmailData {
+  name: string;
+  position: string;
+  role: UserRole;
+  leaderName?: string; // Vice Chair or mentor name
+  acceptanceDeadline?: string; // For invitation emails
+  customMessage?: string; // Additional custom message
+}
+
+export interface GoogleGroupAssignment {
+  userId: string;
+  email: string;
+  role: UserRole;
+  googleGroup: GoogleGroup;
+  assignedAt: Timestamp;
+  assignedBy: string; // uid of the executive who assigned
+  success: boolean;
+  error?: string;
+}
