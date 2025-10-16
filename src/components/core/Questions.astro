@@ -1,13 +1,12 @@
 ---
 import Question from "./Question.astro";
 const { faq } = Astro.props;
+import { LiaDotCircle } from "react-icons/lia";
 ---
 
 <div class="text-white md:ml-[15vw] ml-[10vw] mb-[20%] mt-[10%]">
   <div class="text-[4.5vw] md:text-[2.5vw] flex items-center my-[7vh]">
-    <div class="mr-[1vw]">
-      <span class="text-ieee-yellow">●</span>
-    </div>
+    <LiaDotCircle className=" mr-[1vw] pt-[0.5%]" />
     <p>Frequently Asked Questions</p>
   </div>
   <div class="w-full ml-[5vw]">
