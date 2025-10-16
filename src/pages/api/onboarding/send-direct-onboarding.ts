@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (!name || !email || !role || !position || !emailTemplate) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -35,13 +35,38 @@ export const POST: APIRoute = async ({ request }) => {
       console.error("RESEND_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "Email service not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        { status: 500, headers: { "Content-Type": "application/json" } },
       );
     }
 
     const fromEmail =
       import.meta.env.FROM_EMAIL || "IEEE UCSD <noreply@ieeeatucsd.org>";
     const replyToEmail = import.meta.env.REPLY_TO_EMAIL || "ieee@ucsd.edu";
+
+    // Fetch Google Sheets URL from organization settings
+    let googleSheetsUrl = "";
+    try {
+      const settingsDoc = await db
+        .collection("organizationSettings")
+        .doc("onboarding")
+        .get();
+      if (settingsDoc.exists) {
+        const settingsData = settingsDoc.data();
+        googleSheetsUrl = settingsData?.googleSheetsContactListUrl || "";
+      }
+    } catch (error) {
+      console.error("Error fetching organization settings:", error);
+    }
+
+    // Replace Google Sheets URL in email template
+    let processedEmailTemplate = emailTemplate;
+    if (googleSheetsUrl) {
+      // Replace the hardcoded URL with the configured one
+      processedEmailTemplate = emailTemplate.replace(
+        /https:\/\/docs\.google\.com\/spreadsheets\/d\/[a-zA-Z0-9-_]+[^\s)"]*/g,
+        googleSheetsUrl,
+      );
+    }
 
     // Send onboarding email
     const emailSuccess = await sendDirectOnboardingEmail(
@@ -55,14 +80,14 @@ export const POST: APIRoute = async ({ request }) => {
         position,
         leaderName,
         customMessage,
-        emailTemplate,
-      }
+        emailTemplate: processedEmailTemplate,
+      },
     );
 
     if (!emailSuccess) {
       return new Response(
         JSON.stringify({ error: "Failed to send onboarding email" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        { status: 500, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -90,7 +115,7 @@ export const POST: APIRoute = async ({ request }) => {
               googleGroup,
               role,
             }),
-          }
+          },
         );
 
         const googleResult = await googleResponse.json();
@@ -98,7 +123,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (!googleGroupSuccess) {
           console.warn(
-            `Failed to add ${email} to Google Group: ${googleResult.error}`
+            `Failed to add ${email} to Google Group: ${googleResult.error}`,
           );
         }
       } catch (googleError) {
@@ -126,7 +151,7 @@ export const POST: APIRoute = async ({ request }) => {
         emailSent: emailSuccess,
         googleGroupAssigned: googleGroupSuccess,
       }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      { status: 200, headers: { "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("Error in send-direct-onboarding API:", error);
@@ -134,8 +159,7 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({
         error: error instanceof Error ? error.message : "Internal server error",
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 };
-

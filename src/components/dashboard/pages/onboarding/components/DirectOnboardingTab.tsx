@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { Send, Eye } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Send, Eye, Settings, Save, ExternalLink, AlertCircle } from 'lucide-react';
 import { Card, CardBody, Input, Select, SelectItem, Textarea, Button, Spacer, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
-import type { UserRole } from '../../../shared/types/firestore';
+import { db } from '../../../../../firebase/client';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../../../../../firebase/client';
+import type { UserRole, OrganizationSettings } from '../../../shared/types/firestore';
 import type { DirectOnboardingFormData } from '../types/OnboardingTypes';
 
 interface DirectOnboardingTabProps {
@@ -58,6 +62,7 @@ Once you join these groups, you will receive information on weekly meetings with
 Once again, congratulations on this position and we're all so excited to have you on our board! We'll be here to support you in every step of the way so feel free to ask any questions and get as much clarification as you need.`;
 
 export default function DirectOnboardingTab({ onSendOnboarding, loading }: DirectOnboardingTabProps) {
+    const [user] = useAuthState(auth);
     const [formData, setFormData] = useState<DirectOnboardingFormData>({
         name: '',
         email: '',
@@ -68,11 +73,100 @@ export default function DirectOnboardingTab({ onSendOnboarding, loading }: Direc
         emailTemplate: DEFAULT_EMAIL_TEMPLATE,
     });
     const [showPreview, setShowPreview] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [googleSheetsUrl, setGoogleSheetsUrl] = useState('');
+    const [tempGoogleSheetsUrl, setTempGoogleSheetsUrl] = useState('');
+    const [loadingSettings, setLoadingSettings] = useState(true);
+    const [savingSettings, setSavingSettings] = useState(false);
+    const [settingsError, setSettingsError] = useState<string | null>(null);
+    const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
+
+    // Load Google Sheets URL from Firestore on component mount
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                setLoadingSettings(true);
+                const settingsRef = doc(db, 'organizationSettings', 'onboarding');
+                const settingsSnap = await getDoc(settingsRef);
+
+                if (settingsSnap.exists()) {
+                    const data = settingsSnap.data() as OrganizationSettings;
+                    setGoogleSheetsUrl(data.googleSheetsContactListUrl || '');
+                    setTempGoogleSheetsUrl(data.googleSheetsContactListUrl || '');
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            } finally {
+                setLoadingSettings(false);
+            }
+        };
+
+        loadSettings();
+    }, []);
+
+    const validateGoogleSheetsUrl = (url: string): boolean => {
+        if (!url) return true; // Empty is valid (will be cleared)
+
+        // Check if it's a valid Google Sheets URL
+        const googleSheetsPattern = /^https:\/\/docs\.google\.com\/spreadsheets\/d\/[a-zA-Z0-9-_]+/;
+        return googleSheetsPattern.test(url);
+    };
+
+    const handleSaveSettings = async () => {
+        setSettingsError(null);
+        setSettingsSuccess(null);
+
+        if (!validateGoogleSheetsUrl(tempGoogleSheetsUrl)) {
+            setSettingsError('Please enter a valid Google Sheets URL');
+            return;
+        }
+
+        try {
+            setSavingSettings(true);
+            const settingsRef = doc(db, 'organizationSettings', 'onboarding');
+
+            const settingsData: OrganizationSettings = {
+                googleSheetsContactListUrl: tempGoogleSheetsUrl || undefined,
+                updatedAt: Timestamp.now(),
+                updatedBy: user?.uid,
+            };
+
+            // Check if document exists
+            const settingsSnap = await getDoc(settingsRef);
+            if (!settingsSnap.exists()) {
+                settingsData.createdAt = Timestamp.now();
+            }
+
+            await setDoc(settingsRef, settingsData, { merge: true });
+
+            setGoogleSheetsUrl(tempGoogleSheetsUrl);
+            setSettingsSuccess('Google Sheets URL saved successfully!');
+
+            // Close modal after 1.5 seconds
+            setTimeout(() => {
+                setShowSettingsModal(false);
+                setSettingsSuccess(null);
+            }, 1500);
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            setSettingsError('Failed to save settings. Please try again.');
+        } finally {
+            setSavingSettings(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Check if Google Sheets URL is configured
+        if (!googleSheetsUrl) {
+            setSettingsError('Please configure the Google Sheets contact list URL before sending onboarding emails.');
+            setShowSettingsModal(true);
+            return;
+        }
+
         await onSendOnboarding(formData);
-        
+
         // Reset form on success
         setFormData({
             name: '',
@@ -89,22 +183,81 @@ export default function DirectOnboardingTab({ onSendOnboarding, loading }: Direc
         let preview = formData.emailTemplate;
         preview = preview.replace(/{NAME}/g, formData.name || '[Name]');
         preview = preview.replace(/{POSITION}/g, formData.position || '[Position]');
-        
-        const leaderInfo = formData.leaderName 
+
+        const leaderInfo = formData.leaderName
             ? `The Vice Chair you'll be working with throughout the year will be ${formData.leaderName}.`
             : '';
         preview = preview.replace(/{LEADER_INFO}/g, leaderInfo);
-        
-        const customMsg = formData.customMessage 
+
+        const customMsg = formData.customMessage
             ? `\n\n${formData.customMessage}\n`
             : '';
         preview = preview.replace(/{CUSTOM_MESSAGE}/g, customMsg);
-        
+
+        // Replace Google Sheets URL placeholder
+        preview = preview.replace(
+            /https:\/\/docs\.google\.com\/spreadsheets\/d\/[a-zA-Z0-9-_]+[^\s)"]*/g,
+            googleSheetsUrl || '[Google Sheets URL Not Configured]'
+        );
+
         return preview;
     };
 
     return (
         <div className="max-w-4xl">
+            {/* Google Sheets URL Configuration Card */}
+            <Card className="mb-6">
+                <CardBody className="p-6">
+                    <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                <Settings className="w-5 h-5" />
+                                Contact List Configuration
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Configure the Google Sheets URL for the officer contact list that will be included in onboarding emails.
+                            </p>
+
+                            {loadingSettings ? (
+                                <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                                    Loading settings...
+                                </div>
+                            ) : googleSheetsUrl ? (
+                                <div className="mt-4 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-gray-700">Current URL:</span>
+                                        <a
+                                            href={googleSheetsUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                        >
+                                            View Sheet <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    </div>
+                                    <p className="text-xs text-gray-500 break-all">{googleSheetsUrl}</p>
+                                </div>
+                            ) : (
+                                <div className="mt-4 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                    <span>No Google Sheets URL configured. Please configure it before sending onboarding emails.</span>
+                                </div>
+                            )}
+                        </div>
+                        <Button
+                            color="primary"
+                            variant="flat"
+                            onPress={() => setShowSettingsModal(true)}
+                            startContent={<Settings className="w-4 h-4" />}
+                            className="rounded-lg ml-4"
+                        >
+                            Configure
+                        </Button>
+                    </div>
+                </CardBody>
+            </Card>
+
             <Card>
                 <CardBody className="p-6">
                     <div className="mb-6">
@@ -241,8 +394,8 @@ export default function DirectOnboardingTab({ onSendOnboarding, loading }: Direc
             </Card>
 
             {/* Email Preview Modal */}
-            <Modal 
-                isOpen={showPreview} 
+            <Modal
+                isOpen={showPreview}
                 onClose={() => setShowPreview(false)}
                 size="3xl"
                 scrollBehavior="inside"
@@ -265,6 +418,93 @@ export default function DirectOnboardingTab({ onSendOnboarding, loading }: Direc
                             className="rounded-lg"
                         >
                             Close
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            {/* Settings Modal */}
+            <Modal
+                isOpen={showSettingsModal}
+                onClose={() => {
+                    setShowSettingsModal(false);
+                    setSettingsError(null);
+                    setSettingsSuccess(null);
+                    setTempGoogleSheetsUrl(googleSheetsUrl);
+                }}
+                size="2xl"
+            >
+                <ModalContent>
+                    <ModalHeader>
+                        <h3 className="text-lg font-medium">Configure Contact List URL</h3>
+                    </ModalHeader>
+                    <ModalBody>
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    Enter the Google Sheets URL for the officer contact list. This URL will be included in all onboarding emails.
+                                </p>
+
+                                <Input
+                                    type="url"
+                                    label="Google Sheets URL"
+                                    placeholder="https://docs.google.com/spreadsheets/d/..."
+                                    value={tempGoogleSheetsUrl}
+                                    onChange={(e) => setTempGoogleSheetsUrl(e.target.value)}
+                                    classNames={{
+                                        inputWrapper: "rounded-lg"
+                                    }}
+                                    description="The URL should start with https://docs.google.com/spreadsheets/d/"
+                                />
+                            </div>
+
+                            {settingsError && (
+                                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                    <span>{settingsError}</span>
+                                </div>
+                            )}
+
+                            {settingsSuccess && (
+                                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg p-3">
+                                    <Save className="w-4 h-4 flex-shrink-0" />
+                                    <span>{settingsSuccess}</span>
+                                </div>
+                            )}
+
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h4 className="text-sm font-medium text-blue-900 mb-2">Instructions:</h4>
+                                <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                                    <li>Open your Google Sheets contact list</li>
+                                    <li>Click "Share" and ensure it's accessible to anyone with the link</li>
+                                    <li>Copy the full URL from your browser's address bar</li>
+                                    <li>Paste it in the field above</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button
+                            variant="bordered"
+                            onPress={() => {
+                                setShowSettingsModal(false);
+                                setSettingsError(null);
+                                setSettingsSuccess(null);
+                                setTempGoogleSheetsUrl(googleSheetsUrl);
+                            }}
+                            className="rounded-lg"
+                        >
+                            Cancel
+                        </Button>
+                        <Spacer x={2} />
+                        <Button
+                            color="primary"
+                            onPress={handleSaveSettings}
+                            isLoading={savingSettings}
+                            startContent={!savingSettings && <Save className="w-4 h-4" />}
+                            className="rounded-lg"
+                        >
+                            {savingSettings ? 'Saving...' : 'Save URL'}
                         </Button>
                     </ModalFooter>
                 </ModalContent>

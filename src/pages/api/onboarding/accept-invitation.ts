@@ -260,6 +260,31 @@ export const POST: APIRoute = async ({ request }) => {
       role: invitation.role,
     });
 
+    // Fetch Google Sheets URL from organization settings
+    let googleSheetsUrl = "";
+    try {
+      const settingsDoc = await db
+        .collection("organizationSettings")
+        .doc("onboarding")
+        .get();
+      if (settingsDoc.exists) {
+        const settingsData = settingsDoc.data();
+        googleSheetsUrl = settingsData?.googleSheetsContactListUrl || "";
+      }
+    } catch (error) {
+      console.error("Error fetching organization settings:", error);
+    }
+
+    // Replace Google Sheets URL in email template
+    let processedEmailTemplate = DEFAULT_ONBOARDING_TEMPLATE;
+    if (googleSheetsUrl) {
+      // Replace the hardcoded URL with the configured one
+      processedEmailTemplate = DEFAULT_ONBOARDING_TEMPLATE.replace(
+        /https:\/\/docs\.google\.com\/spreadsheets\/d\/[a-zA-Z0-9-_]+[^\s)"]*/g,
+        googleSheetsUrl,
+      );
+    }
+
     // Send onboarding email
     const onboardingSuccess = await sendDirectOnboardingEmail(
       resend,
@@ -270,7 +295,7 @@ export const POST: APIRoute = async ({ request }) => {
         email: invitation.email,
         role: invitation.role,
         position: invitation.position,
-        emailTemplate: DEFAULT_ONBOARDING_TEMPLATE,
+        emailTemplate: processedEmailTemplate,
       },
     );
 

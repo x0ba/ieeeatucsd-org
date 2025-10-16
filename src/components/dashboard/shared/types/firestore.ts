@@ -435,3 +435,31 @@ export interface GoogleGroupAssignment {
   success: boolean;
   error?: string;
 }
+
+export type EmailTemplateType =
+  | "onboarding-invitation"
+  | "onboarding-direct"
+  | "onboarding-acceptance";
+
+export interface EmailTemplate {
+  id?: string; // Document ID
+  templateId: EmailTemplateType; // Template identifier
+  templateName: string; // Human-readable name
+  subject: string; // Email subject line
+  body: string; // Email body with template variables
+  variables: string[]; // Array of supported variables (e.g., ["{NAME}", "{EMAIL}"])
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  updatedBy: string; // UID of user who last updated
+  isDefault: boolean; // Whether this is the default template
+}
+
+export interface EmailTemplateChange {
+  templateId: EmailTemplateType;
+  changedBy: string; // UID of user who made the change
+  changedAt: Timestamp;
+  previousBody: string;
+  newBody: string;
+  previousSubject: string;
+  newSubject: string;
+}

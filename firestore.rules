@@ -459,6 +459,28 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator';
     }
 
+    // Organization Settings collection - for storing organization-wide configuration
+    match /organizationSettings/{settingId} {
+      // Allow Executive Officers and Administrators to read settings
+      allow read, get: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'Executive Officer', 'Administrator'
+        ];
+
+      // Allow Executive Officers and Administrators to create and update settings
+      allow create, update: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'Executive Officer', 'Administrator'
+        ];
+
+      // Only Administrators can delete settings
+      allow delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator';
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write, delete: if false;
