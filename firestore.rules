@@ -33,7 +33,7 @@ service cloud.firestore {
 
       match /public_profile/{profileId} {
         allow read: if request.auth != null;
-        allow create, update: if request.auth != null && 
+        allow create, update: if request.auth != null &&
           request.auth.uid == userId &&
           profileId == 'profile';
         allow create, update, delete: if request.auth != null &&
@@ -300,9 +300,24 @@ service cloud.firestore {
         ];
     }
 
+    // Leaderboard settings collection (executive only)
+    match /leaderboard_settings/{settingsId} {
+      allow read, update: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'General Officer', 'Executive Officer', 'Administrator'
+        ];
+      allow create: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'Executive Officer', 'Administrator'
+        ] &&
+        settingsId == 'settings';
+    }
+
     // Fund Deposits collection
     match /fundDeposits/{depositId} {
-      allow create: if request.auth != null && 
+      allow create: if request.auth != null &&
         request.resource.data.depositedBy == request.auth.uid;
       allow read: if request.auth != null && resource.data.depositedBy == request.auth.uid;
       allow read: if request.auth != null &&
@@ -314,7 +329,7 @@ service cloud.firestore {
       allow read, update: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator';
-      allow delete: if request.auth != null && 
+      allow delete: if request.auth != null &&
         resource.data.depositedBy == request.auth.uid &&
         resource.data.status == 'pending';
       allow delete: if request.auth != null &&

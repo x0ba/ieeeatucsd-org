@@ -1,13 +1,19 @@
-import type { UserRole, OfficerInvitation, OnboardingEmailData } from "../../../shared/types/firestore";
+import type {
+  UserRole,
+  OfficerInvitation,
+  OnboardingEmailData,
+  OfficerTeam,
+} from "../../../shared/types/firestore";
 
 export interface InvitationFormData {
   name: string;
   email: string;
   role: UserRole;
   position: string;
+  team?: OfficerTeam;
   acceptanceDeadline: string;
-  message?: string;
-  leaderName?: string;
+  message: string;
+  leaderName: string;
 }
 
 export interface DirectOnboardingFormData {
@@ -15,6 +21,7 @@ export interface DirectOnboardingFormData {
   email: string;
   role: UserRole;
   position: string;
+  team?: OfficerTeam;
   leaderName?: string;
   customMessage?: string;
   emailTemplate: string;
@@ -34,4 +41,3 @@ export interface OnboardingFilters {
 }
 
 export type OnboardingTab = "invitation" | "direct" | "pending";
-

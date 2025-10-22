@@ -1,0 +1,240 @@
+[debug] [2025-10-22T00:47:05.459Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.461Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.461Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.462Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.462Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.485Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.485Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.485Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.486Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.486Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.487Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.487Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.487Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.487Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.487Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.488Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.488Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.488Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.488Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.488Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.489Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.490Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.490Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.490Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.490Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.491Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.491Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.491Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.491Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.491Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.492Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.492Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.492Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.492Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.492Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.493Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.493Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.493Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.493Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.493Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.524Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.524Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.524Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.525Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.525Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.526Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.526Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.526Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.526Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.526Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.526Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.526Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.526Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.526Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.526Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.527Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.527Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.527Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.527Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.527Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.527Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.527Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.527Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.527Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.527Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.528Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.528Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.528Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.528Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.528Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.528Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.528Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.528Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.528Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.528Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.529Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.529Z] Checked if tokens are valid: false, expires at: 1761012991058
+[debug] [2025-10-22T00:47:05.529Z] > refreshing access token with scopes: []
+[debug] [2025-10-22T00:47:05.529Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-22T00:47:05.529Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.617Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.617Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.630Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseremoteconfig.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.630Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseremoteconfig.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.634Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.634Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.644Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/fcm.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.644Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/fcm.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.644Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.645Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.652Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.652Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.653Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.653Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.669Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.669Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.669Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.669Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.683Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/fcm.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.683Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/fcm.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.684Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.684Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.697Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.697Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.698Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.698Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.707Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseremoteconfig.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.707Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseremoteconfig.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.708Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.709Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.715Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com [none]
+[debug] [2025-10-22T00:47:05.715Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.716Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.717Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.746Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/identitytoolkit.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.746Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/identitytoolkit.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.754Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.754Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.760Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ [none]
+[debug] [2025-10-22T00:47:05.760Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.761Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.761Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.769Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/identitytoolkit.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.769Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/identitytoolkit.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.773Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.773Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.784Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com [none]
+[debug] [2025-10-22T00:47:05.784Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.790Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.790Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.798Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ [none]
+[debug] [2025-10-22T00:47:05.798Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.798Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.798Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.812Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.812Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.816Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.816Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.823Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.823Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:05.824Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-22T00:47:05.824Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-22T00:47:05.831Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-10-22T00:47:05.831Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T00:47:06.124Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com 403
+[debug] [2025-10-22T00:47:06.125Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com [omitted]
+[debug] [2025-10-22T00:47:06.135Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-10-22T00:47:06.135Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:06.135Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseremoteconfig.googleapis.com 200
+[debug] [2025-10-22T00:47:06.135Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseremoteconfig.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:06.142Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-10-22T00:47:06.142Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:06.151Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-10-22T00:47:06.151Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:06.163Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/identitytoolkit.googleapis.com 200
+[debug] [2025-10-22T00:47:06.163Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/identitytoolkit.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:06.445Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/fcm.googleapis.com 200
+[debug] [2025-10-22T00:47:06.446Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/fcm.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:06.451Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com 403
+[debug] [2025-10-22T00:47:06.451Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com [omitted]
+[debug] [2025-10-22T00:47:06.461Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ 200
+[debug] [2025-10-22T00:47:06.461Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ [omitted]
+[debug] [2025-10-22T00:47:06.491Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseremoteconfig.googleapis.com 200
+[debug] [2025-10-22T00:47:06.491Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseremoteconfig.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:06.500Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-10-22T00:47:06.500Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:06.528Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/identitytoolkit.googleapis.com 200
+[debug] [2025-10-22T00:47:06.528Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/identitytoolkit.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:06.532Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-10-22T00:47:06.532Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:06.636Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-10-22T00:47:06.636Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:07.104Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/fcm.googleapis.com 200
+[debug] [2025-10-22T00:47:07.104Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/fcm.googleapis.com [omitted]
+[debug] [2025-10-22T00:47:07.444Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ 200
+[debug] [2025-10-22T00:47:07.444Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ [omitted]
+[debug] [2025-10-22T00:47:07.446Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-10-22T00:47:07.446Z] > authorizing via signed-in user (charles15851@gmail.com)
+[debug] [2025-10-22T06:06:05.319Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.321Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.321Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.321Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.321Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.321Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.322Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.322Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.322Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.322Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.322Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ [none]
+[debug] [2025-10-22T06:06:05.322Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T06:06:05.341Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-10-22T06:06:05.341Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T06:06:05.342Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-10-22T06:06:05.342Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T06:06:05.342Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-10-22T06:06:05.343Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T06:06:05.343Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com [none]
+[debug] [2025-10-22T06:06:05.343Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T06:06:05.358Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.358Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.359Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.359Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.359Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.359Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.359Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.359Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.359Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.359Z] Checked if tokens are valid: true, expires at: 1761115453622
+[debug] [2025-10-22T06:06:05.359Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ [none]
+[debug] [2025-10-22T06:06:05.359Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T06:06:05.360Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-10-22T06:06:05.360Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T06:06:05.360Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-10-22T06:06:05.360Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T06:06:05.361Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-10-22T06:06:05.361Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T06:06:05.362Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com [none]
+[debug] [2025-10-22T06:06:05.362Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com x-goog-quota-user=projects/ieee-at-uc-san-diego
+[debug] [2025-10-22T06:06:07.507Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-10-22T06:06:07.508Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-10-22T06:06:07.509Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-10-22T06:06:07.509Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-10-22T06:06:07.510Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-10-22T06:06:07.510Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-10-22T06:06:07.763Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-10-22T06:06:07.763Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-10-22T06:06:07.781Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-10-22T06:06:07.782Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-10-22T06:06:07.870Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ 200
+[debug] [2025-10-22T06:06:07.870Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ [omitted]
+[debug] [2025-10-22T06:06:08.041Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com 403
+[debug] [2025-10-22T06:06:08.041Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com [omitted]
+[debug] [2025-10-22T06:06:08.236Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-10-22T06:06:08.237Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-10-22T06:06:08.370Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-10-22T06:06:08.371Z] > authorizing via signed-in user (charles15851@gmail.com)
+[debug] [2025-10-22T06:06:08.422Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ 200
+[debug] [2025-10-22T06:06:08.422Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/ [omitted]
+[debug] [2025-10-22T06:06:08.846Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com 403
+[debug] [2025-10-22T06:06:08.846Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ieee-at-uc-san-diego/services/firebaseio.com [omitted]

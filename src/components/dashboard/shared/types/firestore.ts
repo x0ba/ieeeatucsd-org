@@ -1,5 +1,7 @@
 import type { Timestamp } from "firebase/firestore";
 
+export type OfficerTeam = "Internal" | "Events" | "Projects";
+
 export type UserRole =
   | "Member"
   | "General Officer"
@@ -36,6 +38,7 @@ export interface User {
   joinDate: Timestamp;
   eventsAttended?: number;
   points?: number;
+  team?: "Internal" | "Events" | "Projects"; // Officer team assignment (optional)
   invitedBy?: string; // uid of the user who invited them
   inviteAccepted?: Timestamp; // when they accepted the invite
   lastUpdated?: Timestamp; // when the user data was last updated

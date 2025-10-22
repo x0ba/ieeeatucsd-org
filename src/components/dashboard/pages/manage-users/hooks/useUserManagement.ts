@@ -167,32 +167,36 @@ export const useUserManagement = () => {
         return;
       }
 
-      const userRef = doc(db, "users", userData.id);
-
       // Normalize major name before saving
       const normalizedMajor = normalizeMajorName(userData.major);
 
-      const updateData: any = {
-        name: userData.name,
-        role: userData.role,
-        position: userData.position || "",
-        status: userData.status,
-        pid: userData.pid || "",
-        memberId: userData.memberId || "",
-        major: normalizedMajor || "",
-        graduationYear: userData.graduationYear || null,
-        updatedAt: new Date(),
-      };
+      // Use server-side API for user updates
+      const response = await fetch("/api/update-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: userData.id,
+          name: userData.name,
+          role: userData.role,
+          position: userData.position || "",
+          status: userData.status,
+          pid: userData.pid || "",
+          memberId: userData.memberId || "",
+          major: normalizedMajor || "",
+          graduationYear: userData.graduationYear || null,
+          team: userData.team || null,
+          points: userData.points,
+          adminUserId: user?.uid,
+        }),
+      });
 
-      // Only administrators can modify points
-      if (
-        currentUserRole === "Administrator" &&
-        userData.points !== undefined
-      ) {
-        updateData.points = userData.points;
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || "Failed to update user");
       }
-
-      await updateDoc(userRef, updateData);
 
       // Sync to public profile
       try {
@@ -220,7 +224,11 @@ export const useUserManagement = () => {
       await fetchUsers();
     } catch (error) {
       console.error("Error updating user:", error);
-      setError("Failed to update user. Please try again.");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update user. Please try again.",
+      );
     }
   };
 

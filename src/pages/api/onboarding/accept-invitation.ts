@@ -10,7 +10,7 @@ import {
 // Default onboarding template
 const DEFAULT_ONBOARDING_TEMPLATE = `Hello {NAME}!
 
-Congratulations on being elected as the new {POSITION} for IEEE at UC San Diego! There is a lot of information to get started but it is fairly quick and straightforward. Please read this email in its entirety. If you have any problems feel free to ask me or any of the other officers! 
+Congratulations on being elected as the new {POSITION} for IEEE at UC San Diego! There is a lot of information to get started but it is fairly quick and straightforward. Please read this email in its entirety. If you have any problems feel free to ask me or any of the other officers!
 
 1. Contact Info
 
@@ -22,7 +22,7 @@ Go to http://ieee.org/join and join IEEE as a student member. Be sure to list UC
 
 3. Join the Dashboard and Slack
 
-Your role should have been updated on our Dashboard to a general officer, if it hasn't please let me know as soon as possible. Once on the dashboard, please go into the tab labeled "Slack Access" and follow the instructions to gain access to your IEEE email for slack. 
+Your role should have been updated on our Dashboard to a general officer, if it hasn't please let me know as soon as possible. Once on the dashboard, please go into the tab labeled "Slack Access" and follow the instructions to gain access to your IEEE email for slack.
 
 {LEADER_INFO}
 
@@ -30,11 +30,11 @@ You should definitely join channels such as "#-announcements", "#-executive", "#
 
 4. Position Email
 
-After you're on Slack, we will provide you access with your Positions email that provides access to all documents and files we will be using within the organization throughout the year. 
+After you're on Slack, we will provide you access with your Positions email that provides access to all documents and files we will be using within the organization throughout the year.
 
 5. Read Slack and your email frequently. Good communication is key. Please try to be responsive.
 
-Once you join these groups, you will receive information on weekly meetings with your subgroups (Internal, Events, Project) for the rest of the quarter as well as further onboarding information for your position. 
+Once you join these groups, you will receive information on weekly meetings with your subgroups (Internal, Events, Project) for the rest of the quarter as well as further onboarding information for your position.
 
 Once again, congratulations on this position and we're all so excited to have you on our board! We'll be here to support you in every step of the way so feel free to ask any questions and get as much clarification as you need.`;
 
@@ -173,6 +173,7 @@ export const POST: APIRoute = async ({ request }) => {
           await userDocRef.update({
             role: invitation.role,
             position: invitation.position,
+            team: invitation.team || null,
             status: "active",
             invitedBy: invitation.invitedBy,
             inviteAccepted: Timestamp.now(),
@@ -191,6 +192,7 @@ export const POST: APIRoute = async ({ request }) => {
             name: invitation.name,
             role: invitation.role,
             position: invitation.position,
+            team: invitation.team || null,
             status: "active",
             joinDate: Timestamp.now(),
             invitedBy: invitation.invitedBy,

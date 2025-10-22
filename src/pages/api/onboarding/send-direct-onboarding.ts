@@ -13,6 +13,7 @@ export const POST: APIRoute = async ({ request }) => {
       email,
       role,
       position,
+      team,
       leaderName,
       customMessage,
       emailTemplate,
@@ -137,12 +138,70 @@ export const POST: APIRoute = async ({ request }) => {
       email,
       role,
       position,
+      team,
       onboardedBy,
       onboardedAt: new Date(),
       emailSent: emailSuccess,
       googleGroupAssigned: googleGroupSuccess,
       googleGroup: googleGroup || null,
     });
+
+    // Create or update user document in Firestore
+    try {
+      const { adminAuth } = await import("../../../firebase/server");
+      let userUid = null;
+
+      // Try to find user by email
+      try {
+        const userRecord = await adminAuth.getUserByEmail(email);
+        userUid = userRecord.uid;
+      } catch (error: any) {
+        if (error.code !== "auth/user-not-found") {
+          console.error("Error finding user:", error);
+        }
+      }
+
+      if (userUid) {
+        // Update existing user document
+        const userDocRef = db.collection("users").doc(userUid);
+        await userDocRef.update({
+          role,
+          position,
+          team: team || null,
+          status: "active",
+          lastUpdated: new Date(),
+          lastUpdatedBy: onboardedBy,
+        });
+        console.log(`✅ Updated user document for ${email}`);
+      } else {
+        // User doesn't exist in Firebase Auth yet, they'll need to sign in first
+        // We'll create the Firestore document so it's ready when they sign in
+        const tempUid = `temp_${email.replace(/[^a-zA-Z0-9]/g, "_")}`;
+        const userDocRef = db.collection("users").doc(tempUid);
+        await userDocRef.set({
+          email,
+          emailVisibility: true,
+          verified: true,
+          name,
+          role,
+          position,
+          team: team || null,
+          status: "pending_signin",
+          joinDate: new Date(),
+          lastUpdated: new Date(),
+          lastUpdatedBy: onboardedBy,
+          notificationPreferences: {},
+          displayPreferences: {},
+          accessibilitySettings: {},
+          signedUp: false,
+          requestedEmail: false,
+        });
+        console.log(`✅ Created temp user document for ${email}`);
+      }
+    } catch (userError) {
+      console.error("Error creating/updating user document:", userError);
+      // Continue even if user creation fails - email was sent successfully
+    }
 
     return new Response(
       JSON.stringify({

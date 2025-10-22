@@ -1,4 +1,8 @@
-import type { UserRole, SponsorTier } from "../../../shared/types/firestore";
+import type {
+  UserRole,
+  SponsorTier,
+  OfficerTeam,
+} from "../../../shared/types/firestore";
 
 export interface UserModalData {
   id?: string;
@@ -12,6 +16,8 @@ export interface UserModalData {
   major?: string;
   graduationYear?: number;
   points?: number;
+  // Team assignment (optional for officers)
+  team?: OfficerTeam;
   // IEEE Email fields
   hasIEEEEmail?: boolean;
   ieeeEmail?: string;
@@ -28,6 +34,7 @@ export interface InviteModalData {
   email: string;
   role: UserRole;
   position: string;
+  team?: OfficerTeam;
   message: string;
 }
 

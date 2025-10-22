@@ -53,6 +53,7 @@ export const NAVIGATION_PATHS = {
   SETTINGS: "/dashboard/settings",
   SIGNOUT: "/dashboard/signout",
   GET_STARTED: "/dashboard/get-started",
+  OFFICER_LEADERBOARD: "/dashboard/officer-leaderboard",
 } as const;
 
 export type NavigationPath =
