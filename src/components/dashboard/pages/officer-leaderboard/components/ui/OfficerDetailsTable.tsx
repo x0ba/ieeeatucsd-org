@@ -19,8 +19,8 @@ import type { TeamMember } from "../types/OfficerLeaderboardTypes";
 interface OfficerDetailsTableProps {
   team: OfficerTeam;
   members: TeamMember[];
-  teamPoints: number;
-  maxPoints: number;
+  teamAttendanceRate: number;
+  maxAttendanceRate: number;
   rank: number;
 }
 
@@ -70,15 +70,16 @@ const getTeamIcon = (team: OfficerTeam) => {
 export default function OfficerDetailsTable({
   team,
   members,
-  teamPoints,
-  maxPoints,
+  teamAttendanceRate,
+  maxAttendanceRate,
   rank,
 }: OfficerDetailsTableProps) {
   const sortedMembers = useMemo(() => {
     return [...members].sort((a, b) => b.eventsAttended - a.eventsAttended);
   }, [members]);
 
-  const progressPercentage = maxPoints > 0 ? (teamPoints / maxPoints) * 100 : 0;
+  const progressPercentage =
+    maxAttendanceRate > 0 ? (teamAttendanceRate / maxAttendanceRate) * 100 : 0;
 
   const columns = [
     { key: "rank", label: "Rank", minWidth: 80 },
@@ -183,13 +184,12 @@ export default function OfficerDetailsTable({
               className="flex-1 max-w-[60px]"
             />
             <span
-              className={`text-xs min-w-[35px] font-medium ${
-                contribution >= 80
-                  ? "text-green-600"
-                  : contribution >= 50
-                    ? "text-yellow-600"
-                    : "text-red-600"
-              }`}
+              className={`text-xs min-w-[35px] font-medium ${contribution >= 80
+                ? "text-green-600"
+                : contribution >= 50
+                  ? "text-yellow-600"
+                  : "text-red-600"
+                }`}
             >
               {contribution.toFixed(0)}%
             </span>
@@ -224,10 +224,10 @@ export default function OfficerDetailsTable({
             size="lg"
             className="font-bold"
           >
-            {teamPoints.toFixed(2)} pts
+            {teamAttendanceRate.toFixed(2)}%
           </Chip>
           <div className="text-right min-w-[80px]">
-            <div className="text-xs text-gray-500">Progress</div>
+            <div className="text-xs text-gray-500">Relative</div>
             <div className="text-sm font-semibold text-gray-900">
               {progressPercentage.toFixed(1)}%
             </div>
@@ -263,9 +263,8 @@ export default function OfficerDetailsTable({
                 <TableColumn
                   key={column.key}
                   style={{ minWidth: column.minWidth }}
-                  className={`text-center ${
-                    column.key === "name" ? "text-left" : ""
-                  }`}
+                  className={`text-center ${column.key === "name" ? "text-left" : ""
+                    }`}
                 >
                   {column.label}
                 </TableColumn>
@@ -279,9 +278,8 @@ export default function OfficerDetailsTable({
                 >
                   {(columnKey) => (
                     <TableCell
-                      className={`${
-                        columnKey === "name" ? "text-left" : "text-center"
-                      }`}
+                      className={`${columnKey === "name" ? "text-left" : "text-center"
+                        }`}
                     >
                       {renderCell(item, columnKey as string)}
                     </TableCell>

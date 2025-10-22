@@ -38,7 +38,7 @@ interface TeamMetrics {
   team: OfficerTeam;
   totalAttendees: number;
   teamSize: number;
-  points: number;
+  attendanceRate: number;
   rank: number;
   members: TeamMember[];
 }
@@ -94,7 +94,7 @@ export default function OfficerLeaderboardContent() {
           team: team.team,
           totalAttendees: team.totalAttendees,
           teamSize: team.teamSize,
-          points: team.points,
+          attendanceRate: team.attendanceRate,
           rank: index + 1,
           members: team.members,
         }));
@@ -154,7 +154,10 @@ export default function OfficerLeaderboardContent() {
     }
   };
 
-  const maxPoints = Math.max(...leaderboardData.map((team) => team.points), 1);
+  const maxAttendanceRate = Math.max(
+    ...leaderboardData.map((team) => team.attendanceRate),
+    1,
+  );
 
   // Don't render if user is not authenticated or not an officer
   if (!user || !currentUserRole) {
@@ -204,14 +207,14 @@ export default function OfficerLeaderboardContent() {
 
         {(currentUserRole === "Executive Officer" ||
           currentUserRole === "Administrator") && (
-          <Button
-            variant="bordered"
-            startContent={<Settings className="w-4 h-4" />}
-            onPress={() => setActiveTab("settings")}
-          >
-            Settings
-          </Button>
-        )}
+            <Button
+              variant="bordered"
+              startContent={<Settings className="w-4 h-4" />}
+              onPress={() => setActiveTab("settings")}
+            >
+              Settings
+            </Button>
+          )}
       </div>
 
       {/* Tabs */}
@@ -223,8 +226,8 @@ export default function OfficerLeaderboardContent() {
         <Tab key="leaderboard" title="Leaderboard" />
         {(currentUserRole === "Executive Officer" ||
           currentUserRole === "Administrator") && (
-          <Tab key="settings" title="Executive Settings" />
-        )}
+            <Tab key="settings" title="Executive Settings" />
+          )}
       </Tabs>
 
       {/* Tab Content */}
@@ -274,15 +277,18 @@ export default function OfficerLeaderboardContent() {
                     <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5" />
                     <div>
                       <h3 className="font-semibold text-blue-900">
-                        Points Calculation
+                        Attendance Rate Calculation
                       </h3>
                       <p className="text-blue-800 mt-1">
-                        Points = Total Team Attendances ÷ Team Size
+                        Attendance Rate = (Total Team Attendances ÷ Total
+                        Possible Attendances) × 100
                       </p>
                       <p className="text-blue-700 text-sm mt-2">
-                        Team size only includes officers who joined on or before
-                        the configured start date. Only attendances from events
-                        after the start date are counted.
+                        Total Possible Attendances = Number of Events × Team
+                        Size. Team size only includes officers who joined on or
+                        before the start date. All officers are displayed,
+                        including late-joiners, but only events attended after
+                        their join date are counted.
                       </p>
                     </div>
                   </div>
@@ -317,9 +323,11 @@ export default function OfficerLeaderboardContent() {
                           {team.team} Team
                         </h3>
                         <div className="text-3xl font-bold text-gray-900 mb-1">
-                          {team.points.toFixed(2)}
+                          {team.attendanceRate.toFixed(2)}%
                         </div>
-                        <div className="text-sm text-gray-600">points</div>
+                        <div className="text-sm text-gray-600">
+                          attendance rate
+                        </div>
                         <div className="mt-3 pt-3 border-t border-gray-300/50">
                           <div className="flex justify-around text-xs">
                             <div>
@@ -348,8 +356,8 @@ export default function OfficerLeaderboardContent() {
                       key={team.team}
                       team={team.team}
                       members={team.members}
-                      teamPoints={team.points}
-                      maxPoints={maxPoints}
+                      teamAttendanceRate={team.attendanceRate}
+                      maxAttendanceRate={maxAttendanceRate}
                       rank={team.rank}
                     />
                   ))}

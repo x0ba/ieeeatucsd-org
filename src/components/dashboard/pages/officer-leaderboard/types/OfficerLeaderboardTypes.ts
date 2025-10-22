@@ -6,7 +6,7 @@ export interface TeamLeaderboardEntry {
   team: OfficerTeam;
   totalAttendees: number;
   teamSize: number;
-  points: number;
+  attendanceRate: number; // Percentage: (totalAttendees / totalPossibleAttendances) * 100
   members: TeamMember[];
 }
 
@@ -32,7 +32,7 @@ export interface OfficerTeamData {
   members: TeamMember[];
   totalAttendees: number;
   teamSize: number;
-  points: number;
+  attendanceRate: number; // Percentage: (totalAttendees / totalPossibleAttendances) * 100
 }
 
 export interface OfficerLeaderboardData {

@@ -113,10 +113,12 @@ export class OfficerLeaderboardService {
   /**
    * Get event attendances for officers after a specific date
    * Queries the attendees subcollection for each event to get accurate attendance data
+   * Returns both attendance data with event dates and total event count
    */
-  static async getOfficerAttendances(
-    startDate: Timestamp,
-  ): Promise<Map<string, number>> {
+  static async getOfficerAttendances(startDate: Timestamp): Promise<{
+    attendanceMap: Map<string, Array<{ eventId: string; endDate: Timestamp }>>;
+    totalEvents: number;
+  }> {
     try {
       const eventsQuery = query(
         collection(db, "events"),
@@ -125,23 +127,35 @@ export class OfficerLeaderboardService {
       );
 
       const eventsSnapshot = await getDocs(eventsQuery);
-      const attendanceMap = new Map<string, number>();
+      const attendanceMap = new Map<
+        string,
+        Array<{ eventId: string; endDate: Timestamp }>
+      >();
 
       // For each event, query the attendees subcollection
       for (const eventDoc of eventsSnapshot.docs) {
         try {
+          const eventData = eventDoc.data();
+          const eventEndDate = eventData.endDate as Timestamp;
+
           const attendeesQuery = query(
             collection(db, "events", eventDoc.id, "attendees"),
           );
           const attendeesSnapshot = await getDocs(attendeesQuery);
 
-          // Count each attendee
+          // Store event attendance with metadata
           for (const attendeeDoc of attendeesSnapshot.docs) {
             const attendeeData = attendeeDoc.data();
             const userId = attendeeData.userId || attendeeDoc.id;
 
-            const currentCount = attendanceMap.get(userId) || 0;
-            attendanceMap.set(userId, currentCount + 1);
+            if (!attendanceMap.has(userId)) {
+              attendanceMap.set(userId, []);
+            }
+
+            attendanceMap.get(userId)!.push({
+              eventId: eventDoc.id,
+              endDate: eventEndDate,
+            });
           }
         } catch (error) {
           console.error(
@@ -152,7 +166,10 @@ export class OfficerLeaderboardService {
         }
       }
 
-      return attendanceMap;
+      return {
+        attendanceMap,
+        totalEvents: eventsSnapshot.docs.length,
+      };
     } catch (error) {
       console.error("Error getting officer attendances:", error);
       throw error;
@@ -182,7 +199,7 @@ export class OfficerLeaderboardService {
       }
 
       const officers = await this.getOfficers();
-      const attendanceMap = await this.getOfficerAttendances(
+      const { attendanceMap, totalEvents } = await this.getOfficerAttendances(
         settings.startDate,
       );
 
@@ -198,9 +215,16 @@ export class OfficerLeaderboardService {
           if (!teams.has(team)) {
             teams.set(team, []);
           }
+
+          // Filter events to only count those after the officer's join date
+          const officerEvents = attendanceMap.get(officer.userId) || [];
+          const validEvents = officerEvents.filter(
+            (event) => event.endDate.toMillis() >= officer.joinDate.toMillis(),
+          );
+
           teams.get(team)!.push({
             ...officer,
-            eventsAttended: attendanceMap.get(officer.userId) || 0,
+            eventsAttended: validEvents.length,
           });
         }
       });
@@ -209,31 +233,39 @@ export class OfficerLeaderboardService {
       const teamData: OfficerTeamData[] = [];
 
       for (const [team, members] of teams.entries()) {
-        // Only count officers who joined before or on the start date
+        // Only count officers who joined before or on the start date for team size
         const eligibleMembers = members.filter(
           (member) =>
             member.joinDate.toMillis() <= settings.startDate.toMillis(),
         );
 
         const teamSize = eligibleMembers.length;
-        const totalAttendees = eligibleMembers.reduce(
+
+        // Sum all members' events (including late-joiners)
+        const totalAttendees = members.reduce(
           (sum, member) => sum + member.eventsAttended,
           0,
         );
 
-        const points = teamSize > 0 ? totalAttendees / teamSize : 0;
+        // Calculate attendance rate: (totalAttendees / totalPossibleAttendances) * 100
+        // totalPossibleAttendances = totalEvents × teamSize (eligible members only)
+        const totalPossibleAttendances = totalEvents * teamSize;
+        const attendanceRate =
+          totalPossibleAttendances > 0
+            ? (totalAttendees / totalPossibleAttendances) * 100
+            : 0;
 
         teamData.push({
           team,
-          members: eligibleMembers,
+          members, // Include ALL members (not just eligible ones)
           totalAttendees,
-          teamSize,
-          points: Math.round(points * 100) / 100, // Round to 2 decimal places
+          teamSize, // Only eligible members count toward team size
+          attendanceRate: Math.round(attendanceRate * 100) / 100, // Round to 2 decimal places
         });
       }
 
-      // Sort by points (descending)
-      teamData.sort((a, b) => b.points - a.points);
+      // Sort by attendance rate (descending)
+      teamData.sort((a, b) => b.attendanceRate - a.attendanceRate);
 
       return {
         teams: teamData,
@@ -257,7 +289,7 @@ export class OfficerLeaderboardService {
         team: team.team,
         totalAttendees: team.totalAttendees,
         teamSize: team.teamSize,
-        points: team.points,
+        attendanceRate: team.attendanceRate,
         members: team.members,
       }));
     } catch (error) {
