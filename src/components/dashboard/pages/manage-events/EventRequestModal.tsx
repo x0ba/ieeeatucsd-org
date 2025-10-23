@@ -273,8 +273,8 @@ export default function EventRequestModal({
       [field]: checked
         ? [...(prev[field as keyof EventFormData] as string[]), value]
         : (prev[field as keyof EventFormData] as string[]).filter(
-            (item) => item !== value,
-          ),
+          (item) => item !== value,
+        ),
     }));
   };
 
@@ -640,6 +640,7 @@ export default function EventRequestModal({
         files: [],
         privateFiles: [],
         pointsToReward: formData.pointsToReward,
+        eventCode: formData.eventCode,
         createdFrom: editingRequest
           ? editingRequest.id
           : (eventRequestRef as any).id,
