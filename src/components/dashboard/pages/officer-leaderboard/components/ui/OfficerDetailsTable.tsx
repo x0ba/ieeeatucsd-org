@@ -108,8 +108,8 @@ export default function OfficerDetailsTable({
 
       case "name":
         return (
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0A2463' }}>
               <span className="text-xs font-bold text-white">
                 {member.name
                   .split(" ")
@@ -123,35 +123,16 @@ export default function OfficerDetailsTable({
                 {member.name}
               </span>
               <span className="text-xs text-gray-500">{member.role}</span>
-              {member.team && (
-                <Chip
-                  size="sm"
-                  variant="flat"
-                  className="mt-1"
-                  color={
-                    member.team === "Projects"
-                      ? "primary"
-                      : member.team === "Events"
-                        ? "secondary"
-                        : "success"
-                  }
-                >
-                  {member.team}
-                </Chip>
-              )}
             </div>
           </div>
         );
 
       case "position":
         return (
-          <div className="flex flex-col">
+          <div>
             <span className="text-sm text-gray-700 font-medium">
               {member.position}
             </span>
-            {member.team && (
-              <span className="text-xs text-gray-500">{member.team} Team</span>
-            )}
           </div>
         );
 
@@ -203,30 +184,30 @@ export default function OfficerDetailsTable({
 
   return (
     <Card className="w-full">
-      <CardHeader className="flex items-center justify-between pb-3">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100">
+      <CardHeader className="flex items-center justify-between pb-2 pt-3 px-4">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full" style={{ backgroundColor: '#E8EDF5' }}>
             {getRankIcon(rank)}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-3xl">{getTeamIcon(team)}</span>
+            <span className="text-2xl">{getTeamIcon(team)}</span>
             <div className="flex flex-col">
-              <h3 className="text-xl font-bold text-gray-900">{team} Team</h3>
-              <p className="text-sm text-gray-500">{members.length} officers</p>
+              <h3 className="text-lg font-bold" style={{ color: '#0A2463' }}>{team} Team</h3>
+              <p className="text-xs text-gray-500">{members.length} officers</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Chip
             color={getTeamColor(team) as any}
             variant="solid"
-            size="lg"
+            size="md"
             className="font-bold"
           >
             {teamAttendanceRate.toFixed(2)}%
           </Chip>
-          <div className="text-right min-w-[80px]">
+          <div className="text-right min-w-[70px]">
             <div className="text-xs text-gray-500">Relative</div>
             <div className="text-sm font-semibold text-gray-900">
               {progressPercentage.toFixed(1)}%
@@ -235,13 +216,13 @@ export default function OfficerDetailsTable({
         </div>
       </CardHeader>
 
-      <CardBody className="pt-0">
+      <CardBody className="pt-0 px-4 pb-3">
         {/* Team Progress Bar */}
-        <div className="mb-4">
+        <div className="mb-3">
           <Progress
             value={progressPercentage}
             color={getTeamColor(team) as any}
-            size="md"
+            size="sm"
             className="w-full"
             showValueLabel={false}
           />
@@ -253,16 +234,24 @@ export default function OfficerDetailsTable({
             aria-label={`${team} team officers`}
             removeWrapper
             classNames={{
-              th: "bg-gray-50 text-gray-700 text-xs font-semibold uppercase tracking-wider",
-              td: "py-3 text-sm",
+              th: "text-xs font-semibold uppercase tracking-wider py-2",
+              td: "py-2 text-sm",
               wrapper: "p-0",
             }}
+            style={{
+              '--table-header-bg': '#0A2463',
+              '--table-header-color': '#ffffff',
+            } as React.CSSProperties}
           >
             <TableHeader columns={columns}>
               {(column) => (
                 <TableColumn
                   key={column.key}
-                  style={{ minWidth: column.minWidth }}
+                  style={{
+                    minWidth: column.minWidth,
+                    backgroundColor: '#0A2463',
+                    color: '#ffffff'
+                  }}
                   className={`text-center ${column.key === "name" ? "text-left" : ""
                     }`}
                 >
@@ -289,9 +278,9 @@ export default function OfficerDetailsTable({
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-8">
-            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 mb-2">
+          <div className="text-center py-6">
+            <Users className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-500 text-sm mb-1">
               No officers assigned to this team yet
             </p>
             <p className="text-xs text-gray-400 max-w-sm mx-auto">
@@ -303,22 +292,22 @@ export default function OfficerDetailsTable({
 
         {/* Team Summary */}
         {members.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="bg-blue-50 rounded-lg p-3">
-                <div className="text-2xl font-bold text-blue-900">
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-lg p-2" style={{ backgroundColor: '#E8EDF5' }}>
+                <div className="text-xl font-bold" style={{ color: '#0A2463' }}>
                   {members.length}
                 </div>
-                <div className="text-xs text-blue-600">Total Officers</div>
+                <div className="text-xs text-gray-600">Total Officers</div>
               </div>
-              <div className="bg-green-50 rounded-lg p-3">
-                <div className="text-2xl font-bold text-green-900">
+              <div className="bg-green-50 rounded-lg p-2">
+                <div className="text-xl font-bold text-green-900">
                   {members.reduce((sum, m) => sum + m.eventsAttended, 0)}
                 </div>
                 <div className="text-xs text-green-600">Total Attendances</div>
               </div>
-              <div className="bg-purple-50 rounded-lg p-3">
-                <div className="text-2xl font-bold text-purple-900">
+              <div className="bg-purple-50 rounded-lg p-2">
+                <div className="text-xl font-bold text-purple-900">
                   {(
                     members.reduce((sum, m) => sum + m.eventsAttended, 0) /
                     members.length

@@ -19,6 +19,7 @@ interface EventRequest {
     needsAsFunding?: boolean;
     graphicsCompleted?: boolean;
     graphicsFiles?: string[];
+    published?: boolean;
 }
 
 interface EventsTableProps {
@@ -106,6 +107,9 @@ export function EventsTable({
                         Location
                     </th>
                     <SortableHeader field="status">Status</SortableHeader>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                        Published
+                    </th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
                         Requirements
                     </th>
@@ -179,6 +183,24 @@ export function EventsTable({
                                     </Chip>
                                 </div>
                             </td>
+
+                            {/* Published Status Column */}
+                            <td className="px-3 py-2 hidden sm:table-cell">
+                                <div className="inline-flex">
+                                    <Chip
+                                        color={request.published ? "success" : "default"}
+                                        variant="flat"
+                                        size="sm"
+                                        classNames={{
+                                            base: "h-6",
+                                            content: "text-xs px-1"
+                                        }}
+                                    >
+                                        {request.published ? "Published" : "Draft"}
+                                    </Chip>
+                                </div>
+                            </td>
+
                             {/* Requirements Column (hidden on smaller screens) */}
                             <td className="px-3 py-2 hidden xl:table-cell">
                                 <div className="flex flex-col gap-1">

@@ -32,6 +32,7 @@ interface EventRequest {
   needsAsFunding?: boolean;
   graphicsCompleted?: boolean;
   graphicsFiles?: string[];
+  published?: boolean;
   [key: string]: any;
 }
 
@@ -132,13 +133,41 @@ export function useEventManagement(userId: string | undefined) {
 
     const unsubscribe = onSnapshot(
       q,
-      (snapshot) => {
+      async (snapshot) => {
         const eventRequestsData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as EventRequest[];
 
-        setEventRequests(eventRequestsData);
+        // Fetch published status for each event request
+        const eventRequestsWithPublishStatus = await Promise.all(
+          eventRequestsData.map(async (request) => {
+            try {
+              const eventsQuery = query(
+                collection(db, "events"),
+                where("createdFrom", "==", request.id),
+              );
+              const eventsSnapshot = await getDocs(eventsQuery);
+
+              if (!eventsSnapshot.empty) {
+                const eventData = eventsSnapshot.docs[0].data();
+                return {
+                  ...request,
+                  published: eventData.published || false,
+                };
+              }
+              return { ...request, published: false };
+            } catch (error) {
+              console.error(
+                `Error fetching published status for event ${request.id}:`,
+                error,
+              );
+              return { ...request, published: false };
+            }
+          }),
+        );
+
+        setEventRequests(eventRequestsWithPublishStatus);
         setLoading(false);
       },
       (error) => {

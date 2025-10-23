@@ -191,15 +191,15 @@ export default function OfficerLeaderboardContent() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Trophy className="w-8 h-8 text-yellow-500" />
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: '#0A2463' }}>
+            <Trophy className="w-6 h-6 text-yellow-500" />
             Officer Leaderboard
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 text-sm mt-1">
             Team-based competition tracking event participation and
             collaboration
           </p>
@@ -209,6 +209,7 @@ export default function OfficerLeaderboardContent() {
           currentUserRole === "Administrator") && (
             <Button
               variant="bordered"
+              size="sm"
               startContent={<Settings className="w-4 h-4" />}
               onPress={() => setActiveTab("settings")}
             >
@@ -245,11 +246,11 @@ export default function OfficerLeaderboardContent() {
 
           {/* Loading State */}
           {loading ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {[1, 2, 3].map((i) => (
                 <Card key={i} className="w-full">
-                  <CardBody className="p-6">
-                    <div className="space-y-4">
+                  <CardBody className="p-4">
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <Skeleton className="h-4 w-32" />
                         <Skeleton className="h-4 w-16" />
@@ -258,10 +259,10 @@ export default function OfficerLeaderboardContent() {
                         <Skeleton className="h-3 w-full" />
                         <Skeleton className="h-3 w-3/4" />
                       </div>
-                      <div className="grid grid-cols-3 gap-4">
-                        <Skeleton className="h-16 w-full" />
-                        <Skeleton className="h-16 w-full" />
-                        <Skeleton className="h-16 w-full" />
+                      <div className="grid grid-cols-3 gap-3">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
                       </div>
                     </div>
                   </CardBody>
@@ -272,23 +273,20 @@ export default function OfficerLeaderboardContent() {
             <>
               {/* Formula Explanation */}
               <Card className="bg-blue-50 border-blue-200">
-                <CardBody>
-                  <div className="flex items-start gap-3">
-                    <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5" />
+                <CardBody className="p-3">
+                  <div className="flex items-start gap-2">
+                    <TrendingUp className="w-4 h-4 mt-0.5" style={{ color: '#0A2463' }} />
                     <div>
-                      <h3 className="font-semibold text-blue-900">
+                      <h3 className="font-semibold text-sm" style={{ color: '#0A2463' }}>
                         Attendance Rate Calculation
                       </h3>
-                      <p className="text-blue-800 mt-1">
+                      <p className="text-blue-800 text-xs mt-1">
                         Attendance Rate = (Total Team Attendances ÷ Total
                         Possible Attendances) × 100
                       </p>
-                      <p className="text-blue-700 text-sm mt-2">
-                        Total Possible Attendances = Number of Events × Team
-                        Size. Team size only includes officers who joined on or
-                        before the start date. All officers are displayed,
-                        including late-joiners, but only events attended after
-                        their join date are counted.
+                      <p className="text-blue-700 text-xs mt-1">
+                        Only events with at least one attendee are counted. Team size includes officers who joined on or
+                        before the start date. Events attended after an officer's join date are counted.
                       </p>
                     </div>
                   </div>
@@ -296,39 +294,45 @@ export default function OfficerLeaderboardContent() {
               </Card>
 
               {/* Enhanced Leaderboard with Officer Details */}
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Top 3 Teams Summary */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {leaderboardData.slice(0, 3).map((team, index) => (
                     <Card
                       key={team.team}
-                      className="relative overflow-hidden hover:shadow-lg transition-all duration-300"
+                      className="relative overflow-hidden hover:shadow-md transition-all duration-300"
                       style={{
-                        background:
+                        backgroundColor:
                           index === 0
-                            ? "linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%)"
+                            ? "#fef3c7"
                             : index === 1
-                              ? "linear-gradient(135deg, #f3f4f6 0%, #d1d5db 100%)"
-                              : "linear-gradient(135deg, #fed7aa 0%, #fb923c 100%)",
+                              ? "#f3f4f6"
+                              : "#fed7aa",
+                        borderLeft: `4px solid ${index === 0
+                          ? "#fbbf24"
+                          : index === 1
+                            ? "#d1d5db"
+                            : "#fb923c"
+                          }`,
                       }}
                     >
-                      <CardBody className="p-6 text-center">
-                        <div className="flex justify-center mb-3">
+                      <CardBody className="p-4 text-center">
+                        <div className="flex justify-center mb-2">
                           {getRankIcon(team.rank)}
                         </div>
-                        <div className="text-4xl mb-2">
+                        <div className="text-3xl mb-1">
                           {getTeamIcon(team.team)}
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">
+                        <h3 className="text-base font-bold text-gray-900 mb-1">
                           {team.team} Team
                         </h3>
-                        <div className="text-3xl font-bold text-gray-900 mb-1">
+                        <div className="text-2xl font-bold text-gray-900 mb-0.5">
                           {team.attendanceRate.toFixed(2)}%
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-xs text-gray-600">
                           attendance rate
                         </div>
-                        <div className="mt-3 pt-3 border-t border-gray-300/50">
+                        <div className="mt-2 pt-2 border-t border-gray-300/50">
                           <div className="flex justify-around text-xs">
                             <div>
                               <div className="font-semibold">
@@ -340,7 +344,7 @@ export default function OfficerLeaderboardContent() {
                               <div className="font-semibold">
                                 {team.totalAttendees}
                               </div>
-                              <div className="text-gray-600">Events</div>
+                              <div className="text-gray-600">Attendances</div>
                             </div>
                           </div>
                         </div>
@@ -350,7 +354,7 @@ export default function OfficerLeaderboardContent() {
                 </div>
 
                 {/* Detailed Team Tables */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {leaderboardData.map((team) => (
                     <OfficerDetailsTable
                       key={team.team}
@@ -365,24 +369,24 @@ export default function OfficerLeaderboardContent() {
               </div>
 
               {leaderboardData.length === 0 && !loading && !error && (
-                <Card className="text-center py-16">
+                <Card className="text-center py-12">
                   <CardBody>
-                    <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Target className="w-12 h-12 text-blue-600" />
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#E8EDF5' }}>
+                      <Target className="w-8 h-8" style={{ color: '#0A2463' }} />
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
                       Ready to Track Team Performance
                     </h3>
-                    <p className="text-gray-600 max-w-md mx-auto mb-6">
+                    <p className="text-gray-600 text-sm max-w-md mx-auto mb-4">
                       Once officers start attending events and are assigned to
                       teams, the leaderboard will display comprehensive team
                       performance metrics and individual contributions.
                     </p>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-sm mx-auto">
-                      <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-sm mx-auto">
+                      <h4 className="text-xs font-semibold mb-1.5" style={{ color: '#0A2463' }}>
                         Getting Started:
                       </h4>
-                      <ul className="text-sm text-blue-700 space-y-1 text-left">
+                      <ul className="text-xs text-blue-700 space-y-0.5 text-left">
                         <li>• Assign officers to teams in Manage Users</li>
                         <li>• Configure the leaderboard start date</li>
                         <li>• Officers attend events to earn points</li>

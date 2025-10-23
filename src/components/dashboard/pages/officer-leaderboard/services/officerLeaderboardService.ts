@@ -113,7 +113,7 @@ export class OfficerLeaderboardService {
   /**
    * Get event attendances for officers after a specific date
    * Queries the attendees subcollection for each event to get accurate attendance data
-   * Returns both attendance data with event dates and total event count
+   * Returns both attendance data with event dates and total event count (excluding zero-attendance events)
    */
   static async getOfficerAttendances(startDate: Timestamp): Promise<{
     attendanceMap: Map<string, Array<{ eventId: string; endDate: Timestamp }>>;
@@ -131,6 +131,7 @@ export class OfficerLeaderboardService {
         string,
         Array<{ eventId: string; endDate: Timestamp }>
       >();
+      const eventsWithAttendees = new Set<string>();
 
       // For each event, query the attendees subcollection
       for (const eventDoc of eventsSnapshot.docs) {
@@ -143,19 +144,24 @@ export class OfficerLeaderboardService {
           );
           const attendeesSnapshot = await getDocs(attendeesQuery);
 
-          // Store event attendance with metadata
-          for (const attendeeDoc of attendeesSnapshot.docs) {
-            const attendeeData = attendeeDoc.data();
-            const userId = attendeeData.userId || attendeeDoc.id;
+          // Only count events that have at least one attendee
+          if (attendeesSnapshot.docs.length > 0) {
+            eventsWithAttendees.add(eventDoc.id);
 
-            if (!attendanceMap.has(userId)) {
-              attendanceMap.set(userId, []);
+            // Store event attendance with metadata
+            for (const attendeeDoc of attendeesSnapshot.docs) {
+              const attendeeData = attendeeDoc.data();
+              const userId = attendeeData.userId || attendeeDoc.id;
+
+              if (!attendanceMap.has(userId)) {
+                attendanceMap.set(userId, []);
+              }
+
+              attendanceMap.get(userId)!.push({
+                eventId: eventDoc.id,
+                endDate: eventEndDate,
+              });
             }
-
-            attendanceMap.get(userId)!.push({
-              eventId: eventDoc.id,
-              endDate: eventEndDate,
-            });
           }
         } catch (error) {
           console.error(
@@ -168,7 +174,7 @@ export class OfficerLeaderboardService {
 
       return {
         attendanceMap,
-        totalEvents: eventsSnapshot.docs.length,
+        totalEvents: eventsWithAttendees.size, // Only count events with attendees
       };
     } catch (error) {
       console.error("Error getting officer attendances:", error);
