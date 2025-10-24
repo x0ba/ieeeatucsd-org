@@ -61,6 +61,7 @@ export default function EventRequestModal({
   onClose,
   editingRequest,
   onSuccess,
+  preselectedDate,
 }: EventRequestModalProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -142,7 +143,7 @@ export default function EventRequestModal({
 
   const db = getFirestore(app);
 
-  // Populate form data when editing
+  // Populate form data when editing or with preselected date
   useEffect(() => {
     if (editingRequest) {
       const invoicesData = convertLegacyInvoices(editingRequest);
@@ -251,8 +252,15 @@ export default function EventRequestModal({
 
       // Initialize invoices in the hook
       setInvoices(invoicesData);
+    } else if (preselectedDate && !editingRequest) {
+      // Set the start date from the calendar selection
+      const dateString = preselectedDate.toISOString().split('T')[0];
+      setFormData((prev) => ({
+        ...prev,
+        startDate: dateString,
+      }));
     }
-  }, [editingRequest, setInvoices]);
+  }, [editingRequest, setInvoices, preselectedDate]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

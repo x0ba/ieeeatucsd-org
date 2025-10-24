@@ -2,6 +2,22 @@ export interface EventRequestModalProps {
   onClose: () => void;
   editingRequest?: any | null;
   onSuccess?: () => void;
+  preselectedDate?: Date | null;
+}
+
+export interface DraftEventModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  preselectedDate?: Date | null;
+  onSuccess?: () => void;
+}
+
+export interface DraftEventFormData {
+  name: string;
+  startDate: string;
+  endDate?: string;
+  description?: string;
+  location?: string;
 }
 
 export interface ItemizedInvoiceItem {

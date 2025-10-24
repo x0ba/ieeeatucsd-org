@@ -33,6 +33,7 @@ interface EventRequest {
   graphicsCompleted?: boolean;
   graphicsFiles?: string[];
   published?: boolean;
+  isDraft?: boolean;
   [key: string]: any;
 }
 
@@ -48,6 +49,7 @@ export function useEventManagement(userId: string | undefined) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<string>("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showDrafts, setShowDrafts] = useState(true);
   const eventsPerPage = 10;
 
   const db = getFirestore(app);
@@ -321,13 +323,17 @@ export function useEventManagement(userId: string | undefined) {
               .toLowerCase()
               .includes(searchTerm.toLowerCase()));
 
-        return matchesSearch;
+        // Filter out drafts if showDrafts is false
+        const matchesDraftFilter =
+          showDrafts || (!request.isDraft && request.status !== "draft");
+
+        return matchesSearch && matchesDraftFilter;
       } catch (error) {
         console.error("Error filtering event request:", error, request);
         return true;
       }
     });
-  }, [eventRequests, searchTerm, users]);
+  }, [eventRequests, searchTerm, showDrafts, users]);
 
   const sortedEventRequests = useMemo(() => {
     return [...filteredEventRequests].sort((a, b) => {
@@ -414,11 +420,13 @@ export function useEventManagement(userId: string | undefined) {
     endIndex,
     eventsPerPage,
     stats,
+    showDrafts,
     setError,
     setSuccess,
     setSearchTerm,
     setSortBy,
     setCurrentPage,
+    setShowDrafts,
     handleDeleteRequest,
     handleUpdateEventStatus,
     getUserName,

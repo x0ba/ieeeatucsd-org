@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { Card, CardHeader, CardBody, Button } from '@heroui/react';
+import { Plus, List, CalendarDays } from 'lucide-react';
+import { Card, CardHeader, CardBody, Button, Tabs, Tab, Switch } from '@heroui/react';
 import { auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { EventManagementStats } from './EventManagementStats';
@@ -13,6 +13,8 @@ import { TableSkeleton } from '../../../ui/loading';
 import DashboardHeader from '../../shared/DashboardHeader';
 import { EventsTable } from './components/EventsTable';
 import { EventsPagination } from './components/EventsPagination';
+import { EventCalendarView } from './components/EventCalendarView';
+import DraftEventModal from './components/DraftEventModal';
 import { useEventManagement } from './hooks/useEventManagement';
 import { canCreateEvent, canManageGraphics } from './utils/permissionUtils';
 
@@ -39,8 +41,13 @@ interface EventRequest {
 export default function ManageEventsContent() {
     const [user] = useAuthState(auth);
 
+    // Tab state
+    const [activeTab, setActiveTab] = useState<string>('list');
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
     // Modal states
     const [showEventRequestModal, setShowEventRequestModal] = useState(false);
+    const [showDraftEventModal, setShowDraftEventModal] = useState(false);
     const [showEventViewModal, setShowEventViewModal] = useState(false);
     const [showFileManagementModal, setShowFileManagementModal] = useState(false);
     const [showBulkActionsModal, setShowBulkActionsModal] = useState(false);
@@ -67,11 +74,13 @@ export default function ManageEventsContent() {
         startIndex,
         endIndex,
         stats,
+        showDrafts,
         setError,
         setSuccess,
         setSearchTerm,
         setSortBy,
         setCurrentPage,
+        setShowDrafts,
         handleDeleteRequest,
         getUserName
     } = useEventManagement(user?.uid);
@@ -136,6 +145,16 @@ export default function ManageEventsContent() {
         setCurrentPage(1);
     };
 
+    const handleCreateEventFromCalendar = (date: Date) => {
+        setSelectedDate(date);
+        setShowDraftEventModal(true);
+    };
+
+    const handleConvertDraftToFull = (request: EventRequest) => {
+        setEditingRequest(request);
+        setShowEventRequestModal(true);
+    };
+
 
 
     return (
@@ -162,21 +181,6 @@ export default function ManageEventsContent() {
             {/* Manage Events Content */}
             <main className="p-4 md:p-6">
                 <div className="grid grid-cols-1 gap-4 md:gap-6">
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-3 mb-4 md:mb-6">
-                        {canCreateEvent(currentUserRole) && (
-                            <Button
-                                color="primary"
-                                startContent={<Plus className="w-4 h-4" />}
-                                onPress={() => setShowEventRequestModal(true)}
-                                className="min-h-[44px]"
-                            >
-                                <span className="hidden sm:inline">Request an Event</span>
-                                <span className="sm:hidden">Request</span>
-                            </Button>
-                        )}
-                    </div>
-
                     {/* Stats Overview */}
                     <EventManagementStats stats={stats} loading={loading} />
 
@@ -192,65 +196,153 @@ export default function ManageEventsContent() {
                         </div>
                     )}
 
-                    {/* Event Requests Table */}
-                    <Card key={currentUserRole} shadow="sm" className="border border-gray-200">
-                        <CardHeader className="flex flex-col items-start px-4 md:px-6 py-4">
-                            <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                                Event Requests ({sortedEventRequests.length})
-                            </h2>
-                        </CardHeader>
+                    {/* Draft Filter Toggle */}
+                    <div className="flex items-center justify-end gap-2">
+                        <Switch
+                            size="sm"
+                            isSelected={showDrafts}
+                            onValueChange={setShowDrafts}
+                            classNames={{
+                                wrapper: "group-data-[selected=true]:bg-[#0A2463]"
+                            }}
+                        >
+                            <span className="text-sm text-gray-700">Show Draft Events</span>
+                        </Switch>
+                    </div>
+
+                    {/* Tabs for View Switcher */}
+                    <Card shadow="sm" className="border border-gray-200">
                         <CardBody className="p-0">
-                            <div className="overflow-x-auto">
-                                {loading ? (
-                                    <TableSkeleton rows={5} columns={7} />
-                                ) : paginatedEventRequests.length === 0 ? (
-                                    <div className="p-6 text-center">
-                                        <p className="text-gray-500">
-                                            {sortedEventRequests.length === 0 ? 'No event requests found' : 'No events match the current filters'}
-                                        </p>
-                                        {sortedEventRequests.length > 0 && (
+                            <Tabs
+                                selectedKey={activeTab}
+                                onSelectionChange={(key) => setActiveTab(key as string)}
+                                aria-label="Event management views"
+                                classNames={{
+                                    base: "w-full",
+                                    tabList: "w-full px-6 pt-4",
+                                    panel: "px-6 py-4"
+                                }}
+                            >
+                                <Tab
+                                    key="list"
+                                    title={
+                                        <div className="flex items-center gap-2">
+                                            <List className="w-4 h-4" />
+                                            <span>Events List</span>
+                                        </div>
+                                    }
+                                >
+                                    {/* Action Buttons */}
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-3 mb-4">
+                                        {canCreateEvent(currentUserRole) && (
                                             <Button
-                                                variant="light"
                                                 color="primary"
-                                                onPress={handleClearFilters}
-                                                className="mt-2"
+                                                startContent={<Plus className="w-4 h-4" />}
+                                                onPress={() => setShowEventRequestModal(true)}
+                                                className="min-h-[44px]"
                                             >
-                                                Clear filters
+                                                <span className="hidden sm:inline">Request an Event</span>
+                                                <span className="sm:hidden">Request</span>
                                             </Button>
                                         )}
                                     </div>
-                                ) : (
-                                    <EventsTable
-                                        eventRequests={paginatedEventRequests}
-                                        sortBy={sortBy}
+
+                                    {/* Event Requests Table */}
+                                    <Card key={currentUserRole} shadow="sm" className="border border-gray-200">
+                                        <CardHeader className="flex flex-col items-start px-4 md:px-6 py-4">
+                                            <h2 className="text-base md:text-lg font-semibold text-gray-900">
+                                                Event Requests ({sortedEventRequests.length})
+                                            </h2>
+                                        </CardHeader>
+                                        <CardBody className="p-0">
+                                            <div className="overflow-x-auto">
+                                                {loading ? (
+                                                    <TableSkeleton rows={5} columns={7} />
+                                                ) : paginatedEventRequests.length === 0 ? (
+                                                    <div className="p-6 text-center">
+                                                        <p className="text-gray-500">
+                                                            {sortedEventRequests.length === 0 ? 'No event requests found' : 'No events match the current filters'}
+                                                        </p>
+                                                        {sortedEventRequests.length > 0 && (
+                                                            <Button
+                                                                variant="light"
+                                                                color="primary"
+                                                                onPress={handleClearFilters}
+                                                                className="mt-2"
+                                                            >
+                                                                Clear filters
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <EventsTable
+                                                        eventRequests={paginatedEventRequests}
+                                                        sortBy={sortBy}
+                                                        currentUserRole={currentUserRole}
+                                                        currentUserId={user?.uid}
+                                                        onSort={handleSort}
+                                                        onViewRequest={handleViewRequest}
+                                                        onEditRequest={handleEditRequest}
+                                                        onDeleteRequest={handleDeleteRequest}
+                                                        onGraphicsToggle={handleGraphicsToggle}
+                                                        onConvertDraftToFull={handleConvertDraftToFull}
+                                                        getUserName={getUserName}
+                                                    />
+                                                )}
+                                            </div>
+                                        </CardBody>
+                                    </Card>
+
+                                    {/* Pagination Controls */}
+                                    {totalPages > 1 && (
+                                        <EventsPagination
+                                            currentPage={currentPage}
+                                            totalPages={totalPages}
+                                            totalItems={sortedEventRequests.length}
+                                            startIndex={startIndex}
+                                            endIndex={endIndex}
+                                            onPageChange={setCurrentPage}
+                                        />
+                                    )}
+                                </Tab>
+
+                                <Tab
+                                    key="calendar"
+                                    title={
+                                        <div className="flex items-center gap-2">
+                                            <CalendarDays className="w-4 h-4" />
+                                            <span>Event Planning</span>
+                                        </div>
+                                    }
+                                >
+                                    <EventCalendarView
+                                        eventRequests={sortedEventRequests}
+                                        onCreateEvent={handleCreateEventFromCalendar}
+                                        onViewEvent={handleViewRequest}
+                                        onEditEvent={handleEditRequest}
                                         currentUserRole={currentUserRole}
-                                        currentUserId={user?.uid}
-                                        onSort={handleSort}
-                                        onViewRequest={handleViewRequest}
-                                        onEditRequest={handleEditRequest}
-                                        onDeleteRequest={handleDeleteRequest}
-                                        onGraphicsToggle={handleGraphicsToggle}
-                                        getUserName={getUserName}
                                     />
-                                )}
-                            </div>
+                                </Tab>
+                            </Tabs>
                         </CardBody>
                     </Card>
 
-                    {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                        <EventsPagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            totalItems={sortedEventRequests.length}
-                            startIndex={startIndex}
-                            endIndex={endIndex}
-                            onPageChange={setCurrentPage}
-                        />
-                    )}
-
                 </div>
             </main >
+
+            {/* Draft Event Modal */}
+            <DraftEventModal
+                isOpen={showDraftEventModal}
+                onClose={() => {
+                    setShowDraftEventModal(false);
+                    setSelectedDate(null);
+                }}
+                preselectedDate={selectedDate}
+                onSuccess={() => {
+                    setShowDraftEventModal(false);
+                    setSelectedDate(null);
+                }}
+            />
 
             {/* Event Request Modal */}
             {
@@ -259,11 +351,14 @@ export default function ManageEventsContent() {
                         onClose={() => {
                             setShowEventRequestModal(false);
                             setEditingRequest(null);
+                            setSelectedDate(null);
                         }}
                         editingRequest={editingRequest}
+                        preselectedDate={selectedDate}
                         onSuccess={() => {
                             // Real-time updates will handle the refresh automatically
                             setSuccess(editingRequest ? 'Event request updated successfully' : 'Event request created successfully');
+                            setSelectedDate(null);
                         }}
                     />
                 )

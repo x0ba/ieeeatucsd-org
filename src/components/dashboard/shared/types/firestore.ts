@@ -147,11 +147,19 @@ export interface EventRequest {
   invoiceFiles?: string[];
   needsGraphics: boolean;
   needsAsFunding: boolean;
-  status: "submitted" | "pending" | "completed" | "declined" | "needs_review";
+  status:
+    | "draft"
+    | "submitted"
+    | "pending"
+    | "completed"
+    | "approved"
+    | "declined"
+    | "needs_review";
   declinedReason?: string;
   reviewFeedback?: string;
   requestedUser: string;
   auditLogs?: EventAuditLog[];
+  isDraft?: boolean; // Flag to indicate if this is a draft event (minimal fields)
 }
 
 export interface EventAuditLog {

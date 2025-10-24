@@ -156,12 +156,33 @@ service cloud.firestore {
       allow create: if request.auth != null &&
         request.resource.data.requestedUser == request.auth.uid;
 
+      // PRIORITY 1.5: Allow officers to create draft events with minimal validation
+      // Draft events only require: name, startDateTime, status='draft', isDraft=true
+      allow create: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'General Officer', 'Executive Officer', 'Administrator'
+        ] &&
+        request.resource.data.status == 'draft' &&
+        request.resource.data.isDraft == true &&
+        request.resource.data.keys().hasAll(['name', 'startDateTime', 'requestedUser', 'status', 'isDraft']);
+
       // PRIORITY 2: Allow officers to read, create, and edit any event request (administrative access)
       allow read, create, update: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
           'General Officer', 'Executive Officer', 'Administrator'
         ];
+
+      // Allow converting draft events to full events (status change from 'draft' to 'submitted')
+      allow update: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in [
+          'General Officer', 'Executive Officer', 'Administrator'
+        ] &&
+        resource.data.status == 'draft' &&
+        resource.data.isDraft == true &&
+        request.resource.data.status in ['submitted', 'pending'];
 
       // Allow audit log updates for any authenticated user with proper role
       allow update: if request.auth != null &&

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, Eye, ChevronUp, ChevronDown, ChevronsUpDown, MapPin, Calendar } from 'lucide-react';
+import { Edit, Trash2, Eye, ChevronUp, ChevronDown, ChevronsUpDown, MapPin, Calendar, FileUp } from 'lucide-react';
 import { Button, Chip, Tooltip, Checkbox } from '@heroui/react';
 import { getStatusColor, getStatusIcon } from '../utils/statusUtils';
 import { canEditEvent as checkCanEditEvent, canDeleteEvent as checkCanDeleteEvent, canManageGraphics } from '../utils/permissionUtils';
@@ -20,6 +20,7 @@ interface EventRequest {
     graphicsCompleted?: boolean;
     graphicsFiles?: string[];
     published?: boolean;
+    isDraft?: boolean;
 }
 
 interface EventsTableProps {
@@ -32,6 +33,7 @@ interface EventsTableProps {
     onEditRequest: (request: EventRequest) => void;
     onDeleteRequest: (requestId: string, eventName: string) => void;
     onGraphicsToggle: (requestId: string, isCompleted: boolean) => void;
+    onConvertDraftToFull?: (request: EventRequest) => void;
     getUserName: (userId: string) => string;
 }
 
@@ -45,6 +47,7 @@ export function EventsTable({
     onEditRequest,
     onDeleteRequest,
     onGraphicsToggle,
+    onConvertDraftToFull,
     getUserName
 }: EventsTableProps) {
     const SortableHeader = ({ field, children }: { field: string; children: React.ReactNode }) => (
@@ -84,8 +87,10 @@ export function EventsTable({
         switch (status) {
             case 'approved':
                 return 'success';
-            case 'submitted':
+            case 'draft':
                 return 'default';
+            case 'submitted':
+                return 'primary';
             case 'pending':
             case 'needs_review':
                 return 'warning';
@@ -188,15 +193,15 @@ export function EventsTable({
                             <td className="px-3 py-2 hidden sm:table-cell">
                                 <div className="inline-flex">
                                     <Chip
-                                        color={request.published ? "success" : "default"}
-                                        variant="flat"
+                                        color={request.published ? "success" : (request.isDraft ? "default" : "default")}
+                                        variant={request.isDraft ? "bordered" : "flat"}
                                         size="sm"
                                         classNames={{
                                             base: "h-6",
                                             content: "text-xs px-1"
                                         }}
                                     >
-                                        {request.published ? "Published" : "Draft"}
+                                        {request.published ? "Published" : (request.isDraft ? "DRAFT" : "Unpublished")}
                                     </Chip>
                                 </div>
                             </td>
@@ -272,6 +277,22 @@ export function EventsTable({
                                             <Eye className="w-3.5 h-3.5" />
                                         </Button>
                                     </Tooltip>
+
+                                    {request.isDraft && request.status === 'draft' && onConvertDraftToFull && (
+                                        <Tooltip content="Convert to Full Event Request" delay={300}>
+                                            <Button
+                                                isIconOnly
+                                                size="sm"
+                                                variant="light"
+                                                style={{ color: '#0A2463' }}
+                                                onPress={() => onConvertDraftToFull(request)}
+                                                aria-label="Convert to Full Request"
+                                                className="min-w-unit-8 w-8 h-8"
+                                            >
+                                                <FileUp className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </Tooltip>
+                                    )}
 
                                     {canEditEvent(request) && (
                                         <Tooltip content="Edit Event" delay={300}>
