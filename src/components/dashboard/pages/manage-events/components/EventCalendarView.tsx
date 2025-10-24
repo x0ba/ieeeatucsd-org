@@ -109,6 +109,13 @@ export function EventCalendarView({
         }
     };
 
+    const handleCreateEventOnSelectedDate = () => {
+        if (selectedDate) {
+            setShowEventModal(false);
+            onCreateEvent(selectedDate);
+        }
+    };
+
     const handlePreviousMonth = () => {
         setCurrentMonth(prev => subMonths(prev, 1));
     };
@@ -270,11 +277,28 @@ export function EventCalendarView({
                 size="2xl"
             >
                 <ModalContent>
-                    <ModalHeader>
-                        Events on {selectedDate && format(selectedDate, 'MMMM d, yyyy')}
+                    <ModalHeader className="flex flex-col gap-1">
+                        <h2 className="text-xl font-semibold">
+                            Events on {selectedDate && format(selectedDate, 'MMMM d, yyyy')}
+                        </h2>
+                        <p className="text-sm text-gray-600 font-normal">
+                            You can create additional draft events on this date for planning purposes.
+                        </p>
                     </ModalHeader>
                     <ModalBody className="pb-6">
                         <div className="space-y-3">
+                            {/* Create New Draft Event Button */}
+                            <Button
+                                color="primary"
+                                variant="flat"
+                                startContent={<Plus className="w-4 h-4" />}
+                                onPress={handleCreateEventOnSelectedDate}
+                                className="w-full"
+                            >
+                                Create New Draft Event on This Date
+                            </Button>
+
+                            {/* Existing Events List */}
                             {selectedDate && getEventsForDate(selectedDate).map(event => (
                                 <Card key={event.id} shadow="sm" className="border border-gray-200">
                                     <CardBody className="p-4">

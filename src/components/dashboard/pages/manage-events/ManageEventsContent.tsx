@@ -196,20 +196,6 @@ export default function ManageEventsContent() {
                         </div>
                     )}
 
-                    {/* Draft Filter Toggle */}
-                    <div className="flex items-center justify-end gap-2">
-                        <Switch
-                            size="sm"
-                            isSelected={showDrafts}
-                            onValueChange={setShowDrafts}
-                            classNames={{
-                                wrapper: "group-data-[selected=true]:bg-[#0A2463]"
-                            }}
-                        >
-                            <span className="text-sm text-gray-700">Show Draft Events</span>
-                        </Switch>
-                    </div>
-
                     {/* Tabs for View Switcher */}
                     <Card shadow="sm" className="border border-gray-200">
                         <CardBody className="p-0">
@@ -232,27 +218,26 @@ export default function ManageEventsContent() {
                                         </div>
                                     }
                                 >
-                                    {/* Action Buttons */}
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-3 mb-4">
-                                        {canCreateEvent(currentUserRole) && (
-                                            <Button
-                                                color="primary"
-                                                startContent={<Plus className="w-4 h-4" />}
-                                                onPress={() => setShowEventRequestModal(true)}
-                                                className="min-h-[44px]"
-                                            >
-                                                <span className="hidden sm:inline">Request an Event</span>
-                                                <span className="sm:hidden">Request</span>
-                                            </Button>
-                                        )}
-                                    </div>
+
 
                                     {/* Event Requests Table */}
                                     <Card key={currentUserRole} shadow="sm" className="border border-gray-200">
-                                        <CardHeader className="flex flex-col items-start px-4 md:px-6 py-4">
+                                        <CardHeader className="flex flex-row items-center justify-between px-4 md:px-6 py-4">
                                             <h2 className="text-base md:text-lg font-semibold text-gray-900">
                                                 Event Requests ({sortedEventRequests.length})
                                             </h2>
+                                            {/* Action Buttons */}
+                                            {canCreateEvent(currentUserRole) && (
+                                                <Button
+                                                    color="primary"
+                                                    startContent={<Plus className="w-4 h-4" />}
+                                                    onPress={() => setShowEventRequestModal(true)}
+                                                    className="min-h-[44px]"
+                                                >
+                                                    <span className="hidden sm:inline">Request an Event</span>
+                                                    <span className="sm:hidden">Request</span>
+                                                </Button>
+                                            )}
                                         </CardHeader>
                                         <CardBody className="p-0">
                                             <div className="overflow-x-auto">
