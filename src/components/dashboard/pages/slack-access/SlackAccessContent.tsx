@@ -4,7 +4,6 @@ import DOMPurify from 'dompurify';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth } from '../../../../firebase/client';
-import DashboardHeader from '../../shared/DashboardHeader';
 import type { User as UserType, UserRole } from '../../shared/types/firestore';
 
 interface EmailGenerationState {
@@ -519,12 +518,6 @@ export default function SlackAccessContent() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <DashboardHeader
-                title="Slack Access"
-                subtitle="Generate IEEE email for Slack authentication and manage your inbox"
-                showSearch={false}
-            />
-
             <div className="p-4 sm:p-6">
 
                 {/* Disclaimer */}

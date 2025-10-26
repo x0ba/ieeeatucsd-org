@@ -3,7 +3,6 @@ import { Search, Calendar, Bell, User, Filter, MapPin, Clock, Users, UserCheck, 
 import { getFirestore, collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { app } from '../../../../firebase/client';
-import DashboardHeader from '../../shar../../shared/DashboardHeader';
 import { PublicProfileService } from '../../shar../../shared/services/publicProfile';
 import { EventCardSkeleton, MetricCardSkeleton } from '../../../ui/loading';
 
@@ -314,27 +313,30 @@ export default function EventsContent() {
 
     return (
         <div className="flex-1 overflow-auto">
-            {/* Header */}
-            <DashboardHeader
-                title="Events"
-                subtitle="View IEEE UCSD events and check in to earn points"
-                searchPlaceholder="Search events..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            >
-                <button
-                    onClick={() => fetchEvents()}
-                    disabled={loading}
-                    className="flex items-center space-x-2 px-3 md:px-4 py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 min-h-[44px] text-sm md:text-base"
-                >
-                    <Calendar className="w-4 h-4" />
-                    <span className="hidden sm:inline">{loading ? 'Refreshing...' : 'Refresh Events'}</span>
-                    <span className="sm:hidden">{loading ? 'Refresh...' : 'Refresh'}</span>
-                </button>
-            </DashboardHeader>
-
             {/* Events Content */}
             <main className="p-4 md:p-6">
+                {/* Search and Actions Bar */}
+                <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                    <div className="relative flex-1 max-w-md w-full">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <input
+                            type="text"
+                            placeholder="Search events..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                        />
+                    </div>
+                    <button
+                        onClick={() => fetchEvents()}
+                        disabled={loading}
+                        className="flex items-center space-x-2 px-3 md:px-4 py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 min-h-[44px] text-sm md:text-base"
+                    >
+                        <Calendar className="w-4 h-4" />
+                        <span className="hidden sm:inline">{loading ? 'Refreshing...' : 'Refresh Events'}</span>
+                        <span className="sm:hidden">{loading ? 'Refresh...' : 'Refresh'}</span>
+                    </button>
+                </div>
                 <div className="grid grid-cols-1 gap-4 md:gap-6">
                     {/* Error Message */}
                     {error && (

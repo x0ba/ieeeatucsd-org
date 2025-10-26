@@ -5,7 +5,6 @@ import { db, storage } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import DashboardHeader from '../../shared/DashboardHeader';
 import type { UserRole } from '../../shared/types/firestore';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { TableSkeleton, MetricCardSkeleton } from '../../../ui/loading';
@@ -776,15 +775,20 @@ const FundDepositsContent: React.FC = () => {
             {NewDepositPasteNotification}
             {EditDepositPasteNotification}
             <div className="min-h-screen bg-gray-50">
-                <DashboardHeader
-                    title="Fund Deposits"
-                    subtitle="Track and manage funds deposited into the IEEE account"
-                    searchPlaceholder="Search deposits..."
-                    searchValue={searchTerm}
-                    onSearchChange={setSearchTerm}
-                />
-
                 <div className="p-4 md:p-6">
+                    {/* Search Bar */}
+                    <div className="mb-6">
+                        <div className="relative max-w-md">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder="Search deposits..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                            />
+                        </div>
+                    </div>
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-4 md:mb-6">
                         {isLoading ? (

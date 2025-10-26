@@ -10,7 +10,6 @@ import {
   UserManagementTableSkeleton,
   MetricCardSkeleton,
 } from "../../../ui/loading";
-import DashboardHeader from "../../shared/DashboardHeader";
 
 // Import refactored components
 import UserStatsCards from "./components/UserStatsCards";
@@ -232,12 +231,7 @@ export default function ManageUsersContent() {
 
   if (isFullyLoading) {
     return (
-      <div className="space-y-6">
-        <DashboardHeader
-          title="Manage Users"
-          subtitle="Manage user accounts, roles, and permissions"
-          showSearch={false}
-        />
+      <div className="space-y-6 p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
             <MetricCardSkeleton key={i} />
@@ -251,12 +245,7 @@ export default function ManageUsersContent() {
   // If user doesn't have access, show access denied message
   if (user && !permissions.hasUserManagementAccess) {
     return (
-      <div className="space-y-6">
-        <DashboardHeader
-          title="Manage Users"
-          subtitle="Manage user accounts, roles, and permissions"
-          showSearch={false}
-        />
+      <div className="space-y-6 p-6">
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <div className="text-red-400 mb-4">
             <svg
@@ -290,12 +279,7 @@ export default function ManageUsersContent() {
   // Show access denied if no user is logged in
   if (!user) {
     return (
-      <div className="space-y-6">
-        <DashboardHeader
-          title="Manage Users"
-          subtitle="Manage user accounts, roles, and permissions"
-          showSearch={false}
-        />
+      <div className="space-y-6 p-6">
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <div className="text-gray-400 mb-4">
             <svg
@@ -325,11 +309,6 @@ export default function ManageUsersContent() {
 
   return (
     <div className="">
-      <DashboardHeader
-        title="Manage Users"
-        subtitle="Manage user accounts, roles, and permissions"
-        showSearch={false}
-      />
       <div className="space-y-6 p-6 mx-">
         {/* Error/Success Messages */}
         {error && (

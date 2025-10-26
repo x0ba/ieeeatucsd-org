@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Medal, Award, Crown, TrendingUp, Users, Star } from 'lucide-react';
+import { Trophy, Medal, Award, Crown, TrendingUp, Users, Star, Search } from 'lucide-react';
 import { Pagination } from '@heroui/react';
 import { collection, query, orderBy, onSnapshot, limit, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
-import DashboardHeader from '../../shared/DashboardHeader';
 import { PublicProfileService, type PublicProfile } from '../../shared/services/publicProfile';
 import { LeaderboardTableSkeleton, MetricCardSkeleton, CardSkeleton } from '../../../ui/loading';
 
@@ -171,16 +170,21 @@ export default function LeaderboardContent() {
 
     return (
         <div className="flex-1 overflow-auto">
-            <DashboardHeader
-                title="Leaderboard"
-                subtitle="See how you rank among IEEE UCSD members"
-                searchPlaceholder="Search members..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            />
-
             <main className="p-4 md:p-6">
                 <div className="grid grid-cols-1 gap-4 md:gap-6">
+                    {/* Search Bar */}
+                    <div className="mb-4">
+                        <div className="relative max-w-md">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder="Search members..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                            />
+                        </div>
+                    </div>
                     {/* Stats Overview */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                         {loading ? (

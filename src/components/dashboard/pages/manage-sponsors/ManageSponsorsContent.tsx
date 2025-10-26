@@ -1,6 +1,5 @@
 import React from 'react';
 import { useAuth } from '../../../../hooks/useAuth';
-import DashboardHeader from '../../shared/DashboardHeader';
 import SponsorDomainsSection from '../manage-users/components/SponsorDomainsSection';
 
 export default function ManageSponsorsContent() {
@@ -8,12 +7,7 @@ export default function ManageSponsorsContent() {
 
     if (loading) {
         return (
-            <div className="space-y-6">
-                <DashboardHeader
-                    title="Manage Sponsors"
-                    subtitle="Configure sponsor domain auto-detection and manage sponsor settings"
-                    showSearch={false}
-                />
+            <div className="space-y-6 p-6">
                 <div className="flex items-center justify-center py-12">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
@@ -26,12 +20,7 @@ export default function ManageSponsorsContent() {
 
     if (!isAdmin) {
         return (
-            <div className="space-y-6">
-                <DashboardHeader
-                    title="Manage Sponsors"
-                    subtitle="Configure sponsor domain auto-detection and manage sponsor settings"
-                    showSearch={false}
-                />
+            <div className="space-y-6 p-6">
                 <div className="bg-white rounded-lg shadow p-8 text-center">
                     <div className="text-red-400 mb-4">
                         <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,15 +36,8 @@ export default function ManageSponsorsContent() {
     }
 
     return (
-        <div className="">
-            <DashboardHeader
-                title="Manage Sponsors"
-                subtitle="Configure sponsor domain auto-detection and manage sponsor settings"
-                showSearch={false}
-            />
-            <div className="space-y-6 p-6">
-                <SponsorDomainsSection isAdmin={true} />
-            </div>
+        <div className="space-y-6 p-6">
+            <SponsorDomainsSection isAdmin={true} />
         </div>
     );
 }

@@ -5,7 +5,6 @@ import { collection, query, where, orderBy, limit, onSnapshot, doc, getDoc } fro
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
-import DashboardHeader from '../../shared/DashboardHeader';
 import type { User as UserType } from '../../shared/types/firestore';
 
 interface UserStats {
@@ -228,12 +227,6 @@ export default function OverviewContent() {
 
     return (
         <div className="flex-1 overflow-auto">
-            <DashboardHeader
-                title="Overview"
-                subtitle={`${getGreeting()}, ${userData?.name || 'Member'}! Here's your IEEE UCSD activity summary.`}
-                showSearch={false}
-            />
-
             <main className="p-4 md:p-6 lg:p-8">
                 <div className="grid grid-cols-1 gap-6 md:gap-8 max-w-7xl mx-auto">
                     {/* Welcome Banner */}

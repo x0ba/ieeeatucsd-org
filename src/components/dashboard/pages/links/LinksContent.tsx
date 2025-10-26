@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { Plus, AlertCircle, CheckCircle, Link as LinkIcon } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle, Link as LinkIcon, Search } from "lucide-react";
 import { useLinksManagement } from "./hooks/useLinksManagement";
-import DashboardHeader from "../../shared/DashboardHeader";
 import LinkCard from "./components/LinkCard";
 import LinkModal from "./components/LinkModal";
 import LinkFilters from "./components/LinkFilters";
@@ -87,26 +86,30 @@ export default function LinksContent() {
 
   return (
     <div className="flex-1 overflow-auto">
-      <DashboardHeader
-        title="Links"
-        subtitle="Quick access to useful resources and tools"
-        searchPlaceholder="Search links..."
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
-      >
-        {canManageLinks && (
-          <button
-            onClick={handleAddLink}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px]"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add Link</span>
-            <span className="sm:hidden">Add</span>
-          </button>
-        )}
-      </DashboardHeader>
-
       <main className="p-4 md:p-6">
+        {/* Search and Actions Bar */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="relative flex-1 max-w-md w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search links..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+            />
+          </div>
+          {canManageLinks && (
+            <button
+              onClick={handleAddLink}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px]"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add Link</span>
+              <span className="sm:hidden">Add</span>
+            </button>
+          )}
+        </div>
         {/* Messages */}
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">

@@ -5,7 +5,6 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { AlertCircle, Search, FileText, Users, GraduationCap, Briefcase, Filter, X, CheckSquare, Square, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { User as FirestoreUser, UserRole } from '../../shared/types/firestore';
 import { SponsorPermissionService } from './utils/sponsorPermissions';
-import DashboardHeader from '../../shared/DashboardHeader';
 import JSZip from 'jszip';
 import {
     normalizeMajorName,
@@ -269,37 +268,27 @@ export default function ResumeDatabaseContent() {
     // Check if user has access
     if (currentUserRole && !SponsorPermissionService.hasSponsorAccess(currentUserRole, sponsorTier as any)) {
         return (
-            <div className="flex-1 overflow-auto">
-                <DashboardHeader
-                    title="Access Denied"
-                    subtitle="You don't have permission to access this page"
-                />
-                <div className="p-6">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                        <div className="flex items-center">
-                            <AlertCircle className="h-8 w-8 text-red-600" />
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-red-800">Access Restricted</h3>
-                                <p className="text-red-700">
-                                    {currentUserRole === 'Sponsor' && sponsorTier === 'Bronze'
-                                        ? 'Bronze tier sponsors do not have access to the resume database. Please upgrade to Silver tier or above.'
-                                        : 'Only Silver tier (or above) Sponsors and Administrators can access the resume database.'}
-                                </p>
-                            </div>
+            <div className="flex-1 overflow-auto p-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div className="flex items-center">
+                        <AlertCircle className="h-8 w-8 text-red-600" />
+                        <div className="ml-4">
+                            <h3 className="text-lg font-semibold text-red-800">Access Restricted</h3>
+                            <p className="text-red-700">
+                                {currentUserRole === 'Sponsor' && sponsorTier === 'Bronze'
+                                    ? 'Bronze tier sponsors do not have access to the resume database. Please upgrade to Silver tier or above.'
+                                    : 'Only Silver tier (or above) Sponsors and Administrators can access the resume database.'}
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
+            </div >
         );
     }
 
     return (
         <div className="flex-1 overflow-auto">
-            <DashboardHeader
-                title="Resume Database"
-                subtitle="Browse resumes from IEEE members"
-            />
-
             <div className="p-6 space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -577,8 +566,8 @@ export default function ResumeDatabaseContent() {
                                                 onClick={goToPreviousPage}
                                                 disabled={currentPage === 1}
                                                 className={`p-2 rounded-lg transition-colors ${currentPage === 1
-                                                        ? 'text-gray-400 cursor-not-allowed'
-                                                        : 'text-gray-700 hover:bg-gray-200'
+                                                    ? 'text-gray-400 cursor-not-allowed'
+                                                    : 'text-gray-700 hover:bg-gray-200'
                                                     }`}
                                             >
                                                 <ChevronLeft className="w-5 h-5" />
@@ -603,8 +592,8 @@ export default function ResumeDatabaseContent() {
                                                             key={pageNum}
                                                             onClick={() => goToPage(pageNum)}
                                                             className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
-                                                                    ? 'bg-blue-600 text-white'
-                                                                    : 'text-gray-700 hover:bg-gray-200'
+                                                                ? 'bg-blue-600 text-white'
+                                                                : 'text-gray-700 hover:bg-gray-200'
                                                                 }`}
                                                         >
                                                             {pageNum}
@@ -617,8 +606,8 @@ export default function ResumeDatabaseContent() {
                                                 onClick={goToNextPage}
                                                 disabled={currentPage === totalPages}
                                                 className={`p-2 rounded-lg transition-colors ${currentPage === totalPages
-                                                        ? 'text-gray-400 cursor-not-allowed'
-                                                        : 'text-gray-700 hover:bg-gray-200'
+                                                    ? 'text-gray-400 cursor-not-allowed'
+                                                    : 'text-gray-700 hover:bg-gray-200'
                                                     }`}
                                             >
                                                 <ChevronRight className="w-5 h-5" />

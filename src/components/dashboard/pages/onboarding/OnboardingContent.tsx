@@ -3,7 +3,6 @@ import { UserPlus, Mail, List, AlertCircle, CheckCircle, Lock } from 'lucide-rea
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../../../firebase/client';
 import { doc, getDoc } from 'firebase/firestore';
-import DashboardHeader from '../../shared/DashboardHeader';
 import { Alert, AlertDescription } from '../../../ui/alert';
 import type { OnboardingTab } from './types/OnboardingTypes';
 import type { UserRole } from '../../shared/types/firestore';
@@ -127,13 +126,6 @@ export default function OnboardingContent() {
 
     return (
         <div className="flex-1 overflow-auto">
-            {/* Header */}
-            <DashboardHeader
-                title="Officer Onboarding"
-                subtitle="Manage officer invitations and onboarding workflows"
-                showSearch={false}
-            />
-
             {/* Main Content */}
             <main className="p-4 md:p-6">
                 {/* Error/Success Messages */}

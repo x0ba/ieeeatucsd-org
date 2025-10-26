@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, List, CalendarDays } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, List, CalendarDays, Search } from 'lucide-react';
 import { Card, CardHeader, CardBody, Button, Tabs, Tab, Switch } from '@heroui/react';
 import { auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -10,7 +10,6 @@ import FileManagementModal from './FileManagementModal';
 import BulkActionsModal from './BulkActionsModal';
 import GraphicsUploadModal from './GraphicsUploadModal';
 import { TableSkeleton } from '../../../ui/loading';
-import DashboardHeader from '../../shared/DashboardHeader';
 import { EventsTable } from './components/EventsTable';
 import { EventsPagination } from './components/EventsPagination';
 import { EventCalendarView } from './components/EventCalendarView';
@@ -159,28 +158,31 @@ export default function ManageEventsContent() {
 
     return (
         <div className="flex-1 overflow-auto">
-            {/* Header */}
-            <DashboardHeader
-                title="Manage Events"
-                subtitle="Create, edit, and manage IEEE UCSD events"
-                searchPlaceholder="Search events..."
-                searchValue={searchTerm}
-                onSearchChange={handleSearch}
-            >
-                {searchTerm && (
-                    <button
-                        onClick={handleClearFilters}
-                        className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] text-sm md:text-base"
-                    >
-                        <span className="hidden sm:inline">Clear</span>
-                        <span className="sm:hidden">✕</span>
-                    </button>
-                )}
-            </DashboardHeader>
-
             {/* Manage Events Content */}
             <main className="p-4 md:p-6">
                 <div className="grid grid-cols-1 gap-4 md:gap-6">
+                    {/* Search Bar */}
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                        <div className="relative flex-1 max-w-md w-full">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder="Search events..."
+                                value={searchTerm}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                            />
+                        </div>
+                        {searchTerm && (
+                            <button
+                                onClick={handleClearFilters}
+                                className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] text-sm md:text-base"
+                            >
+                                <span className="hidden sm:inline">Clear</span>
+                                <span className="sm:hidden">✕</span>
+                            </button>
+                        )}
+                    </div>
                     {/* Stats Overview */}
                     <EventManagementStats stats={stats} loading={loading} />
 
