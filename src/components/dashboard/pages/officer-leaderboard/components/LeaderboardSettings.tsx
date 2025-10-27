@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Calendar, Settings, Save, AlertCircle } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../../../../../firebase/client";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, Timestamp } from "firebase/firestore";
 import {
   Card,
   CardBody,
@@ -63,9 +63,13 @@ export default function LeaderboardSettings() {
         const settingsData =
           await OfficerLeaderboardService.getLeaderboardSettings();
         setSettings(settingsData);
-        setStartDate(
-          settingsData.startDate.toDate().toISOString().split("T")[0],
-        );
+
+        // Convert to local date string (YYYY-MM-DD) without timezone shifts
+        const date = settingsData.startDate.toDate();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        setStartDate(`${year}-${month}-${day}`);
       } catch (error) {
         console.error("Error loading settings:", error);
         setError("Failed to load settings");
@@ -90,7 +94,11 @@ export default function LeaderboardSettings() {
     setSuccess("");
 
     try {
-      const startTimestamp = new Date(startDate + "T00:00:00.000Z");
+      // Parse date as local date (YYYY-MM-DD) to avoid timezone shifts
+      const [year, month, day] = startDate.split('-').map(Number);
+      const localDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+      const startTimestamp = Timestamp.fromDate(localDate);
+
       await OfficerLeaderboardService.updateLeaderboardSettings(user.uid, {
         startDate: startTimestamp,
       });
@@ -194,7 +202,13 @@ export default function LeaderboardSettings() {
             <div className="bg-gray-50 p-3 rounded-lg">
               <div className="text-sm">
                 <span className="font-medium">Start Date: </span>
-                {settings.startDate.toDate().toLocaleDateString()}
+                {(() => {
+                  const date = settings.startDate.toDate();
+                  const year = date.getFullYear();
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const day = String(date.getDate()).padStart(2, '0');
+                  return `${month}/${day}/${year}`;
+                })()}
               </div>
               <div className="text-xs text-gray-500 mt-1">
                 Last updated: {settings.lastUpdated.toDate().toLocaleString()}
