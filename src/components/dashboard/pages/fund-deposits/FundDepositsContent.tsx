@@ -11,6 +11,7 @@ import { TableSkeleton, MetricCardSkeleton } from '../../../ui/loading';
 import { useGlobalImagePaste } from '../../shared/hooks/useGlobalImagePaste';
 import { useModalRegistration } from '../../shared/contexts/ModalContext';
 import { usePasteNotification } from '../../shared/components/PasteNotification';
+import MultiFileUpload from './components/MultiFileUpload';
 
 interface FundDeposit {
     id: string;
@@ -1145,44 +1146,15 @@ const FundDepositsContent: React.FC = () => {
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Receipt Files
-                                    </label>
-                                    <input
-                                        type="file"
-                                        multiple
-                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                        onChange={(e) => {
-                                            const files = Array.from(e.target.files || []);
-                                            setReceiptFiles(prev => [...prev, ...files]);
-                                            e.target.value = ''; // Reset input to allow same files again
-                                        }}
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Upload receipt files (PDF, JPG, PNG, DOC, DOCX) - can select multiple files
-                                    </p>
-                                    {receiptFiles.length > 0 && (
-                                        <div className="mt-2">
-                                            <p className="text-sm font-medium text-gray-700">Selected files:</p>
-                                            <ul className="text-sm text-gray-600">
-                                                {receiptFiles.map((file, index) => (
-                                                    <li key={index} className="flex items-center justify-between">
-                                                        <span>{file.name}</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setReceiptFiles(prev => prev.filter((_, i) => i !== index))}
-                                                            className="text-red-600 hover:text-red-800 ml-2"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
+                                <MultiFileUpload
+                                    files={receiptFiles}
+                                    onFilesChange={setReceiptFiles}
+                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                    maxFiles={10}
+                                    maxSizeInMB={10}
+                                    label="Receipt Files"
+                                    description="Drag and drop files here, or click to browse"
+                                />
 
                                 {/* IEEE Deposit Section */}
                                 <div className="flex items-center">
@@ -1485,75 +1457,17 @@ const FundDepositsContent: React.FC = () => {
                                     />
                                 </div>
 
-                                {/* Existing Receipt Files */}
-                                {editingDeposit.receiptFiles && editingDeposit.receiptFiles.length > 0 && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Existing Receipt Files
-                                        </label>
-                                        <div className="space-y-2">
-                                            {editingDeposit.receiptFiles.map((fileUrl, index) => (
-                                                <div key={index} className="flex items-center justify-between p-2 border border-gray-200 rounded">
-                                                    <a
-                                                        href={fileUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-blue-600 hover:text-blue-800 underline"
-                                                    >
-                                                        Receipt {index + 1}
-                                                    </a>
-                                                    <button
-                                                        onClick={() => removeReceiptFile(editingDeposit, fileUrl)}
-                                                        className="text-red-600 hover:text-red-800"
-                                                        title="Remove file"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Add New Receipt Files */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Add New Receipt Files
-                                    </label>
-                                    <input
-                                        type="file"
-                                        multiple
-                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                        onChange={(e) => {
-                                            const files = Array.from(e.target.files || []);
-                                            setEditReceiptFiles(prev => [...prev, ...files]);
-                                            e.target.value = '';
-                                        }}
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Upload additional receipt files (PDF, JPG, PNG, DOC, DOCX) - can select multiple files
-                                    </p>
-                                    {editReceiptFiles.length > 0 && (
-                                        <div className="mt-2">
-                                            <p className="text-sm font-medium text-gray-700">New files to upload:</p>
-                                            <ul className="text-sm text-gray-600">
-                                                {editReceiptFiles.map((file, index) => (
-                                                    <li key={index} className="flex items-center justify-between">
-                                                        <span>{file.name}</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setEditReceiptFiles(prev => prev.filter((_, i) => i !== index))}
-                                                            className="text-red-600 hover:text-red-800 ml-2"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
+                                <MultiFileUpload
+                                    files={editReceiptFiles}
+                                    onFilesChange={setEditReceiptFiles}
+                                    existingFiles={editingDeposit.receiptFiles || []}
+                                    onRemoveExistingFile={(fileUrl) => removeReceiptFile(editingDeposit, fileUrl)}
+                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                    maxFiles={10}
+                                    maxSizeInMB={10}
+                                    label="Receipt Files"
+                                    description="Drag and drop files here, or click to browse"
+                                />
                             </div>
 
                             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
