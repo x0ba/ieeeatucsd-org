@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, Award, Crown, TrendingUp, Users, Star, Search } from 'lucide-react';
 import { Pagination } from '@heroui/react';
-import { collection, query, orderBy, onSnapshot, limit, getCountFromServer } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
@@ -23,7 +23,7 @@ export default function LeaderboardContent() {
     const [user] = useAuthState(auth);
     const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
     const [currentUserRank, setCurrentUserRank] = useState<number>(0);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Start with false to show cached data immediately
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5); // Show 5 users per page
@@ -31,11 +31,15 @@ export default function LeaderboardContent() {
 
     useEffect(() => {
         // Set up real-time listener for public profiles leaderboard
+        // Firebase persistence will cache ALL users, so subsequent loads are instant
         try {
-            // Query for all users (no limit for pagination)
+            // Query for ALL users (no limit) - Firebase cache makes this fast on repeat visits
             const publicProfilesQuery = query(
                 collection(db, 'public_profiles'),
                 orderBy('points', 'desc')
+                // No limit - fetch all users for accurate counting
+                // First load: from server (may be slow)
+                // Subsequent loads: from cache (instant!)
             );
 
             // Separate query to get total count of all users

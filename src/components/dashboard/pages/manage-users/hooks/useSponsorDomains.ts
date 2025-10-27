@@ -12,7 +12,10 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "../../../../../firebase/client";
 import { useAuthState } from "react-firebase-hooks/auth";
-import type { SponsorDomain, SponsorTier } from "../../../shared/types/firestore";
+import type {
+  SponsorDomain,
+  SponsorTier,
+} from "../../../shared/types/firestore";
 
 export interface SponsorDomainWithId extends SponsorDomain {
   id: string;
@@ -27,7 +30,7 @@ export interface SponsorDomainFormData {
 export const useSponsorDomains = () => {
   const [user] = useAuthState(auth);
   const [domains, setDomains] = useState<SponsorDomainWithId[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start false to show cached data immediately
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -79,20 +82,21 @@ export const useSponsorDomains = () => {
 
       // Check for duplicate domain
       const existingDomain = domains.find(
-        (d) => d.domain.toLowerCase() === formData.domain.toLowerCase()
+        (d) => d.domain.toLowerCase() === formData.domain.toLowerCase(),
       );
       if (existingDomain) {
         setError("This domain already exists");
         return;
       }
 
-      const domainData: Omit<SponsorDomain, "lastModified" | "lastModifiedBy"> = {
-        domain: formData.domain.toLowerCase(),
-        organizationName: formData.organizationName,
-        sponsorTier: formData.sponsorTier,
-        createdAt: Timestamp.now(),
-        createdBy: user.uid,
-      };
+      const domainData: Omit<SponsorDomain, "lastModified" | "lastModifiedBy"> =
+        {
+          domain: formData.domain.toLowerCase(),
+          organizationName: formData.organizationName,
+          sponsorTier: formData.sponsorTier,
+          createdAt: Timestamp.now(),
+          createdBy: user.uid,
+        };
 
       await addDoc(collection(db, "sponsorDomains"), domainData);
       setSuccess("Sponsor domain added successfully");
@@ -107,7 +111,7 @@ export const useSponsorDomains = () => {
   // Update an existing sponsor domain
   const updateDomain = async (
     domainId: string,
-    formData: SponsorDomainFormData
+    formData: SponsorDomainFormData,
   ) => {
     if (!user) {
       setError("You must be logged in to update a sponsor domain");
@@ -130,7 +134,7 @@ export const useSponsorDomains = () => {
       const existingDomain = domains.find(
         (d) =>
           d.domain.toLowerCase() === formData.domain.toLowerCase() &&
-          d.id !== domainId
+          d.id !== domainId,
       );
       if (existingDomain) {
         setError("This domain already exists");
@@ -192,4 +196,3 @@ export const useSponsorDomains = () => {
     fetchDomains,
   };
 };
-

@@ -37,11 +37,12 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { getFirestore, doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
-import { auth } from "../../../firebase/client";
+import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { auth, db } from "../../../firebase/client";
 import type { NavigationCategory } from "./types/navigation";
 import type { UserRole } from "./types/firestore";
 import { NAVIGATION_PATHS } from "./types/navigation";
+import { SyncStatusIndicator } from "./components/SyncStatusIndicator.tsx";
 
 interface TopNavbarProps {
   currentPath?: string;
@@ -167,7 +168,7 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
   const [userData, setUserData] = useState<UserType | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const db = getFirestore();
+  // Use db from client import
 
   useEffect(() => {
     if (userLoading) return;
@@ -178,35 +179,36 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
       return;
     }
 
-    if (user && currentUserRole === null) {
-      const fetchUserRole = async () => {
-        try {
-          setIsLoadingRole(true);
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            setCurrentUserRole(data.role || "Member");
-            setSponsorTier(data.sponsorTier || null);
-            setUserData({
-              name: data.name || "User",
-              email: data.email || user.email || "",
-              points: data.points || 0,
-              role: data.role || "Member",
-            });
-          } else {
-            setCurrentUserRole("Member");
-          }
-        } catch (error) {
-          console.error("Error fetching user role:", error);
-          setCurrentUserRole("Member");
-        } finally {
-          setIsLoadingRole(false);
-        }
-      };
+    setIsLoadingRole(true);
 
-      fetchUserRole();
-    }
-  }, [user, userLoading, currentUserRole, db]);
+    // Set up real-time listener for user data
+    const unsubscribe = onSnapshot(
+      doc(db, "users", user.uid),
+      (userDoc) => {
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setCurrentUserRole(data.role || "Member");
+          setSponsorTier(data.sponsorTier || null);
+          setUserData({
+            name: data.name || "User",
+            email: data.email || user.email || "",
+            points: data.points || 0,
+            role: data.role || "Member",
+          });
+        } else {
+          setCurrentUserRole("Member");
+        }
+        setIsLoadingRole(false);
+      },
+      (error) => {
+        console.error("Error fetching user role:", error);
+        setCurrentUserRole("Member");
+        setIsLoadingRole(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user, userLoading, db]);
 
   // Fetch notifications
   useEffect(() => {
@@ -301,11 +303,10 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
               <NavbarItem key={index} isActive={isActive}>
                 <a
                   href={item.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-                    isActive
-                      ? "bg-white/20 text-white font-semibold"
-                      : "text-white/80 hover:bg-white/10 hover:text-white"
-                  }`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${isActive
+                    ? "bg-white/20 text-white font-semibold"
+                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   <span className="text-sm">{item.label}</span>
@@ -348,8 +349,13 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
         )}
       </NavbarContent>
 
-      {/* Right side - Notifications & Profile */}
+      {/* Right side - Sync Status, Notifications & Profile */}
       <NavbarContent justify="end">
+        {/* Sync Status Indicator */}
+        <NavbarItem>
+          <SyncStatusIndicator />
+        </NavbarItem>
+
         {/* Notifications */}
         <Dropdown placement="bottom-end">
           <NavbarItem>
@@ -465,11 +471,10 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
                     <NavbarMenuItem key={index} isActive={isActive}>
                       <a
                         href={item.href}
-                        className={`flex items-center gap-3 px-2 py-2.5 rounded-lg transition-all w-full ${
-                          isActive
-                            ? "bg-blue-50 text-blue-700 font-semibold"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                        className={`flex items-center gap-3 px-2 py-2.5 rounded-lg transition-all w-full ${isActive
+                          ? "bg-blue-50 text-blue-700 font-semibold"
+                          : "text-gray-700 hover:bg-gray-100"
+                          }`}
                       >
                         <Icon className="w-5 h-5" />
                         <span>{item.label}</span>

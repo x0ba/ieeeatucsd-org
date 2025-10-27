@@ -2,6 +2,7 @@ import { type ReactNode, useEffect } from 'react';
 import { TopNavbar } from './TopNavbar.tsx';
 import { auth } from '../../../firebase/client';
 import { ModalProvider } from './contexts/ModalContext.tsx';
+import { SyncStatusProvider } from './contexts/SyncStatusContext.tsx';
 
 interface DashboardLayoutProps {
     children?: ReactNode;
@@ -20,17 +21,19 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
     }, []);
 
     return (
-        <ModalProvider>
-            <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
-                {/* Top Navigation Bar */}
-                <TopNavbar currentPath={currentPath} />
+        <SyncStatusProvider>
+            <ModalProvider>
+                <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+                    {/* Top Navigation Bar */}
+                    <TopNavbar currentPath={currentPath} />
 
-                {/* Main Content Area */}
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                    {children || <DefaultContent />}
+                    {/* Main Content Area */}
+                    <div className="flex-1 min-h-0 overflow-y-auto">
+                        {children || <DefaultContent />}
+                    </div>
                 </div>
-            </div>
-        </ModalProvider>
+            </ModalProvider>
+        </SyncStatusProvider>
     );
 }
 

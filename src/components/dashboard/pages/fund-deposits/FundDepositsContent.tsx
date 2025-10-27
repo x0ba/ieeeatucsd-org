@@ -99,7 +99,7 @@ const FundDepositsContent: React.FC = () => {
     const [user, loading, error] = useAuthState(auth);
     const [deposits, setDeposits] = useState<FundDeposit[]>([]);
     const [filteredDeposits, setFilteredDeposits] = useState<FundDeposit[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false); // Start false to show cached data immediately
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [userRole, setUserRole] = useState<UserRole>('Member');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { auth } from '../../../../firebase/client';
-import { getFirestore, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../../../../firebase/client';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { app } from '../../../../firebase/client';
 import { User, GraduationCap, CreditCard, Upload, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
@@ -86,7 +86,7 @@ export default function GetStartedContent() {
     const [loading, setLoading] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
 
-    const db = getFirestore(app);
+    // Use db from client
     const storage = getStorage(app);
     const currentQuestion = questions[currentStep];
     const isLastStep = currentStep === questions.length - 1;

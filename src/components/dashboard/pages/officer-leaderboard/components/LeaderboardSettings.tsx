@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, Settings, Save, AlertCircle } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "../../../../../firebase/client";
-import { doc, getDoc, getFirestore } from "firebase/firestore";
+import { auth, db } from "../../../../../firebase/client";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import {
   Card,
   CardBody,
@@ -20,29 +20,32 @@ export default function LeaderboardSettings() {
   const [user] = useAuthState(auth);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [settings, setSettings] = useState<LeaderboardSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start false to show cached data immediately
   const [saving, setSaving] = useState(false);
   const [startDate, setStartDate] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
 
   useEffect(() => {
-    const loadUserRole = async () => {
-      if (!user) return;
+    if (!user) return;
 
-      try {
-        const db = getFirestore();
-        const userDoc = await getDoc(doc(db, "users", user.uid));
+    // Use db from client import
+
+    // Set up real-time listener for user role
+    const unsubscribe = onSnapshot(
+      doc(db, "users", user.uid),
+      (userDoc) => {
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setCurrentUserRole(userData.role);
         }
-      } catch (error) {
+      },
+      (error) => {
         console.error("Error loading user role:", error);
       }
-    };
+    );
 
-    loadUserRole();
+    return () => unsubscribe();
   }, [user]);
 
   useEffect(() => {

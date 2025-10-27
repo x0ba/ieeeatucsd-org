@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import {
-  getFirestore,
   collection,
   addDoc,
   doc,
@@ -10,7 +9,7 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import { app } from "../../../../firebase/client";
+import { app, db } from "../../../../firebase/client";
 import { auth } from "../../../../firebase/client";
 import { EventAuditService } from "../../shared/services/eventAuditService";
 import { EmailClient } from "../../../../scripts/email/EmailClient";
@@ -141,7 +140,7 @@ export default function EventRequestModal({
     setFormData((prev) => ({ ...prev, invoices }));
   }, [invoices]);
 
-  const db = getFirestore(app);
+  // Use db from client
 
   // Populate form data when editing or with preselected date
   useEffect(() => {

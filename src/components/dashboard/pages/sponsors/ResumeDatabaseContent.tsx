@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { db, auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { AlertCircle, Search, FileText, Users, GraduationCap, Briefcase, Filter, X, CheckSquare, Square, Download, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -29,7 +29,7 @@ export default function ResumeDatabaseContent() {
     const [sponsorTier, setSponsorTier] = useState<string | null>(null);
     const [users, setUsers] = useState<UserWithResume[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<UserWithResume[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Start false to show cached data immediately
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedMajor, setSelectedMajor] = useState<string>('all');
@@ -42,40 +42,40 @@ export default function ResumeDatabaseContent() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    // Fetch current user role and sponsor tier
+    // Real-time listener for current user role and sponsor tier
     useEffect(() => {
         if (!user) return;
 
-        const fetchUserRole = async () => {
-            try {
-                const userDoc = await getDocs(query(collection(db, 'users'), where('__name__', '==', user.uid)));
-                if (!userDoc.empty) {
-                    const userData = userDoc.docs[0].data();
+        const userRef = doc(db, 'users', user.uid);
+        const unsubscribe = onSnapshot(
+            userRef,
+            (userDoc) => {
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
                     setCurrentUserRole(userData.role || 'Member');
                     setSponsorTier(userData.sponsorTier || null);
                 }
-            } catch (error) {
+            },
+            (error) => {
                 console.error('Error fetching user role:', error);
                 setCurrentUserRole('Member');
             }
-        };
+        );
 
-        fetchUserRole();
-    }, [user]);
+        return () => unsubscribe();
+    }, [user, db]);
 
-    // Fetch users with resumes
+    // Real-time listener for users with resumes
     useEffect(() => {
         if (!user || !currentUserRole) return;
 
-        const fetchUsers = async () => {
-            try {
-                setLoading(true);
-                setError(null);
+        setLoading(true);
+        setError(null);
 
-                // Query all users - no opt-in required
-                const usersRef = collection(db, 'users');
-                const querySnapshot = await getDocs(usersRef);
-
+        const usersRef = collection(db, 'users');
+        const unsubscribe = onSnapshot(
+            usersRef,
+            (querySnapshot) => {
                 const usersData: UserWithResume[] = querySnapshot.docs
                     .map(doc => ({
                         id: doc.id,
@@ -85,16 +85,17 @@ export default function ResumeDatabaseContent() {
 
                 setUsers(usersData);
                 setFilteredUsers(usersData);
-            } catch (err: any) {
+                setLoading(false);
+            },
+            (err) => {
                 console.error('Error fetching users:', err);
                 setError('Failed to load resume database: ' + err.message);
-            } finally {
                 setLoading(false);
             }
-        };
+        );
 
-        fetchUsers();
-    }, [user, currentUserRole]);
+        return () => unsubscribe();
+    }, [user, currentUserRole, db]);
 
     // Memoize major normalization map for efficient lookups
     const majorNormalizationMap = useMemo(() => {
@@ -283,7 +284,6 @@ export default function ResumeDatabaseContent() {
                     </div>
                 </div>
             </div>
-            </div >
         );
     }
 

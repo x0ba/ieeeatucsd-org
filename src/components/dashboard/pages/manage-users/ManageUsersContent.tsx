@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { getFirestore, doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../../../../firebase/client";
 import { Pagination } from "@heroui/react";
 import { useUserManagement } from "./hooks/useUserManagement";
 import type {
@@ -175,7 +176,6 @@ export default function ManageUsersContent() {
 
       if (result.success) {
         // Update the user's email status in Firebase
-        const db = getFirestore();
         const userRef = doc(db, "users", userId);
 
         try {

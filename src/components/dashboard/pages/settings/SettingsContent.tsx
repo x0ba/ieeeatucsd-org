@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Shield, UserCircle, Upload, FileText, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
-import { auth } from '../../../../firebase/client';
-import { getFirestore, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../../../../firebase/client';
+import { doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import type { User } from '../../shared/types/firestore';
@@ -11,7 +11,7 @@ import { normalizeMajorName } from '../../../../utils/majorNormalization';
 
 export default function SettingsContent() {
     const [userData, setUserData] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Start false to show cached data immediately
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -43,23 +43,30 @@ export default function SettingsContent() {
     const [resumeFile, setResumeFile] = useState<File | null>(null);
     const [uploadingResume, setUploadingResume] = useState(false);
 
-    const db = getFirestore();
+    // Use db from client import
     const storage = getStorage();
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        let userDataUnsubscribe: (() => void) | null = null;
+
+        const authUnsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
-                loadUserData(user);
+                userDataUnsubscribe = loadUserData(user);
             } else {
                 setError('Not authenticated');
                 setLoading(false);
             }
         });
 
-        return () => unsubscribe();
+        return () => {
+            authUnsubscribe();
+            if (userDataUnsubscribe) {
+                userDataUnsubscribe();
+            }
+        };
     }, []);
 
-    const loadUserData = async (user: any) => {
+    const loadUserData = (user: any) => {
         try {
             // Check if user logged in with Google
             const isGoogle = user.providerData.some((provider: any) =>
@@ -67,26 +74,37 @@ export default function SettingsContent() {
             );
             setIsGoogleUser(isGoogle);
 
-            // Load user data from Firestore
+            // Set up real-time listener for user data
             const userRef = doc(db, 'users', user.uid);
-            const userSnap = await getDoc(userRef);
+            const unsubscribe = onSnapshot(
+                userRef,
+                (userSnap) => {
+                    if (userSnap.exists()) {
+                        const data = userSnap.data() as User;
+                        setUserData(data);
+                        setProfileData({
+                            name: data.name || '',
+                            pid: data.pid || '',
+                            major: data.major || '',
+                            graduationYear: data.graduationYear?.toString() || '',
+                            memberId: data.memberId || '',
+                            zelleInformation: data.zelleInformation || ''
+                        });
+                    }
+                    setLoading(false);
+                },
+                (err: any) => {
+                    setError(err.message);
+                    setLoading(false);
+                }
+            );
 
-            if (userSnap.exists()) {
-                const data = userSnap.data() as User;
-                setUserData(data);
-                setProfileData({
-                    name: data.name || '',
-                    pid: data.pid || '',
-                    major: data.major || '',
-                    graduationYear: data.graduationYear?.toString() || '',
-                    memberId: data.memberId || '',
-                    zelleInformation: data.zelleInformation || ''
-                });
-            }
+            // Store unsubscribe function for cleanup
+            return unsubscribe;
         } catch (err: any) {
             setError(err.message);
-        } finally {
             setLoading(false);
+            return () => { };
         }
     };
 

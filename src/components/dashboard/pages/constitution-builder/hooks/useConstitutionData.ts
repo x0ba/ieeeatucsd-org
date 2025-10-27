@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  getFirestore,
   collection,
   doc,
   onSnapshot,
@@ -14,7 +13,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "../../../../../firebase/client";
+import { auth, db } from "../../../../../firebase/client";
 import type {
   Constitution,
   ConstitutionSection,
@@ -29,11 +28,11 @@ export const useConstitutionData = () => {
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Start false to show cached data immediately
   const [constitutionLoaded, setConstitutionLoaded] = useState(false);
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
 
-  const db = getFirestore();
+  // Use db from client import
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const constitutionId = "ieee-ucsd-constitution";
 

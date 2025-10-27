@@ -3,32 +3,34 @@ import { Building2, Mail, Award, Check, X, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../../../firebase/client';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import type { User as FirestoreUser, SponsorTier } from '../../shared/types/firestore';
 
 export default function SponsorInformation() {
     const { userRole } = useAuth();
     const [user] = useAuthState(auth);
     const [sponsorData, setSponsorData] = React.useState<Partial<FirestoreUser> | null>(null);
-    const [loading, setLoading] = React.useState(true);
+    const [loading, setLoading] = React.useState(false); // Start false to show cached data immediately
 
     React.useEffect(() => {
-        const fetchSponsorData = async () => {
-            if (!user) return;
+        if (!user) return;
 
-            try {
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
+        // Set up real-time listener for sponsor data
+        const unsubscribe = onSnapshot(
+            doc(db, 'users', user.uid),
+            (userDoc) => {
                 if (userDoc.exists()) {
                     setSponsorData(userDoc.data() as FirestoreUser);
                 }
-            } catch (error) {
+                setLoading(false);
+            },
+            (error) => {
                 console.error('Error fetching sponsor data:', error);
-            } finally {
                 setLoading(false);
             }
-        };
+        );
 
-        fetchSponsorData();
+        return () => unsubscribe();
     }, [user]);
 
     if (loading) {

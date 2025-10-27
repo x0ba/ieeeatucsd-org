@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar, FileText, DollarSign, Users, Clock } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, Tabs, Tab, Chip } from '@heroui/react';
-import { getFirestore, collection, doc, updateDoc, query, where, getDocs, getDoc } from 'firebase/firestore';
-import { app, auth } from '../../../../firebase/client';
+import { collection, doc, updateDoc, query, where, getDocs, getDoc } from 'firebase/firestore';
+import { app, auth, db } from '../../../../firebase/client';
 import { EventAuditService } from '../../shared/services/eventAuditService';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import FilePreviewModal from './components/FilePreviewModal';
@@ -22,11 +22,11 @@ export default function EventViewModal({ request, users, onClose, onSuccess }: E
     const [updating, setUpdating] = useState(false);
     const [eventFiles, setEventFiles] = useState<string[]>([]);
     const [privateFiles, setPrivateFiles] = useState<string[]>([]);
-    const [loadingEventFiles, setLoadingEventFiles] = useState(true);
+    const [loadingEventFiles, setLoadingEventFiles] = useState(false); // Start false to show cached data immediately
     const [eventCode, setEventCode] = useState<string>('');
     const [pointsToReward, setPointsToReward] = useState<number>(0);
     const [attendees, setAttendees] = useState<AttendeeRecord[]>([]);
-    const [loadingAttendees, setLoadingAttendees] = useState(true);
+    const [loadingAttendees, setLoadingAttendees] = useState(false); // Start false to show cached data immediately
     const [copiedInvoice, setCopiedInvoice] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewFeedback, setReviewFeedback] = useState('');
@@ -34,7 +34,7 @@ export default function EventViewModal({ request, users, onClose, onSuccess }: E
     const [currentUserRole, setCurrentUserRole] = useState<string>('Member');
     const [selectedTab, setSelectedTab] = useState<string>('details');
 
-    const db = getFirestore(app);
+    // Use db from client
 
     useEffect(() => {
         if (!request) return;

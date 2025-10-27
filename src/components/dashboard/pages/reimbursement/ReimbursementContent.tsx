@@ -75,7 +75,7 @@ const getStatusDisplayName = (status: string) => {
 export default function ReimbursementContent() {
     const [user] = useAuthState(auth);
     const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Start false to show cached data immediately
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isWizardOpen, setIsWizardOpen] = useState(false);
     const [selectedReimbursement, setSelectedReimbursement] = useState<Reimbursement | null>(null);

@@ -33,7 +33,6 @@ export default function ResumeDatabaseWrapper() {
                     </div>
                 </div>
             </div>
-            </div >
         );
     }
 

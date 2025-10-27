@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  getFirestore,
   collection,
   getDocs,
   query,
@@ -12,7 +11,7 @@ import {
   onSnapshot,
   getDoc,
 } from "firebase/firestore";
-import { app } from "../../../../../firebase/client";
+import { app, db } from "../../../../../firebase/client";
 import { PublicProfileService } from "../../../shared/services/publicProfile";
 import { EmailClient } from "../../../../../scripts/email/EmailClient";
 import type { UserRole } from "../../../shared/types/firestore";
@@ -42,7 +41,7 @@ export function useEventManagement(userId: string | undefined) {
   const [users, setUsers] = useState<
     Record<string, { name: string; email: string }>
   >({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start false to show cached data immediately
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>("Member");
@@ -52,7 +51,7 @@ export function useEventManagement(userId: string | undefined) {
   const [showDrafts, setShowDrafts] = useState(true);
   const eventsPerPage = 10;
 
-  const db = getFirestore(app);
+  // Use db from client
 
   // Fetch users
   const fetchUsers = async () => {

@@ -6,7 +6,11 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Firebase client configuration for web app
@@ -23,6 +27,17 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Initialize Firestore with persistent cache (new API - replaces enableMultiTabIndexedDbPersistence)
+// This allows the app to cache Firestore data locally and work offline
+// Multi-tab support allows multiple tabs to share the same cache
+// IMPORTANT: This must be the FIRST initialization of Firestore for this app
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
+
 export const storage = getStorage(app);
+
 export { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider };

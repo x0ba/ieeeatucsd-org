@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Calendar, Bell, User, Filter, MapPin, Clock, Users, UserCheck, X, Award, FileText, Eye, Download } from 'lucide-react';
-import { getFirestore, collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { Search, Calendar, MapPin, Clock, Users, UserCheck, X, Award, FileText, Eye, Download } from 'lucide-react';
+import { collection, query, where, doc, updateDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { app } from '../../../../firebase/client';
+import { app, db } from '../../../../firebase/client';
 import { PublicProfileService } from '../../shar../../shared/services/publicProfile';
 import { EventCardSkeleton, MetricCardSkeleton } from '../../../ui/loading';
 
@@ -35,14 +35,14 @@ export default function EventsContent() {
         totalPointsEarned: 0,
         totalEventsAttended: 0
     });
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Start false to show cached data immediately
     const [error, setError] = useState<string | null>(null);
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [checkingIn, setCheckingIn] = useState<string | null>(null);
     const [checkedInEvents, setCheckedInEvents] = useState<Set<string>>(new Set());
 
-    const db = getFirestore(app);
+    // Use db from client
     const auth = getAuth(app);
 
     // Utility function to determine if an event is currently active
@@ -56,125 +56,117 @@ export default function EventsContent() {
         return now >= startDate && now <= endDate;
     };
 
+    // Real-time listener for events
     useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-            if (user) {
-                fetchEvents();
-                fetchUserStats();
-            } else {
-                // Even without authentication, we can fetch public events
-                fetchEvents();
+        setLoading(true);
+        setError(null);
+
+        const eventsRef = collection(db, 'events');
+        const publishedQuery = query(
+            eventsRef,
+            where('published', '==', true)
+        );
+
+        const unsubscribeEvents = onSnapshot(
+            publishedQuery,
+            (snapshot) => {
+                const eventsData = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        // Ensure all required fields have defaults
+                        published: data.published ?? false,
+                        pointsToReward: data.pointsToReward ?? 0,
+                        attendees: data.attendees ?? [],
+                        eventCode: data.eventCode ?? '',
+                        eventName: data.eventName ?? data.name ?? 'Untitled Event',
+                        hasFood: data.hasFood ?? false,
+                        files: data.files ?? []
+                    };
+                }) as Event[];
+
+                // Sort by start date
+                eventsData.sort((a, b) => {
+                    const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
+                    const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
+                    return dateA.getTime() - dateB.getTime();
+                });
+
+                setEvents(eventsData);
+                setLoading(false);
+            },
+            (error) => {
+                console.error('Error fetching events:', error);
+                setError('Failed to fetch events: ' + error.message);
                 setLoading(false);
             }
-        });
+        );
 
-        return () => unsubscribe();
-    }, []);
+        return () => unsubscribeEvents();
+    }, [db]);
 
+    // Real-time listener for user stats
     useEffect(() => {
-        if (auth.currentUser && events.length > 0) {
-            fetchUserCheckedInEvents();
-        }
-    }, [auth.currentUser, events]);
-
-    const fetchEvents = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-
-            const eventsRef = collection(db, 'events');
-            let eventsSnapshot;
-
-            // First try to get only published events with simple query
-            try {
-                const publishedQuery = query(
-                    eventsRef,
-                    where('published', '==', true)
-                );
-                eventsSnapshot = await getDocs(publishedQuery);
-            } catch (queryError) {
-                // Fallback: get all events and filter client-side
-                eventsSnapshot = await getDocs(eventsRef);
-            }
-
-            const eventsData = eventsSnapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    ...data,
-                    // Ensure all required fields have defaults
-                    published: data.published ?? false, // Default to false for safety
-                    pointsToReward: data.pointsToReward ?? 0,
-                    attendees: data.attendees ?? [],
-                    eventCode: data.eventCode ?? '',
-                    eventName: data.eventName ?? data.name ?? 'Untitled Event',
-                    hasFood: data.hasFood ?? false,
-                    files: data.files ?? []
-                };
-            }) as Event[];
-
-            // Always filter for published events client-side
-            const publishedEvents = eventsData.filter(event => event.published === true);
-
-            // Sort by start date
-            publishedEvents.sort((a, b) => {
-                const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
-                const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
-                return dateA.getTime() - dateB.getTime();
-            });
-
-            setEvents(publishedEvents);
-        } catch (error) {
-            setError('Failed to fetch events: ' + (error as Error).message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchUserStats = async () => {
         if (!auth.currentUser) return;
 
-        try {
-            const userRef = doc(db, 'users', auth.currentUser.uid);
-            const userSnap = await getDoc(userRef);
-
-            if (userSnap.exists()) {
-                const userData = userSnap.data();
-                setUserStats({
-                    lastEventAttended: userData.lastEventAttended || 'None',
-                    totalPointsEarned: userData.points || 0,
-                    totalEventsAttended: userData.eventsAttended || 0
-                });
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        const unsubscribeUser = onSnapshot(
+            userRef,
+            (userSnap) => {
+                if (userSnap.exists()) {
+                    const userData = userSnap.data();
+                    setUserStats({
+                        lastEventAttended: userData.lastEventAttended || 'None',
+                        totalPointsEarned: userData.points || 0,
+                        totalEventsAttended: userData.eventsAttended || 0
+                    });
+                }
+            },
+            (error) => {
+                console.error('Error fetching user stats:', error);
             }
-        } catch (error) {
-            // Error fetching user stats
-        }
-    };
+        );
 
-    const fetchUserCheckedInEvents = async () => {
-        if (!auth.currentUser) return;
+        return () => unsubscribeUser();
+    }, [auth.currentUser, db]);
 
-        try {
-            const checkedInSet = new Set<string>();
+    // Set up real-time listeners for user check-in status for each event
+    useEffect(() => {
+        if (!auth.currentUser || events.length === 0) return;
 
-            // For each event, check if user has checked in
-            for (const event of events) {
-                try {
-                    const attendeeRef = doc(db, 'events', event.id, 'attendees', auth.currentUser.uid);
-                    const attendeeSnap = await getDoc(attendeeRef);
+        const unsubscribers: (() => void)[] = [];
+        const checkedInSet = new Set<string>();
+
+        // Set up a listener for each event's attendee document
+        events.forEach((event) => {
+            const attendeeRef = doc(db, 'events', event.id, 'attendees', auth.currentUser!.uid);
+
+            const unsubscribe = onSnapshot(
+                attendeeRef,
+                (attendeeSnap) => {
                     if (attendeeSnap.exists()) {
                         checkedInSet.add(event.id);
+                    } else {
+                        checkedInSet.delete(event.id);
                     }
-                } catch (error) {
-                    // Continue if there's an error checking a specific event
+                    // Update state with new set
+                    setCheckedInEvents(new Set(checkedInSet));
+                },
+                (error) => {
+                    // Silently handle errors for individual events
+                    console.debug(`Error checking attendance for event ${event.id}:`, error);
                 }
-            }
+            );
 
-            setCheckedInEvents(checkedInSet);
-        } catch (error) {
-            // Error fetching user checked-in events
-        }
-    };
+            unsubscribers.push(unsubscribe);
+        });
+
+        // Cleanup all listeners
+        return () => {
+            unsubscribers.forEach(unsub => unsub());
+        };
+    }, [auth.currentUser, events, db]);
 
     const handleCheckIn = async (event: Event) => {
         if (!auth.currentUser) {
@@ -257,8 +249,7 @@ export default function EventsContent() {
             // Add event to checked-in set
             setCheckedInEvents(prev => new Set(prev).add(event.id));
 
-            // Refresh user stats
-            fetchUserStats();
+            // User stats will auto-update via real-time listener
 
             // Show success message
             const message = event.hasFood && foodPreference
@@ -327,15 +318,11 @@ export default function EventsContent() {
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
                         />
                     </div>
-                    <button
-                        onClick={() => fetchEvents()}
-                        disabled={loading}
-                        className="flex items-center space-x-2 px-3 md:px-4 py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 min-h-[44px] text-sm md:text-base"
-                    >
+                    {/* Real-time sync - no manual refresh needed */}
+                    <div className="flex items-center space-x-2 px-3 md:px-4 py-2 text-gray-600 text-sm">
                         <Calendar className="w-4 h-4" />
-                        <span className="hidden sm:inline">{loading ? 'Refreshing...' : 'Refresh Events'}</span>
-                        <span className="sm:hidden">{loading ? 'Refresh...' : 'Refresh'}</span>
-                    </button>
+                        <span className="hidden sm:inline">Auto-syncing</span>
+                    </div>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:gap-6">
                     {/* Error Message */}

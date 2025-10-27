@@ -93,7 +93,7 @@ const getStatusDisplayName = (status: string) => {
 export default function ManageReimbursementsContent() {
     const [user] = useAuthState(auth);
     const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Start false to show cached data immediately
     const [selectedReimbursement, setSelectedReimbursement] = useState<Reimbursement | null>(null);
     const [auditReimbursement, setAuditReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');

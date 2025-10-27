@@ -40,15 +40,15 @@ export default function OverviewContent() {
     });
     const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
     const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Start false to show cached data immediately
 
     useEffect(() => {
         if (!user) return;
 
-        // Fetch user data
-        const fetchUserData = async () => {
-            try {
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
+        // Set up real-time listener for user data
+        const unsubscribeUser = onSnapshot(
+            doc(db, 'users', user.uid),
+            (userDoc) => {
                 if (userDoc.exists()) {
                     const data = userDoc.data() as UserType;
                     setUserData(data);
@@ -58,12 +58,11 @@ export default function OverviewContent() {
                         eventsAttended: data.eventsAttended || 0
                     }));
                 }
-            } catch (error) {
+            },
+            (error) => {
                 console.error('Error fetching user data:', error);
             }
-        };
-
-        fetchUserData();
+        );
 
         // Set up real-time listener for leaderboard ranking with delay to ensure auth is ready
         const timeoutId = setTimeout(() => {
@@ -113,6 +112,7 @@ export default function OverviewContent() {
         }, 1000); // 1 second delay to ensure auth is fully ready
 
         return () => {
+            unsubscribeUser();
             clearTimeout(timeoutId);
             if ((window as any).__rankingUnsubscribe) {
                 (window as any).__rankingUnsubscribe();

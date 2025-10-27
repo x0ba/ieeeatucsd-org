@@ -32,7 +32,7 @@ export function useLinksManagement() {
   const [user, userLoading] = useAuthState(auth);
   const [links, setLinks] = useState<(Link & { id: string })[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start false to show cached data immediately
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
