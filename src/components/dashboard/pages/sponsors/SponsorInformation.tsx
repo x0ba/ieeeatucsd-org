@@ -202,7 +202,13 @@ export default function SponsorInformation() {
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <Table aria-label="Sponsorship benefits comparison table">
+                    <Table
+                        aria-label="Sponsorship benefits comparison table"
+                        classNames={{
+                            th: "bg-transparent border-b border-border/30 pb-2",
+                            tr: "hover:bg-muted/30 transition-colors"
+                        }}
+                    >
                         <TableHeader>
                             <TableColumn>BENEFIT</TableColumn>
                             <TableColumn align="center">
