@@ -8,8 +8,8 @@ import type { User as FirestoreUser, SponsorTier } from '../../shared/types/fire
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/react';
 
 export default function SponsorInformation() {
     const { userRole } = useAuth();
@@ -202,41 +202,39 @@ export default function SponsorInformation() {
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <Table>
+                    <Table aria-label="Sponsorship benefits comparison table">
                         <TableHeader>
-                            <TableRow>
-                                <TableHead className="text-left">Benefit</TableHead>
-                                <TableHead className="text-center">
-                                    <div className="flex flex-col items-center">
-                                        <Badge variant="outline" className={`mb-1 ${getTierColor('Bronze')}`}>
-                                            Bronze
-                                        </Badge>
-                                        <span className="text-muted-foreground text-sm">{getTierAmount('Bronze')}</span>
-                                    </div>
-                                </TableHead>
-                                <TableHead className="text-center">
-                                    <div className="flex flex-col items-center">
-                                        <Badge variant="outline" className={`mb-1 ${getTierColor('Silver')}`}>
-                                            Silver
-                                        </Badge>
-                                        <span className="text-muted-foreground text-sm">{getTierAmount('Silver')}</span>
-                                    </div>
-                                </TableHead>
-                                <TableHead className="text-center">
-                                    <div className="flex flex-col items-center">
-                                        <Badge variant="outline" className={`mb-1 ${getTierColor('Gold')}`}>
-                                            Gold
-                                        </Badge>
-                                        <span className="text-muted-foreground text-sm">{getTierAmount('Gold')}</span>
-                                    </div>
-                                </TableHead>
-                            </TableRow>
+                            <TableColumn>BENEFIT</TableColumn>
+                            <TableColumn align="center">
+                                <div className="flex flex-col items-center gap-1">
+                                    <Badge variant="outline" className={getTierColor('Bronze')}>
+                                        BRONZE
+                                    </Badge>
+                                    <span className="text-muted-foreground text-xs font-medium">{getTierAmount('Bronze')}</span>
+                                </div>
+                            </TableColumn>
+                            <TableColumn align="center">
+                                <div className="flex flex-col items-center gap-1">
+                                    <Badge variant="outline" className={getTierColor('Silver')}>
+                                        SILVER
+                                    </Badge>
+                                    <span className="text-muted-foreground text-xs font-medium">{getTierAmount('Silver')}</span>
+                                </div>
+                            </TableColumn>
+                            <TableColumn align="center">
+                                <div className="flex flex-col items-center gap-1">
+                                    <Badge variant="outline" className={getTierColor('Gold')}>
+                                        GOLD
+                                    </Badge>
+                                    <span className="text-muted-foreground text-xs font-medium">{getTierAmount('Gold')}</span>
+                                </div>
+                            </TableColumn>
                         </TableHeader>
                         <TableBody>
                             {benefits.map((benefit, index) => (
-                                <TableRow key={index} className="hover:bg-muted/50 transition-colors">
-                                    <TableCell className="font-medium">{benefit.name}</TableCell>
-                                    <TableCell className="text-center">
+                                <TableRow key={index}>
+                                    <TableCell>{benefit.name}</TableCell>
+                                    <TableCell align="center">
                                         <div className="flex items-center justify-center gap-2">
                                             {renderBenefitIcon(benefit.bronze)}
                                             {typeof benefit.bronze === 'string' && (
@@ -244,7 +242,7 @@ export default function SponsorInformation() {
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-center">
+                                    <TableCell align="center">
                                         <div className="flex items-center justify-center gap-2">
                                             {renderBenefitIcon(benefit.silver)}
                                             {typeof benefit.silver === 'string' && (
@@ -252,7 +250,7 @@ export default function SponsorInformation() {
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-center">
+                                    <TableCell align="center">
                                         <div className="flex items-center justify-center gap-2">
                                             {renderBenefitIcon(benefit.gold)}
                                             {typeof benefit.gold === 'string' && (
