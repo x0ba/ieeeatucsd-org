@@ -14,6 +14,7 @@ import {
   Avatar,
   Badge,
   Button,
+  Tooltip,
 } from "@heroui/react";
 import {
   Home,
@@ -357,38 +358,23 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
         </NavbarItem>
 
         {/* Notifications */}
-        <Dropdown placement="bottom-end">
-          <NavbarItem>
-            <DropdownTrigger>
+        <NavbarItem>
+          <Tooltip content="Under Development" placement="bottom" showArrow>
+            <div className="inline-block">
               <Button
                 isIconOnly
                 variant="light"
-                className="text-white hover:bg-white/10"
-                aria-label="Notifications"
+                isDisabled
+                className="text-white/40 cursor-not-allowed"
+                aria-label="Notifications (Under Development)"
               >
                 <Badge content={unreadCount > 0 ? unreadCount : ""} color="danger" size="sm">
                   <Bell className="w-5 h-5" />
                 </Badge>
               </Button>
-            </DropdownTrigger>
-          </NavbarItem>
-          <DropdownMenu aria-label="Notifications" className="w-80">
-            {notifications.length === 0 ? (
-              <DropdownItem key="no-notifications" className="cursor-default">
-                No notifications
-              </DropdownItem>
-            ) : (
-              notifications.slice(0, 5).map((notif) => (
-                <DropdownItem key={notif.id} className="py-2">
-                  <div className="flex flex-col gap-1">
-                    <p className="font-semibold text-sm">{notif.title}</p>
-                    <p className="text-xs text-gray-600">{notif.message}</p>
-                  </div>
-                </DropdownItem>
-              ))
-            )}
-          </DropdownMenu>
-        </Dropdown>
+            </div>
+          </Tooltip>
+        </NavbarItem>
 
         {/* Profile Dropdown */}
         <Dropdown placement="bottom-end">
