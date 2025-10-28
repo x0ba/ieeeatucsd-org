@@ -11,7 +11,7 @@ import {
   onSnapshot,
   getDoc,
 } from "firebase/firestore";
-import { app, db } from "../../../../../firebase/client";
+import { db } from "../../../../../firebase/client";
 import { PublicProfileService } from "../../../shared/services/publicProfile";
 import { EmailClient } from "../../../../../scripts/email/EmailClient";
 import type { UserRole } from "../../../shared/types/firestore";
@@ -322,17 +322,13 @@ export function useEventManagement(userId: string | undefined) {
               .toLowerCase()
               .includes(searchTerm.toLowerCase()));
 
-        // Filter out drafts if showDrafts is false
-        const matchesDraftFilter =
-          showDrafts || (!request.isDraft && request.status !== "draft");
-
-        return matchesSearch && matchesDraftFilter;
+        return matchesSearch;
       } catch (error) {
         console.error("Error filtering event request:", error, request);
         return true;
       }
     });
-  }, [eventRequests, searchTerm, showDrafts, users]);
+  }, [eventRequests, searchTerm, users]);
 
   const sortedEventRequests = useMemo(() => {
     return [...filteredEventRequests].sort((a, b) => {

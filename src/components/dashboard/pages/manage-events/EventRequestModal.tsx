@@ -508,7 +508,9 @@ export default function EventRequestModal({
           processedInvoices.length > 0 ? processedInvoices[0].vendor : "",
         invoiceFile:
           processedInvoices.length > 0 ? processedInvoices[0].invoiceFile : "",
-        status: editingRequest ? editingRequest.status : "submitted",
+        // When converting a draft to full submission, change status to "submitted" and clear isDraft flag
+        status: editingRequest?.isDraft ? "submitted" : (editingRequest ? editingRequest.status : "submitted"),
+        isDraft: false, // Always set to false when submitting through the full event form
         requestedUser: editingRequest
           ? editingRequest.requestedUser
           : auth.currentUser?.uid || "",
@@ -528,6 +530,20 @@ export default function EventRequestModal({
           const userName = await EventAuditService.getUserName(
             auth.currentUser?.uid || "",
           );
+
+          // If converting from draft to submitted, log as status change
+          if (editingRequest.isDraft && eventRequestData.status === "submitted") {
+            await EventAuditService.logStatusChange(
+              editingRequest.id,
+              auth.currentUser?.uid || "",
+              "draft",
+              "submitted",
+              undefined,
+              userName,
+              { eventName: formData.name },
+            );
+          }
+
           const fieldMappings = {
             name: "Event Name",
             location: "Location",
@@ -559,7 +575,10 @@ export default function EventRequestModal({
           console.error("Error logging event update:", error);
         }
 
-        toast.success("Event request updated successfully!");
+        const successMessage = editingRequest.isDraft
+          ? "Draft event converted to full submission successfully!"
+          : "Event request updated successfully!";
+        toast.success(successMessage);
       } else {
         // Create new event request
         eventRequestRef = await addDoc(
@@ -680,8 +699,9 @@ export default function EventRequestModal({
         await addDoc(collection(db, "events"), eventData);
       }
 
-      // Send email notification for new submissions
-      if (!editingRequest) {
+      // Send email notification for new submissions or draft conversions
+      const wasDraftConversion = editingRequest?.isDraft && eventRequestData.status === "submitted";
+      if (!editingRequest || wasDraftConversion) {
         try {
           await EmailClient.notifyFirebaseEventRequestSubmission(
             (eventRequestRef as any).id,

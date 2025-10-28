@@ -14,6 +14,7 @@ import { EventsTable } from './components/EventsTable';
 import { EventsPagination } from './components/EventsPagination';
 import { EventCalendarView } from './components/EventCalendarView';
 import DraftEventModal from './components/DraftEventModal';
+import { DraftViewModal } from './components/DraftViewModal';
 import { useEventManagement } from './hooks/useEventManagement';
 import { canCreateEvent, canManageGraphics } from './utils/permissionUtils';
 
@@ -47,6 +48,7 @@ export default function ManageEventsContent() {
     // Modal states
     const [showEventRequestModal, setShowEventRequestModal] = useState(false);
     const [showDraftEventModal, setShowDraftEventModal] = useState(false);
+    const [showDraftViewModal, setShowDraftViewModal] = useState(false);
     const [showEventViewModal, setShowEventViewModal] = useState(false);
     const [showFileManagementModal, setShowFileManagementModal] = useState(false);
     const [showBulkActionsModal, setShowBulkActionsModal] = useState(false);
@@ -55,6 +57,7 @@ export default function ManageEventsContent() {
     const [graphicsUploadRequest, setGraphicsUploadRequest] = useState<EventRequest | null>(null);
     const [editingRequest, setEditingRequest] = useState<EventRequest | null>(null);
     const [viewingRequest, setViewingRequest] = useState<EventRequest | null>(null);
+    const [viewingDraft, setViewingDraft] = useState<EventRequest | null>(null);
     const [managingFilesRequest, setManagingFilesRequest] = useState<EventRequest | null>(null);
 
     // Use custom hook for event management
@@ -91,8 +94,16 @@ export default function ManageEventsContent() {
     };
 
     const handleViewRequest = (request: EventRequest) => {
-        setViewingRequest(request);
-        setShowEventViewModal(true);
+        // Check if this is a draft event
+        const isDraftEvent = request.isDraft === true || request.status === 'draft';
+
+        if (isDraftEvent) {
+            setViewingDraft(request);
+            setShowDraftViewModal(true);
+        } else {
+            setViewingRequest(request);
+            setShowEventViewModal(true);
+        }
     };
 
     const handleFileManagement = (request: EventRequest) => {
@@ -152,6 +163,22 @@ export default function ManageEventsContent() {
     const handleConvertDraftToFull = (request: EventRequest) => {
         setEditingRequest(request);
         setShowEventRequestModal(true);
+    };
+
+    const handleConvertDraftFromView = () => {
+        if (viewingDraft) {
+            setShowDraftViewModal(false);
+            setEditingRequest(viewingDraft);
+            setShowEventRequestModal(true);
+        }
+    };
+
+    const handleDeleteDraft = async () => {
+        if (viewingDraft) {
+            setShowDraftViewModal(false);
+            await handleDeleteRequest(viewingDraft.id, viewingDraft.name);
+            setViewingDraft(null);
+        }
     };
 
 
@@ -307,6 +334,7 @@ export default function ManageEventsContent() {
                                         onCreateEvent={handleCreateEventFromCalendar}
                                         onViewEvent={handleViewRequest}
                                         onEditEvent={handleEditRequest}
+                                        onConvertDraftToFull={handleConvertDraftToFull}
                                         currentUserRole={currentUserRole}
                                     />
                                 </Tab>
@@ -347,6 +375,23 @@ export default function ManageEventsContent() {
                             setSuccess(editingRequest ? 'Event request updated successfully' : 'Event request created successfully');
                             setSelectedDate(null);
                         }}
+                    />
+                )
+            }
+
+            {/* Draft View Modal */}
+            {
+                showDraftViewModal && viewingDraft && (
+                    <DraftViewModal
+                        isOpen={showDraftViewModal}
+                        onClose={() => {
+                            setShowDraftViewModal(false);
+                            setViewingDraft(null);
+                        }}
+                        draftEvent={viewingDraft}
+                        onConvertToFull={handleConvertDraftFromView}
+                        onDelete={handleDeleteDraft}
+                        userName={getUserName(viewingDraft.requestedUser)}
                     />
                 )
             }
