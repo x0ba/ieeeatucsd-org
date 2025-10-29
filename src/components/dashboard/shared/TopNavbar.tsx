@@ -220,16 +220,25 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
       where("userId", "==", user.uid)
     );
 
-    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-      const notifs = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate() || new Date(),
-      })) as Notification[];
+    const unsubscribe = onSnapshot(
+      notificationsQuery,
+      (snapshot) => {
+        const notifs = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate() || new Date(),
+        })) as Notification[];
 
-      setNotifications(notifs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
-      setUnreadCount(notifs.filter((n) => !n.read).length);
-    });
+        setNotifications(notifs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
+        setUnreadCount(notifs.filter((n) => !n.read).length);
+      },
+      (error) => {
+        console.error("Error fetching notifications:", error);
+        // Silently fail - notifications are not critical
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    );
 
     return () => unsubscribe();
   }, [user, db]);
@@ -304,12 +313,14 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
               <NavbarItem key={index} isActive={isActive}>
                 <a
                   href={item.href}
+                  aria-label={`Navigate to ${item.label}`}
+                  aria-current={isActive ? "page" : undefined}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${isActive
                     ? "bg-white/20 text-white font-semibold"
                     : "text-white/80 hover:bg-white/10 hover:text-white"
                     }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4" aria-hidden="true" />
                   <span className="text-sm">{item.label}</span>
                 </a>
               </NavbarItem>
@@ -457,12 +468,14 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
                     <NavbarMenuItem key={index} isActive={isActive}>
                       <a
                         href={item.href}
+                        aria-label={`Navigate to ${item.label}`}
+                        aria-current={isActive ? "page" : undefined}
                         className={`flex items-center gap-3 px-2 py-2.5 rounded-lg transition-all w-full ${isActive
                           ? "bg-blue-50 text-blue-700 font-semibold"
                           : "text-gray-700 hover:bg-gray-100"
                           }`}
                       >
-                        <Icon className="w-5 h-5" />
+                        <Icon className="w-5 h-5" aria-hidden="true" />
                         <span>{item.label}</span>
                       </a>
                     </NavbarMenuItem>

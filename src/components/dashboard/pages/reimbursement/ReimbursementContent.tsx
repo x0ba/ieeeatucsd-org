@@ -92,15 +92,23 @@ export default function ReimbursementContent() {
             orderBy('submittedAt', 'desc')
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const reimbursementData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Reimbursement[];
+        const unsubscribe = onSnapshot(
+            q,
+            (snapshot) => {
+                const reimbursementData = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })) as Reimbursement[];
 
-            setReimbursements(reimbursementData);
-            setLoading(false);
-        });
+                setReimbursements(reimbursementData);
+                setLoading(false);
+            },
+            (error) => {
+                console.error('Error fetching reimbursements:', error);
+                setLoading(false);
+                // Keep existing data on error
+            }
+        );
 
         return () => unsubscribe();
     }, [user]);

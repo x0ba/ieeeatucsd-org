@@ -71,26 +71,40 @@ export const useConstitutionData = () => {
         }
 
         // Set up real-time listeners
-        const unsubscribeConstitution = onSnapshot(constitutionRef, (doc) => {
-          if (doc.exists()) {
-            setConstitution({ id: doc.id, ...doc.data() } as Constitution);
-          }
-          setConstitutionLoaded(true);
-        });
+        const unsubscribeConstitution = onSnapshot(
+          constitutionRef,
+          (doc) => {
+            if (doc.exists()) {
+              setConstitution({ id: doc.id, ...doc.data() } as Constitution);
+            }
+            setConstitutionLoaded(true);
+          },
+          (error) => {
+            console.error("Error fetching constitution:", error);
+            setConstitutionLoaded(true);
+          },
+        );
 
         const sectionsQuery = query(
           collection(db, "constitutions", constitutionId, "sections"),
           orderBy("order", "asc"),
         );
 
-        const unsubscribeSections = onSnapshot(sectionsQuery, (snapshot) => {
-          const sectionsData = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as ConstitutionSection[];
-          setSections(sectionsData);
-          setSectionsLoaded(true);
-        });
+        const unsubscribeSections = onSnapshot(
+          sectionsQuery,
+          (snapshot) => {
+            const sectionsData = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            })) as ConstitutionSection[];
+            setSections(sectionsData);
+            setSectionsLoaded(true);
+          },
+          (error) => {
+            console.error("Error fetching sections:", error);
+            setSectionsLoaded(true);
+          },
+        );
 
         return () => {
           unsubscribeConstitution();

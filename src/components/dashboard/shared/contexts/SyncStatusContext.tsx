@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
 interface SyncStatusContextType {
   isSyncing: boolean;
@@ -28,12 +28,12 @@ export function SyncStatusProvider({ children }: { children: React.ReactNode }) 
     });
   }, []);
 
-  const value: SyncStatusContextType = {
+  const value: SyncStatusContextType = useMemo(() => ({
     isSyncing: activeSyncs.size > 0,
     syncCount: activeSyncs.size,
     registerSync,
     unregisterSync,
-  };
+  }), [activeSyncs.size, registerSync, unregisterSync]);
 
   return (
     <SyncStatusContext.Provider value={value}>

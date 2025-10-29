@@ -178,14 +178,6 @@ export function DraftViewModal({
         </ModalBody>
 
         <ModalFooter className="flex justify-between">
-          <Button
-            color="danger"
-            variant="light"
-            startContent={<Trash2 className="w-4 h-4" />}
-            onPress={onDelete}
-          >
-            Delete Draft
-          </Button>
           <div className="flex gap-2">
             <Button
               color="default"
@@ -195,14 +187,22 @@ export function DraftViewModal({
               Close
             </Button>
             <Button
-              style={{ backgroundColor: '#0A2463' }}
-              className="text-white"
-              startContent={<FileUp className="w-4 h-4" />}
-              onPress={onConvertToFull}
+              color="danger"
+              variant="light"
+              startContent={<Trash2 className="w-4 h-4" />}
+              onPress={onDelete}
             >
-              Convert to Full Event Request
+              Delete Draft
             </Button>
           </div>
+          <Button
+            style={{ backgroundColor: '#0A2463' }}
+            className="text-white"
+            startContent={<FileUp className="w-4 h-4" />}
+            onPress={onConvertToFull}
+          >
+            Convert to Full Event Request
+          </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>

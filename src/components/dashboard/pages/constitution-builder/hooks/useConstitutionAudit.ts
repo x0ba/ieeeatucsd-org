@@ -34,14 +34,22 @@ export const useConstitutionAudit = (constitutionId: string) => {
       // Removed artificial limit - load all audit entries for comprehensive history
     );
 
-    const unsubscribe = onSnapshot(auditQuery, (snapshot) => {
-      const entries = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as ConstitutionAuditEntry[];
-      setAuditEntries(entries);
-      setIsLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      auditQuery,
+      (snapshot) => {
+        const entries = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as ConstitutionAuditEntry[];
+        setAuditEntries(entries);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching audit entries:", error);
+        setIsLoading(false);
+        // Keep existing entries on error
+      },
+    );
 
     return unsubscribe;
   }, [constitutionId, db]);
