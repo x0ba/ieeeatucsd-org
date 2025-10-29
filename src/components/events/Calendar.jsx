@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   getFirestore,
   collection,
@@ -17,6 +17,13 @@ const Calendar = ({ CALENDAR_API_KEY, EVENT_CALENDAR_ID }) => {
   const [hoveredEvent, setHoveredEvent] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [mounted, setMounted] = useState(false);
+  const [gapiReady, setGapiReady] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Refs for cleanup and race condition prevention
+  const abortControllerRef = useRef(null);
+  const isMountedRef = useRef(false);
+  const currentFetchRef = useRef(null);
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
@@ -80,22 +87,159 @@ const Calendar = ({ CALENDAR_API_KEY, EVENT_CALENDAR_ID }) => {
     });
   };
 
+  // Track mounted state
   useEffect(() => {
     setMounted(true);
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
+  // Load Google API script once on mount
+  useEffect(() => {
+    if (!mounted || !CALENDAR_API_KEY) {
+      setGapiReady(false);
+      return;
+    }
+
+    const loadGoogleAPI = async () => {
+      try {
+        // Check if already loaded
+        if (typeof window.gapi !== "undefined") {
+          await new Promise((resolve) => {
+            window.gapi.load("client", resolve);
+          });
+          await window.gapi.client.init({
+            apiKey: CALENDAR_API_KEY,
+            discoveryDocs: [
+              "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
+            ],
+          });
+          if (isMountedRef.current) {
+            setGapiReady(true);
+          }
+          return;
+        }
+
+        // Load script
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://apis.google.com/js/api.js";
+          script.async = true;
+          script.defer = true;
+          document.body.appendChild(script);
+          script.onload = () => {
+            window.gapi.load("client", resolve);
+          };
+          script.onerror = () => {
+            reject(new Error("Failed to load the Google API script."));
+          };
+        });
+
+        await window.gapi.client.init({
+          apiKey: CALENDAR_API_KEY,
+          discoveryDocs: [
+            "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
+          ],
+        });
+
+        if (isMountedRef.current) {
+          setGapiReady(true);
+        }
+      } catch (error) {
+        console.error("Error loading Google API:", error);
+        // Continue without Google Calendar
+        if (isMountedRef.current) {
+          setGapiReady(false);
+        }
+      }
+    };
+
+    loadGoogleAPI();
+  }, [mounted, CALENDAR_API_KEY]);
+
+  // Helper function to fetch Firestore events
+  const fetchFirestoreEvents = async (firstDay, lastDay) => {
+    try {
+      const db = getFirestore(app);
+      const eventsRef = collection(db, "events");
+
+      // Query published events only
+      const q = query(
+        eventsRef,
+        where("published", "==", true),
+        orderBy("startDate", "asc"),
+      );
+
+      const eventsSnapshot = await getDocs(q);
+
+      const firestoreEvents = eventsSnapshot.docs
+        .map((doc) => {
+          const data = doc.data();
+          const startDate = data.startDate?.toDate
+            ? data.startDate.toDate()
+            : new Date(data.startDate);
+          const endDate = data.endDate?.toDate
+            ? data.endDate.toDate()
+            : new Date(data.endDate);
+
+          // Transform to Google Calendar format
+          return {
+            id: doc.id,
+            summary: data.eventName,
+            description: data.eventDescription,
+            location: data.location,
+            start: {
+              dateTime: startDate.toISOString(),
+              date: null,
+            },
+            end: {
+              dateTime: endDate.toISOString(),
+              date: null,
+            },
+            source: "firestore", // Mark as Firestore event
+          };
+        })
+        .filter((event) => {
+          // Filter events in current month
+          const eventDate = new Date(event.start.dateTime);
+          return eventDate >= firstDay && eventDate <= lastDay;
+        });
+
+      return firestoreEvents;
+    } catch (error) {
+      console.error("Error fetching Firestore events:", error);
+      throw error;
+    }
+  };
+
+  // Main event fetching effect with race condition prevention
   useEffect(() => {
     if (!mounted) return;
 
-    const calendarId = EVENT_CALENDAR_ID;
-    const userTimeZone = "America/Los_Angeles";
+    // Abort any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-    const fetchFirestoreEvents = async () => {
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    // Create unique identifier for this fetch
+    const fetchId = `${currentDate.getFullYear()}-${currentDate.getMonth()}`;
+    currentFetchRef.current = fetchId;
+
+    const loadEvents = async () => {
+      // Clear previous errors and start loading
+      if (isMountedRef.current) {
+        setLoading(true);
+        setError(null);
+      }
+
       try {
-        const db = getFirestore(app);
-        const eventsRef = collection(db, "events");
-
-        // Get first and last day of current month for filtering
+        // Get first and last day of current month
         const firstDay = new Date(
           currentDate.getFullYear(),
           currentDate.getMonth(),
@@ -107,113 +251,48 @@ const Calendar = ({ CALENDAR_API_KEY, EVENT_CALENDAR_ID }) => {
           0,
         );
 
-        // Query published events
-        const q = query(
-          eventsRef,
-          where("published", "==", true),
-          orderBy("startDate", "asc"),
-        );
-
-        const eventsSnapshot = await getDocs(q);
-
-        const firestoreEvents = eventsSnapshot.docs
-          .map((doc) => {
-            const data = doc.data();
-            const startDate = data.startDate?.toDate
-              ? data.startDate.toDate()
-              : new Date(data.startDate);
-            const endDate = data.endDate?.toDate
-              ? data.endDate.toDate()
-              : new Date(data.endDate);
-
-            // Transform to Google Calendar format
-            return {
-              id: doc.id,
-              summary: data.eventName,
-              description: data.eventDescription,
-              location: data.location,
-              start: {
-                dateTime: startDate.toISOString(),
-                date: null,
-              },
-              end: {
-                dateTime: endDate.toISOString(),
-                date: null,
-              },
-              source: "firestore", // Mark as Firestore event
-            };
-          })
-          .filter((event) => {
-            // Filter events in current month
-            const eventDate = new Date(event.start.dateTime);
-            return eventDate >= firstDay && eventDate <= lastDay;
-          });
-
-        return firestoreEvents;
-      } catch (error) {
-        console.error("Error fetching Firestore events:", error);
-        return [];
-      }
-    };
-
-    const loadGapiAndListEvents = async () => {
-      try {
         let googleEvents = [];
 
-        // Try to load Google Calendar events if API key is provided
-        if (CALENDAR_API_KEY && calendarId) {
-          if (typeof window.gapi === "undefined") {
-            await new Promise((resolve, reject) => {
-              const script = document.createElement("script");
-              script.src = "https://apis.google.com/js/api.js";
-              document.body.appendChild(script);
-              script.onload = () => {
-                window.gapi.load("client", resolve);
-              };
-              script.onerror = () => {
-                reject(new Error("Failed to load the Google API script."));
-              };
+        // Try to load Google Calendar events if API is ready
+        if (gapiReady && EVENT_CALENDAR_ID) {
+          try {
+            const userTimeZone = "America/Los_Angeles";
+            const response = await window.gapi.client.calendar.events.list({
+              calendarId: EVENT_CALENDAR_ID,
+              timeZone: userTimeZone,
+              singleEvents: true,
+              timeMin: firstDay.toISOString(),
+              timeMax: lastDay.toISOString(),
+              orderBy: "startTime",
             });
-          }
 
-          await window.gapi.client.init({
-            apiKey: CALENDAR_API_KEY,
-            discoveryDocs: [
-              "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
-            ],
-          });
-
-          // Get first and last day of current month
-          const firstDay = new Date(
-            currentDate.getFullYear(),
-            currentDate.getMonth(),
-            1,
-          );
-          const lastDay = new Date(
-            currentDate.getFullYear(),
-            currentDate.getMonth() + 1,
-            0,
-          );
-
-          const response = await window.gapi.client.calendar.events.list({
-            calendarId: calendarId,
-            timeZone: userTimeZone,
-            singleEvents: true,
-            timeMin: firstDay.toISOString(),
-            timeMax: lastDay.toISOString(),
-            orderBy: "startTime",
-          });
-
-          if (response.result.items) {
-            googleEvents = response.result.items.map((event) => ({
-              ...event,
-              source: "google", // Mark as Google Calendar event
-            }));
+            if (response.result.items) {
+              googleEvents = response.result.items.map((event) => ({
+                ...event,
+                source: "google",
+              }));
+            }
+          } catch (googleError) {
+            console.warn("Google Calendar fetch failed:", googleError);
+            // Continue with Firestore events only
           }
         }
 
-        // Fetch Firestore events
-        const firestoreEvents = await fetchFirestoreEvents();
+        // Check if this request was aborted
+        if (abortController.signal.aborted) {
+          return;
+        }
+
+        // Fetch Firestore events (published only)
+        const firestoreEvents = await fetchFirestoreEvents(firstDay, lastDay);
+
+        // Check again if aborted or if a newer request has started
+        if (
+          abortController.signal.aborted ||
+          currentFetchRef.current !== fetchId
+        ) {
+          return;
+        }
 
         // Combine both event sources
         const allEvents = [...googleEvents, ...firestoreEvents];
@@ -225,26 +304,47 @@ const Calendar = ({ CALENDAR_API_KEY, EVENT_CALENDAR_ID }) => {
           return dateA - dateB;
         });
 
-        setEvents(allEvents);
+        // Only update state if component is still mounted and request wasn't aborted
+        if (isMountedRef.current && !abortController.signal.aborted) {
+          setEvents(allEvents);
+          setRetryCount(0); // Reset retry count on success
+        }
       } catch (error) {
-        console.error("Error loading events: ", error);
+        // Only handle error if not aborted and component is mounted
+        if (!abortController.signal.aborted && isMountedRef.current) {
+          console.error("Error loading events:", error);
 
-        // If Google Calendar fails, try to load just Firestore events
-        try {
-          const firestoreEvents = await fetchFirestoreEvents();
-          setEvents(firestoreEvents);
-        } catch (firestoreError) {
-          console.error("Error loading Firestore events:", firestoreError);
-          setError("Failed to load events");
+          // Implement retry logic with exponential backoff
+          if (retryCount < 3) {
+            const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+            console.log(
+              `Retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/3)`,
+            );
+
+            setTimeout(() => {
+              if (isMountedRef.current && currentFetchRef.current === fetchId) {
+                setRetryCount((prev) => prev + 1);
+              }
+            }, retryDelay);
+          } else {
+            setError("Failed to load events. Please try again later.");
+          }
         }
       } finally {
-        setLoading(false);
+        // Only update loading state if component is mounted and not aborted
+        if (isMountedRef.current && !abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
-    setLoading(true);
-    loadGapiAndListEvents();
-  }, [CALENDAR_API_KEY, EVENT_CALENDAR_ID, currentDate, mounted]);
+    loadEvents();
+
+    // Cleanup function
+    return () => {
+      abortController.abort();
+    };
+  }, [currentDate, mounted, gapiReady, EVENT_CALENDAR_ID, retryCount]);
 
   const monthNames = [
     "Jan",
@@ -407,15 +507,15 @@ const Calendar = ({ CALENDAR_API_KEY, EVENT_CALENDAR_ID }) => {
                       <div
                         key={eventIndex}
                         className={`text-[0.8vw] border text-white p-[0.5vw] rounded truncate cursor-pointer hover:bg-white/10 transition-colors relative ${
-                          event.source === 'firestore' 
-                            ? 'border-ieee-yellow bg-ieee-yellow/10' 
-                            : 'border-gray-300'
+                          event.source === "firestore"
+                            ? "border-ieee-yellow bg-ieee-yellow/10"
+                            : "border-gray-300"
                         }`}
                         onMouseEnter={(e) => handleEventMouseEnter(event, e)}
                         onMouseLeave={handleEventMouseLeave}
                       >
                         {event.summary}
-                        {event.source === 'firestore' && (
+                        {event.source === "firestore" && (
                           <div className="absolute -top-1 -right-1 w-2 h-2 bg-ieee-yellow rounded-full"></div>
                         )}
                       </div>
@@ -438,7 +538,7 @@ const Calendar = ({ CALENDAR_API_KEY, EVENT_CALENDAR_ID }) => {
           >
             <h3 className="text-[1vw] font-semibold mb-[0.5vw] flex items-center gap-2">
               {hoveredEvent.event.summary}
-              {hoveredEvent.event.source === 'firestore' && (
+              {hoveredEvent.event.source === "firestore" && (
                 <span className="text-ieee-yellow text-[0.7vw] bg-ieee-yellow/20 px-2 py-1 rounded">
                   IEEE Event
                 </span>

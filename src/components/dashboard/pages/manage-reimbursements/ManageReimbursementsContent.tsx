@@ -270,7 +270,7 @@ export default function ManageReimbursementsContent() {
                         newStatus,
                         previousStatus,
                         changedByUserId: user.uid,
-                        rejectionReason: auditNote && (newStatus === 'rejected' || newStatus === 'declined') ? auditNote : undefined,
+                        rejectionReason: auditNote && newStatus === 'declined' ? auditNote : undefined,
                         paymentConfirmation: paymentInfo && newStatus === 'paid' ? {
                             ...paymentInfo,
                             paidByName: currentUserName,

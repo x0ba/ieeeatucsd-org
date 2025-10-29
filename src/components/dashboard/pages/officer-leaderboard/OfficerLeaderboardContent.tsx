@@ -95,7 +95,7 @@ export default function OfficerLeaderboardContent() {
     // Set up real-time listener for leaderboard settings changes only
     // This is more efficient than listening to all officer document changes
     const settingsUnsubscribe = onSnapshot(
-      doc(db, "leaderboard", "settings"),
+      doc(db, "leaderboard_settings", "settings"),
       async () => {
         if (!isMounted) return;
 

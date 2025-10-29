@@ -26,7 +26,7 @@ export const POST: APIRoute = async ({ request }) => {
     let success = false;
 
     switch (type) {
-      case "profile_update":
+      case "profile_update": {
         const { userId, changes, changedByUserId } = data;
         if (!userId || !changes || !changedByUserId) {
           return new Response(
@@ -47,8 +47,9 @@ export const POST: APIRoute = async ({ request }) => {
           },
         );
         break;
+      }
 
-      case "role_change":
+      case "role_change": {
         const {
           userId: roleUserId,
           oldRole,
@@ -75,6 +76,7 @@ export const POST: APIRoute = async ({ request }) => {
           },
         );
         break;
+      }
 
       default:
         return new Response(

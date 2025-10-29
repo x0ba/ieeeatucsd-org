@@ -951,6 +951,24 @@ export async function sendGraphicsUploadEmail(
   try {
     console.log("🎨 Starting graphics upload email process...");
 
+    // Helper to normalize timestamp to Date or null for safe formatting
+    const normalizeToDate = (timestamp: any): Date | null => {
+      if (!timestamp) return null;
+      if (timestamp instanceof Date) return timestamp;
+      if (typeof timestamp.toDate === "function") {
+        try {
+          return timestamp.toDate();
+        } catch {
+          return null;
+        }
+      }
+      try {
+        return new Date(timestamp);
+      } catch {
+        return null;
+      }
+    };
+
     const db = getFirestore(app);
 
     // Get event request details
@@ -994,11 +1012,16 @@ export async function sendGraphicsUploadEmail(
     const submitter = { id: submitterDoc.id, ...submitterDoc.data() } as any;
 
     // Build email content
+    const normalizedStartDate = normalizeToDate(eventRequest.startDateTime);
+    const startDateValue = normalizedStartDate
+      ? formatDate(normalizedStartDate)
+      : "Not specified";
+
     const detailsHtml = `
       <div style="background: ${IEEE_COLORS.gray[50]}; border-radius: 8px; padding: 20px; margin: 20px 0;">
         ${createDetailRow("Event Name", eventRequest.name)}
         ${createDetailRow("Location", eventRequest.location || "Not specified")}
-        ${createDetailRow("Start Date", formatDate(eventRequest.startDateTime.toDate()))}
+        ${createDetailRow("Start Date", startDateValue)}
         ${createDetailRow("Files Uploaded", data.filesUploaded.toString())}
         ${createDetailRow("Uploaded By", uploader.name || uploader.email)}
       </div>

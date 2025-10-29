@@ -239,18 +239,10 @@ const currentPath = "/dashboard/email-testing";
     </style>
 
     <script>
-      const testEmailInput = document.getElementById(
-        "test-email",
-      ) as HTMLInputElement;
-      const emailTypeSelect = document.getElementById(
-        "email-type",
-      ) as HTMLSelectElement;
-      const sendButton = document.getElementById(
-        "send-test-email",
-      ) as HTMLButtonElement;
-      const statusMessage = document.getElementById(
-        "status-message",
-      ) as HTMLDivElement;
+      const testEmailInput = document.getElementById("test-email");
+      const emailTypeSelect = document.getElementById("email-type");
+      const sendButton = document.getElementById("send-test-email");
+      const statusMessage = document.getElementById("status-message");
 
       sendButton.addEventListener("click", async () => {
         const testEmail = testEmailInput.value.trim();
@@ -304,15 +296,12 @@ const currentPath = "/dashboard/email-testing";
         }
       });
 
-      function showStatus(
-        message: string,
-        type: "success" | "error" | "loading",
-      ) {
+      function showStatus(message, type) {
         statusMessage.textContent = message;
         statusMessage.className = `status-message ${type}`;
       }
 
-      function isValidEmail(email: string): boolean {
+      function isValidEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       }
     </script>

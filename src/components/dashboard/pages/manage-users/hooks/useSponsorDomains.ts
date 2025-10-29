@@ -30,7 +30,7 @@ export interface SponsorDomainFormData {
 export const useSponsorDomains = () => {
   const [user] = useAuthState(auth);
   const [domains, setDomains] = useState<SponsorDomainWithId[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 

@@ -1,6 +1,4 @@
-import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
-import { app } from "../../firebase/client";
 import { app as adminApp } from "../../firebase/server";
 import {
   generateEmailTemplate,
