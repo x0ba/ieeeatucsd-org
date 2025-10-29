@@ -205,6 +205,10 @@ export default function ManageReimbursementsContent() {
         if (!user) return;
 
         try {
+            // Get current reimbursement for previous status
+            const currentReimbursement = reimbursements.find(r => r.id === reimbursementId);
+            const previousStatus = currentReimbursement?.status;
+
             // Get current user name
             let currentUserName = 'Unknown User';
             try {
@@ -252,6 +256,32 @@ export default function ManageReimbursementsContent() {
             }
 
             await updateDoc(doc(db, 'reimbursements', reimbursementId), updateData);
+
+            // Send status change email notification
+            try {
+                await fetch('/api/email/send-reimbursement-notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        type: 'status_change',
+                        reimbursementId,
+                        newStatus,
+                        previousStatus,
+                        changedByUserId: user.uid,
+                        rejectionReason: auditNote && (newStatus === 'rejected' || newStatus === 'declined') ? auditNote : undefined,
+                        paymentConfirmation: paymentInfo && newStatus === 'paid' ? {
+                            ...paymentInfo,
+                            paidByName: currentUserName,
+                            paidAt: new Date()
+                        } : undefined,
+                    }),
+                });
+            } catch (emailError) {
+                console.error('Failed to send status change notification email:', emailError);
+                // Don't fail the status update if email fails
+            }
         } catch (error) {
             console.error('Error updating reimbursement:', error);
         }
