@@ -37,7 +37,7 @@ interface FileItem {
 
 export default function FileManagementModal({ request, onClose }: FileManagementModalProps) {
     const [files, setFiles] = useState<FileItem[]>([]);
-    const [loading, setLoading] = useState(false); // Start false to show cached data immediately
+    const [loading, setLoading] = useState(true); // Start true for better UX (no caching mechanism exists)
     const [uploading, setUploading] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
     const [uploadTarget, setUploadTarget] = useState<'public' | 'private'>('private');
@@ -49,11 +49,13 @@ export default function FileManagementModal({ request, onClose }: FileManagement
     // Use db from client
     const storage = getStorage(app);
 
-    if (!request) return null;
-
     useEffect(() => {
+        if (!request) return;
         fetchFiles();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [request]);
+
+    if (!request) return null;
 
     const fetchFiles = async () => {
         try {
@@ -588,4 +590,4 @@ export default function FileManagementModal({ request, onClose }: FileManagement
             )}
         </>
     );
-} 
+}

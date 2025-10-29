@@ -28,9 +28,10 @@ export const useConstitutionData = () => {
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // Start false to show cached data immediately
+  const [isLoading, setIsLoading] = useState(true);
   const [constitutionLoaded, setConstitutionLoaded] = useState(false);
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Use db from client import
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -76,11 +77,13 @@ export const useConstitutionData = () => {
           (doc) => {
             if (doc.exists()) {
               setConstitution({ id: doc.id, ...doc.data() } as Constitution);
+              setError(null);
             }
             setConstitutionLoaded(true);
           },
           (error) => {
             console.error("Error fetching constitution:", error);
+            setError("Failed to load constitution");
             setConstitutionLoaded(true);
           },
         );
@@ -98,10 +101,12 @@ export const useConstitutionData = () => {
               ...doc.data(),
             })) as ConstitutionSection[];
             setSections(sectionsData);
+            setError(null);
             setSectionsLoaded(true);
           },
           (error) => {
             console.error("Error fetching sections:", error);
+            setError("Failed to load sections");
             setSectionsLoaded(true);
           },
         );
@@ -112,6 +117,7 @@ export const useConstitutionData = () => {
         };
       } catch (error) {
         console.error("Error initializing constitution:", error);
+        setError("Failed to initialize constitution");
         setConstitutionLoaded(true);
         setSectionsLoaded(true);
       }
@@ -232,6 +238,7 @@ export const useConstitutionData = () => {
       );
     } catch (error) {
       console.error("Error adding section:", error);
+      setError("Error adding section");
     }
   };
 
@@ -276,6 +283,7 @@ export const useConstitutionData = () => {
     } catch (error) {
       console.error("Error updating section:", error);
       setSaveStatus("error");
+      setError("Error updating section");
     }
   };
 
@@ -313,6 +321,7 @@ export const useConstitutionData = () => {
       }
     } catch (error) {
       console.error("Error deleting section:", error);
+      setError("Error deleting section");
     }
   };
 
@@ -332,5 +341,8 @@ export const useConstitutionData = () => {
     // Constants
     constitutionId,
     user,
+
+    // Errors
+    error,
   };
 };

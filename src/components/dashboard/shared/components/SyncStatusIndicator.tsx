@@ -41,6 +41,15 @@ export function SyncStatusIndicator() {
 export function useFirebaseSyncTracker(id: string) {
   const { registerSync, unregisterSync } = useSyncStatus();
 
+  // Ensure we don't leave dangling registrations on unmount
+  React.useEffect(() => {
+    return () => {
+      unregisterSync(id);
+    };
+  }, [id, unregisterSync]);
+
+  // fromCache === true means data is served from cache (still syncing)
+  // We want to show "Syncing..." while fromCache is true
   return React.useCallback((isFromCache: boolean) => {
     if (isFromCache) {
       registerSync(id);

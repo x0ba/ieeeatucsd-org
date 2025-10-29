@@ -8,7 +8,7 @@ import {
   Chip,
 } from '@heroui/react';
 import { Calendar, MapPin, FileText, Trash2, FileUp, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDateTime, formatDate } from '../event-view-modal/utils';
 
 interface DraftViewModalProps {
   isOpen: boolean;
@@ -38,18 +38,6 @@ export function DraftViewModal({
   userName,
 }: DraftViewModalProps) {
   if (!draftEvent) return null;
-
-  const formatDateTime = (timestamp: any) => {
-    if (!timestamp) return 'Not set';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return format(date, 'MMMM d, yyyy h:mm a');
-  };
-
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return 'Not set';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return format(date, 'MMMM d, yyyy');
-  };
 
   return (
     <Modal

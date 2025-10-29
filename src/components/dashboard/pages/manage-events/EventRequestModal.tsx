@@ -249,7 +249,7 @@ export default function EventRequestModal({
         existingInvoiceFile: editingRequest.invoiceFile || "",
       });
 
-      // Initialize invoices in the hook
+      // Initialize invoices in hook
       setInvoices(invoicesData);
     } else if (preselectedDate && !editingRequest) {
       // Set the start date from the calendar selection
@@ -510,7 +510,7 @@ export default function EventRequestModal({
           processedInvoices.length > 0 ? processedInvoices[0].invoiceFile : "",
         // When converting a draft to full submission, change status to "submitted" and clear isDraft flag
         status: editingRequest?.isDraft ? "submitted" : (editingRequest ? editingRequest.status : "submitted"),
-        isDraft: false, // Always set to false when submitting through the full event form
+        isDraft: false, // Always set to false when submitting through full event form
         requestedUser: editingRequest
           ? editingRequest.requestedUser
           : auth.currentUser?.uid || "",
@@ -536,7 +536,7 @@ export default function EventRequestModal({
             await EventAuditService.logStatusChange(
               editingRequest.id,
               auth.currentUser?.uid || "",
-              "draft",
+              editingRequest.status || "unknown",
               "submitted",
               undefined,
               userName,
@@ -624,7 +624,7 @@ export default function EventRequestModal({
 
               // Update invoice files if any
               if (processedInvoices.some((inv) => inv.invoiceFiles?.length)) {
-                // If needed, update invoice URLs on the newly created doc here
+                // If needed, update invoice URLs on newly created doc here
                 // Currently invoiceFiles are already in eventRequestData via processedInvoices
               }
 
@@ -885,7 +885,7 @@ export default function EventRequestModal({
           handleFileChange("otherLogoFiles", fileList);
           toast.success(`Image added to Other Logo Files: ${file.name}`);
         } else {
-          toast.info(
+          toast(
             `Paste functionality available when "Other" options are selected`,
           );
         }
@@ -897,10 +897,10 @@ export default function EventRequestModal({
             `Image added to Room Booking Confirmation: ${file.name}`,
           );
         } else {
-          toast.info(`Enable room booking to paste files`);
+          toast(`Enable room booking to paste files`);
         }
       } else if (stepTitle === "Funding Details") {
-        // Add to the active invoice's files
+        // Add to active invoice's files
         if (invoices.length > 0) {
           const activeInvoice = invoices.find(
             (inv) => inv.id === activeInvoiceTab,
@@ -918,13 +918,13 @@ export default function EventRequestModal({
             });
             toast.success(`Image added to invoice: ${file.name}`);
           } else {
-            toast.info(`Select an invoice to paste files`);
+            toast(`Select an invoice to paste files`);
           }
         } else {
-          toast.info(`Add an invoice first to paste files`);
+          toast(`Add an invoice first to paste files`);
         }
       } else {
-        toast.info(
+        toast(
           `Image paste is available in Marketing, Logistics, and Funding steps`,
         );
       }

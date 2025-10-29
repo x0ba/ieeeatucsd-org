@@ -93,7 +93,7 @@ const getStatusDisplayName = (status: string) => {
 export default function ManageReimbursementsContent() {
     const [user] = useAuthState(auth);
     const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
-    const [loading, setLoading] = useState(false); // Start false to show cached data immediately
+    const [loading, setLoading] = useState(true);
     const [selectedReimbursement, setSelectedReimbursement] = useState<Reimbursement | null>(null);
     const [auditReimbursement, setAuditReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -371,6 +371,7 @@ export default function ManageReimbursementsContent() {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                                aria-label="Search reimbursements"
                             />
                         </div>
                         <Select

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, Award, Crown, TrendingUp, Users, Star, Search } from 'lucide-react';
 import { Pagination } from '@heroui/react';
-import { collection, query, orderBy, onSnapshot, getCountFromServer } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getCountFromServer, limit } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
@@ -23,7 +23,7 @@ export default function LeaderboardContent() {
     const [user] = useAuthState(auth);
     const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
     const [currentUserRank, setCurrentUserRank] = useState<number>(0);
-    const [loading, setLoading] = useState(false); // Start with false to show cached data immediately
+    const [loading, setLoading] = useState(true); // Start true for better UX on first visit
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5); // Show 5 users per page
@@ -31,15 +31,15 @@ export default function LeaderboardContent() {
 
     useEffect(() => {
         // Set up real-time listener for public profiles leaderboard
-        // Firebase persistence will cache ALL users, so subsequent loads are instant
+        // SCALABILITY: Limit to top 1000 users to prevent unbounded query issues
+        // For organizations with >1000 members, consider implementing pagination or virtual scrolling
         try {
-            // Query for ALL users (no limit) - Firebase cache makes this fast on repeat visits
+            const LEADERBOARD_LIMIT = 1000; // Reasonable limit for most organizations
+
             const publicProfilesQuery = query(
                 collection(db, 'public_profiles'),
-                orderBy('points', 'desc')
-                // No limit - fetch all users for accurate counting
-                // First load: from server (may be slow)
-                // Subsequent loads: from cache (instant!)
+                orderBy('points', 'desc'),
+                limit(LEADERBOARD_LIMIT) // Add limit to prevent unbounded query
             );
 
             // Separate query to get total count of all users
@@ -73,10 +73,18 @@ export default function LeaderboardContent() {
 
                 setLeaderboardData(validUsers);
 
-                // Find current user's rank
+                // Find current user's rank and calculate accurate ranking beyond top 1000
                 if (user) {
-                    const currentUser = validUsers.find(u => u.id === user.uid);
-                    setCurrentUserRank(currentUser?.rank || 0);
+                    const currentUserIndex = validUsers.findIndex(u => u.id === user.uid);
+                    if (currentUserIndex !== -1) {
+                        // User is in top 1000, use their assigned rank
+                        setCurrentUserRank(validUsers[currentUserIndex].rank);
+                    } else {
+                        // User is beyond top 1000, need to calculate their rank
+                        // This would require a separate query to count users with higher points
+                        // For now, show "1000+" to indicate they're beyond the displayed leaderboard
+                        setCurrentUserRank(-1); // Special value to indicate beyond top 1000
+                    }
                 }
 
                 setLoading(false);
@@ -240,10 +248,15 @@ export default function LeaderboardContent() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium text-gray-600">Your Rank</p>
-                                            <p className="text-2xl font-bold text-gray-900">#{currentUserRank || 'N/A'}</p>
+                                            <p
+                                                className="text-2xl font-bold text-gray-900"
+                                                aria-label={`Your current leaderboard ranking is ${currentUserRank === -1 ? 'beyond top 1000' : currentUserRank === 0 ? 'not ranked' : '#' + currentUserRank}`}
+                                            >
+                                                {currentUserRank === -1 ? '1000+' : currentUserRank ? '#' + currentUserRank : 'N/A'}
+                                            </p>
                                         </div>
                                         <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                            <Trophy className="w-6 h-6 text-purple-600" />
+                                            <Trophy className="w-6 h-6 text-purple-600" aria-label="Trophy icon representing your ranking" />
                                         </div>
                                     </div>
                                 </div>
@@ -430,4 +443,4 @@ export default function LeaderboardContent() {
             </main>
         </div>
     );
-} 
+}

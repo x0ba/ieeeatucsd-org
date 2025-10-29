@@ -14,7 +14,7 @@ export const useBrowserDetection = () => {
     isEdge: false,
     isSupported: true, // Default to supported on server
   });
-  const [isLoading, setIsLoading] = useState(false); // Start false to show cached data immediately
+  const [isLoading, setIsLoading] = useState(true); // Start true, set false after detection
 
   useEffect(() => {
     // Only run browser detection on the client side

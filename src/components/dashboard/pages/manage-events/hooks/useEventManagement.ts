@@ -48,7 +48,6 @@ export function useEventManagement(userId: string | undefined) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<string>("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [showDrafts, setShowDrafts] = useState(true);
   const eventsPerPage = 10;
 
   // Use db from client
@@ -322,6 +321,7 @@ export function useEventManagement(userId: string | undefined) {
               .toLowerCase()
               .includes(searchTerm.toLowerCase()));
 
+        // Show all events including drafts
         return matchesSearch;
       } catch (error) {
         console.error("Error filtering event request:", error, request);
@@ -415,13 +415,11 @@ export function useEventManagement(userId: string | undefined) {
     endIndex,
     eventsPerPage,
     stats,
-    showDrafts,
     setError,
     setSuccess,
     setSearchTerm,
     setSortBy,
     setCurrentPage,
-    setShowDrafts,
     handleDeleteRequest,
     handleUpdateEventStatus,
     getUserName,

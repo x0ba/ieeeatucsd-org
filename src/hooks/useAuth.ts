@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../firebase/client";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import type { UserRole } from "../components/dashboard/shared/types/firestore";
 import type { User } from "firebase/auth";
 
@@ -22,10 +22,12 @@ export function useAuth(): UseAuthResult {
     if (!authedUser) {
       setUserRole("Member");
       setLoading(false);
+      setError(null); // Clear error state when not authenticated
       return;
     }
 
     setLoading(true);
+    setError(null); // Clear previous errors when starting new listener
 
     // Set up real-time listener for user role
     const unsubscribe = onSnapshot(
@@ -38,6 +40,7 @@ export function useAuth(): UseAuthResult {
           setUserRole("Member");
         }
         setLoading(false);
+        setError(null); // Clear error state on successful snapshot
       },
       (e: any) => {
         setError(e?.message || "Failed to fetch user role");

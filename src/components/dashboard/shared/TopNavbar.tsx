@@ -171,11 +171,26 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   // Use db from client import
 
+  // Helper function to filter navigation items based on sponsor tier
+  const filterBySponsorTier = (items: typeof navigationCategories[0]["items"]) => {
+    return items.filter((item) => {
+      // Hide Resume Database for Bronze tier sponsors
+      if (
+        item.href === NAVIGATION_PATHS.RESUME_DATABASE &&
+        currentUserRole === "Sponsor" &&
+        sponsorTier === "Bronze"
+      ) {
+        return false;
+      }
+      return true;
+    });
+  };
+
   useEffect(() => {
     if (userLoading) return;
 
     if (!user) {
-      setCurrentUserRole("Member");
+      setCurrentUserRole(null);
       setIsLoadingRole(false);
       return;
     }
@@ -197,51 +212,45 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
             role: data.role || "Member",
           });
         } else {
+          // No explicit role set in Firestore; default to Member to avoid indefinite loading state
           setCurrentUserRole("Member");
         }
         setIsLoadingRole(false);
       },
       (error) => {
         console.error("Error fetching user role:", error);
+        // On error, default to Member to avoid indefinite loading state
         setCurrentUserRole("Member");
         setIsLoadingRole(false);
       }
     );
 
     return () => unsubscribe();
-  }, [user, userLoading, db]);
+  }, [user, userLoading]);
 
-  // Fetch notifications
+  // Fetch notifications (deferred until notifications are active)
+  // Since notifications are under development, we don't set up listeners yet
   useEffect(() => {
-    if (!user) return;
+    // Defer notification setup until feature is fully implemented
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
 
-    const notificationsQuery = query(
-      collection(db, "notifications"),
-      where("userId", "==", user.uid)
-    );
+    // TODO: Enable notification listener when feature is active
+    // const notificationsQuery = query(
+    //   collection(db, "notifications"),
+    //   where("userId", "==", user.uid)
+    // );
+    //
+    // const unsubscribe = onSnapshot(/* notification query */);
+    // return () => unsubscribe();
 
-    const unsubscribe = onSnapshot(
-      notificationsQuery,
-      (snapshot) => {
-        const notifs = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp?.toDate() || new Date(),
-        })) as Notification[];
-
-        setNotifications(notifs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
-        setUnreadCount(notifs.filter((n) => !n.read).length);
-      },
-      (error) => {
-        console.error("Error fetching notifications:", error);
-        // Silently fail - notifications are not critical
-        setNotifications([]);
-        setUnreadCount(0);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user, db]);
+    // For now, keep empty state
+    setNotifications([]);
+    setUnreadCount(0);
+  }, [user]);
 
   const isActiveRoute = (href: string): boolean => {
     if (currentPath === "/dashboard" || currentPath === "/dashboard/") {
@@ -255,7 +264,7 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
     return category.requiresRole.includes(currentUserRole);
   };
 
-  const isLoading = userLoading || isLoadingRole || currentUserRole === null;
+  const isLoading = userLoading || isLoadingRole;
 
   const filteredCategories = currentUserRole
     ? navigationCategories.filter(canAccessCategory)
@@ -263,17 +272,7 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
 
   // Flatten all navigation items for desktop display
   const allNavItems = filteredCategories.flatMap((category) =>
-    category.items.filter((item) => {
-      // Hide Resume Database for Bronze tier sponsors
-      if (
-        item.href === NAVIGATION_PATHS.RESUME_DATABASE &&
-        currentUserRole === "Sponsor" &&
-        sponsorTier === "Bronze"
-      ) {
-        return false;
-      }
-      return true;
-    })
+    filterBySponsorTier(category.items)
   );
 
   return (
@@ -306,11 +305,11 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
       {/* Desktop Navigation Links */}
       <NavbarContent className="hidden lg:flex gap-1" justify="center">
         {!isLoading &&
-          allNavItems.slice(0, 6).map((item, index) => {
+          allNavItems.slice(0, 6).map((item) => {
             const isActive = isActiveRoute(item.href);
             const Icon = item.icon;
             return (
-              <NavbarItem key={index} isActive={isActive}>
+              <NavbarItem key={item.href} isActive={isActive}>
                 <a
                   href={item.href}
                   aria-label={`Navigate to ${item.label}`}
@@ -344,11 +343,11 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
               </DropdownTrigger>
             </NavbarItem>
             <DropdownMenu aria-label="More navigation items">
-              {allNavItems.slice(6).map((item, index) => {
+              {allNavItems.slice(6).map((item) => {
                 const Icon = item.icon;
                 return (
                   <DropdownItem
-                    key={index}
+                    key={item.href}
                     startContent={<Icon className="w-4 h-4" />}
                     href={item.href}
                   >
@@ -445,27 +444,17 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
       {/* Mobile Menu */}
       <NavbarMenu className="pt-6 bg-white">
         {!isLoading &&
-          filteredCategories.map((category, categoryIndex) => (
-            <div key={categoryIndex} className="mb-4">
+          filteredCategories.map((category) => (
+            <div key={category.title} className="mb-4">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
                 {category.title}
               </p>
-              {category.items
-                .filter((item) => {
-                  if (
-                    item.href === NAVIGATION_PATHS.RESUME_DATABASE &&
-                    currentUserRole === "Sponsor" &&
-                    sponsorTier === "Bronze"
-                  ) {
-                    return false;
-                  }
-                  return true;
-                })
-                .map((item, index) => {
+              {filterBySponsorTier(category.items)
+                .map((item) => {
                   const isActive = isActiveRoute(item.href);
                   const Icon = item.icon;
                   return (
-                    <NavbarMenuItem key={index} isActive={isActive}>
+                    <NavbarMenuItem key={item.href} isActive={isActive}>
                       <a
                         href={item.href}
                         aria-label={`Navigate to ${item.label}`}
@@ -487,4 +476,3 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
     </Navbar>
   );
 }
-

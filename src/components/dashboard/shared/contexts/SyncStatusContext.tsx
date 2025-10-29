@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 
 interface SyncStatusContextType {
   isSyncing: boolean;
@@ -27,6 +27,14 @@ export function SyncStatusProvider({ children }: { children: React.ReactNode }) 
       return newSet;
     });
   }, []);
+
+  // Cleanup any active sync registrations when provider unmounts
+  useEffect(() => {
+    return () => {
+      setActiveSyncs(new Set());
+    };
+  }, []);
+
 
   const value: SyncStatusContextType = useMemo(() => ({
     isSyncing: activeSyncs.size > 0,

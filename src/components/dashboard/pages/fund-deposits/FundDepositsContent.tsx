@@ -31,7 +31,6 @@ interface FundDeposit {
     verifiedBy?: string;
     verifiedByName?: string;
     verifiedAt?: any;
-
     notes?: string;
     rejectionReason?: string; // Reason for rejection when status is 'rejected'
     auditLogs?: { action: string; createdBy: string; createdByName?: string; timestamp: any; note?: string; previousData?: any; newData?: any; }[];
@@ -53,7 +52,6 @@ const getStatusColor = (status: string) => {
             return 'bg-yellow-100 text-yellow-800';
         case 'verified':
             return 'bg-blue-100 text-blue-800';
-
         case 'rejected':
             return 'bg-red-100 text-red-800';
         default:
@@ -67,7 +65,6 @@ const getStatusIcon = (status: string) => {
             return <Clock className="w-4 h-4" />;
         case 'verified':
             return <Eye className="w-4 h-4" />;
-
         case 'rejected':
             return <XCircle className="w-4 h-4" />;
         default:
@@ -311,7 +308,7 @@ const FundDepositsContent: React.FC = () => {
     useEffect(() => {
         let filtered = deposits;
 
-        // Remove the visibility filter since we're already querying the correct deposits
+        // Remove the visibility filter since we're already querying correct deposits
         // filtered = filtered.filter(deposit => canViewDeposit(deposit));
 
         if (searchTerm) {
@@ -358,7 +355,7 @@ const FundDepositsContent: React.FC = () => {
 
         // Validate "other" deposit method specification
         if (newDeposit.depositMethod === 'other' && !newDeposit.otherDepositMethod.trim()) {
-            errors.otherDepositMethod = 'Please specify the deposit method when "Other" is selected';
+            errors.otherDepositMethod = 'Please specify deposit method when "Other" is selected';
         }
 
         // If there are validation errors, show them and return
@@ -657,11 +654,14 @@ const FundDepositsContent: React.FC = () => {
         if (!user || !window.confirm('Are you sure you want to delete this deposit? This action cannot be undone.')) return;
 
         try {
-            // Get deposit data for audit
+            // Get deposit data for cleanup
             const deposit = deposits.find(d => d.id === depositId);
             if (!deposit) return;
 
-            // Delete receipt files from storage
+            // 1) Delete Firestore document first to avoid dangling references
+            await deleteDoc(doc(db, 'fundDeposits', depositId));
+
+            // 2) Best-effort: delete storage files after doc removal
             if (deposit.receiptFiles && deposit.receiptFiles.length > 0) {
                 for (const fileUrl of deposit.receiptFiles) {
                     try {
@@ -677,9 +677,6 @@ const FundDepositsContent: React.FC = () => {
                     }
                 }
             }
-
-            // Delete the document
-            await deleteDoc(doc(db, 'fundDeposits', depositId));
         } catch (error) {
             console.error('Error deleting deposit:', error);
         }
@@ -694,7 +691,10 @@ const FundDepositsContent: React.FC = () => {
             const userData = userDoc.data();
             const userName = userData?.name || user.email || 'Unknown User';
 
-            // Remove file from storage
+            const depositRef = doc(db, 'fundDeposits', deposit.id);
+            const updatedReceiptFiles = (deposit.receiptFiles || []).filter(url => url !== fileUrl);
+
+            // Attempt storage deletion first
             try {
                 const url = new URL(fileUrl);
                 const pathMatch = url.pathname.match(/\/o\/(.+?)\?/);
@@ -704,14 +704,12 @@ const FundDepositsContent: React.FC = () => {
                     await deleteObject(fileRef);
                 }
             } catch (deleteError) {
-                // Failed to delete file from storage
+                console.error('Failed to delete receipt file:', deleteError);
+                throw deleteError;
             }
 
-            // Update deposit document
-            const depositRef = doc(db, 'fundDeposits', deposit.id);
-            const updatedReceiptFiles = (deposit.receiptFiles || []).filter(url => url !== fileUrl);
-
-            const newAuditLog = {
+            // Only update Firestore after successful storage deletion
+            const removedAudit = {
                 action: 'receipt_removed',
                 createdBy: user.uid,
                 createdByName: userName,
@@ -721,8 +719,9 @@ const FundDepositsContent: React.FC = () => {
 
             await updateDoc(depositRef, {
                 receiptFiles: updatedReceiptFiles,
-                auditLogs: [...(deposit.auditLogs || []), newAuditLog]
+                auditLogs: [...(deposit.auditLogs || []), removedAudit]
             });
+
         } catch (error) {
             console.error('Error removing receipt file:', error);
         }
@@ -743,7 +742,7 @@ const FundDepositsContent: React.FC = () => {
         if (deposit.depositedBy === user?.uid && deposit.status === 'pending') {
             return true;
         }
-        // Administrators can delete any deposit
+        // Only Administrators can delete any deposit
         return userRole === 'Administrator';
     };
 
@@ -868,7 +867,6 @@ const FundDepositsContent: React.FC = () => {
                                         <option value="all">All Status</option>
                                         <option value="pending">Pending</option>
                                         <option value="verified">Verified</option>
-
                                         <option value="rejected">Rejected</option>
                                     </select>
 

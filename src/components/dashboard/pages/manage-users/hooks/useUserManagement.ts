@@ -29,7 +29,7 @@ import { normalizeMajorName } from "../../../../../utils/majorNormalization";
 export const useUserManagement = () => {
   const [user, userLoading, userError] = useAuthState(auth);
   const [users, setUsers] = useState<(FirestoreUser & { id: string })[]>([]);
-  const [loading, setLoading] = useState(false); // Start false to show cached data immediately
+  const [loading, setLoading] = useState(true); // Start true for better UX (data fetching begins immediately)
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<
@@ -64,8 +64,12 @@ export const useUserManagement = () => {
     setLoading(true);
     setRoleLoading(true);
 
+    // Initialize unsubscribe functions for mutual cleanup in error handlers
+    let currentUserUnsubscribe: (() => void) | null = null;
+    let usersUnsubscribe: (() => void) | null = null;
+
     // Real-time listener for current user
-    const currentUserUnsubscribe = onSnapshot(
+    currentUserUnsubscribe = onSnapshot(
       doc(db, "users", user.uid),
       (userDoc) => {
         if (userDoc.exists()) {
@@ -82,18 +86,25 @@ export const useUserManagement = () => {
       },
       (error) => {
         console.error("Error fetching current user:", error);
+        setError("Failed to load your user data. Please refresh the page.");
         setRoleLoading(false);
+        setLoading(false);
+        // Clean up users listener if it exists
+        if (usersUnsubscribe) {
+          usersUnsubscribe();
+        }
       },
     );
 
     // Real-time listener for all users
-    const usersUnsubscribe = onSnapshot(
+    usersUnsubscribe = onSnapshot(
       collection(db, "users"),
       (snapshot) => {
         const usersData = snapshot.docs.map((doc) => {
           const data = doc.data();
           return {
             id: doc.id,
+            ...data,
             name: data.name || "",
             email: data.email || "",
             role: data.role || "Member",
@@ -106,7 +117,6 @@ export const useUserManagement = () => {
             points: data.points || 0,
             joinDate: data.joinDate || null,
             signInMethod: data.signInMethod || null,
-            ...data,
           } as FirestoreUser & { id: string };
         });
 
@@ -117,15 +127,19 @@ export const useUserManagement = () => {
         console.error("Error fetching users:", error);
         setError("Failed to load users. Please try again.");
         setLoading(false);
+        // Clean up current user listener if it exists
+        if (currentUserUnsubscribe) {
+          currentUserUnsubscribe();
+        }
       },
     );
 
     // Cleanup listeners on unmount
     return () => {
-      currentUserUnsubscribe();
-      usersUnsubscribe();
+      if (currentUserUnsubscribe) currentUserUnsubscribe();
+      if (usersUnsubscribe) usersUnsubscribe();
     };
-  }, [user, userLoading, db]);
+  }, [user, userLoading]);
 
   // Filter and sort users
   const filteredUsers = useMemo(() => {

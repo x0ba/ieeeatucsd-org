@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../../../../firebase/client";
-import { doc, getDoc, onSnapshot, collection, query, where } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import {
   Card,
   CardBody,
@@ -33,6 +33,13 @@ import type {
   TeamMember,
 } from "./types/OfficerLeaderboardTypes";
 import type { UserRole } from "../shared/types/firestore";
+
+// Allowed roles for viewing officer leaderboard
+const ALLOWED_OFFICER_ROLES: UserRole[] = [
+  "General Officer",
+  "Executive Officer",
+  "Administrator",
+];
 
 interface TeamMetrics {
   team: OfficerTeam;
@@ -77,37 +84,30 @@ export default function OfficerLeaderboardContent() {
     if (!user || !currentUserRole) return;
 
     // Only allow officers to view this leaderboard
-    const allowedRoles = [
-      "General Officer",
-      "Executive Officer",
-      "Administrator",
-    ];
-    if (!allowedRoles.includes(currentUserRole)) {
+    if (!ALLOWED_OFFICER_ROLES.includes(currentUserRole)) {
       setError("You do not have permission to view the officer leaderboard.");
       return;
     }
 
-    // Set up real-time listener for officers data
-    // This will trigger recalculation when users change
-    const officersQuery = query(
-      collection(db, "users"),
-      where("role", "in", [
-        "General Officer",
-        "Executive Officer",
-        "Administrator",
-      ])
-    );
+    let isMounted = true;
+    let currentRequestId = 0;
 
-    const unsubscribe = onSnapshot(
-      officersQuery,
-      async (snapshot) => {
-        // When officers data changes, recalculate leaderboard
+    // Set up real-time listener for leaderboard settings changes only
+    // This is more efficient than listening to all officer document changes
+    const settingsUnsubscribe = onSnapshot(
+      doc(db, "leaderboard", "settings"),
+      async () => {
+        if (!isMounted) return;
+
+        const requestId = ++currentRequestId;
+
         try {
-          // Show loading indicator while fetching
-          // Note: First load from cache will be fast, subsequent server updates may take longer
           setLoading(true);
 
           const data = await OfficerLeaderboardService.getLeaderboardData();
+
+          // Only update state if this is still the latest request and component is mounted
+          if (!isMounted || requestId !== currentRequestId) return;
 
           const teamMetrics: TeamMetrics[] = data.map((team, index) => ({
             team: team.team,
@@ -119,21 +119,29 @@ export default function OfficerLeaderboardContent() {
           }));
 
           setLeaderboardData(teamMetrics);
+          setError("");
         } catch (error) {
+          if (!isMounted) return;
           console.error("Error loading leaderboard data:", error);
           setError("Failed to load leaderboard data");
         } finally {
-          setLoading(false);
+          if (isMounted) {
+            setLoading(false);
+          }
         }
       },
       (error) => {
-        console.error("Error in officers listener:", error);
+        if (!isMounted) return;
+        console.error("Error in settings listener:", error);
         setError("Failed to load leaderboard data");
         setLoading(false);
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      settingsUnsubscribe();
+    };
   }, [user, currentUserRole]);
 
   const getTeamColor = (team: OfficerTeam): string => {

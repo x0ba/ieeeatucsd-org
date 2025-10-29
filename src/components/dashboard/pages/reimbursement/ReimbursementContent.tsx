@@ -227,6 +227,7 @@ export default function ReimbursementContent() {
                             <input
                                 type="text"
                                 placeholder="Search reimbursements..."
+                                aria-label="Search reimbursements"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
@@ -235,6 +236,7 @@ export default function ReimbursementContent() {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
+                            aria-label="Filter reimbursements by status"
                             className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] text-sm md:text-base"
                         >
                             <option value="all">All Status</option>
@@ -458,4 +460,4 @@ export default function ReimbursementContent() {
             )}
         </div>
     );
-} 
+}

@@ -15,11 +15,14 @@ export default function SponsorInformation() {
     const { userRole } = useAuth();
     const [user] = useAuthState(auth);
     const [sponsorData, setSponsorData] = React.useState<Partial<FirestoreUser> | null>(null);
-    const [loading, setLoading] = React.useState(false); // Start false to show cached data immediately
+    const [loading, setLoading] = React.useState(true); // Start true to avoid flash of stale content
+    const [error, setError] = React.useState<string>("");
 
     React.useEffect(() => {
         if (!user) return;
 
+        setLoading(true);
+        setError("");
         // Set up real-time listener for sponsor data
         const unsubscribe = onSnapshot(
             doc(db, 'users', user.uid),
@@ -31,6 +34,7 @@ export default function SponsorInformation() {
             },
             (error) => {
                 console.error('Error fetching sponsor data:', error);
+                setError('Failed to load sponsor data');
                 setLoading(false);
             }
         );
@@ -40,7 +44,7 @@ export default function SponsorInformation() {
 
     if (loading) {
         return (
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6" role="status" aria-live="polite" aria-busy="true">
                 <Skeleton className="h-32 w-full" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Skeleton className="h-48 w-full" />
@@ -112,9 +116,14 @@ export default function SponsorInformation() {
             return <ArrowRight className="w-5 h-5 text-blue-600" />;
         }
     };
-
     return (
         <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
+            {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                    {error}
+                </div>
+            )}
+
             {/* Welcome Card */}
             <Card className="border-0 shadow-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white">
                 <CardContent className="p-8">

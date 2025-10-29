@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
-import { app, auth, db } from '../../../../firebase/client';
+import { auth, db } from '../../../../firebase/client';
 import { EventAuditService } from '../../shared/services/eventAuditService';
 import type { EventFileChange } from '../../shared/types/firestore';
 import EnhancedFileViewer from './components/EnhancedFileViewer';

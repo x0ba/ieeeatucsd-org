@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Calendar, Settings, Save, AlertCircle } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../../../../../firebase/client";
-import { doc, getDoc, onSnapshot, Timestamp } from "firebase/firestore";
+import { doc, onSnapshot, Timestamp } from "firebase/firestore";
 import {
   Card,
   CardBody,
@@ -14,7 +14,7 @@ import {
 } from "@heroui/react";
 import { OfficerLeaderboardService } from "../services/officerLeaderboardService";
 import type { LeaderboardSettings } from "../types/OfficerLeaderboardTypes";
-import type { UserRole } from "../../shared/types/firestore";
+import type { UserRole } from "../../../shared/types/firestore";
 
 export default function LeaderboardSettings() {
   const [user] = useAuthState(auth);
@@ -50,6 +50,8 @@ export default function LeaderboardSettings() {
 
   useEffect(() => {
     const loadSettings = async () => {
+      setLoading(true);
+
       if (
         !user ||
         (currentUserRole !== "Executive Officer" &&
@@ -62,9 +64,16 @@ export default function LeaderboardSettings() {
       try {
         const settingsData =
           await OfficerLeaderboardService.getLeaderboardSettings();
+
+        if (!settingsData) {
+          setError("Settings not found");
+          setLoading(false);
+          return;
+        }
+
         setSettings(settingsData);
 
-        // Convert to local date string (YYYY-MM-DD) without timezone shifts
+        // Convert to date string (YYYY-MM-DD) using consistent local time approach
         const date = settingsData.startDate.toDate();
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -129,7 +138,7 @@ export default function LeaderboardSettings() {
   if (loading) {
     return (
       <Card className="w-full">
-        <CardBody className="p-6">
+        <CardBody className="p-6" role="status" aria-live="polite" aria-busy="true">
           <div className="animate-pulse">
             <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
             <div className="h-10 bg-gray-200 rounded w-full mb-4"></div>
@@ -223,6 +232,8 @@ export default function LeaderboardSettings() {
             variant="solid"
             onPress={handleSaveSettings}
             isLoading={saving}
+            aria-label={saving ? "Saving settings" : "Save settings"}
+            aria-busy={saving}
             startContent={!saving && <Save className="w-4 h-4" />}
             className="w-full sm:w-auto"
           >

@@ -11,7 +11,7 @@ import { normalizeMajorName } from '../../../../utils/majorNormalization';
 
 export default function SettingsContent() {
     const [userData, setUserData] = useState<User | null>(null);
-    const [loading, setLoading] = useState(false); // Start false to show cached data immediately
+    const [loading, setLoading] = useState(true); // Start true for better UX (data fetching begins immediately)
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -50,6 +50,12 @@ export default function SettingsContent() {
         let userDataUnsubscribe: (() => void) | null = null;
 
         const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+            // Clean up previous user data listener if it exists
+            if (userDataUnsubscribe) {
+                userDataUnsubscribe();
+                userDataUnsubscribe = null;
+            }
+
             if (user) {
                 userDataUnsubscribe = loadUserData(user);
             } else {

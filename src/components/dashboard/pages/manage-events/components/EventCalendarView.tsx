@@ -79,7 +79,7 @@ export function EventCalendarView({
         }
 
         // Draft events - special styling
-        if (event.isDraft || event.status?.toLowerCase() === 'draft') {
+        if (isDraftEvent(event)) {
             return 'bg-gray-100 border-gray-400 text-gray-700 border-dashed';
         }
 
@@ -128,6 +128,11 @@ export function EventCalendarView({
 
     const handleToday = () => {
         setCurrentMonth(new Date());
+    };
+
+    // Helper function to check if an event is a draft (case-insensitive)
+    const isDraftEvent = (event: EventRequest): boolean => {
+        return event.isDraft || event.status?.toLowerCase() === 'draft';
     };
 
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -320,7 +325,7 @@ export function EventCalendarView({
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
-                                                {(event.isDraft || event.status === 'draft') && onConvertDraftToFull ? (
+                                                {isDraftEvent(event) && onConvertDraftToFull ? (
                                                     <>
                                                         <Button
                                                             size="sm"
@@ -381,4 +386,3 @@ export function EventCalendarView({
         </div>
     );
 }
-

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, FileText, Image as ImageIcon, File, Eye } from 'lucide-react';
-import { Card, CardBody, Button, Chip, Progress } from '@heroui/react';
+import { Upload, X, FileText, Image as ImageIcon, File, Eye, AlertCircle } from 'lucide-react';
+import { Card, CardBody, Button, Chip } from '@heroui/react';
 
 interface MultiFileUploadProps {
     files: File[];
@@ -30,12 +30,12 @@ export default function MultiFileUpload({
     disabled = false
 }: MultiFileUploadProps) {
     const [isDragOver, setIsDragOver] = useState(false);
-    const [previewFile, setPreviewFile] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const getFileIcon = (fileName: string) => {
         const ext = fileName.split('.').pop()?.toLowerCase();
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
+        if (ext && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
             return <ImageIcon className="w-5 h-5" />;
         } else if (ext === 'pdf') {
             return <FileText className="w-5 h-5" />;
@@ -48,20 +48,63 @@ export default function MultiFileUpload({
         const k = 1024;
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+        const clampedIndex = Math.min(i, sizes.length - 1);
+        return Math.round((bytes / Math.pow(k, clampedIndex)) * 100) / 100 + ' ' + sizes[clampedIndex];
     };
 
     const validateFile = (file: File): string | null => {
-        // Check file size
-        if (file.size > maxSizeInMB * 1024 * 1024) {
-            return `File size exceeds ${maxSizeInMB}MB limit`;
+        // Check file size - use the more restrictive of maxSizeInMB or 100MB hard limit
+        const MAX_SAFE_FILE_SIZE = 100 * 1024 * 1024; // 100MB hard limit
+        const effectiveMaxSize = Math.min(maxSizeInMB * 1024 * 1024, MAX_SAFE_FILE_SIZE);
+
+        if (file.size > effectiveMaxSize) {
+            if (file.size > MAX_SAFE_FILE_SIZE) {
+                return `File "${file.name}" is too large (${formatFileSize(file.size)}). Maximum file size is 100MB. Please compress or split the file.`;
+            }
+            return `File "${file.name}" exceeds ${maxSizeInMB}MB limit`;
         }
 
-        // Check file type
+        // Check file type - both extension and MIME type validation
         const acceptedTypes = accept.split(',').map(t => t.trim());
-        const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
+        const fileParts = file.name.split('.');
+        const fileExt = fileParts.length > 1 ? '.' + fileParts.pop()?.toLowerCase() : '';
+        const mimeType = file.type.toLowerCase();
+
+        // Define MIME type mappings for safety (expanded coverage)
+        const mimeTypeMap: Record<string, string[]> = {
+            '.pdf': ['application/pdf'],
+            '.jpg': ['image/jpeg'],
+            '.jpeg': ['image/jpeg'],
+            '.png': ['image/png'],
+            '.gif': ['image/gif'],
+            '.webp': ['image/webp'],
+            '.svg': ['image/svg+xml'],
+            '.heic': ['image/heic', 'image/heif'],
+            '.heif': ['image/heif'],
+            '.doc': ['application/msword'],
+            '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+            '.txt': ['text/plain'],
+            '.csv': ['text/csv', 'application/vnd.ms-excel'],
+            '.xls': ['application/vnd.ms-excel', 'application/xls'],
+            '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+            '.ppt': ['application/vnd.ms-powerpoint'],
+            '.pptx': ['application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+            '.zip': ['application/zip', 'application/x-zip-compressed', 'multipart/x-zip'],
+            '.json': ['application/json'],
+            '.md': ['text/markdown', 'text/plain']
+        };
+
+        if (!fileExt) {
+            return `File must have an extension. Allowed: ${accept}`;
+        }
         if (!acceptedTypes.includes(fileExt)) {
             return `File type not accepted. Allowed: ${accept}`;
+        }
+
+        // Additional MIME type validation for security
+        const allowedMimeTypes = mimeTypeMap[fileExt];
+        if (allowedMimeTypes && !allowedMimeTypes.includes(mimeType)) {
+            return `File MIME type "${mimeType}" does not match expected type for ${fileExt.toUpperCase()} files. This may indicate a corrupted or malicious file.`;
         }
 
         return null;
@@ -70,11 +113,14 @@ export default function MultiFileUpload({
     const handleFiles = (newFiles: FileList | null) => {
         if (!newFiles || disabled) return;
 
+        // Clear previous errors
+        setErrorMessage('');
+
         const fileArray = Array.from(newFiles);
         const totalFiles = files.length + existingFiles.length + fileArray.length;
 
         if (totalFiles > maxFiles) {
-            alert(`Maximum ${maxFiles} files allowed`);
+            setErrorMessage(`Maximum ${maxFiles} files allowed`);
             return;
         }
 
@@ -84,14 +130,14 @@ export default function MultiFileUpload({
         fileArray.forEach(file => {
             const error = validateFile(file);
             if (error) {
-                errors.push(`${file.name}: ${error}`);
+                errors.push(error);
             } else {
                 validFiles.push(file);
             }
         });
 
         if (errors.length > 0) {
-            alert('Some files were not added:\n' + errors.join('\n'));
+            setErrorMessage(errors.join('; '));
         }
 
         if (validFiles.length > 0) {
@@ -132,7 +178,18 @@ export default function MultiFileUpload({
     };
 
     const handlePreview = (fileUrl: string) => {
-        window.open(fileUrl, '_blank', 'noopener,noreferrer');
+        // Validate URL before opening to prevent XSS
+        try {
+            const url = new URL(fileUrl);
+            // Only allow http, https, and blob protocols
+            if (!['http:', 'https:', 'blob:'].includes(url.protocol)) {
+                setErrorMessage('Invalid file URL protocol');
+                return;
+            }
+            window.open(fileUrl, '_blank', 'noopener,noreferrer');
+        } catch (error) {
+            setErrorMessage('Invalid file URL');
+        }
     };
 
     const totalFileCount = files.length + existingFiles.length;
@@ -146,6 +203,23 @@ export default function MultiFileUpload({
                 {required && <span className="text-red-600 ml-1">*</span>}
             </label>
 
+            {/* Error Message */}
+            {errorMessage && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                        <p className="text-sm text-red-800">{errorMessage}</p>
+                    </div>
+                    <button
+                        onClick={() => setErrorMessage('')}
+                        className="text-red-600 hover:text-red-800 flex-shrink-0"
+                        aria-label="Dismiss error"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
             {/* Existing Files */}
             {existingFiles.length > 0 && (
                 <div className="space-y-2">
@@ -153,8 +227,14 @@ export default function MultiFileUpload({
                     <div className="grid grid-cols-1 gap-2">
                         {existingFiles.map((fileUrl, index) => {
                             const fileName = fileUrl.split('/').pop()?.split('?')[0] || `File ${index + 1}`;
-                            const decodedName = decodeURIComponent(fileName);
-                            
+                            let decodedName = fileName;
+                            try {
+                                decodedName = decodeURIComponent(fileName);
+                            } catch (error) {
+                                // If decodeURIComponent fails, use the original filename
+                                console.warn('Failed to decode filename:', fileName, error);
+                            }
+
                             return (
                                 <Card key={index} className="border border-gray-200">
                                     <CardBody className="p-3">
@@ -253,11 +333,20 @@ export default function MultiFileUpload({
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     onClick={() => !disabled && fileInputRef.current?.click()}
+                    onKeyDown={(e) => {
+                        if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
+                            e.preventDefault();
+                            fileInputRef.current?.click();
+                        }
+                    }}
+                    tabIndex={disabled ? -1 : 0}
+                    role="button"
+                    aria-label="Upload files by clicking or using drag and drop"
                     className={`
                         relative border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer
                         ${isDragOver
                             ? 'border-blue-500 bg-blue-50 scale-[1.02]'
-                            : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                            : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50'
                         }
                         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
                     `}
@@ -271,17 +360,17 @@ export default function MultiFileUpload({
                         className="hidden"
                         disabled={disabled}
                     />
-                    
+
                     <Upload className={`w-10 h-10 mx-auto mb-3 ${isDragOver ? 'text-blue-500' : 'text-gray-400'}`} />
-                    
+
                     <p className="text-sm font-medium text-gray-700 mb-1">
                         {description}
                     </p>
-                    
+
                     <p className="text-xs text-gray-500">
-                        {accept.split(',').join(', ').toUpperCase()} up to {maxSizeInMB}MB
+                        {`${accept.split(',').join(', ').toUpperCase()} • up to ${Math.min(maxSizeInMB, 100)}MB (100MB hard limit enforced)`}
                     </p>
-                    
+
                     {totalFileCount > 0 && (
                         <div className="mt-3">
                             <Chip size="sm" color="primary" variant="flat">
@@ -303,4 +392,3 @@ export default function MultiFileUpload({
         </div>
     );
 }
-
