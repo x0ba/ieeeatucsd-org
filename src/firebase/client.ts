@@ -55,7 +55,7 @@ export const db = initializeFirestore(
           tabManager: persistentMultipleTabManager(),
         }),
       }
-    : ({} as any),
+    : {}, // Empty configuration object when persistence is disabled or IndexedDB is not supported
 );
 
 export const storage = getStorage(app);

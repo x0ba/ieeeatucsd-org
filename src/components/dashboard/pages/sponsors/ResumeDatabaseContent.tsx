@@ -63,7 +63,7 @@ export default function ResumeDatabaseContent() {
         );
 
         return () => unsubscribe();
-    }, [user, db]);
+    }, [user]);
 
     // Real-time listener for users with resumes
     useEffect(() => {
@@ -95,7 +95,7 @@ export default function ResumeDatabaseContent() {
         );
 
         return () => unsubscribe();
-    }, [user, currentUserRole, db]);
+    }, [user, currentUserRole]);
 
     // Memoize major normalization map for efficient lookups
     const majorNormalizationMap = useMemo(() => {

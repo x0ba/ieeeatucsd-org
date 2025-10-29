@@ -635,12 +635,16 @@ export async function sendReimbursementStatusChangeEmail(
 
     // Add payment confirmation if applicable
     if (data.paymentConfirmation) {
+      const paidAtDate = data.paymentConfirmation.paidAt?.toDate
+        ? data.paymentConfirmation.paidAt.toDate()
+        : new Date(data.paymentConfirmation.paidAt);
+
       detailsHtml += createInfoBox(
         `
         <h4 style="margin: 0 0 8px 0; color: ${IEEE_COLORS.success};">Payment Confirmation</h4>
         ${data.paymentConfirmation.confirmationNumber ? `<p style="margin: 4px 0;"><strong>Confirmation Number:</strong> ${data.paymentConfirmation.confirmationNumber}</p>` : ""}
         ${data.paymentConfirmation.paidByName ? `<p style="margin: 4px 0;"><strong>Paid By:</strong> ${data.paymentConfirmation.paidByName}</p>` : ""}
-        ${data.paymentConfirmation.paidAt ? `<p style="margin: 4px 0;"><strong>Paid At:</strong> ${formatDate(data.paymentConfirmation.paidAt.toDate())}</p>` : ""}
+        ${data.paymentConfirmation.paidAt ? `<p style="margin: 4px 0;"><strong>Paid At:</strong> ${formatDate(paidAtDate)}</p>` : ""}
       `,
         "success",
       );

@@ -24,6 +24,7 @@ const Calendar = ({ CALENDAR_API_KEY, EVENT_CALENDAR_ID }) => {
   const abortControllerRef = useRef(null);
   const isMountedRef = useRef(false);
   const currentFetchRef = useRef(null);
+  const retryTimeoutRef = useRef(null);
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
@@ -160,52 +161,59 @@ const Calendar = ({ CALENDAR_API_KEY, EVENT_CALENDAR_ID }) => {
   }, [mounted, CALENDAR_API_KEY]);
 
   // Helper function to fetch Firestore events
-  const fetchFirestoreEvents = async (firstDay, lastDay) => {
+  const fetchFirestoreEvents = async (firstDay, lastDay, abortSignal) => {
     try {
       const db = getFirestore(app);
       const eventsRef = collection(db, "events");
 
-      // Query published events only
+      // Query published events only within the date range
       const q = query(
         eventsRef,
         where("published", "==", true),
+        where("startDate", ">=", firstDay),
+        where("startDate", "<=", lastDay),
         orderBy("startDate", "asc"),
       );
 
+      // Check if aborted before making the request
+      if (abortSignal.aborted) {
+        return [];
+      }
+
       const eventsSnapshot = await getDocs(q);
 
-      const firestoreEvents = eventsSnapshot.docs
-        .map((doc) => {
-          const data = doc.data();
-          const startDate = data.startDate?.toDate
-            ? data.startDate.toDate()
-            : new Date(data.startDate);
-          const endDate = data.endDate?.toDate
-            ? data.endDate.toDate()
-            : new Date(data.endDate);
+      // Check if aborted after getting the snapshot
+      if (abortSignal.aborted) {
+        return [];
+      }
 
-          // Transform to Google Calendar format
-          return {
-            id: doc.id,
-            summary: data.eventName,
-            description: data.eventDescription,
-            location: data.location,
-            start: {
-              dateTime: startDate.toISOString(),
-              date: null,
-            },
-            end: {
-              dateTime: endDate.toISOString(),
-              date: null,
-            },
-            source: "firestore", // Mark as Firestore event
-          };
-        })
-        .filter((event) => {
-          // Filter events in current month
-          const eventDate = new Date(event.start.dateTime);
-          return eventDate >= firstDay && eventDate <= lastDay;
-        });
+      const firestoreEvents = eventsSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        const startDate = data.startDate?.toDate
+          ? data.startDate.toDate()
+          : new Date(data.startDate);
+        const endDate = data.endDate?.toDate
+          ? data.endDate.toDate()
+          : new Date(data.endDate);
+
+        // Transform to Google Calendar format
+        return {
+          id: doc.id,
+          summary: data.eventName,
+          description: data.eventDescription,
+          location: data.location,
+          start: {
+            dateTime: startDate.toISOString(),
+            date: null,
+          },
+          end: {
+            dateTime: endDate.toISOString(),
+            date: null,
+          },
+          source: "firestore", // Mark as Firestore event
+        };
+      });
+      // No need for client-side filtering since we filter at query level
 
       return firestoreEvents;
     } catch (error) {
@@ -284,7 +292,11 @@ const Calendar = ({ CALENDAR_API_KEY, EVENT_CALENDAR_ID }) => {
         }
 
         // Fetch Firestore events (published only)
-        const firestoreEvents = await fetchFirestoreEvents(firstDay, lastDay);
+        const firestoreEvents = await fetchFirestoreEvents(
+          firstDay,
+          lastDay,
+          abortController.signal,
+        );
 
         // Check again if aborted or if a newer request has started
         if (
@@ -321,7 +333,7 @@ const Calendar = ({ CALENDAR_API_KEY, EVENT_CALENDAR_ID }) => {
               `Retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/3)`,
             );
 
-            setTimeout(() => {
+            retryTimeoutRef.current = setTimeout(() => {
               if (isMountedRef.current && currentFetchRef.current === fetchId) {
                 setRetryCount((prev) => prev + 1);
               }
@@ -343,6 +355,11 @@ const Calendar = ({ CALENDAR_API_KEY, EVENT_CALENDAR_ID }) => {
     // Cleanup function
     return () => {
       abortController.abort();
+      // Clear any pending retry timeout
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     };
   }, [currentDate, mounted, gapiReady, EVENT_CALENDAR_ID, retryCount]);
 

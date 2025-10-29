@@ -28,6 +28,36 @@ export const IEEE_COLORS = {
   black: '#000000',
 };
 
+/**
+ * HTML escaping utility to prevent XSS attacks
+ */
+function escapeHtml(unsafe: string): string {
+  if (typeof unsafe !== 'string') {
+    return String(unsafe);
+  }
+  return unsafe
+    .replace(/&/g, "&")
+    .replace(/</g, "<")
+    .replace(/>/g, ">")
+    .replace(/"/g, """)
+    .replace(/'/g, "&#039;");
+}
+
+/**
+ * URL sanitization utility to prevent XSS via javascript: protocol
+ */
+function sanitizeUrl(url: string): string {
+  if (typeof url !== 'string') {
+    return '#';
+  }
+  const trimmed = url.trim();
+  // Block javascript: and data: protocols
+  if (/^(javascript|data|vbscript):/i.test(trimmed)) {
+    return '#';
+  }
+  return escapeHtml(trimmed);
+}
+
 interface EmailTemplateOptions {
   title: string;
   preheader?: string;
@@ -64,8 +94,8 @@ export function generateEmailTemplate(options: EmailTemplateOptions): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  ${preheader ? `<meta name="description" content="${preheader}">` : ''}
-  <title>${title}</title>
+  ${preheader ? `<meta name="description" content="${escapeHtml(preheader)}">` : ''}
+  <title>${escapeHtml(title)}</title>
   <!--[if mso]>
   <style type="text/css">
     body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
@@ -171,7 +201,6 @@ export function generateEmailTemplate(options: EmailTemplateOptions): string {
     
     /* Detail Row */
     .detail-row {
-      display: flex;
       padding: 12px 0;
       border-bottom: 1px solid ${IEEE_COLORS.gray[200]};
     }
@@ -184,11 +213,15 @@ export function generateEmailTemplate(options: EmailTemplateOptions): string {
       font-weight: 600;
       color: ${IEEE_COLORS.gray[700]};
       min-width: 140px;
+      display: inline-block;
+      width: 140px;
     }
     
     .detail-value {
       color: ${IEEE_COLORS.gray[800]};
-      flex: 1;
+      display: inline-block;
+      width: calc(100% - 140px);
+      vertical-align: top;
     }
     
     /* CTA Button */
@@ -269,7 +302,7 @@ export function generateEmailTemplate(options: EmailTemplateOptions): string {
   ${preheader ? `
   <!-- Preheader text (hidden but shows in email preview) -->
   <div style="display: none; max-height: 0; overflow: hidden;">
-    ${preheader}
+    ${escapeHtml(preheader)}
   </div>
   ` : ''}
   
@@ -280,7 +313,7 @@ export function generateEmailTemplate(options: EmailTemplateOptions): string {
         <div class="email-container">
           <!-- Header -->
           <div class="email-header">
-            <h1>${headerText}</h1>
+            <h1>${escapeHtml(headerText)}</h1>
           </div>
           
           <!-- Body -->
@@ -289,7 +322,7 @@ export function generateEmailTemplate(options: EmailTemplateOptions): string {
             
             ${ctaButton ? `
             <div style="text-align: center; margin: 32px 0;">
-              <a href="${ctaButton.url}" class="cta-button">${ctaButton.text}</a>
+              <a href="${sanitizeUrl(ctaButton.url)}" class="cta-button">${escapeHtml(ctaButton.text)}</a>
             </div>
             ` : ''}
           </div>
@@ -298,16 +331,16 @@ export function generateEmailTemplate(options: EmailTemplateOptions): string {
           <div class="email-footer">
             ${referenceId ? `
             <p style="margin-bottom: 16px;">
-              Reference ID: <span class="reference-code">${referenceId}</span>
+              Reference ID: <span class="reference-code">${escapeHtml(referenceId)}</span>
             </p>
             ` : ''}
             <p>
-              Questions? Contact us at 
-              <a href="mailto:${contactEmail}">${contactEmail}</a>
+              Questions? Contact us at
+              <a href="mailto:${escapeHtml(contactEmail)}">${escapeHtml(contactEmail)}</a>
             </p>
             <hr style="border: none; border-top: 1px solid ${IEEE_COLORS.gray[300]}; margin: 16px 0;">
             <p style="font-size: 12px; color: ${IEEE_COLORS.gray[500]};">
-              ${footerText}
+              ${escapeHtml(footerText)}
             </p>
           </div>
         </div>
@@ -324,10 +357,16 @@ export function generateEmailTemplate(options: EmailTemplateOptions): string {
  */
 export function createDetailRow(label: string, value: string | number): string {
   return `
-    <div class="detail-row">
-      <div class="detail-label">${label}:</div>
-      <div class="detail-value">${value}</div>
-    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td width="140" valign="top" style="font-weight: 600; color: ${IEEE_COLORS.gray[700]}; padding: 12px 12px 12px 0; border-bottom: 1px solid ${IEEE_COLORS.gray[200]};">
+          ${escapeHtml(label)}:
+        </td>
+        <td valign="top" style="color: ${IEEE_COLORS.gray[800]}; padding: 12px 0 12px 12px; border-bottom: 1px solid ${IEEE_COLORS.gray[200]};">
+          ${escapeHtml(String(value))}
+        </td>
+      </tr>
+    </table>
   `;
 }
 
@@ -336,7 +375,7 @@ export function createDetailRow(label: string, value: string | number): string {
  */
 export function createInfoBox(content: string, type: 'info' | 'success' | 'warning' | 'danger' = 'info'): string {
   const className = type === 'info' ? 'info-box' : `info-box info-box-${type}`;
-  return `<div class="${className}">${content}</div>`;
+  return `<div class="${className}">${escapeHtml(content)}</div>`;
 }
 
 /**
@@ -354,6 +393,9 @@ export function formatCurrency(amount: number): string {
  */
 export function formatDate(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(dateObj.getTime())) {
+    throw new Error(`Invalid date: ${String(date)}`);
+  }
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'long',

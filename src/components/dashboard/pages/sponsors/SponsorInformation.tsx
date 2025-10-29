@@ -95,16 +95,17 @@ export default function SponsorInformation() {
         bronze: boolean | string;
         silver: boolean | string;
         gold: boolean | string;
+        diamond: boolean | string;
     }
 
     const benefits: Benefit[] = [
-        { name: 'Prominent Logo Placement on Website & Newsletters', bronze: true, silver: true, gold: true },
-        { name: 'Tabling/Swag at Major Events', bronze: true, silver: true, gold: true },
-        { name: 'Exclusive Access to Student Resume Database', bronze: false, silver: true, gold: true },
-        { name: 'Participation in Professional Development Sessions', bronze: false, silver: '3 per year', gold: 'Unlimited' },
-        { name: 'Participation in Technical Workshops', bronze: false, silver: '1 per year', gold: 'Unlimited' },
-        { name: 'Unlimited Participation in Quarterly Projects', bronze: false, silver: false, gold: true },
-        { name: 'Custom Events & Activations', bronze: false, silver: false, gold: true },
+        { name: 'Prominent Logo Placement on Website & Newsletters', bronze: true, silver: true, gold: true, diamond: true },
+        { name: 'Tabling/Swag at Major Events', bronze: true, silver: true, gold: true, diamond: true },
+        { name: 'Exclusive Access to Student Resume Database', bronze: false, silver: true, gold: true, diamond: true },
+        { name: 'Participation in Professional Development Sessions', bronze: false, silver: '3 per year', gold: 'Unlimited', diamond: 'Unlimited' },
+        { name: 'Participation in Technical Workshops', bronze: false, silver: '1 per year', gold: 'Unlimited', diamond: 'Unlimited' },
+        { name: 'Unlimited Participation in Quarterly Projects', bronze: false, silver: false, gold: true, diamond: true },
+        { name: 'Custom Events & Activations', bronze: false, silver: false, gold: true, diamond: true },
     ];
 
     const renderBenefitIcon = (value: boolean | string) => {
@@ -244,6 +245,14 @@ export default function SponsorInformation() {
                                     <span className="text-muted-foreground text-xs font-medium">{getTierAmount('Gold')}</span>
                                 </div>
                             </TableColumn>
+                            <TableColumn align="center">
+                                <div className="flex flex-col items-center gap-1">
+                                    <Badge variant="outline" className={getTierColor('Diamond')}>
+                                        DIAMOND
+                                    </Badge>
+                                    <span className="text-muted-foreground text-xs font-medium">{getTierAmount('Diamond')}</span>
+                                </div>
+                            </TableColumn>
                         </TableHeader>
                         <TableBody>
                             {benefits.map((benefit, index) => (
@@ -270,6 +279,14 @@ export default function SponsorInformation() {
                                             {renderBenefitIcon(benefit.gold)}
                                             {typeof benefit.gold === 'string' && (
                                                 <span className="text-xs text-blue-600 font-medium">{benefit.gold}</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            {renderBenefitIcon(benefit.diamond)}
+                                            {typeof benefit.diamond === 'string' && (
+                                                <span className="text-xs text-blue-600 font-medium">{benefit.diamond}</span>
                                             )}
                                         </div>
                                     </TableCell>

@@ -289,7 +289,7 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
       {/* Brand */}
       <NavbarContent justify="start">
         <NavbarBrand>
-          <a href="/dashboard/overview" className="flex items-center gap-2 group">
+          <a href={NAVIGATION_PATHS.OVERVIEW} className="flex items-center gap-2 group">
             <img
               src="/logos/blue_logo_only.svg"
               alt="IEEE UCSD Logo"

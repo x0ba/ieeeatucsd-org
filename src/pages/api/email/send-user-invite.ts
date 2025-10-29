@@ -13,9 +13,6 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Initialize Resend
-    const resend = new Resend(import.meta.env.RESEND_API_KEY);
-
     if (!import.meta.env.RESEND_API_KEY) {
       console.error("RESEND_API_KEY not configured");
       return new Response(
@@ -23,6 +20,9 @@ export const POST: APIRoute = async ({ request }) => {
         { status: 500, headers: { "Content-Type": "application/json" } },
       );
     }
+
+    // Initialize Resend
+    const resend = new Resend(import.meta.env.RESEND_API_KEY);
 
     const fromEmail =
       import.meta.env.FROM_EMAIL ||

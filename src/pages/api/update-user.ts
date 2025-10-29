@@ -260,6 +260,7 @@ export const POST: APIRoute = async ({ request }) => {
                 newRole: roleChange.newValue,
                 changedByUserId: adminUserId,
               }),
+              signal: AbortSignal.timeout(10000), // 10 second timeout
             },
           );
         } else {
@@ -277,6 +278,7 @@ export const POST: APIRoute = async ({ request }) => {
                 changes,
                 changedByUserId: adminUserId,
               }),
+              signal: AbortSignal.timeout(10000), // 10 second timeout
             },
           );
         }

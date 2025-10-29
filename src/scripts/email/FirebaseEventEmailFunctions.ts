@@ -27,7 +27,7 @@ export async function sendFirebaseEventRequestSubmissionEmail(
       .doc(data.eventRequestId)
       .get();
     if (!eventRequestDoc.exists) {
-      console.error("❌ Event request not found:", data.eventRequestId);
+      console.error("❌ Event request not found");
       return false;
     }
 
@@ -42,7 +42,7 @@ export async function sendFirebaseEventRequestSubmissionEmail(
       .doc(eventRequest.requestedUser)
       .get();
     if (!userDoc.exists) {
-      console.error("❌ User not found:", eventRequest.requestedUser);
+      console.error("❌ User not found");
       return false;
     }
 
@@ -325,7 +325,7 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
       .doc(data.eventRequestId)
       .get();
     if (!eventRequestDoc.exists) {
-      console.error("❌ Event request not found:", data.eventRequestId);
+      console.error("❌ Event request not found");
       return false;
     }
 
@@ -340,7 +340,7 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
       .doc(eventRequest.requestedUser)
       .get();
     if (!userDoc.exists) {
-      console.error("❌ User not found:", eventRequest.requestedUser);
+      console.error("❌ User not found");
       return false;
     }
 
@@ -534,7 +534,7 @@ export async function sendFirebaseEventEditEmail(
       .doc(data.eventRequestId)
       .get();
     if (!eventRequestDoc.exists) {
-      console.error("❌ Event request not found:", data.eventRequestId);
+      console.error("❌ Event request not found");
       return false;
     }
 
@@ -549,7 +549,7 @@ export async function sendFirebaseEventEditEmail(
       .doc(eventRequest.requestedUser)
       .get();
     if (!userDoc.exists) {
-      console.error("❌ User not found:", eventRequest.requestedUser);
+      console.error("❌ User not found");
       return false;
     }
 
@@ -951,6 +951,33 @@ export async function sendGraphicsUploadEmail(
   try {
     console.log("🎨 Starting graphics upload email process...");
 
+    // Validate input parameters
+    if (!data.eventRequestId || typeof data.eventRequestId !== "string") {
+      console.error("❌ Invalid eventRequestId parameter");
+      return false;
+    }
+
+    if (!data.uploadedByUserId || typeof data.uploadedByUserId !== "string") {
+      console.error("❌ Invalid uploadedByUserId parameter");
+      return false;
+    }
+
+    if (
+      typeof data.filesUploaded !== "number" ||
+      data.filesUploaded < 0 ||
+      !Number.isInteger(data.filesUploaded)
+    ) {
+      console.error(
+        "❌ Invalid filesUploaded parameter: must be a non-negative integer",
+      );
+      return false;
+    }
+
+    if (data.filesUploaded === 0) {
+      console.log("ℹ️ No files uploaded, skipping email notification");
+      return true;
+    }
+
     // Helper to normalize timestamp to Date or null for safe formatting
     const normalizeToDate = (timestamp: any): Date | null => {
       if (!timestamp) return null;
@@ -977,7 +1004,7 @@ export async function sendGraphicsUploadEmail(
       .doc(data.eventRequestId)
       .get();
     if (!eventRequestDoc.exists) {
-      console.error("❌ Event request not found:", data.eventRequestId);
+      console.error("❌ Event request not found");
       return false;
     }
 
@@ -992,7 +1019,7 @@ export async function sendGraphicsUploadEmail(
       .doc(data.uploadedByUserId)
       .get();
     if (!uploaderDoc.exists) {
-      console.error("❌ Uploader not found:", data.uploadedByUserId);
+      console.error("❌ Uploader not found");
       return false;
     }
     const uploader = { id: uploaderDoc.id, ...uploaderDoc.data() } as any;
@@ -1003,10 +1030,7 @@ export async function sendGraphicsUploadEmail(
       .doc(eventRequest.requestedUser)
       .get();
     if (!submitterDoc.exists) {
-      console.error(
-        "❌ Event submitter not found:",
-        eventRequest.requestedUser,
-      );
+      console.error("❌ Event submitter not found");
       return false;
     }
     const submitter = { id: submitterDoc.id, ...submitterDoc.data() } as any;

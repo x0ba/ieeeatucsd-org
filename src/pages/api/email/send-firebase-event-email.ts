@@ -24,6 +24,8 @@ export const POST: APIRoute = async ({ request }) => {
       userName,
       userEmail,
       status,
+      uploadedByUserId,
+      filesUploaded,
     } = await request.json();
 
     if (!type) {
@@ -141,7 +143,6 @@ export const POST: APIRoute = async ({ request }) => {
         break;
 
       case "graphics_upload":
-        const { uploadedByUserId, filesUploaded } = await request.json();
         if (!eventRequestId || !uploadedByUserId || !filesUploaded) {
           return new Response(
             JSON.stringify({

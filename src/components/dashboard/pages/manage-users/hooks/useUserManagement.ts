@@ -8,6 +8,10 @@ import {
   deleteDoc,
   getDoc,
   onSnapshot,
+  query,
+  where,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { app, auth, db } from "../../../../../firebase/client";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -96,9 +100,20 @@ export const useUserManagement = () => {
       },
     );
 
-    // Real-time listener for all users
+    // Real-time listener for users with proper filtering
     usersUnsubscribe = onSnapshot(
-      collection(db, "users"),
+      query(
+        collection(db, "users"),
+        where("role", "in", [
+          "Member",
+          "General Officer",
+          "Executive Officer",
+          "Administrator",
+          "Sponsor",
+        ]),
+        orderBy("name", "asc"),
+        limit(100), // Limit to 100 users for performance
+      ),
       (snapshot) => {
         const usersData = snapshot.docs.map((doc) => {
           const data = doc.data();

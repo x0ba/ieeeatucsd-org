@@ -1,9 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   collection,
   query,
   orderBy,
-  onSnapshot,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -12,8 +11,9 @@ import {
   Timestamp,
   deleteField,
 } from "firebase/firestore";
-import { db, auth } from "../../../../../firebase/client";
-import { useAuthState } from "react-firebase-hooks/auth";
+import { db } from "../../../../../firebase/client";
+import { useAuthContext } from "../../../../../contexts/AuthContext";
+import { useFirestoreCollection } from "../../../../../hooks/useFirestore";
 import type { Link, UserRole } from "../../../shared/types/firestore";
 import { LinkPermissionService } from "../utils/linkPermissions";
 
@@ -29,67 +29,29 @@ export interface LinkFormData {
 }
 
 export function useLinksManagement() {
-  const [user, userLoading] = useAuthState(auth);
-  const [links, setLinks] = useState<(Link & { id: string })[]>([]);
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
-  const [loading, setLoading] = useState(false); // Start false to show cached data immediately
+  const {
+    user,
+    userRole: currentUserRole,
+    loading: authLoading,
+  } = useAuthContext();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  // Fetch current user role
-  useEffect(() => {
-    if (!user) {
-      setCurrentUserRole(null);
-      return;
-    }
+  // Fetch links with real-time updates using new hook
+  const linksQuery = useMemo(
+    () => query(collection(db, "links"), orderBy("createdAt", "desc")),
+    [],
+  );
 
-    const fetchUserRole = async () => {
-      try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setCurrentUserRole(userData.role || "Member");
-        } else {
-          setCurrentUserRole("Member");
-        }
-      } catch (error) {
-        console.error("Error fetching user role:", error);
-        setCurrentUserRole("Member");
-      }
-    };
+  const {
+    data: links = [],
+    loading: linksLoading,
+    error: linksError,
+  } = useFirestoreCollection<Link>(linksQuery);
 
-    fetchUserRole();
-  }, [user]);
-
-  // Fetch links with real-time updates
-  useEffect(() => {
-    const linksQuery = query(
-      collection(db, "links"),
-      orderBy("createdAt", "desc"),
-    );
-
-    const unsubscribe = onSnapshot(
-      linksQuery,
-      (snapshot) => {
-        const linksData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as (Link & { id: string })[];
-
-        setLinks(linksData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Error fetching links:", error);
-        setError("Failed to load links. Please try again.");
-        setLoading(false);
-      },
-    );
-
-    return () => unsubscribe();
-  }, []);
+  const [loading, setLoading] = useState(false);
 
   // Filter links by date visibility only (for category counts)
   const visibleLinks = useMemo(() => {
@@ -307,8 +269,8 @@ export function useLinksManagement() {
     currentUserRole,
 
     // State
-    loading: loading || userLoading,
-    error,
+    loading: authLoading || linksLoading,
+    error: error || (linksError ? linksError.message : null),
     success,
     searchTerm,
     categoryFilter,

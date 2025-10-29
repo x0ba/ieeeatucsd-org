@@ -168,6 +168,7 @@ export default function ManageEventsContent() {
             setShowDraftViewModal(false);
             setEditingRequest(viewingDraft);
             setShowEventRequestModal(true);
+            setViewingDraft(null); // Clear the viewingDraft state
         }
     };
 

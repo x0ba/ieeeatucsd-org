@@ -11,6 +11,15 @@ import {
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    // Check authentication
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const { testEmail, emailType } = await request.json();
 
     if (!testEmail || !emailType) {
@@ -122,9 +131,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Send test email
-    console.log(
-      `📧 Sending test email to ${testEmail} with type: ${emailType}`,
-    );
+    console.log(`📧 Sending test email with type: ${emailType}`);
     console.log(`📧 Subject: ${subject}`);
     console.log(`📧 From: ${fromEmail}`);
 

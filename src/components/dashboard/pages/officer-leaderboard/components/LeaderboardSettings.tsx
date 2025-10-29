@@ -29,8 +29,6 @@ export default function LeaderboardSettings() {
   useEffect(() => {
     if (!user) return;
 
-    // Use db from client import
-
     // Set up real-time listener for user role
     const unsubscribe = onSnapshot(
       doc(db, "users", user.uid),
@@ -74,7 +72,9 @@ export default function LeaderboardSettings() {
         setSettings(settingsData);
 
         // Convert to date string (YYYY-MM-DD) using consistent local time approach
-        const date = settingsData.startDate.toDate();
+        const date = settingsData.startDate?.toDate
+          ? settingsData.startDate.toDate()
+          : new Date(settingsData.startDate.toMillis());
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
@@ -184,7 +184,7 @@ export default function LeaderboardSettings() {
         )}
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
+          <label htmlFor="leaderboard-start-date" className="text-sm font-medium text-gray-700">
             Leaderboard Start Date
           </label>
           <p className="text-xs text-gray-500 mb-2">
@@ -200,6 +200,8 @@ export default function LeaderboardSettings() {
             placeholder="Select start date"
             variant="bordered"
             className="w-full"
+            aria-label="Leaderboard start date"
+            id="leaderboard-start-date"
           />
         </div>
 
@@ -212,7 +214,9 @@ export default function LeaderboardSettings() {
               <div className="text-sm">
                 <span className="font-medium">Start Date: </span>
                 {(() => {
-                  const date = settings.startDate.toDate();
+                  const date = settings.startDate?.toDate
+                    ? settings.startDate.toDate()
+                    : new Date(settings.startDate.toMillis());
                   const year = date.getFullYear();
                   const month = String(date.getMonth() + 1).padStart(2, '0');
                   const day = String(date.getDate()).padStart(2, '0');
@@ -220,7 +224,9 @@ export default function LeaderboardSettings() {
                 })()}
               </div>
               <div className="text-xs text-gray-500 mt-1">
-                Last updated: {settings.lastUpdated.toDate().toLocaleString()}
+                Last updated: {settings.lastUpdated?.toDate
+                  ? settings.lastUpdated.toDate().toLocaleString()
+                  : new Date(settings.lastUpdated.toMillis()).toLocaleString()}
               </div>
             </div>
           </div>
