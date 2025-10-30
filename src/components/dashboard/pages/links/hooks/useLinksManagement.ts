@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   collection,
   query,
@@ -10,10 +10,10 @@ import {
   getDoc,
   Timestamp,
   deleteField,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "../../../../../firebase/client";
-import { useAuthContext } from "../../../../../contexts/AuthContext";
-import { useFirestoreCollection } from "../../../../../hooks/useFirestore";
+import { useAuth } from "../../../../../hooks/useAuth";
 import type { Link, UserRole } from "../../../shared/types/firestore";
 import { LinkPermissionService } from "../utils/linkPermissions";
 
@@ -29,29 +29,44 @@ export interface LinkFormData {
 }
 
 export function useLinksManagement() {
-  const {
-    user,
-    userRole: currentUserRole,
-    loading: authLoading,
-  } = useAuthContext();
+  const { user, userRole: currentUserRole, loading: authLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-
-  // Fetch links with real-time updates using new hook
-  const linksQuery = useMemo(
-    () => query(collection(db, "links"), orderBy("createdAt", "desc")),
-    [],
-  );
-
-  const {
-    data: links = [],
-    loading: linksLoading,
-    error: linksError,
-  } = useFirestoreCollection<Link>(linksQuery);
-
+  const [links, setLinks] = useState<Link[]>([]);
+  const [linksLoading, setLinksLoading] = useState(true);
+  const [linksError, setLinksError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Fetch links with real-time updates
+  useEffect(() => {
+    setLinksLoading(true);
+    const linksQuery = query(
+      collection(db, "links"),
+      orderBy("createdAt", "desc"),
+    );
+
+    const unsubscribe = onSnapshot(
+      linksQuery,
+      (snapshot) => {
+        const linksData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Link[];
+        setLinks(linksData);
+        setLinksLoading(false);
+        setLinksError(null);
+      },
+      (error) => {
+        console.error("Error fetching links:", error);
+        setLinksError(error);
+        setLinksLoading(false);
+      },
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   // Filter links by date visibility only (for category counts)
   const visibleLinks = useMemo(() => {
