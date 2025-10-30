@@ -239,14 +239,22 @@ const currentPath = "/dashboard/email-testing";
     </style>
 
     <script>
-      const testEmailInput = document.getElementById("test-email");
-      const emailTypeSelect = document.getElementById("email-type");
-      const sendButton = document.getElementById("send-test-email");
-      const statusMessage = document.getElementById("status-message");
+      const testEmailInput = document.getElementById(
+        "test-email",
+      ) as HTMLInputElement | null;
+      const emailTypeSelect = document.getElementById(
+        "email-type",
+      ) as HTMLSelectElement | null;
+      const sendButton = document.getElementById(
+        "send-test-email",
+      ) as HTMLButtonElement | null;
+      const statusMessage = document.getElementById(
+        "status-message",
+      ) as HTMLDivElement | null;
 
-      sendButton.addEventListener("click", async () => {
-        const testEmail = testEmailInput.value.trim();
-        const emailType = emailTypeSelect.value;
+      sendButton?.addEventListener("click", async () => {
+        const testEmail = (testEmailInput as HTMLInputElement)?.value?.trim();
+        const emailType = (emailTypeSelect as HTMLSelectElement)?.value;
 
         if (!testEmail || !emailType) {
           showStatus("Please fill in all fields", "error");
@@ -258,7 +266,7 @@ const currentPath = "/dashboard/email-testing";
           return;
         }
 
-        sendButton.disabled = true;
+        if (sendButton) sendButton.disabled = true;
         showStatus("Sending test email...", "loading");
 
         try {
@@ -292,16 +300,18 @@ const currentPath = "/dashboard/email-testing";
             "error",
           );
         } finally {
-          sendButton.disabled = false;
+          if (sendButton) sendButton.disabled = false;
         }
       });
 
-      function showStatus(message, type) {
-        statusMessage.textContent = message;
-        statusMessage.className = `status-message ${type}`;
+      function showStatus(message: string, type: string) {
+        if (statusMessage) {
+          statusMessage.textContent = message;
+          statusMessage.className = `status-message ${type}`;
+        }
       }
 
-      function isValidEmail(email) {
+      function isValidEmail(email: string): boolean {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       }
     </script>

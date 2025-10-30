@@ -111,6 +111,7 @@
     "zod": "^3.25.69"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/prismjs": "^1.26.5",
     "daisyui": "^4.12.23",
     "prettier": "^3.4.2",

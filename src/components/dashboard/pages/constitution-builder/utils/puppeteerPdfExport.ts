@@ -328,7 +328,9 @@ export class PuppeteerPDFExporter {
    */
   private async downloadAndOpenPrintDialog(pdfBuffer: Buffer): Promise<void> {
     // Create blob from buffer
-    const blob = new Blob([pdfBuffer], { type: "application/pdf" });
+    const blob = new Blob([new Uint8Array(pdfBuffer)], {
+      type: "application/pdf",
+    });
 
     // Create object URL
     const url = URL.createObjectURL(blob);
