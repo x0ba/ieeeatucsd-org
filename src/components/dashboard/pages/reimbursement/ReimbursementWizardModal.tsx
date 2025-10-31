@@ -95,6 +95,8 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
             notes: receipt.notes,
             subtotal: receipt.subtotal,
             tax: receipt.tax || 0,
+            tip: receipt.tip || 0,
+            shipping: receipt.shipping || 0,
             total: receipt.total
         }));
 

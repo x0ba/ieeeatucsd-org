@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Calendar, Bell, User, Plus, Filter, DollarSign, Receipt, Clock, CheckCircle, XCircle, AlertCircle, FileText, Eye, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Plus, DollarSign, Receipt, Clock, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
-import ReimbursementRequestModal from './ReimbursementRequestModal';
 import ReimbursementWizardModal from './ReimbursementWizardModal';
 import ReimbursementDetailModal from './ReimbursementDetailModal';
 import { ReimbursementListSkeleton, MetricCardSkeleton } from '../../../ui/loading';
@@ -76,12 +75,40 @@ export default function ReimbursementContent() {
     const [user] = useAuthState(auth);
     const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
     const [loading, setLoading] = useState(false); // Start false to show cached data immediately
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isWizardOpen, setIsWizardOpen] = useState(false);
-    const [selectedReimbursement, setSelectedReimbursement] = useState<Reimbursement | null>(null);
     const [viewReimbursement, setViewReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+
+    // Calculate receipt total if it's 0 or missing
+    const calculateReceiptTotal = (receipt: any) => {
+        if (receipt.total && receipt.total > 0) {
+            return receipt.total;
+        }
+        // Calculate subtotal from line items if needed
+        let subtotal = receipt.subtotal || 0;
+        if (subtotal === 0 && receipt.lineItems && receipt.lineItems.length > 0) {
+            subtotal = receipt.lineItems.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
+        }
+        return subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0);
+    };
+
+    // Calculate total amount for a reimbursement
+    const calculateTotalAmount = (reimbursement: Reimbursement) => {
+        // Handle new multi-receipt structure
+        if (reimbursement.receipts && reimbursement.receipts.length > 0) {
+            return reimbursement.receipts.reduce((sum: number, receipt: any) => {
+                return sum + calculateReceiptTotal(receipt);
+            }, 0);
+        }
+        // Handle legacy expenses structure
+        if (reimbursement.expenses && reimbursement.expenses.length > 0) {
+            return reimbursement.expenses.reduce((sum: number, expense: any) => {
+                return sum + (expense.amount || 0);
+            }, 0);
+        }
+        return 0;
+    };
 
     useEffect(() => {
         if (!user) return;
@@ -201,9 +228,9 @@ export default function ReimbursementContent() {
     });
 
     const getStats = () => {
-        const totalSubmitted = reimbursements.reduce((sum, r) => sum + r.totalAmount, 0);
-        const approved = reimbursements.filter(r => r.status === 'approved' || r.status === 'paid').reduce((sum, r) => sum + r.totalAmount, 0);
-        const pending = reimbursements.filter(r => r.status === 'submitted').reduce((sum, r) => sum + r.totalAmount, 0);
+        const totalSubmitted = reimbursements.reduce((sum, r) => sum + calculateTotalAmount(r), 0);
+        const approved = reimbursements.filter(r => r.status === 'approved' || r.status === 'paid').reduce((sum, r) => sum + calculateTotalAmount(r), 0);
+        const pending = reimbursements.filter(r => r.status === 'submitted').reduce((sum, r) => sum + calculateTotalAmount(r), 0);
         const thisMonth = reimbursements.filter(r => {
             const submittedDate = new Date(r.submittedAt);
             const now = new Date();
@@ -249,24 +276,14 @@ export default function ReimbursementContent() {
 
                     {/* Page Header */}
                     <div className="flex items-center justify-between mb-4 md:mb-6">
-                        <div className="flex items-center space-x-3">
-                            <button
-                                onClick={() => setIsWizardOpen(true)}
-                                className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-md hover:shadow-lg min-h-[44px] text-sm md:text-base"
-                            >
-                                <Sparkles className="w-4 h-4" />
-                                <span className="hidden sm:inline">New Request (AI-Powered)</span>
-                                <span className="sm:hidden">New (AI)</span>
-                            </button>
-                            <button
-                                onClick={() => setIsModalOpen(true)}
-                                className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] text-sm md:text-base"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span className="hidden sm:inline">Manual Entry</span>
-                                <span className="sm:hidden">Manual</span>
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => setIsWizardOpen(true)}
+                            className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-md hover:shadow-lg min-h-[44px] text-sm md:text-base"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span className="hidden sm:inline">New Reimbursement Request</span>
+                            <span className="sm:hidden">New Request</span>
+                        </button>
                     </div>
 
                     {/* Reimbursement Stats */}
@@ -338,7 +355,7 @@ export default function ReimbursementContent() {
                                 <Receipt className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                                 <p className="text-gray-500">No reimbursement requests found</p>
                                 <button
-                                    onClick={() => setIsModalOpen(true)}
+                                    onClick={() => setIsWizardOpen(true)}
                                     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                 >
                                     Submit Your First Request
@@ -356,7 +373,7 @@ export default function ReimbursementContent() {
                                                 </div>
                                                 <div className="min-w-0 flex-1">
                                                     <h3 className="font-medium text-gray-900 break-words pr-2">{reimbursement.title}</h3>
-                                                    <div className="text-lg font-bold text-gray-900 mt-1">${reimbursement.totalAmount.toFixed(2)}</div>
+                                                    <div className="text-lg font-bold text-gray-900 mt-1">${calculateTotalAmount(reimbursement).toFixed(2)}</div>
                                                 </div>
                                             </div>
 
@@ -415,7 +432,7 @@ export default function ReimbursementContent() {
                                             </div>
                                             <div className="flex items-center space-x-4">
                                                 <div className="text-right">
-                                                    <p className="text-lg font-bold text-gray-900">${reimbursement.totalAmount.toFixed(2)}</p>
+                                                    <p className="text-lg font-bold text-gray-900">${calculateTotalAmount(reimbursement).toFixed(2)}</p>
                                                     <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(reimbursement.status)}`}>
                                                         {getStatusIcon(reimbursement.status)}
                                                         <span>{getStatusDisplayName(reimbursement.status)}</span>
@@ -443,12 +460,6 @@ export default function ReimbursementContent() {
             <ReimbursementWizardModal
                 isOpen={isWizardOpen}
                 onClose={() => setIsWizardOpen(false)}
-                onSubmit={handleSubmitReimbursement}
-            />
-
-            <ReimbursementRequestModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
                 onSubmit={handleSubmitReimbursement}
             />
 

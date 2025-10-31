@@ -98,6 +98,36 @@ export default function ManageReimbursementsContent() {
     const [auditReimbursement, setAuditReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+
+    // Calculate receipt total if it's 0 or missing
+    const calculateReceiptTotal = (receipt: any) => {
+        if (receipt.total && receipt.total > 0) {
+            return receipt.total;
+        }
+        // Calculate subtotal from line items if needed
+        let subtotal = receipt.subtotal || 0;
+        if (subtotal === 0 && receipt.lineItems && receipt.lineItems.length > 0) {
+            subtotal = receipt.lineItems.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
+        }
+        return subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0);
+    };
+
+    // Calculate total amount for a reimbursement
+    const calculateTotalAmount = (reimbursement: Reimbursement) => {
+        // Handle new multi-receipt structure
+        if (reimbursement.receipts && reimbursement.receipts.length > 0) {
+            return reimbursement.receipts.reduce((sum: number, receipt: any) => {
+                return sum + calculateReceiptTotal(receipt);
+            }, 0);
+        }
+        // Handle legacy expenses structure
+        if (reimbursement.expenses && reimbursement.expenses.length > 0) {
+            return reimbursement.expenses.reduce((sum: number, expense: any) => {
+                return sum + (expense.amount || 0);
+            }, 0);
+        }
+        return 0;
+    };
     const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
     const [sortField, setSortField] = useState<string>('submittedAt');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -369,7 +399,7 @@ export default function ManageReimbursementsContent() {
     const getStats = () => {
         const totalRequests = reimbursements.length;
         const pendingReview = reimbursements.filter(r => r.status === 'submitted').length;
-        const totalAmount = reimbursements.reduce((sum, r) => sum + r.totalAmount, 0);
+        const totalAmount = reimbursements.reduce((sum, r) => sum + calculateTotalAmount(r), 0);
         const thisMonth = reimbursements.filter(r => {
             const submittedDate = r.submittedAt?.toDate();
             const now = new Date();
@@ -619,7 +649,7 @@ export default function ManageReimbursementsContent() {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm font-bold text-gray-900">${reimbursement.totalAmount.toFixed(2)}</div>
+                                                        <div className="text-sm font-bold text-gray-900">${calculateTotalAmount(reimbursement).toFixed(2)}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-900">{reimbursement.submittedAt?.toDate ? reimbursement.submittedAt.toDate().toLocaleDateString() : new Date(reimbursement.submittedAt).toLocaleDateString()}</div>
