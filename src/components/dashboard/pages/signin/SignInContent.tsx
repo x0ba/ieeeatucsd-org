@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { auth, signInWithPopup, GoogleAuthProvider } from '../../../../firebase/client';
+import React, { useState, useEffect } from 'react';
+import { auth, signInWithPopup, GoogleAuthProvider, browserPopupRedirectResolver } from '../../../../firebase/client';
 import { Skeleton } from '../../../ui/skeleton';
 
 // Blue IEEE Logo SVG Component
@@ -33,6 +33,19 @@ const SignInButtonSkeleton = () => (
 export default function SignInContent() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [storageWarning, setStorageWarning] = useState(false);
+
+    // Check sessionStorage accessibility on mount
+    useEffect(() => {
+        try {
+            const testKey = '__firebase_test__';
+            sessionStorage.setItem(testKey, 'test');
+            sessionStorage.removeItem(testKey);
+        } catch (e) {
+            setStorageWarning(true);
+            console.warn('SessionStorage is not accessible. This may cause authentication issues.');
+        }
+    }, []);
 
     // Extract invite ID from URL
     const getInviteId = () => {
@@ -45,10 +58,20 @@ export default function SignInContent() {
         setLoading(true);
 
         try {
+            // Configure Google Auth Provider with custom parameters
             const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
+
+            // Add custom parameters to improve compatibility
+            provider.setCustomParameters({
+                prompt: 'select_account', // Always show account selection
+                hd: 'ucsd.edu' // Hint to prefer UCSD accounts (optional, doesn't restrict)
+            });
+
+            // Attempt sign in with popup using explicit resolver for better compatibility
+            const result = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
             const idToken = await result.user.getIdToken();
             const inviteId = getInviteId();
+
             const response = await fetch('/api/set-session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -61,7 +84,27 @@ export default function SignInContent() {
 
             window.location.href = '/dashboard/overview';
         } catch (err: any) {
-            setError(err.message || 'Failed to sign in with Google');
+            console.error('Sign-in error:', err);
+
+            // Handle specific Firebase Auth errors
+            let errorMessage = 'Failed to sign in with Google';
+
+            if (err.code === 'auth/popup-blocked') {
+                errorMessage = 'Popup was blocked by your browser. Please allow popups for this site and try again.';
+            } else if (err.code === 'auth/popup-closed-by-user') {
+                errorMessage = 'Sign-in was cancelled. Please try again.';
+            } else if (err.code === 'auth/cancelled-popup-request') {
+                errorMessage = 'Another sign-in popup is already open. Please complete or close it first.';
+            } else if (err.code === 'auth/network-request-failed') {
+                errorMessage = 'Network error. Please check your internet connection and try again.';
+            } else if (err.code === 'auth/internal-error' || err.message?.includes('initial state')) {
+                errorMessage = 'Authentication error. This may be caused by browser privacy settings blocking third-party cookies or storage. Try using a different browser or adjusting your privacy settings.';
+                setStorageWarning(true);
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -124,6 +167,36 @@ export default function SignInContent() {
                                 aria-live="polite"
                             >
                                 <p className="text-sm text-red-600 text-center">{error}</p>
+                            </div>
+                        )}
+
+                        {/* Storage Warning */}
+                        {storageWarning && (
+                            <div
+                                className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg"
+                                role="alert"
+                            >
+                                <div className="flex items-start">
+                                    <div className="flex-shrink-0">
+                                        <svg className="w-5 h-5 text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3">
+                                        <h3 className="text-sm font-medium text-yellow-800">
+                                            Browser Compatibility Issue
+                                        </h3>
+                                        <p className="text-xs text-yellow-700 mt-1">
+                                            Your browser's privacy settings may be blocking authentication. Try:
+                                        </p>
+                                        <ul className="text-xs text-yellow-700 mt-2 list-disc list-inside space-y-1">
+                                            <li>Allowing third-party cookies for this site</li>
+                                            <li>Disabling Enhanced Tracking Protection (Firefox)</li>
+                                            <li>Using Chrome or Edge instead of Safari</li>
+                                            <li>Trying Incognito/Private mode</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         )}
 

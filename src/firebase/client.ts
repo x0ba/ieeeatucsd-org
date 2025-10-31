@@ -5,6 +5,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
+  browserPopupRedirectResolver,
 } from "firebase/auth";
 import {
   initializeFirestore,
@@ -14,6 +15,10 @@ import {
 import { getStorage } from "firebase/storage";
 
 // Firebase client configuration for web app
+// IMPORTANT: authDomain must match your Firebase project's authorized domains
+// to avoid "missing initial state" errors in OAuth flows. This should be set
+// in your environment as PUBLIC_FIREBASE_AUTH_DOMAIN (e.g., your-project.firebaseapp.com)
+// or a custom domain you've configured in Firebase Console > Authentication > Settings
 const firebaseConfig = {
   apiKey: firebaseEnv.apiKey,
   authDomain:
@@ -26,7 +31,12 @@ const firebaseConfig = {
 };
 
 export const app = initializeApp(firebaseConfig);
+
+// Initialize Auth with explicit popup resolver for better compatibility
 export const auth = getAuth(app);
+
+// Export the popup resolver for use in sign-in flows
+export { browserPopupRedirectResolver };
 
 // Initialize Firestore with persistent cache (new API - replaces enableMultiTabIndexedDbPersistence)
 // This allows the app to cache Firestore data locally and work offline
