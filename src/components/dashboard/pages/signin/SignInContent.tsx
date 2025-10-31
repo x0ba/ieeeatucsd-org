@@ -64,7 +64,6 @@ export default function SignInContent() {
             // Add custom parameters to improve compatibility
             provider.setCustomParameters({
                 prompt: 'select_account', // Always show account selection
-                hd: 'ucsd.edu' // Hint to prefer UCSD accounts (optional, doesn't restrict)
             });
 
             // Attempt sign in with popup using explicit resolver for better compatibility
