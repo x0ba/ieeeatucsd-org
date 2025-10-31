@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../firebase/client";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import type { UserRole } from "../components/dashboard/shared/types/firestore";
 import type { User } from "firebase/auth";
 
@@ -19,37 +19,36 @@ export function useAuth(): UseAuthResult {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    if (!authedUser) {
+      setUserRole("Member");
+      setLoading(false);
+      setError(null); // Clear error state when not authenticated
+      return;
+    }
 
-    const fetchRole = async () => {
-      try {
-        if (!authedUser) {
-          if (isMounted) {
-            setUserRole("Member");
-            setLoading(false);
-          }
-          return;
-        }
+    setLoading(true);
+    setError(null); // Clear previous errors when starting new listener
 
-        const userDocSnap = await getDoc(doc(db, "users", authedUser.uid));
+    // Set up real-time listener for user role
+    const unsubscribe = onSnapshot(
+      doc(db, "users", authedUser.uid),
+      (userDocSnap) => {
         if (userDocSnap.exists()) {
           const role = (userDocSnap.data().role || "Member") as UserRole;
-          if (isMounted) setUserRole(role);
+          setUserRole(role);
         } else {
-          if (isMounted) setUserRole("Member");
+          setUserRole("Member");
         }
-      } catch (e: any) {
-        if (isMounted) setError(e?.message || "Failed to fetch user role");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
+        setLoading(false);
+        setError(null); // Clear error state on successful snapshot
+      },
+      (e: any) => {
+        setError(e?.message || "Failed to fetch user role");
+        setLoading(false);
+      },
+    );
 
-    fetchRole();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => unsubscribe();
   }, [authedUser]);
 
   return { user: authedUser ?? null, userRole, loading, error };

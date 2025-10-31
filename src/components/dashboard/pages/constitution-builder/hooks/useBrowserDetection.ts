@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { detectBrowser, type BrowserInfo } from '../utils/browserDetection';
+import { useState, useEffect } from "react";
+import { detectBrowser, type BrowserInfo } from "../utils/browserDetection";
 
 /**
  * Hook for browser detection with client-side hydration safety
@@ -7,18 +7,18 @@ import { detectBrowser, type BrowserInfo } from '../utils/browserDetection';
  */
 export const useBrowserDetection = () => {
   const [browserInfo, setBrowserInfo] = useState<BrowserInfo>({
-    name: 'Unknown',
+    name: "Unknown",
     isSafari: false,
     isChrome: false,
     isFirefox: false,
     isEdge: false,
     isSupported: true, // Default to supported on server
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // Start true, set false after detection
 
   useEffect(() => {
     // Only run browser detection on the client side
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const info = detectBrowser();
       setBrowserInfo(info);
     }
@@ -37,7 +37,7 @@ export const useBrowserDetection = () => {
  */
 export const useSafariDetection = () => {
   const { isSafari, isLoading } = useBrowserDetection();
-  
+
   return {
     isSafari,
     isLoading,

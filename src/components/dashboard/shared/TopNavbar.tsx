@@ -1,0 +1,478 @@
+import React, { useState, useEffect } from "react";
+import {
+  Navbar,
+  NavbarBrand,
+  NavbarContent,
+  NavbarItem,
+  NavbarMenuToggle,
+  NavbarMenu,
+  NavbarMenuItem,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Avatar,
+  Badge,
+  Button,
+  Tooltip,
+} from "@heroui/react";
+import {
+  Home,
+  Calendar,
+  CreditCard,
+  Settings,
+  LogOut,
+  Users,
+  DollarSign,
+  Trophy,
+  Banknote,
+  FileText,
+  MessageSquare,
+  Link as LinkIcon,
+  Briefcase,
+  Building2,
+  UserPlus,
+  Bell,
+  User,
+  Award,
+  ChevronDown,
+} from "lucide-react";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { auth, db } from "../../../firebase/client";
+import type { NavigationCategory } from "./types/navigation";
+import type { UserRole } from "./types/firestore";
+import { NAVIGATION_PATHS } from "./types/navigation";
+import { SyncStatusIndicator } from "./components/SyncStatusIndicator.tsx";
+
+interface TopNavbarProps {
+  currentPath?: string;
+}
+
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  timestamp: Date;
+  read: boolean;
+  type: string;
+}
+
+interface UserType {
+  name: string;
+  email: string;
+  points?: number;
+  role?: UserRole;
+  sponsorTier?: string;
+}
+
+const navigationCategories: NavigationCategory[] = [
+  {
+    title: "Member Actions",
+    items: [
+      { icon: Home, label: "Overview", href: NAVIGATION_PATHS.OVERVIEW },
+      { icon: LinkIcon, label: "Links", href: NAVIGATION_PATHS.LINKS },
+      { icon: Calendar, label: "Events", href: NAVIGATION_PATHS.EVENTS },
+      {
+        icon: CreditCard,
+        label: "Reimbursement",
+        href: NAVIGATION_PATHS.REIMBURSEMENT,
+      },
+      {
+        icon: Trophy,
+        label: "Leaderboard",
+        href: NAVIGATION_PATHS.LEADERBOARD,
+      },
+    ],
+  },
+  {
+    title: "General Officers",
+    requiresRole: ["General Officer", "Executive Officer", "Administrator"],
+    items: [
+      {
+        icon: Calendar,
+        label: "Manage Events",
+        href: NAVIGATION_PATHS.MANAGE_EVENTS,
+      },
+      {
+        icon: Banknote,
+        label: "Fund Deposits",
+        href: NAVIGATION_PATHS.FUND_DEPOSITS,
+      },
+      {
+        icon: MessageSquare,
+        label: "Slack Access",
+        href: NAVIGATION_PATHS.SLACK_ACCESS,
+      },
+      {
+        icon: Trophy,
+        label: "Officer Leaderboard",
+        href: NAVIGATION_PATHS.OFFICER_LEADERBOARD,
+      },
+    ],
+  },
+  {
+    title: "Executive Officers",
+    requiresRole: ["Executive Officer", "Administrator"],
+    items: [
+      {
+        icon: DollarSign,
+        label: "Manage Reimbursements",
+        href: NAVIGATION_PATHS.MANAGE_REIMBURSEMENTS,
+      },
+      {
+        icon: Users,
+        label: "Manage Users",
+        href: NAVIGATION_PATHS.MANAGE_USERS,
+      },
+      {
+        icon: Building2,
+        label: "Manage Sponsors",
+        href: NAVIGATION_PATHS.MANAGE_SPONSORS,
+      },
+      {
+        icon: UserPlus,
+        label: "Onboarding",
+        href: NAVIGATION_PATHS.ONBOARDING,
+      },
+      {
+        icon: FileText,
+        label: "Constitution Builder",
+        href: NAVIGATION_PATHS.CONSTITUTION_BUILDER,
+      },
+    ],
+  },
+  {
+    title: "Sponsors",
+    requiresRole: ["Sponsor", "Administrator"],
+    items: [
+      {
+        icon: Briefcase,
+        label: "Resume Database",
+        href: NAVIGATION_PATHS.RESUME_DATABASE,
+      },
+      {
+        icon: Building2,
+        label: "Sponsor Information",
+        href: NAVIGATION_PATHS.SPONSOR_INFORMATION,
+      },
+    ],
+  },
+];
+
+export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
+  const [user, userLoading] = useAuthState(auth);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+  const [sponsorTier, setSponsorTier] = useState<string | null>(null);
+  const [isLoadingRole, setIsLoadingRole] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userData, setUserData] = useState<UserType | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  // Use db from client import
+
+  // Helper function to filter navigation items based on sponsor tier
+  const filterBySponsorTier = (items: typeof navigationCategories[0]["items"]) => {
+    return items.filter((item) => {
+      // Hide Resume Database for Bronze tier sponsors
+      if (
+        item.href === NAVIGATION_PATHS.RESUME_DATABASE &&
+        currentUserRole === "Sponsor" &&
+        sponsorTier === "Bronze"
+      ) {
+        return false;
+      }
+      return true;
+    });
+  };
+
+  useEffect(() => {
+    if (userLoading) return;
+
+    if (!user) {
+      setCurrentUserRole(null);
+      setIsLoadingRole(false);
+      return;
+    }
+
+    setIsLoadingRole(true);
+
+    // Set up real-time listener for user data
+    const unsubscribe = onSnapshot(
+      doc(db, "users", user.uid),
+      (userDoc) => {
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setCurrentUserRole(data.role || "Member");
+          setSponsorTier(data.sponsorTier || null);
+          setUserData({
+            name: data.name || "User",
+            email: data.email || user.email || "",
+            points: data.points || 0,
+            role: data.role || "Member",
+          });
+        } else {
+          // No explicit role set in Firestore; default to Member to avoid indefinite loading state
+          setCurrentUserRole("Member");
+        }
+        setIsLoadingRole(false);
+      },
+      (error) => {
+        console.error("Error fetching user role:", error);
+        // On error, default to Member to avoid indefinite loading state
+        setCurrentUserRole("Member");
+        setIsLoadingRole(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user, userLoading]);
+
+  // Fetch notifications (deferred until notifications are active)
+  // Since notifications are under development, we don't set up listeners yet
+  useEffect(() => {
+    // Defer notification setup until feature is fully implemented
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    // TODO: Enable notification listener when feature is active
+    // const notificationsQuery = query(
+    //   collection(db, "notifications"),
+    //   where("userId", "==", user.uid)
+    // );
+    //
+    // const unsubscribe = onSnapshot(/* notification query */);
+    // return () => unsubscribe();
+
+    // For now, keep empty state
+    setNotifications([]);
+    setUnreadCount(0);
+  }, [user]);
+
+  const isActiveRoute = (href: string): boolean => {
+    if (currentPath === "/dashboard" || currentPath === "/dashboard/") {
+      return href === NAVIGATION_PATHS.OVERVIEW;
+    }
+    return currentPath === href;
+  };
+
+  const canAccessCategory = (category: NavigationCategory): boolean => {
+    if (!category.requiresRole || !currentUserRole) return true;
+    return category.requiresRole.includes(currentUserRole);
+  };
+
+  const isLoading = userLoading || isLoadingRole;
+
+  const filteredCategories = currentUserRole
+    ? navigationCategories.filter(canAccessCategory)
+    : [];
+
+  // Flatten all navigation items for desktop display
+  const allNavItems = filteredCategories.flatMap((category) =>
+    filterBySponsorTier(category.items)
+  );
+
+  return (
+    <Navbar
+      isMenuOpen={isMenuOpen}
+      onMenuOpenChange={setIsMenuOpen}
+      maxWidth="full"
+      className="bg-[#0A2463]"
+      classNames={{
+        wrapper: "px-4 sm:px-6",
+        item: "text-white data-[active=true]:text-white",
+      }}
+    >
+      {/* Brand */}
+      <NavbarContent justify="start">
+        <NavbarBrand>
+          <a href={NAVIGATION_PATHS.OVERVIEW} className="flex items-center gap-2 group">
+            <img
+              src="/logos/blue_logo_only.svg"
+              alt="IEEE UCSD Logo"
+              className="w-8 h-8 transition-transform group-hover:scale-105 brightness-0 invert"
+            />
+            <span className="text-xl font-bold text-white hidden sm:block">
+              IEEE UCSD
+            </span>
+          </a>
+        </NavbarBrand>
+      </NavbarContent>
+
+      {/* Desktop Navigation Links */}
+      <NavbarContent className="hidden lg:flex gap-1" justify="center">
+        {!isLoading &&
+          allNavItems.slice(0, 6).map((item) => {
+            const isActive = isActiveRoute(item.href);
+            const Icon = item.icon;
+            return (
+              <NavbarItem key={item.href} isActive={isActive}>
+                <a
+                  href={item.href}
+                  aria-label={`Navigate to ${item.label}`}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${isActive
+                    ? "bg-white/20 text-white font-semibold"
+                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                    }`}
+                >
+                  <Icon className="w-4 h-4" aria-hidden="true" />
+                  <span className="text-sm">{item.label}</span>
+                </a>
+              </NavbarItem>
+            );
+          })}
+
+        {/* More dropdown for additional items */}
+        {!isLoading && allNavItems.length > 6 && (
+          <Dropdown>
+            <NavbarItem>
+              <DropdownTrigger>
+                <Button
+                  disableRipple
+                  className="p-0 bg-transparent data-[hover=true]:bg-white/10 text-white/80 hover:text-white"
+                  endContent={<ChevronDown className="w-4 h-4" />}
+                  radius="sm"
+                  variant="light"
+                >
+                  More
+                </Button>
+              </DropdownTrigger>
+            </NavbarItem>
+            <DropdownMenu aria-label="More navigation items">
+              {allNavItems.slice(6).map((item) => {
+                const Icon = item.icon;
+                return (
+                  <DropdownItem
+                    key={item.href}
+                    startContent={<Icon className="w-4 h-4" />}
+                    href={item.href}
+                  >
+                    {item.label}
+                  </DropdownItem>
+                );
+              })}
+            </DropdownMenu>
+          </Dropdown>
+        )}
+      </NavbarContent>
+
+      {/* Right side - Sync Status, Notifications & Profile */}
+      <NavbarContent justify="end">
+        {/* Sync Status Indicator */}
+        <NavbarItem>
+          <SyncStatusIndicator />
+        </NavbarItem>
+
+        {/* Notifications */}
+        <NavbarItem>
+          <Tooltip content="Under Development" placement="bottom" showArrow>
+            <div className="inline-block">
+              <Button
+                isIconOnly
+                variant="light"
+                isDisabled
+                className="text-white/40 cursor-not-allowed"
+                aria-label="Notifications (Under Development)"
+              >
+                <Badge content={unreadCount > 0 ? unreadCount : ""} color="danger" size="sm">
+                  <Bell className="w-5 h-5" />
+                </Badge>
+              </Button>
+            </div>
+          </Tooltip>
+        </NavbarItem>
+
+        {/* Profile Dropdown */}
+        <Dropdown placement="bottom-end">
+          <NavbarItem>
+            <DropdownTrigger>
+              <Button
+                isIconOnly
+                variant="light"
+                className="text-white hover:bg-white/10"
+                aria-label="Profile"
+              >
+                <User className="w-5 h-5" />
+              </Button>
+            </DropdownTrigger>
+          </NavbarItem>
+          <DropdownMenu aria-label="Profile Actions" variant="flat">
+            <DropdownItem key="profile" className="h-14 gap-2" textValue="Profile">
+              <p className="font-semibold">{userData?.name || "User"}</p>
+              <p className="text-sm text-gray-500">{userData?.email}</p>
+            </DropdownItem>
+            <DropdownItem
+              key="points"
+              startContent={<Award className="w-4 h-4 text-yellow-600" />}
+              textValue="Points"
+            >
+              <div className="flex justify-between items-center">
+                <span>Points</span>
+                <span className="font-bold text-yellow-600">{userData?.points || 0}</span>
+              </div>
+            </DropdownItem>
+            <DropdownItem
+              key="settings"
+              startContent={<Settings className="w-4 h-4" />}
+              href={NAVIGATION_PATHS.SETTINGS}
+            >
+              Settings
+            </DropdownItem>
+            <DropdownItem
+              key="logout"
+              startContent={<LogOut className="w-4 h-4" />}
+              href={NAVIGATION_PATHS.SIGNOUT}
+              className="text-danger"
+              color="danger"
+            >
+              Sign Out
+            </DropdownItem>
+          </DropdownMenu>
+        </Dropdown>
+
+        {/* Mobile Menu Toggle */}
+        <NavbarMenuToggle
+          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          className="lg:hidden text-white"
+        />
+      </NavbarContent>
+
+      {/* Mobile Menu */}
+      <NavbarMenu className="pt-6 bg-white">
+        {!isLoading &&
+          filteredCategories.map((category) => (
+            <div key={category.title} className="mb-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
+                {category.title}
+              </p>
+              {filterBySponsorTier(category.items)
+                .map((item) => {
+                  const isActive = isActiveRoute(item.href);
+                  const Icon = item.icon;
+                  return (
+                    <NavbarMenuItem key={item.href} isActive={isActive}>
+                      <a
+                        href={item.href}
+                        aria-label={`Navigate to ${item.label}`}
+                        aria-current={isActive ? "page" : undefined}
+                        className={`flex items-center gap-3 px-2 py-2.5 rounded-lg transition-all w-full ${isActive
+                          ? "bg-blue-50 text-blue-700 font-semibold"
+                          : "text-gray-700 hover:bg-gray-100"
+                          }`}
+                      >
+                        <Icon className="w-5 h-5" aria-hidden="true" />
+                        <span>{item.label}</span>
+                      </a>
+                    </NavbarMenuItem>
+                  );
+                })}
+            </div>
+          ))}
+      </NavbarMenu>
+    </Navbar>
+  );
+}

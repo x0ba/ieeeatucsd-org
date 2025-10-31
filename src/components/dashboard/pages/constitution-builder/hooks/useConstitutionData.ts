@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  getFirestore,
   collection,
   doc,
   onSnapshot,
@@ -14,7 +13,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "../../../../../firebase/client";
+import { auth, db } from "../../../../../firebase/client";
 import type {
   Constitution,
   ConstitutionSection,
@@ -32,8 +31,9 @@ export const useConstitutionData = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [constitutionLoaded, setConstitutionLoaded] = useState(false);
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const db = getFirestore();
+  // Use db from client import
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const constitutionId = "ieee-ucsd-constitution";
 
@@ -72,26 +72,44 @@ export const useConstitutionData = () => {
         }
 
         // Set up real-time listeners
-        const unsubscribeConstitution = onSnapshot(constitutionRef, (doc) => {
-          if (doc.exists()) {
-            setConstitution({ id: doc.id, ...doc.data() } as Constitution);
-          }
-          setConstitutionLoaded(true);
-        });
+        const unsubscribeConstitution = onSnapshot(
+          constitutionRef,
+          (doc) => {
+            if (doc.exists()) {
+              setConstitution({ id: doc.id, ...doc.data() } as Constitution);
+              setError(null);
+            }
+            setConstitutionLoaded(true);
+          },
+          (error) => {
+            console.error("Error fetching constitution:", error);
+            setError("Failed to load constitution");
+            setConstitutionLoaded(true);
+          },
+        );
 
         const sectionsQuery = query(
           collection(db, "constitutions", constitutionId, "sections"),
           orderBy("order", "asc"),
         );
 
-        const unsubscribeSections = onSnapshot(sectionsQuery, (snapshot) => {
-          const sectionsData = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as ConstitutionSection[];
-          setSections(sectionsData);
-          setSectionsLoaded(true);
-        });
+        const unsubscribeSections = onSnapshot(
+          sectionsQuery,
+          (snapshot) => {
+            const sectionsData = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            })) as ConstitutionSection[];
+            setSections(sectionsData);
+            setError(null);
+            setSectionsLoaded(true);
+          },
+          (error) => {
+            console.error("Error fetching sections:", error);
+            setError("Failed to load sections");
+            setSectionsLoaded(true);
+          },
+        );
 
         return () => {
           unsubscribeConstitution();
@@ -99,6 +117,7 @@ export const useConstitutionData = () => {
         };
       } catch (error) {
         console.error("Error initializing constitution:", error);
+        setError("Failed to initialize constitution");
         setConstitutionLoaded(true);
         setSectionsLoaded(true);
       }
@@ -219,6 +238,7 @@ export const useConstitutionData = () => {
       );
     } catch (error) {
       console.error("Error adding section:", error);
+      setError("Error adding section");
     }
   };
 
@@ -263,6 +283,7 @@ export const useConstitutionData = () => {
     } catch (error) {
       console.error("Error updating section:", error);
       setSaveStatus("error");
+      setError("Error updating section");
     }
   };
 
@@ -300,6 +321,7 @@ export const useConstitutionData = () => {
       }
     } catch (error) {
       console.error("Error deleting section:", error);
+      setError("Error deleting section");
     }
   };
 
@@ -319,5 +341,8 @@ export const useConstitutionData = () => {
     // Constants
     constitutionId,
     user,
+
+    // Errors
+    error,
   };
 };

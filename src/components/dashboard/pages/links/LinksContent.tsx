@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { Plus, AlertCircle, CheckCircle, Link as LinkIcon } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle, Link as LinkIcon, Search } from "lucide-react";
 import { useLinksManagement } from "./hooks/useLinksManagement";
-import DashboardHeader from "../../shared/DashboardHeader";
 import LinkCard from "./components/LinkCard";
 import LinkModal from "./components/LinkModal";
 import LinkFilters from "./components/LinkFilters";
@@ -87,56 +86,68 @@ export default function LinksContent() {
 
   return (
     <div className="flex-1 overflow-auto">
-      <DashboardHeader
-        title="Links"
-        subtitle="Quick access to useful resources and tools"
-        searchPlaceholder="Search links..."
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
-      >
-        {canManageLinks && (
-          <button
-            onClick={handleAddLink}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px]"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add Link</span>
-            <span className="sm:hidden">Add</span>
-          </button>
-        )}
-      </DashboardHeader>
-
       <main className="p-4 md:p-6">
-        {/* Messages */}
-        {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-            <button
-              onClick={clearMessages}
-              className="text-red-600 hover:text-red-800"
-            >
-              ×
-            </button>
+        {/* Search and Actions Bar */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="relative flex-1 max-w-md w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search links..."
+              aria-label="Search links"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+            />
           </div>
-        )}
+          {canManageLinks && (
+            <button
+              onClick={handleAddLink}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px]"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add Link</span>
+              <span className="sm:hidden">Add</span>
+            </button>
+          )}
+        </div>
 
-        {success && (
-          <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm text-green-800">{success}</p>
+        {/* Messages */}
+        {
+          error && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+              <button
+                onClick={clearMessages}
+                className="text-red-600 hover:text-red-800"
+                aria-label="Close error message"
+              >
+                ×
+              </button>
             </div>
-            <button
-              onClick={clearMessages}
-              className="text-green-600 hover:text-green-800"
-            >
-              ×
-            </button>
-          </div>
-        )}
+          )
+        }
+
+        {
+          success && (
+            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-green-800">{success}</p>
+              </div>
+              <button
+                onClick={clearMessages}
+                className="text-green-600 hover:text-green-800"
+                aria-label="Close success message"
+              >
+                ×
+              </button>
+            </div>
+          )
+        }
 
         {/* Filters */}
         <div className="mb-6">
@@ -148,77 +159,81 @@ export default function LinksContent() {
         </div>
 
         {/* Links Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 animate-pulse"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-gray-200 rounded-lg" />
-                  <div className="flex-1 space-y-3">
-                    <div className="h-4 bg-gray-200 rounded w-3/4" />
-                    <div className="h-3 bg-gray-200 rounded w-full" />
-                    <div className="h-3 bg-gray-200 rounded w-2/3" />
+        {
+          loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 animate-pulse"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                    <div className="flex-1 space-y-3">
+                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                      <div className="h-3 bg-gray-200 rounded w-full" />
+                      <div className="h-3 bg-gray-200 rounded w-2/3" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : links.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <LinkIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {searchTerm || categoryFilter !== "all"
-                ? "No links found"
-                : "No links yet"}
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {searchTerm || categoryFilter !== "all"
-                ? "Try adjusting your search or filters"
-                : canManageLinks
-                  ? "Get started by adding your first link"
-                  : "Links will appear here once they are added"}
-            </p>
-            {canManageLinks &&
-              !searchTerm &&
-              categoryFilter === "all" && (
-                <button
-                  onClick={handleAddLink}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Your First Link
-                </button>
-              )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {links.map((link) => (
-              <LinkCard
-                key={link.id}
-                link={link}
-                canManage={canManageLinks}
-                onEdit={handleEditLink}
-                onDelete={handleDeleteLink}
-              />
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          ) : links.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+              <LinkIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {searchTerm || categoryFilter !== "all"
+                  ? "No links found"
+                  : "No links yet"}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {searchTerm || categoryFilter !== "all"
+                  ? "Try adjusting your search or filters"
+                  : canManageLinks
+                    ? "Get started by adding your first link"
+                    : "Links will appear here once they are added"}
+              </p>
+              {canManageLinks &&
+                !searchTerm &&
+                categoryFilter === "all" && (
+                  <button
+                    onClick={handleAddLink}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Your First Link
+                  </button>
+                )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {links.map((link) => (
+                <LinkCard
+                  key={link.id}
+                  link={link}
+                  canManage={canManageLinks}
+                  onEdit={handleEditLink}
+                  onDelete={handleDeleteLink}
+                />
+              ))}
+            </div>
+          )
+        }
 
         {/* Results count */}
-        {!loading && links.length > 0 && (
-          <div className="mt-6 text-center text-sm text-gray-600">
-            Showing {links.length} {links.length === 1 ? "link" : "links"}
-            {(searchTerm || categoryFilter !== "all") && (
-              <span>
-                {" "}
-                of {allLinks.length} total
-              </span>
-            )}
-          </div>
-        )}
+        {
+          !loading && links.length > 0 && (
+            <div className="mt-6 text-center text-sm text-gray-600">
+              Showing {links.length} {links.length === 1 ? "link" : "links"}
+              {(searchTerm || categoryFilter !== "all") && (
+                <span>
+                  {" "}
+                  of {allLinks.length} total
+                </span>
+              )}
+            </div>
+          )
+        }
       </main>
 
       {/* Link Modal */}
@@ -233,4 +248,3 @@ export default function LinksContent() {
     </div>
   );
 }
-

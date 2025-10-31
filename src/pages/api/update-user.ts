@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request }) => {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
 
@@ -66,7 +66,7 @@ export const POST: APIRoute = async ({ request }) => {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
 
@@ -74,7 +74,11 @@ export const POST: APIRoute = async ({ request }) => {
     const adminRole = adminUserData?.role;
 
     // Check if admin has permission to update users
-    const allowedRoles = ["Administrator", "Executive Officer", "General Officer"];
+    const allowedRoles = [
+      "Administrator",
+      "Executive Officer",
+      "General Officer",
+    ];
     if (!allowedRoles.includes(adminRole)) {
       console.log("Insufficient permissions");
       return new Response(
@@ -87,7 +91,7 @@ export const POST: APIRoute = async ({ request }) => {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
 
@@ -107,9 +111,17 @@ export const POST: APIRoute = async ({ request }) => {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
+
+    // Get current user data for change tracking
+    const currentUserData = userDoc.data();
+    const changes: Array<{
+      field: string;
+      oldValue: string;
+      newValue: string;
+    }> = [];
 
     // Build update data
     const updateData: any = {
@@ -117,20 +129,95 @@ export const POST: APIRoute = async ({ request }) => {
       lastUpdatedBy: adminUserId,
     };
 
-    // Add fields if provided
-    if (name !== undefined) updateData.name = name;
-    if (role !== undefined) updateData.role = role;
-    if (position !== undefined) updateData.position = position || "";
-    if (status !== undefined) updateData.status = status;
-    if (pid !== undefined) updateData.pid = pid || "";
-    if (memberId !== undefined) updateData.memberId = memberId || "";
-    if (major !== undefined) updateData.major = major || "";
-    if (graduationYear !== undefined) updateData.graduationYear = graduationYear || null;
-    if (team !== undefined) updateData.team = team || null;
+    // Add fields if provided and track changes
+    if (name !== undefined && name !== currentUserData?.name) {
+      updateData.name = name;
+      changes.push({
+        field: "name",
+        oldValue: currentUserData?.name || "",
+        newValue: name,
+      });
+    }
+    if (role !== undefined && role !== currentUserData?.role) {
+      updateData.role = role;
+      changes.push({
+        field: "role",
+        oldValue: currentUserData?.role || "",
+        newValue: role,
+      });
+    }
+    if (position !== undefined && position !== currentUserData?.position) {
+      updateData.position = position || "";
+      changes.push({
+        field: "position",
+        oldValue: currentUserData?.position || "",
+        newValue: position || "",
+      });
+    }
+    if (status !== undefined && status !== currentUserData?.status) {
+      updateData.status = status;
+      changes.push({
+        field: "status",
+        oldValue: currentUserData?.status || "",
+        newValue: status,
+      });
+    }
+    if (pid !== undefined && pid !== currentUserData?.pid) {
+      updateData.pid = pid || "";
+      changes.push({
+        field: "pid",
+        oldValue: currentUserData?.pid || "",
+        newValue: pid || "",
+      });
+    }
+    if (memberId !== undefined && memberId !== currentUserData?.memberId) {
+      updateData.memberId = memberId || "";
+      changes.push({
+        field: "memberId",
+        oldValue: currentUserData?.memberId || "",
+        newValue: memberId || "",
+      });
+    }
+    if (major !== undefined && major !== currentUserData?.major) {
+      updateData.major = major || "";
+      changes.push({
+        field: "major",
+        oldValue: currentUserData?.major || "",
+        newValue: major || "",
+      });
+    }
+    if (
+      graduationYear !== undefined &&
+      graduationYear !== currentUserData?.graduationYear
+    ) {
+      updateData.graduationYear = graduationYear || null;
+      changes.push({
+        field: "graduationYear",
+        oldValue: currentUserData?.graduationYear?.toString() || "",
+        newValue: graduationYear?.toString() || "",
+      });
+    }
+    if (team !== undefined && team !== currentUserData?.team) {
+      updateData.team = team || null;
+      changes.push({
+        field: "team",
+        oldValue: currentUserData?.team || "",
+        newValue: team || "",
+      });
+    }
 
     // Only administrators can modify points
-    if (adminRole === "Administrator" && points !== undefined) {
+    if (
+      adminRole === "Administrator" &&
+      points !== undefined &&
+      points !== currentUserData?.points
+    ) {
       updateData.points = points;
+      changes.push({
+        field: "points",
+        oldValue: currentUserData?.points?.toString() || "0",
+        newValue: points.toString(),
+      });
     }
 
     console.log("Updating user with data:", updateData);
@@ -151,6 +238,59 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
+    // Send email notification if there were changes
+    if (changes.length > 0) {
+      try {
+        // Determine if this is a role change specifically
+        const roleChange = changes.find((c) => c.field === "role");
+
+        if (roleChange) {
+          // Send role change email
+          await fetch(
+            `${new URL(request.url).origin}/api/email/send-user-notification`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                type: "role_change",
+                userId,
+                oldRole: roleChange.oldValue,
+                newRole: roleChange.newValue,
+                changedByUserId: adminUserId,
+              }),
+              signal: AbortSignal.timeout(10000), // 10 second timeout
+            },
+          );
+        } else {
+          // Send general profile update email
+          await fetch(
+            `${new URL(request.url).origin}/api/email/send-user-notification`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                type: "profile_update",
+                userId,
+                changes,
+                changedByUserId: adminUserId,
+              }),
+              signal: AbortSignal.timeout(10000), // 10 second timeout
+            },
+          );
+        }
+      } catch (emailError) {
+        console.error(
+          "Failed to send user update notification email:",
+          emailError,
+        );
+        // Don't fail the update if email fails
+      }
+    }
+
     console.log(`✅ Successfully updated user ${userId}`);
 
     return new Response(
@@ -163,7 +303,7 @@ export const POST: APIRoute = async ({ request }) => {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   } catch (error) {
     console.error("Error in update-user:", error);
@@ -177,8 +317,7 @@ export const POST: APIRoute = async ({ request }) => {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 };
-

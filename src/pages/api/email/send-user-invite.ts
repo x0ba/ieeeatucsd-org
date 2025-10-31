@@ -1,39 +1,42 @@
-import type { APIRoute } from 'astro';
-import { Resend } from 'resend';
+import type { APIRoute } from "astro";
+import { Resend } from "resend";
 
 export const POST: APIRoute = async ({ request }) => {
-    try {
-        const { name, email, role, position, message, inviteId } = await request.json();
+  try {
+    const { name, email, role, position, message, inviteId } =
+      await request.json();
 
-        if (!name || !email || !role || !inviteId) {
-            return new Response(
-                JSON.stringify({ error: 'Missing required fields' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
+    if (!name || !email || !role || !inviteId) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
-        // Initialize Resend
-        const resend = new Resend(import.meta.env.RESEND_API_KEY);
-        
-        if (!import.meta.env.RESEND_API_KEY) {
-            console.error('RESEND_API_KEY not configured');
-            return new Response(
-                JSON.stringify({ error: 'Email service not configured' }),
-                { status: 500, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
+    if (!import.meta.env.RESEND_API_KEY) {
+      console.error("RESEND_API_KEY not configured");
+      return new Response(
+        JSON.stringify({ error: "Email service not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
-        const fromEmail = import.meta.env.FROM_EMAIL || 'IEEE UCSD <noreply@ieeeatucsd.org>';
-        const replyToEmail = import.meta.env.REPLY_TO_EMAIL || 'ieee@ucsd.edu';
-        
-        // Create invite link (you can customize this URL)
-        const baseUrl = new URL(request.url).origin;
-        const inviteLink = `${baseUrl}/dashboard/signin?invite=${inviteId}`;
+    // Initialize Resend
+    const resend = new Resend(import.meta.env.RESEND_API_KEY);
 
-        const roleText = position ? `${role} - ${position}` : role;
-        const subject = `You're invited to join IEEE UCSD as ${roleText}`;
-        
-        const html = `
+    const fromEmail =
+      import.meta.env.FROM_EMAIL ||
+      "IEEE UCSD <noreply@transactional.ieeeatucsd.org>";
+    const replyToEmail = import.meta.env.REPLY_TO_EMAIL || "ieee@ucsd.edu";
+
+    // Create invite link (you can customize this URL)
+    const baseUrl = new URL(request.url).origin;
+    const inviteLink = `${baseUrl}/dashboard/signin?invite=${inviteId}`;
+
+    const roleText = position ? `${role} - ${position}` : role;
+    const subject = `You're invited to join IEEE UCSD as ${roleText}`;
+
+    const html = `
             <!DOCTYPE html>
             <html>
             <head>
@@ -48,13 +51,17 @@ export const POST: APIRoute = async ({ request }) => {
                 
                 <div style="background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 25px;">
                     <h2 style="margin-top: 0; color: #2c3e50;">Hello ${name},</h2>
-                    <p>You have been invited to join IEEE UCSD with the role of <strong>${role}</strong>${position ? ` as <strong>${position}</strong>` : ''}.</p>
+                    <p>You have been invited to join IEEE UCSD with the role of <strong>${role}</strong>${position ? ` as <strong>${position}</strong>` : ""}.</p>
                     
-                    ${message ? `
+                    ${
+                      message
+                        ? `
                         <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff; margin: 20px 0;">
                             <p style="margin: 0; font-style: italic;">"${message}"</p>
                         </div>
-                    ` : ''}
+                    `
+                        : ""
+                    }
                 </div>
                 
                 <div style="background: white; border: 1px solid #dee2e6; padding: 25px; border-radius: 10px; margin-bottom: 25px;">
@@ -96,27 +103,29 @@ export const POST: APIRoute = async ({ request }) => {
             </html>
         `;
 
-        // Send email
-        const result = await resend.emails.send({
-            from: fromEmail,
-            to: [email],
-            replyTo: replyToEmail,
-            subject,
-            html,
-        });
+    // Send email
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: [email],
+      replyTo: replyToEmail,
+      subject,
+      html,
+    });
 
-        console.log('User invitation email sent successfully:', result);
-        
-        return new Response(
-            JSON.stringify({ success: true, message: 'Invitation sent successfully' }),
-            { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
+    console.log("User invitation email sent successfully:", result);
 
-    } catch (error) {
-        console.error('Failed to send user invitation email:', error);
-        return new Response(
-            JSON.stringify({ error: 'Failed to send invitation' }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
-        );
-    }
-}; 
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Invitation sent successfully",
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  } catch (error) {
+    console.error("Failed to send user invitation email:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to send invitation" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+};

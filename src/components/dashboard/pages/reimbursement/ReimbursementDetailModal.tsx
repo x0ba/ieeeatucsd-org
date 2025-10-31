@@ -15,6 +15,43 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const isAdmin = userRole === 'Administrator';
+
+    // Calculate subtotal from line items if needed
+    const calculateReceiptSubtotal = (receipt: any) => {
+        let subtotal = receipt.subtotal || 0;
+        if (subtotal === 0 && receipt.lineItems && receipt.lineItems.length > 0) {
+            subtotal = receipt.lineItems.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
+        }
+        return subtotal;
+    };
+
+    // Calculate total if it's 0 or missing in Firestore
+    const calculateReceiptTotal = (receipt: any) => {
+        if (receipt.total && receipt.total > 0) {
+            return receipt.total;
+        }
+        // Fallback: calculate from components
+        const subtotal = calculateReceiptSubtotal(receipt);
+        return subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0);
+    };
+
+    // Calculate total amount for all receipts
+    const calculateTotalAmount = () => {
+        // Handle new multi-receipt structure
+        if (reimbursement.receipts && reimbursement.receipts.length > 0) {
+            return reimbursement.receipts.reduce((sum: number, receipt: any) => {
+                return sum + calculateReceiptTotal(receipt);
+            }, 0);
+        }
+        // Handle legacy expenses structure
+        if (reimbursement.expenses && reimbursement.expenses.length > 0) {
+            return reimbursement.expenses.reduce((sum: number, expense: any) => {
+                return sum + (expense.amount || 0);
+            }, 0);
+        }
+        return 0;
+    };
+
     const getStatusColor = (status: string): "default" | "primary" | "secondary" | "success" | "warning" | "danger" => {
         switch (status) {
             case 'submitted':
@@ -150,7 +187,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
 
                                 <div>
                                     <div className="text-right mb-4">
-                                        <p className="text-3xl font-bold text-gray-900">${reimbursement.totalAmount?.toFixed(2)}</p>
+                                        <p className="text-3xl font-bold text-gray-900">${calculateTotalAmount().toFixed(2)}</p>
                                         <Chip
                                             color={getStatusColor(reimbursement.status)}
                                             variant="flat"
@@ -210,17 +247,25 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                                                 <div className="text-sm text-gray-600 border-t pt-2">
                                                     <div className="flex justify-between">
                                                         <span>Subtotal:</span>
-                                                        <span>${receipt.subtotal?.toFixed(2) || '0.00'}</span>
+                                                        <span>${calculateReceiptSubtotal(receipt).toFixed(2)}</span>
                                                     </div>
-                                                    {receipt.tax > 0 && (
+                                                    <div className="flex justify-between">
+                                                        <span>Tax:</span>
+                                                        <span>${(receipt.tax || 0).toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Tip:</span>
+                                                        <span>${(receipt.tip || 0).toFixed(2)}</span>
+                                                    </div>
+                                                    {receipt.shipping > 0 && (
                                                         <div className="flex justify-between">
-                                                            <span>Tax:</span>
-                                                            <span>${receipt.tax?.toFixed(2)}</span>
+                                                            <span>Shipping:</span>
+                                                            <span>${receipt.shipping?.toFixed(2)}</span>
                                                         </div>
                                                     )}
                                                     <div className="flex justify-between font-medium">
                                                         <span>Total:</span>
-                                                        <span>${receipt.total?.toFixed(2)}</span>
+                                                        <span>${calculateReceiptTotal(receipt).toFixed(2)}</span>
                                                     </div>
                                                 </div>
 

@@ -5,6 +5,7 @@ import {
   sendFirebaseEventRequestStatusChangeEmail,
   sendFirebaseEventEditEmail,
   sendFirebaseEventDeleteEmail,
+  sendGraphicsUploadEmail,
 } from "../../../scripts/email/FirebaseEventEmailFunctions";
 
 export const POST: APIRoute = async ({ request }) => {
@@ -23,7 +24,8 @@ export const POST: APIRoute = async ({ request }) => {
       userName,
       userEmail,
       status,
-      additionalContext,
+      uploadedByUserId,
+      filesUploaded,
     } = await request.json();
 
     if (!type) {
@@ -44,7 +46,8 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const fromEmail =
-      import.meta.env.FROM_EMAIL || "IEEE UCSD <noreply@ieeeatucsd.org>";
+      import.meta.env.FROM_EMAIL ||
+      "IEEE UCSD <noreply@transactional.ieeeatucsd.org>";
     const replyToEmail = import.meta.env.REPLY_TO_EMAIL || "ieee@ucsd.edu";
 
     let success = false;
@@ -135,6 +138,27 @@ export const POST: APIRoute = async ({ request }) => {
             userName,
             userEmail,
             status,
+          },
+        );
+        break;
+
+      case "graphics_upload":
+        if (!eventRequestId || !uploadedByUserId || !filesUploaded) {
+          return new Response(
+            JSON.stringify({
+              error: "Missing required data for graphics upload notification",
+            }),
+            { status: 400, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        success = await sendGraphicsUploadEmail(
+          resend,
+          fromEmail,
+          replyToEmail,
+          {
+            eventRequestId,
+            uploadedByUserId,
+            filesUploaded,
           },
         );
         break;

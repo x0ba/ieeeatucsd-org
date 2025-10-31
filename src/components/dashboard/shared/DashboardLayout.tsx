@@ -1,9 +1,8 @@
-import React, { type ReactNode, useEffect, useState } from 'react';
-import { Sidebar } from './Sidebar.tsx';
-import { MobileSidebar } from './MobileSidebar.tsx';
-import MobileHeader from './MobileHeader.tsx';
+import { type ReactNode, useEffect } from 'react';
+import { TopNavbar } from './TopNavbar.tsx';
 import { auth } from '../../../firebase/client';
 import { ModalProvider } from './contexts/ModalContext.tsx';
+import { SyncStatusProvider } from './contexts/SyncStatusContext.tsx';
 
 interface DashboardLayoutProps {
     children?: ReactNode;
@@ -11,8 +10,6 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, currentPath }: DashboardLayoutProps) {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged(user => {
             if (!user) {
@@ -23,65 +20,20 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
         return () => unsubscribeAuth();
     }, []);
 
-    const handleMobileMenuToggle = () => {
-        setIsMobileMenuOpen(!isMobileMenuOpen);
-    };
-
-    const handleMobileMenuClose = () => {
-        setIsMobileMenuOpen(false);
-    };
-
-    // Get page title from current path for mobile header
-    const getPageTitle = (path: string): string => {
-        const pathMap: { [key: string]: string } = {
-            '/dashboard/overview': 'Overview',
-            '/dashboard/links': 'Links',
-            '/dashboard/events': 'Events',
-            '/dashboard/reimbursement': 'Reimbursement',
-            '/dashboard/leaderboard': 'Leaderboard',
-            '/dashboard/manage-events': 'Manage Events',
-            '/dashboard/manage-reimbursements': 'Manage Reimbursements',
-            '/dashboard/fund-deposits': 'Fund Deposits',
-            '/dashboard/slack-access': 'Slack Access',
-            '/dashboard/manage-users': 'Manage Users',
-            '/dashboard/onboarding': 'Onboarding',
-            '/dashboard/constitution-builder': 'Constitution Builder',
-            '/dashboard/sponsors/resume-database': 'Resume Database',
-            '/dashboard/settings': 'Settings',
-            '/dashboard': 'Dashboard',
-        };
-        return pathMap[path] || 'IEEE UCSD';
-    };
-
     return (
-        <ModalProvider>
-            <div className="flex h-screen overflow-hidden bg-gray-50">
-                {/* Desktop Sidebar */}
-                <Sidebar currentPath={currentPath} />
+        <SyncStatusProvider>
+            <ModalProvider>
+                <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+                    {/* Top Navigation Bar */}
+                    <TopNavbar currentPath={currentPath} />
 
-                {/* Mobile Sidebar */}
-                <MobileSidebar
-                    currentPath={currentPath}
-                    isOpen={isMobileMenuOpen}
-                    onClose={handleMobileMenuClose}
-                />
-
-                {/* Main Content Area */}
-                <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                    {/* Mobile Header */}
-                    <MobileHeader
-                        title={getPageTitle(currentPath || '')}
-                        onMenuToggle={handleMobileMenuToggle}
-                        isMenuOpen={isMobileMenuOpen}
-                    />
-
-                    {/* Page Content - Independent Scroll Container */}
+                    {/* Main Content Area */}
                     <div className="flex-1 min-h-0 overflow-y-auto">
                         {children || <DefaultContent />}
                     </div>
                 </div>
-            </div>
-        </ModalProvider>
+            </ModalProvider>
+        </SyncStatusProvider>
     );
 }
 
@@ -130,7 +82,7 @@ function DefaultContent() {
             {/* Content */}
             <main className="p-6">
                 <div className="text-center text-gray-500">
-                    <p>Please select a page from the sidebar</p>
+                    <p>Please select a page from the navigation menu</p>
                 </div>
             </main>
         </div>

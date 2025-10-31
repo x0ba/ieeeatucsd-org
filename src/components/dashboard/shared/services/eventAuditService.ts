@@ -1,5 +1,4 @@
 import {
-  getFirestore,
   collection,
   addDoc,
   doc,
@@ -7,7 +6,7 @@ import {
   arrayUnion,
   getDoc,
 } from "firebase/firestore";
-import { app } from "../../../../firebase/client";
+import { db } from "../../../../firebase/client";
 import type {
   EventAuditLog,
   EventFieldChange,
@@ -15,7 +14,7 @@ import type {
 } from "../types/firestore";
 
 export class EventAuditService {
-  private static db = getFirestore(app);
+  private static db = db;
 
   /**
    * Create an audit log entry for event creation

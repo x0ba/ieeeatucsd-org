@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { exportConstitutionToEnhancedPDF, getOptimalExportOptions, type EnhancedPDFExportOptions } from './utils/enhancedPdfExport';
 import { exportConstitutionToPDF } from './utils/pdfExportUtils';
-import type { Constitution, ConstitutionSection } from '../../shar../../shared/types/firestore';
+import type { Constitution, ConstitutionSection } from '../../shared/types/firestore';
 
 interface PDFExportDemoProps {
     constitution: Constitution | null;

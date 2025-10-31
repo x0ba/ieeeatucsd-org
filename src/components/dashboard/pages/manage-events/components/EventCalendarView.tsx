@@ -22,6 +22,7 @@ interface EventCalendarViewProps {
     onCreateEvent: (date: Date) => void;
     onViewEvent: (event: EventRequest) => void;
     onEditEvent: (event: EventRequest) => void;
+    onConvertDraftToFull?: (event: EventRequest) => void;
     currentUserRole: string;
 }
 
@@ -30,6 +31,7 @@ export function EventCalendarView({
     onCreateEvent,
     onViewEvent,
     onEditEvent,
+    onConvertDraftToFull,
     currentUserRole
 }: EventCalendarViewProps) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -77,7 +79,7 @@ export function EventCalendarView({
         }
 
         // Draft events - special styling
-        if (event.isDraft || event.status?.toLowerCase() === 'draft') {
+        if (isDraftEvent(event)) {
             return 'bg-gray-100 border-gray-400 text-gray-700 border-dashed';
         }
 
@@ -126,6 +128,11 @@ export function EventCalendarView({
 
     const handleToday = () => {
         setCurrentMonth(new Date());
+    };
+
+    // Helper function to check if an event is a draft (case-insensitive)
+    const isDraftEvent = (event: EventRequest): boolean => {
+        return event.isDraft || event.status?.toLowerCase() === 'draft';
     };
 
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -251,6 +258,7 @@ export function EventCalendarView({
                                                 className={`text-xs px-2 py-1 rounded border-l-2 truncate ${getEventColor(event)}`}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
+                                                    // Always use view handler - it will determine which modal to show
                                                     onViewEvent(event);
                                                 }}
                                             >
@@ -317,27 +325,55 @@ export function EventCalendarView({
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    onPress={() => {
-                                                        setShowEventModal(false);
-                                                        onViewEvent(event);
-                                                    }}
-                                                >
-                                                    View
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    color="primary"
-                                                    variant="flat"
-                                                    onPress={() => {
-                                                        setShowEventModal(false);
-                                                        onEditEvent(event);
-                                                    }}
-                                                >
-                                                    Edit
-                                                </Button>
+                                                {isDraftEvent(event) && onConvertDraftToFull ? (
+                                                    <>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="flat"
+                                                            onPress={() => {
+                                                                setShowEventModal(false);
+                                                                onViewEvent(event);
+                                                            }}
+                                                        >
+                                                            View
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            color="primary"
+                                                            variant="flat"
+                                                            onPress={() => {
+                                                                setShowEventModal(false);
+                                                                onConvertDraftToFull(event);
+                                                            }}
+                                                        >
+                                                            Convert to Full Event
+                                                        </Button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="flat"
+                                                            onPress={() => {
+                                                                setShowEventModal(false);
+                                                                onViewEvent(event);
+                                                            }}
+                                                        >
+                                                            View
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            color="primary"
+                                                            variant="flat"
+                                                            onPress={() => {
+                                                                setShowEventModal(false);
+                                                                onEditEvent(event);
+                                                            }}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     </CardBody>
@@ -350,4 +386,3 @@ export function EventCalendarView({
         </div>
     );
 }
-

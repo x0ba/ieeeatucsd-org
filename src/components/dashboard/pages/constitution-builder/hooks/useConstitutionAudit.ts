@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  getFirestore,
   collection,
   doc,
   addDoc,
@@ -11,7 +10,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "../../../../../firebase/client";
+import { auth, db } from "../../../../../firebase/client";
 import type {
   ConstitutionAuditEntry,
   ConstitutionSection,
@@ -22,8 +21,8 @@ export const useConstitutionAudit = (constitutionId: string) => {
   const [auditEntries, setAuditEntries] = useState<ConstitutionAuditEntry[]>(
     [],
   );
-  const [isLoading, setIsLoading] = useState(true);
-  const db = getFirestore();
+  const [isLoading, setIsLoading] = useState(false); // Start false to show cached data immediately
+  // Use db from client import
 
   // Load audit entries with real-time updates
   useEffect(() => {
@@ -35,14 +34,22 @@ export const useConstitutionAudit = (constitutionId: string) => {
       // Removed artificial limit - load all audit entries for comprehensive history
     );
 
-    const unsubscribe = onSnapshot(auditQuery, (snapshot) => {
-      const entries = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as ConstitutionAuditEntry[];
-      setAuditEntries(entries);
-      setIsLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      auditQuery,
+      (snapshot) => {
+        const entries = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as ConstitutionAuditEntry[];
+        setAuditEntries(entries);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching audit entries:", error);
+        setIsLoading(false);
+        // Keep existing entries on error
+      },
+    );
 
     return unsubscribe;
   }, [constitutionId, db]);

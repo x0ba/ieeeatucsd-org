@@ -3,7 +3,6 @@ import { PlayCircle, CheckCircle, AlertTriangle, RefreshCw, Users, Award } from 
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
-import DashboardHeader from '../../shared/DashboardHeader';
 
 export default function TestPublicProfilesContent() {
     const [user] = useAuthState(auth);
@@ -87,18 +86,12 @@ export default function TestPublicProfilesContent() {
 
     return (
         <div className="flex-1 overflow-auto">
-            <DashboardHeader
-                title="Public Profiles System Test"
-                subtitle="Test the public profiles functionality to ensure everything is working correctly"
-                showSearch={false}
-            />
-
             <main className="p-6">
                 <div className="max-w-4xl mx-auto">
                     {/* Test Controls */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                         <h2 className="text-lg font-semibold text-gray-900 mb-4">Test Controls</h2>
-                        
+
                         <div className="flex items-center space-x-4">
                             <button
                                 onClick={runTests}
@@ -215,7 +208,7 @@ export default function TestPublicProfilesContent() {
                         </ul>
                         <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                             <p className="text-sm text-blue-800">
-                                <strong>Note:</strong> This test will temporarily modify your public profile data. 
+                                <strong>Note:</strong> This test will temporarily modify your public profile data.
                                 Make sure to update your actual profile in Settings afterward if needed.
                             </p>
                         </div>

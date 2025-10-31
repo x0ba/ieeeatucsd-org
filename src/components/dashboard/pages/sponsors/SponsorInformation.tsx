@@ -3,66 +3,73 @@ import { Building2, Mail, Award, Check, X, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../../../firebase/client';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import type { User as FirestoreUser, SponsorTier } from '../../shared/types/firestore';
-import DashboardHeader from '../../shared/DashboardHeader';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/react';
 
 export default function SponsorInformation() {
     const { userRole } = useAuth();
     const [user] = useAuthState(auth);
     const [sponsorData, setSponsorData] = React.useState<Partial<FirestoreUser> | null>(null);
-    const [loading, setLoading] = React.useState(true);
+    const [loading, setLoading] = React.useState(true); // Start true to avoid flash of stale content
+    const [error, setError] = React.useState<string>("");
 
     React.useEffect(() => {
-        const fetchSponsorData = async () => {
-            if (!user) return;
+        if (!user) return;
 
-            try {
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
+        setLoading(true);
+        setError("");
+        // Set up real-time listener for sponsor data
+        const unsubscribe = onSnapshot(
+            doc(db, 'users', user.uid),
+            (userDoc) => {
                 if (userDoc.exists()) {
                     setSponsorData(userDoc.data() as FirestoreUser);
                 }
-            } catch (error) {
+                setLoading(false);
+            },
+            (error) => {
                 console.error('Error fetching sponsor data:', error);
-            } finally {
+                setError('Failed to load sponsor data');
                 setLoading(false);
             }
-        };
+        );
 
-        fetchSponsorData();
+        return () => unsubscribe();
     }, [user]);
 
     if (loading) {
         return (
-            <>
-                <DashboardHeader
-                    title="Sponsor Information"
-                    subtitle="Your sponsorship details and benefits"
-                    showSearch={false}
-                />
-                <div className="p-6">
-                    <div className="flex items-center justify-center py-12">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    </div>
+            <div className="p-6 space-y-6" role="status" aria-live="polite" aria-busy="true">
+                <Skeleton className="h-32 w-full" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-48 w-full" />
                 </div>
-            </>
+                <Skeleton className="h-96 w-full" />
+                <Skeleton className="h-32 w-full" />
+            </div>
         );
     }
 
     const getTierColor = (tier?: string) => {
         switch (tier) {
             case 'Diamond':
-                return 'bg-cyan-100 text-cyan-800 border-cyan-200';
+                return 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100';
             case 'Platinum':
-                return 'bg-gray-100 text-gray-800 border-gray-200';
+                return 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
             case 'Gold':
-                return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                return 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100';
             case 'Silver':
-                return 'bg-slate-100 text-slate-800 border-slate-200';
+                return 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100';
             case 'Bronze':
-                return 'bg-orange-100 text-orange-800 border-orange-200';
+                return 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100';
             default:
-                return 'bg-gray-100 text-gray-800 border-gray-200';
+                return 'bg-muted text-muted-foreground border-border hover:bg-muted/80';
         }
     };
 
@@ -88,16 +95,17 @@ export default function SponsorInformation() {
         bronze: boolean | string;
         silver: boolean | string;
         gold: boolean | string;
+        diamond: boolean | string;
     }
 
     const benefits: Benefit[] = [
-        { name: 'Prominent Logo Placement on Website & Newsletters', bronze: true, silver: true, gold: true },
-        { name: 'Tabling/Swag at Major Events', bronze: true, silver: true, gold: true },
-        { name: 'Exclusive Access to Student Resume Database', bronze: false, silver: true, gold: true },
-        { name: 'Participation in Professional Development Sessions', bronze: false, silver: '3 per year', gold: 'Unlimited' },
-        { name: 'Participation in Technical Workshops', bronze: false, silver: '1 per year', gold: 'Unlimited' },
-        { name: 'Unlimited Participation in Quarterly Projects', bronze: false, silver: false, gold: true },
-        { name: 'Custom Events & Activations', bronze: false, silver: false, gold: true },
+        { name: 'Prominent Logo Placement on Website & Newsletters', bronze: true, silver: true, gold: true, diamond: true },
+        { name: 'Tabling/Swag at Major Events', bronze: true, silver: true, gold: true, diamond: true },
+        { name: 'Exclusive Access to Student Resume Database', bronze: false, silver: true, gold: true, diamond: true },
+        { name: 'Participation in Professional Development Sessions', bronze: false, silver: '3 per year', gold: 'Unlimited', diamond: 'Unlimited' },
+        { name: 'Participation in Technical Workshops', bronze: false, silver: '1 per year', gold: 'Unlimited', diamond: 'Unlimited' },
+        { name: 'Unlimited Participation in Quarterly Projects', bronze: false, silver: false, gold: true, diamond: true },
+        { name: 'Custom Events & Activations', bronze: false, silver: false, gold: true, diamond: true },
     ];
 
     const renderBenefitIcon = (value: boolean | string) => {
@@ -109,190 +117,218 @@ export default function SponsorInformation() {
             return <ArrowRight className="w-5 h-5 text-blue-600" />;
         }
     };
-
     return (
-        <>
-            <DashboardHeader
-                title="Sponsor Information"
-                subtitle="Your sponsorship details and benefits"
-                showSearch={false}
-            />
-            <div className="p-6 space-y-6">
-                {/* Welcome Card */}
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg p-8 text-white">
+        <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
+            {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                    {error}
+                </div>
+            )}
+
+            {/* Welcome Card */}
+            <Card className="border-0 shadow-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                <CardContent className="p-8">
                     <div className="flex items-center gap-4">
-                        <div className="p-4 bg-white/20 rounded-lg">
+                        <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm">
                             <Building2 className="w-8 h-8" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold">Welcome, {sponsorData?.sponsorOrganization || 'Sponsor'}!</h2>
-                            <p className="text-blue-100 mt-1">Thank you for supporting IEEE at UC San Diego</p>
+                            <CardTitle className="text-2xl text-white mb-1">
+                                Welcome, {sponsorData?.sponsorOrganization || 'Sponsor'}!
+                            </CardTitle>
+                            <CardDescription className="text-blue-100 text-base">
+                                Thank you for supporting IEEE at UC San Diego
+                            </CardDescription>
                         </div>
                     </div>
-                </div>
+                </CardContent>
+            </Card>
 
-                {/* Sponsor Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Organization Info */}
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-blue-100 rounded-lg">
+            {/* Sponsor Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Organization Info */}
+                <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
+                    <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 rounded-xl">
                                 <Building2 className="w-5 h-5 text-blue-600" />
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-900">Organization Details</h3>
+                            <CardTitle className="text-lg">Organization Details</CardTitle>
                         </div>
-                        <div className="space-y-3">
-                            <div>
-                                <p className="text-sm text-gray-500">Organization Name</p>
-                                <p className="text-base font-medium text-gray-900">
-                                    {sponsorData?.sponsorOrganization || 'Not specified'}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500">Contact Email</p>
-                                <p className="text-base font-medium text-gray-900">{sponsorData?.email || 'Not specified'}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Sponsorship Tier */}
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                                <Award className="w-5 h-5 text-purple-600" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900">Sponsorship Tier</h3>
-                        </div>
-                        <div className="space-y-3">
-                            <div>
-                                <p className="text-sm text-gray-500 mb-2">Current Tier</p>
-                                <span className={`px-4 py-2 inline-flex text-sm font-semibold rounded-full border ${getTierColor(sponsorData?.sponsorTier)}`}>
-                                    {sponsorData?.sponsorTier || 'Not assigned'}
-                                </span>
-                            </div>
-                            {sponsorData?.autoAssignedSponsor && (
-                                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <p className="text-xs text-blue-800">
-                                        ✓ Automatically assigned based on email domain
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                </div>
-
-                {/* Sponsorship Benefits Table */}
-                <div className="bg-white rounded-lg shadow overflow-hidden">
-                    <div className="p-6 border-b border-gray-200">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                                <Award className="w-5 h-5 text-purple-600" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900">Sponsorship Benefits by Tier</h3>
-                        </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Benefit
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        <div className="flex flex-col items-center">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getTierColor('Bronze')}`}>
-                                                Bronze
-                                            </span>
-                                            <span className="text-gray-600 mt-1">{getTierAmount('Bronze')}</span>
-                                        </div>
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        <div className="flex flex-col items-center">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getTierColor('Silver')}`}>
-                                                Silver
-                                            </span>
-                                            <span className="text-gray-600 mt-1">{getTierAmount('Silver')}</span>
-                                        </div>
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        <div className="flex flex-col items-center">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getTierColor('Gold')}`}>
-                                                Gold
-                                            </span>
-                                            <span className="text-gray-600 mt-1">{getTierAmount('Gold')}</span>
-                                        </div>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {benefits.map((benefit, index) => (
-                                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                        <td className="px-6 py-4 text-sm text-gray-900">
-                                            {benefit.name}
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                {renderBenefitIcon(benefit.bronze)}
-                                                {typeof benefit.bronze === 'string' && (
-                                                    <span className="text-xs text-blue-600 font-medium">{benefit.bronze}</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                {renderBenefitIcon(benefit.silver)}
-                                                {typeof benefit.silver === 'string' && (
-                                                    <span className="text-xs text-blue-600 font-medium">{benefit.silver}</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                {renderBenefitIcon(benefit.gold)}
-                                                {typeof benefit.gold === 'string' && (
-                                                    <span className="text-xs text-blue-600 font-medium">{benefit.gold}</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    {sponsorData?.sponsorTier && (
-                        <div className="p-4 bg-blue-50 border-t border-blue-200">
-                            <p className="text-sm text-blue-800 text-center">
-                                <strong>Your current tier: {sponsorData.sponsorTier}</strong> - You have access to all benefits marked with ✓ or ➡️ in the {sponsorData.sponsorTier} column
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <p className="text-sm text-muted-foreground mb-1">Organization Name</p>
+                            <p className="text-base font-medium">
+                                {sponsorData?.sponsorOrganization || 'Not specified'}
                             </p>
                         </div>
-                    )}
-                </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground mb-1">Contact Email</p>
+                            <p className="text-base font-medium">{sponsorData?.email || 'Not specified'}</p>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                {/* Contact Information */}
-                <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-yellow-100 rounded-lg">
+                {/* Sponsorship Tier */}
+                <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
+                    <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-purple-100 rounded-xl">
+                                <Award className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <CardTitle className="text-lg">Sponsorship Tier</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <p className="text-sm text-muted-foreground mb-2">Current Tier</p>
+                            <Badge
+                                variant="outline"
+                                className={`px-4 py-2 text-sm font-semibold border ${getTierColor(sponsorData?.sponsorTier)}`}
+                            >
+                                {sponsorData?.sponsorTier || 'Not assigned'}
+                            </Badge>
+                        </div>
+                        {sponsorData?.autoAssignedSponsor && (
+                            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                                <p className="text-xs text-blue-800">
+                                    ✓ Automatically assigned based on email domain
+                                </p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Sponsorship Benefits Table */}
+            <Card className="shadow-md">
+                <CardHeader className="pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-100 rounded-xl">
+                            <Award className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <CardTitle className="text-lg">Sponsorship Benefits by Tier</CardTitle>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <Table
+                        aria-label="Sponsorship benefits comparison table"
+                        classNames={{
+                            th: "bg-transparent border-b border-border/30 pb-2",
+                            tr: "hover:bg-muted/30 transition-colors"
+                        }}
+                    >
+                        <TableHeader>
+                            <TableColumn>BENEFIT</TableColumn>
+                            <TableColumn align="center">
+                                <div className="flex flex-col items-center gap-1">
+                                    <Badge variant="outline" className={getTierColor('Bronze')}>
+                                        BRONZE
+                                    </Badge>
+                                    <span className="text-muted-foreground text-xs font-medium">{getTierAmount('Bronze')}</span>
+                                </div>
+                            </TableColumn>
+                            <TableColumn align="center">
+                                <div className="flex flex-col items-center gap-1">
+                                    <Badge variant="outline" className={getTierColor('Silver')}>
+                                        SILVER
+                                    </Badge>
+                                    <span className="text-muted-foreground text-xs font-medium">{getTierAmount('Silver')}</span>
+                                </div>
+                            </TableColumn>
+                            <TableColumn align="center">
+                                <div className="flex flex-col items-center gap-1">
+                                    <Badge variant="outline" className={getTierColor('Gold')}>
+                                        GOLD
+                                    </Badge>
+                                    <span className="text-muted-foreground text-xs font-medium">{getTierAmount('Gold')}</span>
+                                </div>
+                            </TableColumn>
+                            <TableColumn align="center">
+                                <div className="flex flex-col items-center gap-1">
+                                    <Badge variant="outline" className={getTierColor('Diamond')}>
+                                        DIAMOND
+                                    </Badge>
+                                    <span className="text-muted-foreground text-xs font-medium">{getTierAmount('Diamond')}</span>
+                                </div>
+                            </TableColumn>
+                        </TableHeader>
+                        <TableBody>
+                            {benefits.map((benefit, index) => (
+                                <TableRow key={index}>
+                                    <TableCell>{benefit.name}</TableCell>
+                                    <TableCell align="center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            {renderBenefitIcon(benefit.bronze)}
+                                            {typeof benefit.bronze === 'string' && (
+                                                <span className="text-xs text-blue-600 font-medium">{benefit.bronze}</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            {renderBenefitIcon(benefit.silver)}
+                                            {typeof benefit.silver === 'string' && (
+                                                <span className="text-xs text-blue-600 font-medium">{benefit.silver}</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            {renderBenefitIcon(benefit.gold)}
+                                            {typeof benefit.gold === 'string' && (
+                                                <span className="text-xs text-blue-600 font-medium">{benefit.gold}</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            {renderBenefitIcon(benefit.diamond)}
+                                            {typeof benefit.diamond === 'string' && (
+                                                <span className="text-xs text-blue-600 font-medium">{benefit.diamond}</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+                {sponsorData?.sponsorTier && (
+                    <CardFooter className="bg-blue-50 border-t border-blue-200">
+                        <p className="text-sm text-blue-800 text-center w-full">
+                            <strong>Your current tier: {sponsorData.sponsorTier}</strong> - You have access to all benefits marked with ✓ or ➡️ in the {sponsorData.sponsorTier} column
+                        </p>
+                    </CardFooter>
+                )}
+            </Card>
+
+            {/* Contact Information */}
+            <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
+                <CardHeader className="pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-yellow-100 rounded-xl">
                             <Mail className="w-5 h-5 text-yellow-600" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900">Need Help?</h3>
+                        <CardTitle className="text-lg">Need Help?</CardTitle>
                     </div>
-                    <p className="text-gray-600 mb-4">
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <CardDescription className="text-base leading-relaxed">
                         If you have any questions about your sponsorship or need assistance accessing the resume database,
                         please contact our team.
-                    </p>
+                    </CardDescription>
                     <div className="flex gap-4">
-                        <a
-                            href="mailto:ieee@ucsd.edu"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                            <Mail className="w-4 h-4" />
-                            Contact IEEE UCSD
-                        </a>
+                        <Button asChild variant="default" className="gap-2">
+                            <a href="mailto:ieee@ucsd.edu">
+                                <Mail className="w-4 h-4" />
+                                Contact IEEE UCSD
+                            </a>
+                        </Button>
                     </div>
-                </div>
-            </div>
-        </>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
-

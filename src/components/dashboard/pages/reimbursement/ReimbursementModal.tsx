@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Calendar, Building, CreditCard, MapPin, Eye, CheckCircle, MessageCircle, Upload, UserCheck, User as UserIcon, XCircle, Receipt } from 'lucide-react';
+import { Calendar, Building, CreditCard, MapPin, Eye, CheckCircle, MessageCircle, Upload, UserCheck, User as UserIcon, XCircle, Receipt, RefreshCw } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Chip, Input, Textarea, Select, SelectItem, Spacer, Divider, Card, CardHeader, CardBody, Tabs, Tab } from '@heroui/react';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db, auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import type { UserRole } from '../../shared/types/firestore';
@@ -26,6 +26,42 @@ export default function ReimbursementModal({
 }: ReimbursementModalProps) {
     const [user] = useAuthState(auth);
 
+    // Calculate subtotal from line items if needed
+    const calculateReceiptSubtotal = (receipt: any) => {
+        let subtotal = receipt.subtotal || 0;
+        if (subtotal === 0 && receipt.lineItems && receipt.lineItems.length > 0) {
+            subtotal = receipt.lineItems.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
+        }
+        return subtotal;
+    };
+
+    // Calculate total if it's 0 or missing in Firestore
+    const calculateReceiptTotal = (receipt: any) => {
+        if (receipt.total && receipt.total > 0) {
+            return receipt.total;
+        }
+        // Fallback: calculate from components
+        const subtotal = calculateReceiptSubtotal(receipt);
+        return subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0);
+    };
+
+    // Calculate total amount for all receipts
+    const calculateTotalAmount = () => {
+        // Handle new multi-receipt structure
+        if (reimbursement.receipts && reimbursement.receipts.length > 0) {
+            return reimbursement.receipts.reduce((sum: number, receipt: any) => {
+                return sum + calculateReceiptTotal(receipt);
+            }, 0);
+        }
+        // Handle legacy expenses structure
+        if (reimbursement.expenses && reimbursement.expenses.length > 0) {
+            return reimbursement.expenses.reduce((sum: number, expense: any) => {
+                return sum + (expense.amount || 0);
+            }, 0);
+        }
+        return 0;
+    };
+
     // Audit/Action states
     const [action, setAction] = useState<'review' | 'approve' | 'approve_paid' | 'decline' | 'request_audit'>('review');
     const [auditNote, setAuditNote] = useState('');
@@ -43,6 +79,10 @@ export default function ReimbursementModal({
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [activeReceiptTab, setActiveReceiptTab] = useState<string>('0');
+
+    // AI Recalculation states
+    const [recalculatingReceipts, setRecalculatingReceipts] = useState<Set<number>>(new Set());
+    const [recalculationErrors, setRecalculationErrors] = useState<Map<number, string>>(new Map());
 
     // Determine available actions based on status
     const availableActions = getAvailableActions(reimbursement.status);
@@ -318,6 +358,123 @@ export default function ReimbursementModal({
         }
     };
 
+    // AI Recalculation function
+    const handleRecalculateReceipt = async (receiptIndex: number) => {
+        const receipt = reimbursement.receipts[receiptIndex];
+
+        // Check if receipt has a file
+        if (!receipt.receiptFile) {
+            alert('No receipt file found to recalculate.');
+            return;
+        }
+
+        // Get the receipt file URL (handle both string and object formats)
+        const receiptFileUrl = typeof receipt.receiptFile === 'string'
+            ? receipt.receiptFile
+            : receipt.receiptFile.url;
+
+        if (!receiptFileUrl) {
+            alert('Receipt file URL not found.');
+            return;
+        }
+
+        try {
+            // Mark receipt as recalculating
+            setRecalculatingReceipts(prev => new Set(prev).add(receiptIndex));
+            setRecalculationErrors(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(receiptIndex);
+                return newMap;
+            });
+
+            // Call the parse-receipt API
+            const response = await fetch('/api/parse-receipt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ imageUrl: receiptFileUrl }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to parse receipt with AI');
+            }
+
+            const result = await response.json();
+
+            if (!result.success || !result.data) {
+                throw new Error('Invalid response from AI parser');
+            }
+
+            const parsedData = result.data;
+
+            // Update the receipt in Firestore
+            const updatedReceipts = [...reimbursement.receipts];
+            updatedReceipts[receiptIndex] = {
+                ...receipt,
+                vendorName: parsedData.vendorName || receipt.vendorName,
+                location: parsedData.location || receipt.location,
+                dateOfPurchase: parsedData.dateOfPurchase || receipt.dateOfPurchase,
+                lineItems: Array.isArray(parsedData.lineItems)
+                    ? parsedData.lineItems.map((item: any, index: number) => ({
+                        id: `recalc_${Date.now()}_${index}`,
+                        description: item.description || '',
+                        category: item.category || 'Other',
+                        amount: parseFloat(item.amount) || 0,
+                    }))
+                    : receipt.lineItems,
+                subtotal: parsedData.subtotal || 0,
+                tax: parsedData.tax || 0,
+                tip: parsedData.tip || 0,
+                shipping: parsedData.shipping || 0,
+                total: parsedData.total || 0,
+            };
+
+            // Calculate new total amount
+            const newTotalAmount = updatedReceipts.reduce((sum, r) => {
+                return sum + (r.total || 0);
+            }, 0);
+
+            // Update Firestore
+            const reimbursementRef = doc(db, 'reimbursements', reimbursement.id);
+            await updateDoc(reimbursementRef, {
+                receipts: updatedReceipts,
+                totalAmount: newTotalAmount,
+                auditLogs: [
+                    ...(reimbursement.auditLogs || []),
+                    {
+                        action: `Receipt ${receiptIndex + 1} (${receipt.vendorName}) recalculated with AI`,
+                        createdBy: user?.uid || 'unknown',
+                        timestamp: Timestamp.now(),
+                    }
+                ]
+            });
+
+            // Update local state by triggering a refresh
+            if (onUpdate) {
+                // Trigger parent component to refresh data
+                onUpdate(reimbursement.id, reimbursement.status);
+            }
+
+            alert('Receipt recalculated successfully!');
+        } catch (error) {
+            console.error('Error recalculating receipt:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            setRecalculationErrors(prev => {
+                const newMap = new Map(prev);
+                newMap.set(receiptIndex, errorMessage);
+                return newMap;
+            });
+            alert(`Failed to recalculate receipt: ${errorMessage}`);
+        } finally {
+            setRecalculatingReceipts(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(receiptIndex);
+                return newSet;
+            });
+        }
+    };
+
     return (
         <>
             {PasteNotificationComponent}
@@ -381,7 +538,7 @@ export default function ReimbursementModal({
 
                                     <div>
                                         <div className="text-right mb-4">
-                                            <p className="text-3xl font-bold text-gray-900">${reimbursement.totalAmount?.toFixed(2)}</p>
+                                            <p className="text-3xl font-bold text-gray-900">${calculateTotalAmount().toFixed(2)}</p>
                                             <Chip
                                                 color={getStatusColor(reimbursement.status)}
                                                 variant="flat"
@@ -504,10 +661,32 @@ export default function ReimbursementModal({
                                                                         )}
                                                                     </div>
                                                                 </div>
-                                                                <div className="text-right ml-4">
-                                                                    <p className="text-2xl font-bold text-gray-900">${receipt.total?.toFixed(2)}</p>
+                                                                <div className="flex items-center gap-3 ml-4">
+                                                                    <div className="text-right">
+                                                                        <p className="text-2xl font-bold text-gray-900">${calculateReceiptTotal(receipt).toFixed(2)}</p>
+                                                                    </div>
+                                                                    {/* AI Recalculation Button - Admin Only */}
+                                                                    {canPerformOfficerActions && receipt.receiptFile && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            color="primary"
+                                                                            variant="flat"
+                                                                            isIconOnly
+                                                                            isLoading={recalculatingReceipts.has(receiptIndex)}
+                                                                            onPress={() => handleRecalculateReceipt(receiptIndex)}
+                                                                            title="Recalculate with AI"
+                                                                        >
+                                                                            <RefreshCw className="w-4 h-4" />
+                                                                        </Button>
+                                                                    )}
                                                                 </div>
                                                             </div>
+                                                            {/* Show recalculation error if any */}
+                                                            {recalculationErrors.has(receiptIndex) && (
+                                                                <div className="mt-2 text-sm text-red-600">
+                                                                    Error: {recalculationErrors.get(receiptIndex)}
+                                                                </div>
+                                                            )}
                                                         </CardHeader>
 
                                                         <CardBody className="gap-4">
@@ -530,37 +709,31 @@ export default function ReimbursementModal({
                                                                     </div>
 
                                                                     {/* Subtotal breakdown */}
-                                                                    {(receipt.tax || receipt.tip || receipt.shipping) && (
-                                                                        <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
-                                                                            <div className="flex justify-between text-sm text-gray-600">
-                                                                                <span>Subtotal</span>
-                                                                                <span className="font-medium">${receipt.subtotal?.toFixed(2)}</span>
-                                                                            </div>
-                                                                            {receipt.tax > 0 && (
-                                                                                <div className="flex justify-between text-sm text-gray-600">
-                                                                                    <span>Tax</span>
-                                                                                    <span className="font-medium">${receipt.tax?.toFixed(2)}</span>
-                                                                                </div>
-                                                                            )}
-                                                                            {receipt.tip > 0 && (
-                                                                                <div className="flex justify-between text-sm text-gray-600">
-                                                                                    <span>Tip</span>
-                                                                                    <span className="font-medium">${receipt.tip?.toFixed(2)}</span>
-                                                                                </div>
-                                                                            )}
-                                                                            {receipt.shipping > 0 && (
-                                                                                <div className="flex justify-between text-sm text-gray-600">
-                                                                                    <span>Shipping</span>
-                                                                                    <span className="font-medium">${receipt.shipping?.toFixed(2)}</span>
-                                                                                </div>
-                                                                            )}
-                                                                            <Divider className="my-2" />
-                                                                            <div className="flex justify-between text-base font-bold text-gray-900">
-                                                                                <span>Total</span>
-                                                                                <span>${receipt.total?.toFixed(2)}</span>
-                                                                            </div>
+                                                                    <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                                                                        <div className="flex justify-between text-sm text-gray-600">
+                                                                            <span>Subtotal</span>
+                                                                            <span className="font-medium">${calculateReceiptSubtotal(receipt).toFixed(2)}</span>
                                                                         </div>
-                                                                    )}
+                                                                        <div className="flex justify-between text-sm text-gray-600">
+                                                                            <span>Tax</span>
+                                                                            <span className="font-medium">${(receipt.tax || 0).toFixed(2)}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-between text-sm text-gray-600">
+                                                                            <span>Tip</span>
+                                                                            <span className="font-medium">${(receipt.tip || 0).toFixed(2)}</span>
+                                                                        </div>
+                                                                        {receipt.shipping > 0 && (
+                                                                            <div className="flex justify-between text-sm text-gray-600">
+                                                                                <span>Shipping</span>
+                                                                                <span className="font-medium">${receipt.shipping?.toFixed(2)}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        <Divider className="my-2" />
+                                                                        <div className="flex justify-between text-base font-bold text-gray-900">
+                                                                            <span>Total</span>
+                                                                            <span>${calculateReceiptTotal(receipt).toFixed(2)}</span>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             )}
 

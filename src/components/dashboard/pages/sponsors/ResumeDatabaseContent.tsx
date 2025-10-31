@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { db, auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { AlertCircle, Search, FileText, Users, GraduationCap, Briefcase, Filter, X, CheckSquare, Square, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { User as FirestoreUser, UserRole } from '../../shared/types/firestore';
 import { SponsorPermissionService } from './utils/sponsorPermissions';
-import DashboardHeader from '../../shared/DashboardHeader';
 import JSZip from 'jszip';
 import {
     normalizeMajorName,
@@ -30,7 +29,7 @@ export default function ResumeDatabaseContent() {
     const [sponsorTier, setSponsorTier] = useState<string | null>(null);
     const [users, setUsers] = useState<UserWithResume[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<UserWithResume[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Start false to show cached data immediately
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedMajor, setSelectedMajor] = useState<string>('all');
@@ -43,40 +42,40 @@ export default function ResumeDatabaseContent() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    // Fetch current user role and sponsor tier
+    // Real-time listener for current user role and sponsor tier
     useEffect(() => {
         if (!user) return;
 
-        const fetchUserRole = async () => {
-            try {
-                const userDoc = await getDocs(query(collection(db, 'users'), where('__name__', '==', user.uid)));
-                if (!userDoc.empty) {
-                    const userData = userDoc.docs[0].data();
+        const userRef = doc(db, 'users', user.uid);
+        const unsubscribe = onSnapshot(
+            userRef,
+            (userDoc) => {
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
                     setCurrentUserRole(userData.role || 'Member');
                     setSponsorTier(userData.sponsorTier || null);
                 }
-            } catch (error) {
+            },
+            (error) => {
                 console.error('Error fetching user role:', error);
                 setCurrentUserRole('Member');
             }
-        };
+        );
 
-        fetchUserRole();
+        return () => unsubscribe();
     }, [user]);
 
-    // Fetch users with resumes
+    // Real-time listener for users with resumes
     useEffect(() => {
         if (!user || !currentUserRole) return;
 
-        const fetchUsers = async () => {
-            try {
-                setLoading(true);
-                setError(null);
+        setLoading(true);
+        setError(null);
 
-                // Query all users - no opt-in required
-                const usersRef = collection(db, 'users');
-                const querySnapshot = await getDocs(usersRef);
-
+        const usersRef = collection(db, 'users');
+        const unsubscribe = onSnapshot(
+            usersRef,
+            (querySnapshot) => {
                 const usersData: UserWithResume[] = querySnapshot.docs
                     .map(doc => ({
                         id: doc.id,
@@ -86,15 +85,16 @@ export default function ResumeDatabaseContent() {
 
                 setUsers(usersData);
                 setFilteredUsers(usersData);
-            } catch (err: any) {
+                setLoading(false);
+            },
+            (err) => {
                 console.error('Error fetching users:', err);
                 setError('Failed to load resume database: ' + err.message);
-            } finally {
                 setLoading(false);
             }
-        };
+        );
 
-        fetchUsers();
+        return () => unsubscribe();
     }, [user, currentUserRole]);
 
     // Memoize major normalization map for efficient lookups
@@ -269,23 +269,17 @@ export default function ResumeDatabaseContent() {
     // Check if user has access
     if (currentUserRole && !SponsorPermissionService.hasSponsorAccess(currentUserRole, sponsorTier as any)) {
         return (
-            <div className="flex-1 overflow-auto">
-                <DashboardHeader
-                    title="Access Denied"
-                    subtitle="You don't have permission to access this page"
-                />
-                <div className="p-6">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                        <div className="flex items-center">
-                            <AlertCircle className="h-8 w-8 text-red-600" />
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-red-800">Access Restricted</h3>
-                                <p className="text-red-700">
-                                    {currentUserRole === 'Sponsor' && sponsorTier === 'Bronze'
-                                        ? 'Bronze tier sponsors do not have access to the resume database. Please upgrade to Silver tier or above.'
-                                        : 'Only Silver tier (or above) Sponsors and Administrators can access the resume database.'}
-                                </p>
-                            </div>
+            <div className="flex-1 overflow-auto p-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div className="flex items-center">
+                        <AlertCircle className="h-8 w-8 text-red-600" />
+                        <div className="ml-4">
+                            <h3 className="text-lg font-semibold text-red-800">Access Restricted</h3>
+                            <p className="text-red-700">
+                                {currentUserRole === 'Sponsor' && sponsorTier === 'Bronze'
+                                    ? 'Bronze tier sponsors do not have access to the resume database. Please upgrade to Silver tier or above.'
+                                    : 'Only Silver tier (or above) Sponsors and Administrators can access the resume database.'}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -295,11 +289,6 @@ export default function ResumeDatabaseContent() {
 
     return (
         <div className="flex-1 overflow-auto">
-            <DashboardHeader
-                title="Resume Database"
-                subtitle="Browse resumes from IEEE members"
-            />
-
             <div className="p-6 space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -577,8 +566,8 @@ export default function ResumeDatabaseContent() {
                                                 onClick={goToPreviousPage}
                                                 disabled={currentPage === 1}
                                                 className={`p-2 rounded-lg transition-colors ${currentPage === 1
-                                                        ? 'text-gray-400 cursor-not-allowed'
-                                                        : 'text-gray-700 hover:bg-gray-200'
+                                                    ? 'text-gray-400 cursor-not-allowed'
+                                                    : 'text-gray-700 hover:bg-gray-200'
                                                     }`}
                                             >
                                                 <ChevronLeft className="w-5 h-5" />
@@ -603,8 +592,8 @@ export default function ResumeDatabaseContent() {
                                                             key={pageNum}
                                                             onClick={() => goToPage(pageNum)}
                                                             className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
-                                                                    ? 'bg-blue-600 text-white'
-                                                                    : 'text-gray-700 hover:bg-gray-200'
+                                                                ? 'bg-blue-600 text-white'
+                                                                : 'text-gray-700 hover:bg-gray-200'
                                                                 }`}
                                                         >
                                                             {pageNum}
@@ -617,8 +606,8 @@ export default function ResumeDatabaseContent() {
                                                 onClick={goToNextPage}
                                                 disabled={currentPage === totalPages}
                                                 className={`p-2 rounded-lg transition-colors ${currentPage === totalPages
-                                                        ? 'text-gray-400 cursor-not-allowed'
-                                                        : 'text-gray-700 hover:bg-gray-200'
+                                                    ? 'text-gray-400 cursor-not-allowed'
+                                                    : 'text-gray-700 hover:bg-gray-200'
                                                     }`}
                                             >
                                                 <ChevronRight className="w-5 h-5" />

@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import {
   sendReimbursementSubmissionEmail,
   sendAuditRequestEmail,
+  sendReimbursementStatusChangeEmail,
 } from "../../../scripts/email/ReimbursementEmailFunctions";
 
 export const POST: APIRoute = async ({ request }) => {
@@ -12,7 +13,8 @@ export const POST: APIRoute = async ({ request }) => {
     // Initialize Resend
     const resend = new Resend(import.meta.env.RESEND_API_KEY);
     const fromEmail =
-      import.meta.env.FROM_EMAIL || "IEEE UCSD <noreply@ieeeucsd.org>";
+      import.meta.env.FROM_EMAIL ||
+      "IEEE UCSD <noreply@transactional.ieeeatucsd.org>";
     const replyToEmail =
       import.meta.env.REPLY_TO_EMAIL || "treasurer@ieeeucsd.org";
 
@@ -34,6 +36,22 @@ export const POST: APIRoute = async ({ request }) => {
           fromEmail,
           replyToEmail,
           data,
+        );
+        break;
+
+      case "status_change":
+        success = await sendReimbursementStatusChangeEmail(
+          resend,
+          fromEmail,
+          replyToEmail,
+          {
+            reimbursementId: data.reimbursementId,
+            newStatus: data.newStatus,
+            previousStatus: data.previousStatus,
+            changedByUserId: data.changedByUserId,
+            rejectionReason: data.rejectionReason,
+            paymentConfirmation: data.paymentConfirmation,
+          },
         );
         break;
 

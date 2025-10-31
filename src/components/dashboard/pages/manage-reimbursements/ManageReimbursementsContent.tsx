@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Calendar, User, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, MessageCircle, Eye, CreditCard, ChevronUp, ChevronDown, ChevronsUpDown, Trash2 } from 'lucide-react';
+import { Calendar, User, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, MessageCircle, Eye, CreditCard, ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Search } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, Timestamp, getDoc } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
 import { Card, CardHeader, CardBody, Button, Chip, Select, SelectItem, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
-import DashboardHeader from '../../shared/DashboardHeader';
 import ReimbursementModal from '../reimbursement/ReimbursementModal';
 import type { UserRole } from '../../shared/types/firestore';
 import { PublicProfileService } from '../../shared/services/publicProfile';
@@ -99,6 +98,36 @@ export default function ManageReimbursementsContent() {
     const [auditReimbursement, setAuditReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+
+    // Calculate receipt total if it's 0 or missing
+    const calculateReceiptTotal = (receipt: any) => {
+        if (receipt.total && receipt.total > 0) {
+            return receipt.total;
+        }
+        // Calculate subtotal from line items if needed
+        let subtotal = receipt.subtotal || 0;
+        if (subtotal === 0 && receipt.lineItems && receipt.lineItems.length > 0) {
+            subtotal = receipt.lineItems.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
+        }
+        return subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0);
+    };
+
+    // Calculate total amount for a reimbursement
+    const calculateTotalAmount = (reimbursement: Reimbursement) => {
+        // Handle new multi-receipt structure
+        if (reimbursement.receipts && reimbursement.receipts.length > 0) {
+            return reimbursement.receipts.reduce((sum: number, receipt: any) => {
+                return sum + calculateReceiptTotal(receipt);
+            }, 0);
+        }
+        // Handle legacy expenses structure
+        if (reimbursement.expenses && reimbursement.expenses.length > 0) {
+            return reimbursement.expenses.reduce((sum: number, expense: any) => {
+                return sum + (expense.amount || 0);
+            }, 0);
+        }
+        return 0;
+    };
     const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
     const [sortField, setSortField] = useState<string>('submittedAt');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -134,19 +163,13 @@ export default function ManageReimbursementsContent() {
     // If user doesn't have access, show access denied message
     if (currentUserRole && !hasReimbursementAccess()) {
         return (
-            <div className="flex-1 overflow-auto">
-                <DashboardHeader
-                    title="Access Denied"
-                    subtitle="You don't have permission to access this page"
-                />
-                <div className="p-6">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                        <div className="flex items-center">
-                            <AlertCircle className="h-8 w-8 text-red-600" />
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-red-800">Access Restricted</h3>
-                                <p className="text-red-700">Only Executive Officers and Administrators can access reimbursement management.</p>
-                            </div>
+            <div className="flex-1 overflow-auto p-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div className="flex items-center">
+                        <AlertCircle className="h-8 w-8 text-red-600" />
+                        <div className="ml-4">
+                            <h3 className="text-lg font-semibold text-red-800">Access Restricted</h3>
+                            <p className="text-red-700">Only Executive Officers and Administrators can access reimbursement management.</p>
                         </div>
                     </div>
                 </div>
@@ -212,6 +235,10 @@ export default function ManageReimbursementsContent() {
         if (!user) return;
 
         try {
+            // Get current reimbursement for previous status
+            const currentReimbursement = reimbursements.find(r => r.id === reimbursementId);
+            const previousStatus = currentReimbursement?.status;
+
             // Get current user name
             let currentUserName = 'Unknown User';
             try {
@@ -259,6 +286,32 @@ export default function ManageReimbursementsContent() {
             }
 
             await updateDoc(doc(db, 'reimbursements', reimbursementId), updateData);
+
+            // Send status change email notification
+            try {
+                await fetch('/api/email/send-reimbursement-notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        type: 'status_change',
+                        reimbursementId,
+                        newStatus,
+                        previousStatus,
+                        changedByUserId: user.uid,
+                        rejectionReason: auditNote && newStatus === 'declined' ? auditNote : undefined,
+                        paymentConfirmation: paymentInfo && newStatus === 'paid' ? {
+                            ...paymentInfo,
+                            paidByName: currentUserName,
+                            paidAt: new Date()
+                        } : undefined,
+                    }),
+                });
+            } catch (emailError) {
+                console.error('Failed to send status change notification email:', emailError);
+                // Don't fail the status update if email fails
+            }
         } catch (error) {
             console.error('Error updating reimbursement:', error);
         }
@@ -346,7 +399,7 @@ export default function ManageReimbursementsContent() {
     const getStats = () => {
         const totalRequests = reimbursements.length;
         const pendingReview = reimbursements.filter(r => r.status === 'submitted').length;
-        const totalAmount = reimbursements.reduce((sum, r) => sum + r.totalAmount, 0);
+        const totalAmount = reimbursements.reduce((sum, r) => sum + calculateTotalAmount(r), 0);
         const thisMonth = reimbursements.filter(r => {
             const submittedDate = r.submittedAt?.toDate();
             const now = new Date();
@@ -365,37 +418,41 @@ export default function ManageReimbursementsContent() {
 
     return (
         <div className="flex-1 overflow-auto">
-            {/* Header */}
-            <DashboardHeader
-                title="Manage Reimbursements"
-                subtitle="Review and process member reimbursement requests"
-                searchPlaceholder="Search reimbursements..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            >
-                <Select
-                    label="Filter by Status"
-                    placeholder="Select status"
-                    selectedKeys={[statusFilter]}
-                    onSelectionChange={(keys) => {
-                        const selected = Array.from(keys)[0] as string;
-                        setStatusFilter(selected || 'all');
-                    }}
-                    className="w-48"
-                    size="sm"
-                    variant="bordered"
-                >
-                    <SelectItem key="all">All Status</SelectItem>
-                    <SelectItem key="submitted">Submitted</SelectItem>
-                    <SelectItem key="approved">Approved (Not Paid)</SelectItem>
-                    <SelectItem key="paid">Paid</SelectItem>
-                    <SelectItem key="declined">Declined</SelectItem>
-                </Select>
-            </DashboardHeader>
-
             {/* Manage Reimbursements Content */}
             <main className="p-6">
                 <div className="grid grid-cols-1 gap-6">
+                    {/* Search and Filter Bar */}
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
+                        <div className="relative flex-1 max-w-md w-full">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder="Search reimbursements..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                                aria-label="Search reimbursements"
+                            />
+                        </div>
+                        <Select
+                            label="Filter by Status"
+                            placeholder="Select status"
+                            selectedKeys={[statusFilter]}
+                            onSelectionChange={(keys) => {
+                                const selected = Array.from(keys)[0] as string;
+                                setStatusFilter(selected || 'all');
+                            }}
+                            className="w-48"
+                            size="sm"
+                            variant="bordered"
+                        >
+                            <SelectItem key="all">All Status</SelectItem>
+                            <SelectItem key="submitted">Submitted</SelectItem>
+                            <SelectItem key="approved">Approved (Not Paid)</SelectItem>
+                            <SelectItem key="paid">Paid</SelectItem>
+                            <SelectItem key="declined">Declined</SelectItem>
+                        </Select>
+                    </div>
 
 
                     {/* Reimbursement Management Stats */}
@@ -592,7 +649,7 @@ export default function ManageReimbursementsContent() {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm font-bold text-gray-900">${reimbursement.totalAmount.toFixed(2)}</div>
+                                                        <div className="text-sm font-bold text-gray-900">${calculateTotalAmount(reimbursement).toFixed(2)}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-900">{reimbursement.submittedAt?.toDate ? reimbursement.submittedAt.toDate().toLocaleDateString() : new Date(reimbursement.submittedAt).toLocaleDateString()}</div>

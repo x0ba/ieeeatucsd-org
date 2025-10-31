@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../../../hooks/useAuth';
 import { SponsorPermissionService } from './utils/sponsorPermissions';
-import DashboardHeader from '../../shared/DashboardHeader';
 import ResumeDatabaseTabs from './ResumeDatabaseTabs';
 import ResumeDatabaseContent from './ResumeDatabaseContent';
 import SponsorInformation from './SponsorInformation';
@@ -12,15 +11,9 @@ export default function ResumeDatabaseWrapper() {
 
     if (loading) {
         return (
-            <div className="flex-1 overflow-auto">
-                <DashboardHeader
-                    title="Resume Database"
-                    subtitle="Browse resumes from IEEE members"
-                />
-                <div className="p-6">
-                    <div className="flex items-center justify-center py-12">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    </div>
+            <div className="flex-1 overflow-auto p-6">
+                <div className="flex items-center justify-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
             </div>
         );
@@ -29,19 +22,13 @@ export default function ResumeDatabaseWrapper() {
     // Check if user has access
     if (userRole && !SponsorPermissionService.hasSponsorAccess(userRole)) {
         return (
-            <div className="flex-1 overflow-auto">
-                <DashboardHeader
-                    title="Access Denied"
-                    subtitle="You don't have permission to access this page"
-                />
-                <div className="p-6">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                        <div className="flex items-center">
-                            <AlertCircle className="h-8 w-8 text-red-600" />
-                            <div className="ml-4">
-                                <h3 className="text-lg font-semibold text-red-800">Access Restricted</h3>
-                                <p className="text-red-700">Only Sponsors and Administrators can access the resume database.</p>
-                            </div>
+            <div className="flex-1 overflow-auto p-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div className="flex items-center">
+                        <AlertCircle className="h-8 w-8 text-red-600" />
+                        <div className="ml-4">
+                            <h3 className="text-lg font-semibold text-red-800">Access Restricted</h3>
+                            <p className="text-red-700">Only Sponsors and Administrators can access the resume database.</p>
                         </div>
                     </div>
                 </div>
@@ -50,17 +37,11 @@ export default function ResumeDatabaseWrapper() {
     }
 
     return (
-        <div className="flex-1 overflow-auto">
-            <DashboardHeader
-                title="Resume Database"
-                subtitle="Browse resumes from IEEE members"
-            />
-            <div className="p-6">
-                <ResumeDatabaseTabs>
-                    <ResumeDatabaseContent />
-                    <SponsorInformation />
-                </ResumeDatabaseTabs>
-            </div>
+        <div className="flex-1 overflow-auto p-6">
+            <ResumeDatabaseTabs>
+                <ResumeDatabaseContent />
+                <SponsorInformation />
+            </ResumeDatabaseTabs>
         </div>
     );
 }

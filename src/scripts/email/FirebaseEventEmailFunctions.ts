@@ -1,5 +1,12 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { app } from "../../firebase/server";
+import {
+  generateEmailTemplate,
+  createDetailRow,
+  createInfoBox,
+  formatDate,
+  IEEE_COLORS,
+} from "./templates/EmailTemplate";
 
 export async function sendFirebaseEventRequestSubmissionEmail(
   resend: any,
@@ -20,7 +27,7 @@ export async function sendFirebaseEventRequestSubmissionEmail(
       .doc(data.eventRequestId)
       .get();
     if (!eventRequestDoc.exists) {
-      console.error("❌ Event request not found:", data.eventRequestId);
+      console.error("❌ Event request not found");
       return false;
     }
 
@@ -35,7 +42,7 @@ export async function sendFirebaseEventRequestSubmissionEmail(
       .doc(eventRequest.requestedUser)
       .get();
     if (!userDoc.exists) {
-      console.error("❌ User not found:", eventRequest.requestedUser);
+      console.error("❌ User not found");
       return false;
     }
 
@@ -318,7 +325,7 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
       .doc(data.eventRequestId)
       .get();
     if (!eventRequestDoc.exists) {
-      console.error("❌ Event request not found:", data.eventRequestId);
+      console.error("❌ Event request not found");
       return false;
     }
 
@@ -333,7 +340,7 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
       .doc(eventRequest.requestedUser)
       .get();
     if (!userDoc.exists) {
-      console.error("❌ User not found:", eventRequest.requestedUser);
+      console.error("❌ User not found");
       return false;
     }
 
@@ -527,7 +534,7 @@ export async function sendFirebaseEventEditEmail(
       .doc(data.eventRequestId)
       .get();
     if (!eventRequestDoc.exists) {
-      console.error("❌ Event request not found:", data.eventRequestId);
+      console.error("❌ Event request not found");
       return false;
     }
 
@@ -542,7 +549,7 @@ export async function sendFirebaseEventEditEmail(
       .doc(eventRequest.requestedUser)
       .get();
     if (!userDoc.exists) {
-      console.error("❌ User not found:", eventRequest.requestedUser);
+      console.error("❌ User not found");
       return false;
     }
 
@@ -927,6 +934,197 @@ export async function sendFirebaseEventDeleteEmail(
     return true;
   } catch (error) {
     console.error("❌ Failed to send Firebase event delete email:", error);
+    return false;
+  }
+}
+
+export async function sendGraphicsUploadEmail(
+  resend: any,
+  fromEmail: string,
+  replyToEmail: string,
+  data: {
+    eventRequestId: string;
+    uploadedByUserId: string;
+    filesUploaded: number;
+  },
+): Promise<boolean> {
+  try {
+    console.log("🎨 Starting graphics upload email process...");
+
+    // Validate input parameters
+    if (!data.eventRequestId || typeof data.eventRequestId !== "string") {
+      console.error("❌ Invalid eventRequestId parameter");
+      return false;
+    }
+
+    if (!data.uploadedByUserId || typeof data.uploadedByUserId !== "string") {
+      console.error("❌ Invalid uploadedByUserId parameter");
+      return false;
+    }
+
+    if (
+      typeof data.filesUploaded !== "number" ||
+      data.filesUploaded < 0 ||
+      !Number.isInteger(data.filesUploaded)
+    ) {
+      console.error(
+        "❌ Invalid filesUploaded parameter: must be a non-negative integer",
+      );
+      return false;
+    }
+
+    if (data.filesUploaded === 0) {
+      console.log("ℹ️ No files uploaded, skipping email notification");
+      return true;
+    }
+
+    // Helper to normalize timestamp to Date or null for safe formatting
+    const normalizeToDate = (timestamp: any): Date | null => {
+      if (!timestamp) return null;
+      if (timestamp instanceof Date) return timestamp;
+      if (typeof timestamp.toDate === "function") {
+        try {
+          return timestamp.toDate();
+        } catch {
+          return null;
+        }
+      }
+      try {
+        return new Date(timestamp);
+      } catch {
+        return null;
+      }
+    };
+
+    const db = getFirestore(app);
+
+    // Get event request details
+    const eventRequestDoc = await db
+      .collection("event_requests")
+      .doc(data.eventRequestId)
+      .get();
+    if (!eventRequestDoc.exists) {
+      console.error("❌ Event request not found");
+      return false;
+    }
+
+    const eventRequest = {
+      id: eventRequestDoc.id,
+      ...eventRequestDoc.data(),
+    } as any;
+
+    // Get uploader details
+    const uploaderDoc = await db
+      .collection("users")
+      .doc(data.uploadedByUserId)
+      .get();
+    if (!uploaderDoc.exists) {
+      console.error("❌ Uploader not found");
+      return false;
+    }
+    const uploader = { id: uploaderDoc.id, ...uploaderDoc.data() } as any;
+
+    // Get event submitter details
+    const submitterDoc = await db
+      .collection("users")
+      .doc(eventRequest.requestedUser)
+      .get();
+    if (!submitterDoc.exists) {
+      console.error("❌ Event submitter not found");
+      return false;
+    }
+    const submitter = { id: submitterDoc.id, ...submitterDoc.data() } as any;
+
+    // Build email content
+    const normalizedStartDate = normalizeToDate(eventRequest.startDateTime);
+    const startDateValue = normalizedStartDate
+      ? formatDate(normalizedStartDate)
+      : "Not specified";
+
+    const detailsHtml = `
+      <div style="background: ${IEEE_COLORS.gray[50]}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        ${createDetailRow("Event Name", eventRequest.name)}
+        ${createDetailRow("Location", eventRequest.location || "Not specified")}
+        ${createDetailRow("Start Date", startDateValue)}
+        ${createDetailRow("Files Uploaded", data.filesUploaded.toString())}
+        ${createDetailRow("Uploaded By", uploader.name || uploader.email)}
+      </div>
+    `;
+
+    const bodyContent = `
+      <h2>Graphics Files Uploaded</h2>
+      <p>Graphics files have been uploaded for your event request.</p>
+      ${detailsHtml}
+      ${createInfoBox(
+        `
+        <p style="margin: 0;">The graphics team has uploaded ${data.filesUploaded} file(s) for your event. You can view and download these files from the event management dashboard.</p>
+      `,
+        "success",
+      )}
+    `;
+
+    const uploaderBodyContent = `
+      <h2>Graphics Upload Confirmation</h2>
+      <p>Your graphics files have been successfully uploaded.</p>
+      ${detailsHtml}
+      ${createInfoBox(
+        `
+        <p style="margin: 0;">You have successfully uploaded ${data.filesUploaded} graphics file(s) for this event. The event organizer has been notified.</p>
+      `,
+        "success",
+      )}
+    `;
+
+    // Email to event submitter
+    const submitterEmailHtml = generateEmailTemplate({
+      title: "Graphics Files Uploaded",
+      preheader: `Graphics files have been uploaded for ${eventRequest.name}`,
+      headerText: "IEEE at UC San Diego",
+      bodyContent,
+      referenceId: eventRequest.id,
+      contactEmail: "events@ieeeatucsd.org",
+      ctaButton: {
+        text: "View Event Details",
+        url: "https://ieeeucsd.org/dashboard/manage-events",
+      },
+    });
+
+    // Email to uploader
+    const uploaderEmailHtml = generateEmailTemplate({
+      title: "Graphics Upload Confirmation",
+      preheader: `Your graphics files have been uploaded for ${eventRequest.name}`,
+      headerText: "IEEE at UC San Diego",
+      bodyContent: uploaderBodyContent,
+      referenceId: eventRequest.id,
+      contactEmail: "events@ieeeatucsd.org",
+      ctaButton: {
+        text: "View Event Details",
+        url: "https://ieeeucsd.org/dashboard/manage-events",
+      },
+    });
+
+    // Send to event submitter
+    await resend.emails.send({
+      from: fromEmail,
+      to: [submitter.email],
+      replyTo: uploader.email,
+      subject: `Graphics Uploaded: ${eventRequest.name}`,
+      html: submitterEmailHtml,
+    });
+
+    // Send to uploader
+    await resend.emails.send({
+      from: fromEmail,
+      to: [uploader.email],
+      replyTo: replyToEmail,
+      subject: `Graphics Upload Confirmation: ${eventRequest.name}`,
+      html: uploaderEmailHtml,
+    });
+
+    console.log("✅ Graphics upload emails sent successfully!");
+    return true;
+  } catch (error) {
+    console.error("❌ Failed to send graphics upload emails:", error);
     return false;
   }
 }

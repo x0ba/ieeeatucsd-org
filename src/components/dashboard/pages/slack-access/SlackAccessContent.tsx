@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Key, Eye, EyeOff, AlertCircle, CheckCircle, Loader2, MessageSquare, Shield, RefreshCw, Inbox, X, Paperclip, Check, Download, FileText, File, Image, FileVideo, FileAudio, Archive, ExternalLink } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth } from '../../../../firebase/client';
-import DashboardHeader from '../../shared/DashboardHeader';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '../../../../firebase/client';
 import type { User as UserType, UserRole } from '../../shared/types/firestore';
 
 interface EmailGenerationState {
@@ -72,7 +71,7 @@ export default function SlackAccessContent() {
         credentials: null
     });
 
-    const db = getFirestore();
+    // Use db from client import
 
     // Check if user can reset password (officers and above)
     const canResetPassword = userData?.role && ['General Officer', 'Executive Officer', 'Past Officer', 'Administrator'].includes(userData.role);
@@ -519,12 +518,6 @@ export default function SlackAccessContent() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <DashboardHeader
-                title="Slack Access"
-                subtitle="Generate IEEE email for Slack authentication and manage your inbox"
-                showSearch={false}
-            />
-
             <div className="p-4 sm:p-6">
 
                 {/* Disclaimer */}
@@ -1110,7 +1103,7 @@ const formatFileSize = (bytes: number): string => {
 
 function EmailModal({ email, credentials, onClose }: EmailModalProps) {
     const [emailContent, setEmailContent] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false); // Start false to show cached data immediately
     const [error, setError] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'html' | 'text'>('html');
 

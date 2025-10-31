@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  getFirestore,
   collection,
   getDocs,
   doc,
@@ -8,8 +7,13 @@ import {
   addDoc,
   deleteDoc,
   getDoc,
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  limit,
 } from "firebase/firestore";
-import { app, auth } from "../../../../../firebase/client";
+import { app, auth, db } from "../../../../../firebase/client";
 import { useAuthState } from "react-firebase-hooks/auth";
 import type {
   User as FirestoreUser,
@@ -29,7 +33,7 @@ import { normalizeMajorName } from "../../../../../utils/majorNormalization";
 export const useUserManagement = () => {
   const [user, userLoading, userError] = useAuthState(auth);
   const [users, setUsers] = useState<(FirestoreUser & { id: string })[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Start true for better UX (data fetching begins immediately)
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<
@@ -49,71 +53,9 @@ export const useUserManagement = () => {
     direction: "asc",
   });
 
-  const db = getFirestore(app);
+  // Real-time listener for users - removed, now in useEffect
 
-  // Fetch users from Firestore
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const usersRef = collection(db, "users");
-      const usersSnapshot = await getDocs(usersRef);
-
-      const usersData = usersSnapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          name: data.name || "",
-          email: data.email || "",
-          role: data.role || "Member",
-          position: data.position || "",
-          status: data.status || "active",
-          pid: data.pid || "",
-          memberId: data.memberId || "",
-          major: data.major || "",
-          graduationYear: data.graduationYear || null,
-          points: data.points || 0,
-          joinDate: data.joinDate || null,
-          signInMethod: data.signInMethod || null,
-          ...data,
-        } as FirestoreUser & { id: string };
-      });
-
-      setUsers(usersData);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      setError("Failed to load users. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Get current user info
-  const getCurrentUser = async () => {
-    if (!user) return;
-
-    try {
-      setRoleLoading(true);
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const currentUserData = {
-          id: user.uid,
-          ...userData,
-        } as FirestoreUser & { id: string };
-
-        setCurrentUser(currentUserData);
-        setCurrentUserRole(userData.role || "Member");
-      }
-    } catch (error) {
-      console.error("Error fetching current user:", error);
-    } finally {
-      setRoleLoading(false);
-    }
-  };
-
-  // Initialize data
+  // Initialize data with real-time listeners
   useEffect(() => {
     if (userLoading) return;
 
@@ -123,8 +65,95 @@ export const useUserManagement = () => {
       return;
     }
 
-    getCurrentUser();
-    fetchUsers();
+    setLoading(true);
+    setRoleLoading(true);
+
+    // Initialize unsubscribe functions for mutual cleanup in error handlers
+    let currentUserUnsubscribe: (() => void) | null = null;
+    let usersUnsubscribe: (() => void) | null = null;
+
+    // Real-time listener for current user
+    currentUserUnsubscribe = onSnapshot(
+      doc(db, "users", user.uid),
+      (userDoc) => {
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const currentUserData = {
+            id: user.uid,
+            ...userData,
+          } as FirestoreUser & { id: string };
+
+          setCurrentUser(currentUserData);
+          setCurrentUserRole(userData.role || "Member");
+        }
+        setRoleLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching current user:", error);
+        setError("Failed to load your user data. Please refresh the page.");
+        setRoleLoading(false);
+        setLoading(false);
+        // Clean up users listener if it exists
+        if (usersUnsubscribe) {
+          usersUnsubscribe();
+        }
+      },
+    );
+
+    // Real-time listener for users with proper filtering
+    usersUnsubscribe = onSnapshot(
+      query(
+        collection(db, "users"),
+        where("role", "in", [
+          "Member",
+          "General Officer",
+          "Executive Officer",
+          "Administrator",
+          "Sponsor",
+        ]),
+        orderBy("name", "asc"),
+        limit(100), // Limit to 100 users for performance
+      ),
+      (snapshot) => {
+        const usersData = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            name: data.name || "",
+            email: data.email || "",
+            role: data.role || "Member",
+            position: data.position || "",
+            status: data.status || "active",
+            pid: data.pid || "",
+            memberId: data.memberId || "",
+            major: data.major || "",
+            graduationYear: data.graduationYear || null,
+            points: data.points || 0,
+            joinDate: data.joinDate || null,
+            signInMethod: data.signInMethod || null,
+          } as FirestoreUser & { id: string };
+        });
+
+        setUsers(usersData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching users:", error);
+        setError("Failed to load users. Please try again.");
+        setLoading(false);
+        // Clean up current user listener if it exists
+        if (currentUserUnsubscribe) {
+          currentUserUnsubscribe();
+        }
+      },
+    );
+
+    // Cleanup listeners on unmount
+    return () => {
+      if (currentUserUnsubscribe) currentUserUnsubscribe();
+      if (usersUnsubscribe) usersUnsubscribe();
+    };
   }, [user, userLoading]);
 
   // Filter and sort users
@@ -221,7 +250,7 @@ export const useUserManagement = () => {
       }
 
       setSuccess("User updated successfully");
-      await fetchUsers();
+      // Data will auto-update via real-time listener
     } catch (error) {
       console.error("Error updating user:", error);
       setError(
@@ -264,7 +293,7 @@ export const useUserManagement = () => {
       }
 
       setSuccess("User deleted successfully");
-      await fetchUsers();
+      // Data will auto-update via real-time listener
     } catch (error) {
       console.error("Error deleting user:", error);
       setError("Failed to delete user. Please try again.");
@@ -354,7 +383,7 @@ export const useUserManagement = () => {
       }
 
       setSuccess("Member added successfully");
-      await fetchUsers();
+      // Data will auto-update via real-time listener
     } catch (error) {
       console.error("Error adding member:", error);
       setError("Failed to add member. Please try again.");
@@ -450,7 +479,6 @@ export const useUserManagement = () => {
     updateFilters,
     updateSort,
     clearMessages,
-    fetchUsers,
 
     // Permissions
     permissions,

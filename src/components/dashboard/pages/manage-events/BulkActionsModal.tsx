@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Check, Trash2, Download, Eye, EyeOff, CheckSquare, Square } from 'lucide-react';
-import { getFirestore, collection, doc, updateDoc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
-import { app } from '../../../../firebase/client';
+import { collection, doc, updateDoc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
+import { app, db } from '../../../../firebase/client';
 import { Button } from '../../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Badge } from '../../../ui/badge';
@@ -37,7 +37,7 @@ export default function BulkActionsModal({ events, users, onClose, onSuccess, on
     const [loading, setLoading] = useState(false);
     const [selectAll, setSelectAll] = useState(false);
 
-    const db = getFirestore(app);
+    // Use db from client
 
     const handleEventSelection = (eventId: string) => {
         setSelectedEvents(prev =>
@@ -291,8 +291,8 @@ export default function BulkActionsModal({ events, users, onClose, onSuccess, on
                                     <div
                                         key={event.id}
                                         className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors ${selectedEvents.includes(event.id)
-                                                ? 'border-blue-500 bg-blue-50'
-                                                : 'border-gray-200 hover:bg-gray-50'
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-gray-200 hover:bg-gray-50'
                                             }`}
                                         onClick={() => handleEventSelection(event.id)}
                                     >

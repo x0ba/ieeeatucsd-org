@@ -102,7 +102,7 @@ export default function DirectOnboardingTab({
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [googleSheetsUrl, setGoogleSheetsUrl] = useState("");
   const [tempGoogleSheetsUrl, setTempGoogleSheetsUrl] = useState("");
-  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [loadingSettings, setLoadingSettings] = useState(true); // Start true for better UX (data fetching begins immediately)
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);

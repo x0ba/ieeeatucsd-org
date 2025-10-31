@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, List, CalendarDays } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, List, CalendarDays, Search } from 'lucide-react';
 import { Card, CardHeader, CardBody, Button, Tabs, Tab, Switch } from '@heroui/react';
 import { auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -10,11 +10,11 @@ import FileManagementModal from './FileManagementModal';
 import BulkActionsModal from './BulkActionsModal';
 import GraphicsUploadModal from './GraphicsUploadModal';
 import { TableSkeleton } from '../../../ui/loading';
-import DashboardHeader from '../../shared/DashboardHeader';
 import { EventsTable } from './components/EventsTable';
 import { EventsPagination } from './components/EventsPagination';
 import { EventCalendarView } from './components/EventCalendarView';
 import DraftEventModal from './components/DraftEventModal';
+import { DraftViewModal } from './components/DraftViewModal';
 import { useEventManagement } from './hooks/useEventManagement';
 import { canCreateEvent, canManageGraphics } from './utils/permissionUtils';
 
@@ -48,6 +48,7 @@ export default function ManageEventsContent() {
     // Modal states
     const [showEventRequestModal, setShowEventRequestModal] = useState(false);
     const [showDraftEventModal, setShowDraftEventModal] = useState(false);
+    const [showDraftViewModal, setShowDraftViewModal] = useState(false);
     const [showEventViewModal, setShowEventViewModal] = useState(false);
     const [showFileManagementModal, setShowFileManagementModal] = useState(false);
     const [showBulkActionsModal, setShowBulkActionsModal] = useState(false);
@@ -56,6 +57,7 @@ export default function ManageEventsContent() {
     const [graphicsUploadRequest, setGraphicsUploadRequest] = useState<EventRequest | null>(null);
     const [editingRequest, setEditingRequest] = useState<EventRequest | null>(null);
     const [viewingRequest, setViewingRequest] = useState<EventRequest | null>(null);
+    const [viewingDraft, setViewingDraft] = useState<EventRequest | null>(null);
     const [managingFilesRequest, setManagingFilesRequest] = useState<EventRequest | null>(null);
 
     // Use custom hook for event management
@@ -74,13 +76,11 @@ export default function ManageEventsContent() {
         startIndex,
         endIndex,
         stats,
-        showDrafts,
         setError,
         setSuccess,
         setSearchTerm,
         setSortBy,
         setCurrentPage,
-        setShowDrafts,
         handleDeleteRequest,
         getUserName
     } = useEventManagement(user?.uid);
@@ -92,8 +92,16 @@ export default function ManageEventsContent() {
     };
 
     const handleViewRequest = (request: EventRequest) => {
-        setViewingRequest(request);
-        setShowEventViewModal(true);
+        // Check if this is a draft event
+        const isDraftEvent = request.isDraft === true || request.status === 'draft';
+
+        if (isDraftEvent) {
+            setViewingDraft(request);
+            setShowDraftViewModal(true);
+        } else {
+            setViewingRequest(request);
+            setShowEventViewModal(true);
+        }
     };
 
     const handleFileManagement = (request: EventRequest) => {
@@ -155,32 +163,60 @@ export default function ManageEventsContent() {
         setShowEventRequestModal(true);
     };
 
+    const handleConvertDraftFromView = () => {
+        if (viewingDraft) {
+            setShowDraftViewModal(false);
+            setEditingRequest(viewingDraft);
+            setShowEventRequestModal(true);
+            setViewingDraft(null); // Clear the viewingDraft state
+        }
+    };
 
+    const handleDeleteDraft = async () => {
+        if (viewingDraft) {
+            try {
+                await handleDeleteRequest(viewingDraft.id, viewingDraft.name);
+                setShowDraftViewModal(false);
+                setViewingDraft(null);
+            } catch (error) {
+                // handleDeleteRequest likely sets error state internally,
+                // but keep modal open so user can retry
+                console.error('Failed to delete draft:', error);
+            }
+        }
+    };
 
     return (
         <div className="flex-1 overflow-auto">
-            {/* Header */}
-            <DashboardHeader
-                title="Manage Events"
-                subtitle="Create, edit, and manage IEEE UCSD events"
-                searchPlaceholder="Search events..."
-                searchValue={searchTerm}
-                onSearchChange={handleSearch}
-            >
-                {searchTerm && (
-                    <button
-                        onClick={handleClearFilters}
-                        className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] text-sm md:text-base"
-                    >
-                        <span className="hidden sm:inline">Clear</span>
-                        <span className="sm:hidden">✕</span>
-                    </button>
-                )}
-            </DashboardHeader>
-
-            {/* Manage Events Content */}
             <main className="p-4 md:p-6">
-                <div className="grid grid-cols-1 gap-4 md:gap-6">
+                <div className="space-y-6">
+                    {/* Search Bar */}
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                        <div className="relative flex-1 max-w-md w-full">
+                            <label htmlFor="event-search" className="sr-only">
+                                Search events
+                            </label>
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                id="event-search"
+                                type="text"
+                                placeholder="Search events..."
+                                value={searchTerm}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                            />
+                        </div>
+                        {searchTerm && (
+                            <button
+                                onClick={handleClearFilters}
+                                className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] text-sm md:text-base"
+                            >
+                                <span className="hidden sm:inline">Clear</span>
+                                <span className="sm:hidden">✕</span>
+                            </button>
+                        )}
+                    </div>
+
                     {/* Stats Overview */}
                     <EventManagementStats stats={stats} loading={loading} />
 
@@ -305,6 +341,7 @@ export default function ManageEventsContent() {
                                         onCreateEvent={handleCreateEventFromCalendar}
                                         onViewEvent={handleViewRequest}
                                         onEditEvent={handleEditRequest}
+                                        onConvertDraftToFull={handleConvertDraftToFull}
                                         currentUserRole={currentUserRole}
                                     />
                                 </Tab>
@@ -312,104 +349,119 @@ export default function ManageEventsContent() {
                         </CardBody>
                     </Card>
 
-                </div>
-            </main >
-
-            {/* Draft Event Modal */}
-            <DraftEventModal
-                isOpen={showDraftEventModal}
-                onClose={() => {
-                    setShowDraftEventModal(false);
-                    setSelectedDate(null);
-                }}
-                preselectedDate={selectedDate}
-                onSuccess={() => {
-                    setShowDraftEventModal(false);
-                    setSelectedDate(null);
-                }}
-            />
-
-            {/* Event Request Modal */}
-            {
-                showEventRequestModal && (
-                    <EventRequestModal
+                    {/* Draft Event Modal */}
+                    <DraftEventModal
+                        isOpen={showDraftEventModal}
                         onClose={() => {
-                            setShowEventRequestModal(false);
-                            setEditingRequest(null);
+                            setShowDraftEventModal(false);
                             setSelectedDate(null);
                         }}
-                        editingRequest={editingRequest}
                         preselectedDate={selectedDate}
                         onSuccess={() => {
-                            // Real-time updates will handle the refresh automatically
-                            setSuccess(editingRequest ? 'Event request updated successfully' : 'Event request created successfully');
+                            setShowDraftEventModal(false);
                             setSelectedDate(null);
                         }}
                     />
-                )
-            }
 
-            {/* Event View Modal */}
-            {
-                showEventViewModal && (
-                    <EventViewModal
-                        request={viewingRequest}
-                        users={users}
-                        onClose={() => {
-                            setShowEventViewModal(false);
-                            setViewingRequest(null);
-                        }}
-                        onSuccess={() => {
-                            // The real-time listener will automatically update the data
-                            // No need to manually refresh since we're using onSnapshot
-                        }}
-                    />
-                )
-            }
+                    {/* Event Request Modal */}
+                    {showEventRequestModal && (
+                        <EventRequestModal
+                            onClose={() => {
+                                setShowEventRequestModal(false);
+                                setEditingRequest(null);
+                                setSelectedDate(null);
+                            }}
+                            editingRequest={editingRequest}
+                            preselectedDate={selectedDate}
+                            onSuccess={() => {
+                                // Real-time updates will handle the refresh automatically
+                                setSuccess(editingRequest ? 'Event request updated successfully' : 'Event request created successfully');
+                                setSelectedDate(null);
+                            }}
+                        />
+                    )
+                    }
 
-            {/* File Management Modal */}
-            {
-                showFileManagementModal && (
-                    <FileManagementModal
-                        request={managingFilesRequest}
-                        onClose={() => {
-                            setShowFileManagementModal(false);
-                            setManagingFilesRequest(null);
-                        }}
-                    />
-                )
-            }
+                    {/* Draft View Modal */}
+                    {
+                        showDraftViewModal && viewingDraft && (
+                            <DraftViewModal
+                                isOpen={showDraftViewModal}
+                                onClose={() => {
+                                    setShowDraftViewModal(false);
+                                    setViewingDraft(null);
+                                }}
+                                draftEvent={viewingDraft}
+                                onConvertToFull={handleConvertDraftFromView}
+                                onDelete={handleDeleteDraft}
+                                userName={getUserName(viewingDraft.requestedUser)}
+                            />
+                        )
+                    }
 
-            {/* Bulk Actions Modal */}
-            {
-                showBulkActionsModal && (
-                    <BulkActionsModal
-                        events={sortedEventRequests}
-                        users={users}
-                        onClose={() => setShowBulkActionsModal(false)}
-                        onSuccess={(message: string) => setSuccess(message)}
-                        onError={(message: string) => setError(message)}
-                    />
-                )
-            }
+                    {/* Event View Modal */}
+                    {
+                        showEventViewModal && (
+                            <EventViewModal
+                                request={viewingRequest}
+                                users={users}
+                                onClose={() => {
+                                    setShowEventViewModal(false);
+                                    setViewingRequest(null);
+                                }}
+                                onSuccess={() => {
+                                    // The real-time listener will automatically update the data
+                                    // No need to manually refresh since we're using onSnapshot
+                                }}
+                            />
+                        )
+                    }
 
-            {/* Graphics Upload Modal */}
-            {
-                showGraphicsUploadModal && graphicsUploadRequest && (
-                    <GraphicsUploadModal
-                        request={graphicsUploadRequest}
-                        onClose={() => {
-                            setShowGraphicsUploadModal(false);
-                            setGraphicsUploadRequest(null);
-                        }}
-                        onSuccess={() => {
-                            setSuccess('Graphics files uploaded and marked as completed');
-                            // Real-time listener will automatically update the data
-                        }}
-                    />
-                )
-            }
+                    {/* File Management Modal */}
+                    {
+                        showFileManagementModal && (
+                            <FileManagementModal
+                                request={managingFilesRequest}
+                                onClose={() => {
+                                    setShowFileManagementModal(false);
+                                    setManagingFilesRequest(null);
+                                }}
+                            />
+                        )
+                    }
 
-        </div >
+                    {/* Bulk Actions Modal */}
+                    {
+                        showBulkActionsModal && (
+                            <BulkActionsModal
+                                events={sortedEventRequests}
+                                users={users}
+                                onClose={() => setShowBulkActionsModal(false)}
+                                onSuccess={(message: string) => setSuccess(message)}
+                                onError={(message: string) => setError(message)}
+                            />
+                        )
+                    }
+
+                    {/* Graphics Upload Modal */}
+                    {
+                        showGraphicsUploadModal && graphicsUploadRequest && (
+                            <GraphicsUploadModal
+                                request={graphicsUploadRequest}
+                                onClose={() => {
+                                    setShowGraphicsUploadModal(false);
+                                    setGraphicsUploadRequest(null);
+                                }}
+                                onSuccess={() => {
+                                    setSuccess('Graphics files uploaded and marked as completed');
+                                    // Real-time listener will automatically update the data
+                                }}
+                            />
+                        )
+                    }
+
+                </div>
+            </main>
+        </div>
     );
 }

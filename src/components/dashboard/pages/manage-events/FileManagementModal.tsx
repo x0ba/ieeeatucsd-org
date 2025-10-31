@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, File, Trash2, Download, Eye, Plus, Image, FileText, FolderOpen, Lock, Globe, Receipt, Calendar, Archive } from 'lucide-react';
-import { getFirestore, collection, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
 import { getStorage, ref, deleteObject } from 'firebase/storage';
-import { app } from '../../../../firebase/client';
+import { app, db } from '../../../../firebase/client';
 import { Button } from '../../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Badge } from '../../../ui/badge';
@@ -37,7 +37,7 @@ interface FileItem {
 
 export default function FileManagementModal({ request, onClose }: FileManagementModalProps) {
     const [files, setFiles] = useState<FileItem[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // Start true for better UX (no caching mechanism exists)
     const [uploading, setUploading] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
     const [uploadTarget, setUploadTarget] = useState<'public' | 'private'>('private');
@@ -46,14 +46,16 @@ export default function FileManagementModal({ request, onClose }: FileManagement
     const [success, setSuccess] = useState<string | null>(null);
     const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
 
-    const db = getFirestore(app);
+    // Use db from client
     const storage = getStorage(app);
 
-    if (!request) return null;
-
     useEffect(() => {
+        if (!request) return;
         fetchFiles();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [request]);
+
+    if (!request) return null;
 
     const fetchFiles = async () => {
         try {
@@ -588,4 +590,4 @@ export default function FileManagementModal({ request, onClose }: FileManagement
             )}
         </>
     );
-} 
+}

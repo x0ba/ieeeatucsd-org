@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import {
-  getFirestore,
   collection,
   addDoc,
   doc,
@@ -10,7 +9,7 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import { app } from "../../../../firebase/client";
+import { app, db } from "../../../../firebase/client";
 import { auth } from "../../../../firebase/client";
 import { EventAuditService } from "../../shared/services/eventAuditService";
 import { EmailClient } from "../../../../scripts/email/EmailClient";
@@ -141,7 +140,7 @@ export default function EventRequestModal({
     setFormData((prev) => ({ ...prev, invoices }));
   }, [invoices]);
 
-  const db = getFirestore(app);
+  // Use db from client
 
   // Populate form data when editing or with preselected date
   useEffect(() => {
@@ -250,7 +249,7 @@ export default function EventRequestModal({
         existingInvoiceFile: editingRequest.invoiceFile || "",
       });
 
-      // Initialize invoices in the hook
+      // Initialize invoices in hook
       setInvoices(invoicesData);
     } else if (preselectedDate && !editingRequest) {
       // Set the start date from the calendar selection
@@ -509,7 +508,9 @@ export default function EventRequestModal({
           processedInvoices.length > 0 ? processedInvoices[0].vendor : "",
         invoiceFile:
           processedInvoices.length > 0 ? processedInvoices[0].invoiceFile : "",
-        status: editingRequest ? editingRequest.status : "submitted",
+        // When converting a draft to full submission, change status to "submitted" and clear isDraft flag
+        status: editingRequest?.isDraft ? "submitted" : (editingRequest ? editingRequest.status : "submitted"),
+        isDraft: false, // Always set to false when submitting through full event form
         requestedUser: editingRequest
           ? editingRequest.requestedUser
           : auth.currentUser?.uid || "",
@@ -529,6 +530,20 @@ export default function EventRequestModal({
           const userName = await EventAuditService.getUserName(
             auth.currentUser?.uid || "",
           );
+
+          // If converting from draft to submitted, log as status change
+          if (editingRequest.isDraft && eventRequestData.status === "submitted") {
+            await EventAuditService.logStatusChange(
+              editingRequest.id,
+              auth.currentUser?.uid || "",
+              editingRequest.status || "unknown",
+              "submitted",
+              undefined,
+              userName,
+              { eventName: formData.name },
+            );
+          }
+
           const fieldMappings = {
             name: "Event Name",
             location: "Location",
@@ -560,7 +575,10 @@ export default function EventRequestModal({
           console.error("Error logging event update:", error);
         }
 
-        toast.success("Event request updated successfully!");
+        const successMessage = editingRequest.isDraft
+          ? "Draft event converted to full submission successfully!"
+          : "Event request updated successfully!";
+        toast.success(successMessage);
       } else {
         // Create new event request
         eventRequestRef = await addDoc(
@@ -606,7 +624,7 @@ export default function EventRequestModal({
 
               // Update invoice files if any
               if (processedInvoices.some((inv) => inv.invoiceFiles?.length)) {
-                // If needed, update invoice URLs on the newly created doc here
+                // If needed, update invoice URLs on newly created doc here
                 // Currently invoiceFiles are already in eventRequestData via processedInvoices
               }
 
@@ -681,8 +699,9 @@ export default function EventRequestModal({
         await addDoc(collection(db, "events"), eventData);
       }
 
-      // Send email notification for new submissions
-      if (!editingRequest) {
+      // Send email notification for new submissions or draft conversions
+      const wasDraftConversion = editingRequest?.isDraft && eventRequestData.status === "submitted";
+      if (!editingRequest || wasDraftConversion) {
         try {
           await EmailClient.notifyFirebaseEventRequestSubmission(
             (eventRequestRef as any).id,
@@ -866,7 +885,7 @@ export default function EventRequestModal({
           handleFileChange("otherLogoFiles", fileList);
           toast.success(`Image added to Other Logo Files: ${file.name}`);
         } else {
-          toast.info(
+          toast(
             `Paste functionality available when "Other" options are selected`,
           );
         }
@@ -878,10 +897,10 @@ export default function EventRequestModal({
             `Image added to Room Booking Confirmation: ${file.name}`,
           );
         } else {
-          toast.info(`Enable room booking to paste files`);
+          toast(`Enable room booking to paste files`);
         }
       } else if (stepTitle === "Funding Details") {
-        // Add to the active invoice's files
+        // Add to active invoice's files
         if (invoices.length > 0) {
           const activeInvoice = invoices.find(
             (inv) => inv.id === activeInvoiceTab,
@@ -899,13 +918,13 @@ export default function EventRequestModal({
             });
             toast.success(`Image added to invoice: ${file.name}`);
           } else {
-            toast.info(`Select an invoice to paste files`);
+            toast(`Select an invoice to paste files`);
           }
         } else {
-          toast.info(`Add an invoice first to paste files`);
+          toast(`Add an invoice first to paste files`);
         }
       } else {
-        toast.info(
+        toast(
           `Image paste is available in Marketing, Logistics, and Funding steps`,
         );
       }

@@ -11,6 +11,7 @@ import {
   updateDoc,
   doc,
   Timestamp,
+  onSnapshot,
 } from "firebase/firestore";
 import type {
   OfficerInvitation,
@@ -38,47 +39,50 @@ export function useOnboarding() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Fetch invitations
-  const fetchInvitations = async () => {
+  // Real-time listener for invitations
+  useEffect(() => {
     if (!user) return;
 
-    try {
-      setLoading(true);
-      const invitesRef = collection(db, "officerInvitations");
-      const q = query(invitesRef, orderBy("invitedAt", "desc"));
-      const snapshot = await getDocs(q);
+    setLoading(true);
 
-      const invitationsList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as (OfficerInvitation & { id: string })[];
+    const invitesRef = collection(db, "officerInvitations");
+    const q = query(invitesRef, orderBy("invitedAt", "desc"));
 
-      setInvitations(invitationsList);
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const invitationsList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as (OfficerInvitation & { id: string })[];
 
-      // Calculate stats
-      const stats: OnboardingStats = {
-        totalInvitations: invitationsList.length,
-        pendingInvitations: invitationsList.filter(
-          (i) => i.status === "pending",
-        ).length,
-        acceptedInvitations: invitationsList.filter(
-          (i) => i.status === "accepted",
-        ).length,
-        declinedInvitations: invitationsList.filter(
-          (i) => i.status === "declined",
-        ).length,
-      };
-      setStats(stats);
-    } catch (err) {
-      console.error("Error fetching invitations:", err);
-      setError("Failed to fetch invitations");
-    } finally {
-      setLoading(false);
-    }
-  };
+        setInvitations(invitationsList);
 
-  useEffect(() => {
-    fetchInvitations();
+        // Calculate stats
+        const newStats: OnboardingStats = {
+          totalInvitations: invitationsList.length,
+          pendingInvitations: invitationsList.filter(
+            (i) => i.status === "pending",
+          ).length,
+          acceptedInvitations: invitationsList.filter(
+            (i) => i.status === "accepted",
+          ).length,
+          declinedInvitations: invitationsList.filter(
+            (i) => i.status === "declined",
+          ).length,
+        };
+        setStats(newStats);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Error fetching invitations:", err);
+        setError("Failed to fetch invitations");
+        setLoading(false);
+      },
+    );
+
+    // Cleanup listener on unmount
+    return () => unsubscribe();
   }, [user]);
 
   // Determine Google Group based on role

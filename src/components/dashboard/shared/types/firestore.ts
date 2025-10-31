@@ -269,6 +269,8 @@ export interface Receipt {
   notes?: string;
   subtotal: number;
   tax?: number;
+  tip?: number;
+  shipping?: number;
   total: number;
 }
 

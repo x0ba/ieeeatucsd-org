@@ -10,7 +10,8 @@ import {
   Textarea,
 } from '@heroui/react';
 import { Calendar, MapPin, FileText } from 'lucide-react';
-import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { db } from '../../../../../firebase/client';
 import { getAuth } from 'firebase/auth';
 import toast from 'react-hot-toast';
 import type { DraftEventModalProps, DraftEventFormData } from '../types/EventRequestTypes';
@@ -22,7 +23,7 @@ const DraftEventModal: React.FC<DraftEventModalProps> = ({
   onSuccess,
 }) => {
   const auth = getAuth();
-  const db = getFirestore();
+  // Use db from client import
 
   const [formData, setFormData] = useState<DraftEventFormData>({
     name: '',

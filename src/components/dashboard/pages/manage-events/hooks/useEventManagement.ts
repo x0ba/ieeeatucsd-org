@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  getFirestore,
   collection,
   getDocs,
   query,
@@ -12,7 +11,7 @@ import {
   onSnapshot,
   getDoc,
 } from "firebase/firestore";
-import { app } from "../../../../../firebase/client";
+import { db } from "../../../../../firebase/client";
 import { PublicProfileService } from "../../../shared/services/publicProfile";
 import { EmailClient } from "../../../../../scripts/email/EmailClient";
 import type { UserRole } from "../../../shared/types/firestore";
@@ -42,17 +41,16 @@ export function useEventManagement(userId: string | undefined) {
   const [users, setUsers] = useState<
     Record<string, { name: string; email: string }>
   >({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start false to show cached data immediately
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>("Member");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<string>("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [showDrafts, setShowDrafts] = useState(true);
   const eventsPerPage = 10;
 
-  const db = getFirestore(app);
+  // Use db from client
 
   // Fetch users
   const fetchUsers = async () => {
@@ -323,17 +321,14 @@ export function useEventManagement(userId: string | undefined) {
               .toLowerCase()
               .includes(searchTerm.toLowerCase()));
 
-        // Filter out drafts if showDrafts is false
-        const matchesDraftFilter =
-          showDrafts || (!request.isDraft && request.status !== "draft");
-
-        return matchesSearch && matchesDraftFilter;
+        // Show all events including drafts
+        return matchesSearch;
       } catch (error) {
         console.error("Error filtering event request:", error, request);
         return true;
       }
     });
-  }, [eventRequests, searchTerm, showDrafts, users]);
+  }, [eventRequests, searchTerm, users]);
 
   const sortedEventRequests = useMemo(() => {
     return [...filteredEventRequests].sort((a, b) => {
@@ -420,13 +415,11 @@ export function useEventManagement(userId: string | undefined) {
     endIndex,
     eventsPerPage,
     stats,
-    showDrafts,
     setError,
     setSuccess,
     setSearchTerm,
     setSortBy,
     setCurrentPage,
-    setShowDrafts,
     handleDeleteRequest,
     handleUpdateEventStatus,
     getUserName,

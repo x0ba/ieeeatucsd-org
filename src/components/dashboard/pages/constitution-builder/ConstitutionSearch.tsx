@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Search, X, FileText, Type } from 'lucide-react';
-import type { ConstitutionSection } from '../../shar../../shared/types/firestore';
+import type { ConstitutionSection } from '../../shared/types/firestore';
 import { useConstitutionSearch, type SearchResult } from './hooks/useConstitutionSearch';
 
 interface ConstitutionSearchProps {

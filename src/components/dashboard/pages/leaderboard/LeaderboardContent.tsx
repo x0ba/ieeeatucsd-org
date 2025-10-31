@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Medal, Award, Crown, TrendingUp, Users, Star } from 'lucide-react';
+import { Trophy, Medal, Award, Crown, TrendingUp, Users, Star, Search } from 'lucide-react';
 import { Pagination } from '@heroui/react';
-import { collection, query, orderBy, onSnapshot, limit, getCountFromServer } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getCountFromServer, limit } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
-import DashboardHeader from '../../shared/DashboardHeader';
 import { PublicProfileService, type PublicProfile } from '../../shared/services/publicProfile';
 import { LeaderboardTableSkeleton, MetricCardSkeleton, CardSkeleton } from '../../../ui/loading';
 
@@ -24,7 +23,7 @@ export default function LeaderboardContent() {
     const [user] = useAuthState(auth);
     const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
     const [currentUserRank, setCurrentUserRank] = useState<number>(0);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // Start true for better UX on first visit
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5); // Show 5 users per page
@@ -32,11 +31,15 @@ export default function LeaderboardContent() {
 
     useEffect(() => {
         // Set up real-time listener for public profiles leaderboard
+        // SCALABILITY: Limit to top 1000 users to prevent unbounded query issues
+        // For organizations with >1000 members, consider implementing pagination or virtual scrolling
         try {
-            // Query for all users (no limit for pagination)
+            const LEADERBOARD_LIMIT = 1000; // Reasonable limit for most organizations
+
             const publicProfilesQuery = query(
                 collection(db, 'public_profiles'),
-                orderBy('points', 'desc')
+                orderBy('points', 'desc'),
+                limit(LEADERBOARD_LIMIT) // Add limit to prevent unbounded query
             );
 
             // Separate query to get total count of all users
@@ -70,10 +73,18 @@ export default function LeaderboardContent() {
 
                 setLeaderboardData(validUsers);
 
-                // Find current user's rank
+                // Find current user's rank and calculate accurate ranking beyond top 1000
                 if (user) {
-                    const currentUser = validUsers.find(u => u.id === user.uid);
-                    setCurrentUserRank(currentUser?.rank || 0);
+                    const currentUserIndex = validUsers.findIndex(u => u.id === user.uid);
+                    if (currentUserIndex !== -1) {
+                        // User is in top 1000, use their assigned rank
+                        setCurrentUserRank(validUsers[currentUserIndex].rank);
+                    } else {
+                        // User is beyond top 1000, need to calculate their rank
+                        // This would require a separate query to count users with higher points
+                        // For now, show "1000+" to indicate they're beyond the displayed leaderboard
+                        setCurrentUserRank(-1); // Special value to indicate beyond top 1000
+                    }
                 }
 
                 setLoading(false);
@@ -171,16 +182,21 @@ export default function LeaderboardContent() {
 
     return (
         <div className="flex-1 overflow-auto">
-            <DashboardHeader
-                title="Leaderboard"
-                subtitle="See how you rank among IEEE UCSD members"
-                searchPlaceholder="Search members..."
-                searchValue={searchTerm}
-                onSearchChange={setSearchTerm}
-            />
-
             <main className="p-4 md:p-6">
                 <div className="grid grid-cols-1 gap-4 md:gap-6">
+                    {/* Search Bar */}
+                    <div className="mb-4">
+                        <div className="relative max-w-md">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder="Search members..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                            />
+                        </div>
+                    </div>
                     {/* Stats Overview */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                         {loading ? (
@@ -232,10 +248,15 @@ export default function LeaderboardContent() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium text-gray-600">Your Rank</p>
-                                            <p className="text-2xl font-bold text-gray-900">#{currentUserRank || 'N/A'}</p>
+                                            <p
+                                                className="text-2xl font-bold text-gray-900"
+                                                aria-label={`Your current leaderboard ranking is ${currentUserRank === -1 ? 'beyond top 1000' : currentUserRank === 0 ? 'not ranked' : '#' + currentUserRank}`}
+                                            >
+                                                {currentUserRank === -1 ? '1000+' : currentUserRank ? '#' + currentUserRank : 'N/A'}
+                                            </p>
                                         </div>
                                         <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                            <Trophy className="w-6 h-6 text-purple-600" />
+                                            <Trophy className="w-6 h-6 text-purple-600" aria-label="Trophy icon representing your ranking" />
                                         </div>
                                     </div>
                                 </div>
@@ -422,4 +443,4 @@ export default function LeaderboardContent() {
             </main>
         </div>
     );
-} 
+}

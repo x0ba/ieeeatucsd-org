@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
-import { getFirestore, doc, updateDoc } from 'firebase/firestore';
-import { app, auth } from '../../../../firebase/client';
+import { doc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '../../../../firebase/client';
 import { EventAuditService } from '../../shared/services/eventAuditService';
 import type { EventFileChange } from '../../shared/types/firestore';
 import EnhancedFileViewer from './components/EnhancedFileViewer';
@@ -22,7 +22,7 @@ export default function GraphicsUploadModal({ request, onClose, onSuccess }: Gra
     const [prRequirementsConfirmed, setPrRequirementsConfirmed] = useState(false);
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
-    const db = getFirestore(app);
+    // Use db from client
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -90,6 +90,25 @@ export default function GraphicsUploadModal({ request, onClose, onSuccess }: Gra
                 );
             } catch (auditError) {
                 console.error('Failed to log graphics update:', auditError);
+            }
+
+            // Send graphics upload email notification
+            try {
+                await fetch('/api/email/send-firebase-event-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        type: 'graphics_upload',
+                        eventRequestId: request.id,
+                        uploadedByUserId: auth.currentUser?.uid,
+                        filesUploaded: files.length,
+                    }),
+                });
+            } catch (emailError) {
+                console.error('Failed to send graphics upload notification email:', emailError);
+                // Don't fail the upload if email fails
             }
 
             onSuccess();
