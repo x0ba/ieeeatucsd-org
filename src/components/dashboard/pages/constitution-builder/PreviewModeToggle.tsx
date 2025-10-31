@@ -15,7 +15,7 @@ const PreviewModeToggle: React.FC<PreviewModeToggleProps> = ({
     return (
         <div className={`flex items-center gap-2 ${className}`}>
             <span className="text-sm text-gray-600 font-medium">Preview Mode:</span>
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-gray-100 rounded-xl p-1">
                 <button
                     onClick={() => onToggle(false)}
                     className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${

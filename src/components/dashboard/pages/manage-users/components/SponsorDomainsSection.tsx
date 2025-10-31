@@ -76,7 +76,7 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
     }
 
     return (
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white rounded-2xl shadow">
             <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -92,7 +92,7 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
                     </div>
                     <button
                         onClick={handleAddClick}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700"
                     >
                         <Plus className="w-4 h-4" />
                         Add Domain
@@ -102,7 +102,7 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
 
             {/* Error/Success Messages */}
             {error && (
-                <div className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
                     <div className="flex">
                         <div className="flex-shrink-0">
                             <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -128,7 +128,7 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
             )}
 
             {success && (
-                <div className="mx-6 mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="mx-6 mt-4 bg-green-50 border border-green-200 rounded-xl p-4">
                     <div className="flex">
                         <div className="flex-shrink-0">
                             <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">

@@ -23,7 +23,7 @@ export default function ResumeDatabaseWrapper() {
     if (userRole && !SponsorPermissionService.hasSponsorAccess(userRole)) {
         return (
             <div className="flex-1 overflow-auto p-6">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6">
                     <div className="flex items-center">
                         <AlertCircle className="h-8 w-8 text-red-600" />
                         <div className="ml-4">

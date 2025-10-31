@@ -304,7 +304,7 @@ export default function LinkModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header - Fixed */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <h3 className="text-lg font-semibold text-gray-900">
@@ -312,7 +312,7 @@ export default function LinkModal({
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors rounded-xl hover:bg-gray-100 p-1"
             disabled={loading || uploadingIcon}
           >
             <X className="w-6 h-6" />
@@ -335,7 +335,7 @@ export default function LinkModal({
                     setFormData({ ...formData, url: e.target.value })
                   }
                   placeholder="https://example.com"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.url ? "border-red-500" : "border-gray-300"
+                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.url ? "border-red-500" : "border-gray-300"
                     }`}
                   disabled={loading || uploadingIcon}
                 />
@@ -367,7 +367,7 @@ export default function LinkModal({
                   setFormData({ ...formData, title: e.target.value })
                 }
                 placeholder="Enter link title"
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.title ? "border-red-500" : "border-gray-300"
+                className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.title ? "border-red-500" : "border-gray-300"
                   }`}
                 disabled={loading || uploadingIcon}
               />
@@ -383,7 +383,7 @@ export default function LinkModal({
               </label>
               <div className="relative">
                 <div className="flex">
-                  <span className="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm rounded-l-lg">
+                  <span className="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm rounded-l-xl">
                     ieeeatucsd.org/
                   </span>
                   <input
@@ -393,7 +393,7 @@ export default function LinkModal({
                       setFormData({ ...formData, shortUrl: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })
                     }
                     placeholder="meeting, zoom-link, etc."
-                    className={`flex-1 px-3 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.shortUrl ? "border-red-500" : "border-gray-300"
+                    className={`flex-1 px-3 py-2 border rounded-r-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.shortUrl ? "border-red-500" : "border-gray-300"
                       }`}
                     disabled={loading || uploadingIcon}
                   />
@@ -426,7 +426,7 @@ export default function LinkModal({
                       setFormData({ ...formData, category: value });
                     }
                   }}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? "border-red-500" : "border-gray-300"
+                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? "border-red-500" : "border-gray-300"
                     }`}
                   disabled={loading || uploadingIcon}
                 >
@@ -457,7 +457,7 @@ export default function LinkModal({
                       value={customCategoryInput}
                       onChange={(e) => setCustomCategoryInput(e.target.value)}
                       placeholder="Enter custom category name"
-                      className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? "border-red-500" : "border-gray-300"
+                      className={`flex-1 px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? "border-red-500" : "border-gray-300"
                         }`}
                       disabled={loading || uploadingIcon}
                       autoFocus
@@ -469,7 +469,7 @@ export default function LinkModal({
                         setCustomCategoryInput("");
                         setFormData({ ...formData, category: "General" });
                       }}
-                      className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
                       disabled={loading || uploadingIcon}
                     >
                       Cancel
@@ -494,7 +494,7 @@ export default function LinkModal({
                 }
                 placeholder="Brief description of the link"
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 disabled={loading || uploadingIcon}
               />
             </div>
@@ -512,7 +512,7 @@ export default function LinkModal({
                   onChange={(e) =>
                     setFormData({ ...formData, publishDate: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   disabled={loading || uploadingIcon}
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -531,7 +531,7 @@ export default function LinkModal({
                   onChange={(e) =>
                     setFormData({ ...formData, expireDate: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   disabled={loading || uploadingIcon}
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -551,12 +551,12 @@ export default function LinkModal({
                   <img
                     src={iconPreview}
                     alt="Icon preview"
-                    className="w-20 h-20 rounded-lg object-cover border border-gray-300"
+                    className="w-20 h-20 rounded-xl object-cover border border-gray-300"
                   />
                   <button
                     type="button"
                     onClick={handleRemoveIcon}
-                    className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                    className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-2"
                     disabled={loading || uploadingIcon}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -564,7 +564,7 @@ export default function LinkModal({
                   </button>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-gray-400 transition-colors">
                   <input
                     type="file"
                     accept="image/*"
@@ -594,7 +594,7 @@ export default function LinkModal({
 
             {/* Submit Error */}
             {errors.submit && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                 <p className="text-sm text-red-600">{errors.submit}</p>
               </div>
             )}
@@ -606,7 +606,7 @@ export default function LinkModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
             disabled={loading || uploadingIcon}
           >
             Cancel
@@ -615,7 +615,7 @@ export default function LinkModal({
             type="button"
             onClick={handleSubmit}
             disabled={loading || uploadingIcon}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {uploadingIcon
               ? "Uploading..."

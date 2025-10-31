@@ -696,7 +696,7 @@ export default function ReimbursementModal({
                                                                     <h6 className="text-sm font-semibold text-gray-700 mb-3">Line Items</h6>
                                                                     <div className="space-y-2">
                                                                         {receipt.lineItems.map((item: any, itemIndex: number) => (
-                                                                            <div key={item.id || itemIndex} className="flex justify-between items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                                                            <div key={item.id || itemIndex} className="flex justify-between items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors">
                                                                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                                                                     <p className="text-sm font-medium text-gray-900 truncate">{item.description}</p>
                                                                                     <Chip size="sm" variant="flat" color="default" className="flex-shrink-0">
@@ -941,7 +941,7 @@ export default function ReimbursementModal({
                                                                         Payment Confirmation Photo (Optional)
                                                                     </label>
                                                                     <div
-                                                                        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${isDragging
+                                                                        className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${isDragging
                                                                             ? 'border-primary bg-primary-50 scale-[1.02]'
                                                                             : 'border-gray-300 hover:border-primary hover:bg-gray-50'
                                                                             }`}
@@ -967,7 +967,7 @@ export default function ReimbursementModal({
                                                                                 <img
                                                                                     src={previewUrl}
                                                                                     alt="Preview"
-                                                                                    className="max-h-40 mx-auto rounded-lg shadow-sm"
+                                                                                    className="max-h-40 mx-auto rounded-2xl shadow-sm"
                                                                                 />
                                                                                 <p className="text-sm text-gray-600 font-medium">
                                                                                     {paymentInfo.photoAttachment?.name}

@@ -123,7 +123,7 @@ export default function GraphicsUploadModal({ request, onClose, onSuccess }: Gra
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900">
                         Upload Graphics Files
@@ -260,7 +260,7 @@ export default function GraphicsUploadModal({ request, onClose, onSuccess }: Gra
                             multiple
                             accept=".png,.jpg,.jpeg,.svg,.pdf,.ai,.psd"
                             onChange={handleFileChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                         />
                         <p className="text-xs text-gray-500 mt-1">
                             Accepted formats: PNG, JPG, SVG, PDF, AI, PSD
@@ -324,7 +324,7 @@ export default function GraphicsUploadModal({ request, onClose, onSuccess }: Gra
                         <button
                             onClick={handleSubmit}
                             disabled={uploading || files.length === 0 || !prRequirementsConfirmed}
-                            className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                            className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                         >
                             {uploading ? (
                                 <>
@@ -341,7 +341,7 @@ export default function GraphicsUploadModal({ request, onClose, onSuccess }: Gra
                         <button
                             onClick={onClose}
                             disabled={uploading}
-                            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             Cancel
                         </button>

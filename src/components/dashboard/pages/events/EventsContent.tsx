@@ -329,7 +329,7 @@ export default function EventsContent() {
                             placeholder="Search events..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
                         />
                     </div>
                     {/* Real-time sync - no manual refresh needed */}
@@ -341,7 +341,7 @@ export default function EventsContent() {
                 <div className="grid grid-cols-1 gap-4 md:gap-6">
                     {/* Error Message */}
                     {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                             <p className="text-sm md:text-base text-red-700">{error}</p>
                         </div>
                     )}
@@ -358,7 +358,7 @@ export default function EventsContent() {
                             </>
                         ) : (
                             <>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-gray-600">Last Event Attended</p>
@@ -369,7 +369,7 @@ export default function EventsContent() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-gray-600">Total Points Earned</p>
@@ -380,7 +380,7 @@ export default function EventsContent() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 sm:col-span-2 lg:col-span-1">
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6 sm:col-span-2 lg:col-span-1">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-gray-600">Total Events Attended</p>
@@ -396,7 +396,7 @@ export default function EventsContent() {
                     </div>
 
                     {/* Quick Check-in Section */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4 md:p-6 mb-4 md:mb-6">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-4 md:p-6 mb-4 md:mb-6">
                         <div className="flex items-center justify-between mb-4">
                             <div>
                                 <h2 className="text-base md:text-lg font-semibold text-gray-900 flex items-center">
@@ -476,7 +476,7 @@ export default function EventsContent() {
                                                     <button
                                                         onClick={() => handleCheckIn(event)}
                                                         disabled={checkingIn === event.id}
-                                                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                                                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                                                     >
                                                         {checkingIn === event.id ? (
                                                             <>
@@ -510,7 +510,7 @@ export default function EventsContent() {
                     ) : (
                         <>
                             {/* Upcoming Events */}
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Events ({upcomingEvents.length})</h2>
                                 {upcomingEvents.length === 0 ? (
                                     <p className="text-gray-500 text-center py-8">No upcoming events found</p>
@@ -519,13 +519,13 @@ export default function EventsContent() {
                                         {upcomingEvents.map((event) => (
                                             <div
                                                 key={event.id}
-                                                className="border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                                                className="border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
                                                 onClick={() => setSelectedEvent(event)}
                                             >
                                                 {/* Mobile Layout */}
                                                 <div className="block md:hidden p-4">
                                                     <div className="flex items-start space-x-3 mb-3">
-                                                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
                                                             <Calendar className="w-5 h-5 text-blue-600" />
                                                         </div>
                                                         <div className="min-w-0 flex-1">
@@ -573,7 +573,7 @@ export default function EventsContent() {
                                                                         handleCheckIn(event);
                                                                     }}
                                                                     disabled={checkingIn === event.id}
-                                                                    className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm min-h-[44px]"
+                                                                    className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm min-h-[44px]"
                                                                 >
                                                                     <UserCheck className="w-4 h-4" />
                                                                     <span className="break-words">{checkingIn === event.id ? 'Checking In...' : 'Check In'}</span>
@@ -586,7 +586,7 @@ export default function EventsContent() {
                                                 {/* Desktop Layout */}
                                                 <div className="hidden md:flex items-center justify-between p-4">
                                                     <div className="flex items-center space-x-4">
-                                                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                                                             <Calendar className="w-6 h-6 text-blue-600" />
                                                         </div>
                                                         <div>
@@ -631,7 +631,7 @@ export default function EventsContent() {
                                                                     handleCheckIn(event);
                                                                 }}
                                                                 disabled={checkingIn === event.id}
-                                                                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                                                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
                                                             >
                                                                 <UserCheck className="w-4 h-4" />
                                                                 <span>{checkingIn === event.id ? 'Checking In...' : 'Check In'}</span>
@@ -646,7 +646,7 @@ export default function EventsContent() {
                             </div>
 
                             {/* Past Events */}
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Past Events ({pastEvents.length})</h2>
                                 {pastEvents.length === 0 ? (
                                     <p className="text-gray-500 text-center py-8">No past events found</p>
@@ -655,13 +655,13 @@ export default function EventsContent() {
                                         {pastEvents.map((event) => (
                                             <div
                                                 key={event.id}
-                                                className="border border-gray-200 rounded-lg opacity-75 cursor-pointer hover:opacity-100 transition-opacity"
+                                                className="border border-gray-200 rounded-xl opacity-75 cursor-pointer hover:opacity-100 transition-opacity"
                                                 onClick={() => setSelectedEvent(event)}
                                             >
                                                 {/* Mobile Layout */}
                                                 <div className="block md:hidden p-4">
                                                     <div className="flex items-start space-x-3 mb-3">
-                                                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                        <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
                                                             <Calendar className="w-5 h-5 text-gray-400" />
                                                         </div>
                                                         <div className="min-w-0 flex-1">
@@ -706,7 +706,7 @@ export default function EventsContent() {
                                                 {/* Desktop Layout */}
                                                 <div className="hidden md:flex items-center justify-between p-4">
                                                     <div className="flex items-center space-x-4">
-                                                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
                                                             <Calendar className="w-6 h-6 text-gray-400" />
                                                         </div>
                                                         <div>
@@ -758,12 +758,12 @@ export default function EventsContent() {
             {/* Event Details Modal */}
             {selectedEvent && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
                         <div className="flex items-center justify-between p-6 border-b border-gray-200">
                             <h2 className="text-xl font-bold text-gray-900">{selectedEvent.eventName}</h2>
                             <button
                                 onClick={() => setSelectedEvent(null)}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -819,7 +819,7 @@ export default function EventsContent() {
                                                 const isPdf = /\.pdf$/i.test(fileUrl);
 
                                                 return (
-                                                    <div key={index} className="border rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                                    <div key={index} className="border rounded-xl p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
                                                         <div className="flex items-center justify-between mb-2">
                                                             <span className="text-sm font-medium text-gray-700 truncate">{fileName}</span>
                                                             <div className="flex space-x-2">
@@ -827,7 +827,7 @@ export default function EventsContent() {
                                                                     href={fileUrl}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="text-blue-600 hover:text-blue-800 p-1 rounded transition-colors"
+                                                                    className="text-blue-600 hover:text-blue-800 p-1 rounded-xl transition-colors"
                                                                     title="View File"
                                                                 >
                                                                     <Eye className="w-4 h-4" />
@@ -835,7 +835,7 @@ export default function EventsContent() {
                                                                 <a
                                                                     href={fileUrl}
                                                                     download={fileName}
-                                                                    className="text-green-600 hover:text-green-800 p-1 rounded transition-colors"
+                                                                    className="text-green-600 hover:text-green-800 p-1 rounded-xl transition-colors"
                                                                     title="Download File"
                                                                 >
                                                                     <Download className="w-4 h-4" />
@@ -846,19 +846,19 @@ export default function EventsContent() {
                                                             <img
                                                                 src={fileUrl}
                                                                 alt={fileName}
-                                                                className="w-full h-20 object-cover rounded cursor-pointer"
+                                                                className="w-full h-20 object-cover rounded-lg cursor-pointer"
                                                                 onClick={() => window.open(fileUrl, '_blank')}
                                                             />
                                                         )}
                                                         {isPdf && (
-                                                            <div className="w-full h-20 bg-red-100 rounded flex items-center justify-center cursor-pointer"
+                                                            <div className="w-full h-20 bg-red-100 rounded-xl flex items-center justify-center cursor-pointer"
                                                                 onClick={() => window.open(fileUrl, '_blank')}>
                                                                 <FileText className="w-6 h-6 text-red-600" />
                                                                 <span className="ml-2 text-red-600 text-sm font-medium">PDF</span>
                                                             </div>
                                                         )}
                                                         {!isImage && !isPdf && (
-                                                            <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center cursor-pointer"
+                                                            <div className="w-full h-20 bg-gray-200 rounded-xl flex items-center justify-center cursor-pointer"
                                                                 onClick={() => window.open(fileUrl, '_blank')}>
                                                                 <FileText className="w-6 h-6 text-gray-600" />
                                                                 <span className="ml-2 text-gray-600 text-sm font-medium">File</span>
@@ -876,7 +876,7 @@ export default function EventsContent() {
                         <div className="flex items-center justify-between p-6 border-t border-gray-200">
                             <button
                                 onClick={() => setSelectedEvent(null)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                className="px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
                             >
                                 Close
                             </button>
@@ -887,7 +887,7 @@ export default function EventsContent() {
                                         setSelectedEvent(null);
                                     }}
                                     disabled={checkingIn === selectedEvent.id}
-                                    className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                    className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
                                 >
                                     <UserCheck className="w-4 h-4" />
                                     <span>Check In</span>

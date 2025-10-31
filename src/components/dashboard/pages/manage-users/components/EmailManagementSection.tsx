@@ -202,7 +202,7 @@ export default function EmailManagementSection({
                                     onPress={() => handleEmailAction('disable')}
                                     startContent={<PowerOff className="w-4 h-4" />}
                                     isDisabled={emailOperationLoading}
-                                    className="rounded-lg shadow-sm font-medium px-6"
+                                    className="rounded-2xl shadow-sm font-medium px-6"
                                 >
                                     Disable Email
                                 </Button>
@@ -214,7 +214,7 @@ export default function EmailManagementSection({
                                     onPress={() => handleEmailAction('enable')}
                                     startContent={<Power className="w-4 h-4" />}
                                     isDisabled={emailOperationLoading}
-                                    className="rounded-lg shadow-sm font-medium px-6"
+                                    className="rounded-2xl shadow-sm font-medium px-6"
                                 >
                                     Enable Email
                                 </Button>
@@ -227,7 +227,7 @@ export default function EmailManagementSection({
                                 onPress={() => handleEmailAction('delete')}
                                 startContent={<Trash2 className="w-4 h-4" />}
                                 isDisabled={emailOperationLoading}
-                                className="rounded-lg shadow-sm font-medium px-6"
+                                className="rounded-2xl shadow-sm font-medium px-6"
                             >
                                 Delete Email
                             </Button>

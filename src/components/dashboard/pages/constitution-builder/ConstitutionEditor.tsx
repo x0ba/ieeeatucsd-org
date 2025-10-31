@@ -112,7 +112,7 @@ const ConstitutionEditor: React.FC<ConstitutionEditorProps> = ({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
                             <button
                                 onClick={() => onAddSection('preamble')}
-                                className="flex flex-col items-center p-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[120px] justify-center group"
+                                className="flex flex-col items-center p-6 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors min-h-[120px] justify-center group"
                             >
                                 <div className="bg-blue-500 rounded-full p-3 mb-3 group-hover:bg-blue-600 transition-colors">
                                     <FileText className="h-6 w-6" />
@@ -122,7 +122,7 @@ const ConstitutionEditor: React.FC<ConstitutionEditorProps> = ({
                             </button>
                             <button
                                 onClick={() => onAddSection('article')}
-                                className="flex flex-col items-center p-6 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[120px] justify-center group"
+                                className="flex flex-col items-center p-6 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors min-h-[120px] justify-center group"
                             >
                                 <div className="bg-gray-500 rounded-full p-3 mb-3 group-hover:bg-gray-600 transition-colors">
                                     <Plus className="h-6 w-6" />
@@ -158,14 +158,14 @@ const ConstitutionEditor: React.FC<ConstitutionEditorProps> = ({
                             <>
                                 <button
                                     onClick={() => onEditSection(selectedSection)}
-                                    className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium min-h-[44px] lg:min-h-[40px]"
+                                    className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium min-h-[44px] lg:min-h-[40px]"
                                 >
                                     <Edit3 className="h-4 w-4 mr-2" />
                                     Edit Section
                                 </button>
                                 <button
                                     onClick={() => onDeleteSection(selectedSection)}
-                                    className="inline-flex items-center justify-center px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium min-h-[44px] lg:min-h-[40px]"
+                                    className="inline-flex items-center justify-center px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors text-sm font-medium min-h-[44px] lg:min-h-[40px]"
                                 >
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Delete Section
@@ -179,7 +179,7 @@ const ConstitutionEditor: React.FC<ConstitutionEditorProps> = ({
                                     <button
                                         onClick={handleSave}
                                         disabled={!hasUnsavedChanges}
-                                        className={`inline-flex items-center justify-center px-4 py-2.5 rounded-lg transition-colors text-sm font-medium min-h-[44px] lg:min-h-[40px] ${hasUnsavedChanges
+                                        className={`inline-flex items-center justify-center px-4 py-2.5 rounded-xl transition-colors text-sm font-medium min-h-[44px] lg:min-h-[40px] ${hasUnsavedChanges
                                             ? 'bg-green-600 text-white hover:bg-green-700'
                                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                             }`}
@@ -189,7 +189,7 @@ const ConstitutionEditor: React.FC<ConstitutionEditorProps> = ({
                                     </button>
                                     <button
                                         onClick={handleCancel}
-                                        className="inline-flex items-center justify-center px-4 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium min-h-[44px] lg:min-h-[40px]"
+                                        className="inline-flex items-center justify-center px-4 py-2.5 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors text-sm font-medium min-h-[44px] lg:min-h-[40px]"
                                     >
                                         {hasUnsavedChanges ? 'Discard Changes' : 'Cancel'}
                                     </button>
@@ -221,7 +221,7 @@ const ConstitutionEditor: React.FC<ConstitutionEditorProps> = ({
                                 onChange={(e) => {
                                     setEditTitle(e.target.value);
                                 }}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base font-medium"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base font-medium"
                                 placeholder="Enter section title..."
                             />
                         </div>
@@ -244,7 +244,7 @@ const ConstitutionEditor: React.FC<ConstitutionEditorProps> = ({
                                             setEditContent(e.target.value);
                                         }}
                                         rows={14}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm leading-relaxed transition-colors resize-y min-h-[300px]"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm leading-relaxed transition-colors resize-y min-h-[300px]"
                                         placeholder="Enter the section content...
 
 Tip: Use double line breaks to separate paragraphs.
@@ -254,7 +254,7 @@ For tree structures, use characters like ├── └── │ for proper alig
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                         <button
                                             type="button"
-                                            className="inline-flex items-center justify-center px-4 py-2.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium min-h-[44px]"
+                                            className="inline-flex items-center justify-center px-4 py-2.5 text-sm bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium min-h-[44px]"
                                             onClick={() => {
                                                 const imageText = "[IMAGE:Add image description here]";
                                                 const newContent = editContent + (editContent ? "\n\n" : "") + imageText;
@@ -268,7 +268,7 @@ For tree structures, use characters like ├── └── │ for proper alig
                                             <strong>Tip:</strong> Use [IMAGE:description] syntax to add image placeholders
                                         </p>
                                     </div>
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                                         <p className="text-xs text-blue-700 leading-relaxed">
                                             <strong>Writing Tips:</strong> Changes are automatically saved as you type. Use formal constitutional language for professional results. Double line breaks create new paragraphs.
                                         </p>
@@ -280,7 +280,7 @@ For tree structures, use characters like ├── └── │ for proper alig
                 ) : (
                     <div className="prose max-w-none">
                         {currentSection.type === 'article' ? (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
                                 <div className="text-blue-600 mb-2">
                                     <BookOpen className="h-8 w-8 mx-auto mb-3" />
                                 </div>
@@ -291,13 +291,13 @@ For tree structures, use characters like ├── └── │ for proper alig
                                 </p>
                             </div>
                         ) : currentSection.content ? (
-                            <div className="bg-white border border-gray-200 rounded-lg p-6">
+                            <div className="bg-white border border-gray-200 rounded-xl p-6">
                                 <div className="whitespace-pre-wrap text-gray-900 leading-relaxed text-base">
                                     {renderContentWithImages(currentSection.content)}
                                 </div>
                             </div>
                         ) : (
-                            <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                            <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
                                 <div className="text-gray-400 mb-3">
                                     <Edit3 className="h-8 w-8 mx-auto" />
                                 </div>
@@ -307,7 +307,7 @@ For tree structures, use characters like ├── └── │ for proper alig
                                 </p>
                                 <button
                                     onClick={() => onEditSection(selectedSection)}
-                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium"
                                 >
                                     <Edit3 className="h-4 w-4 mr-2" />
                                     Start Editing
@@ -331,7 +331,7 @@ const renderContentWithImages = (content: string) => {
             const description = part.replace(/^\[IMAGE:/, '').replace(/\]$/, '');
             return (
                 <div key={index} className="my-8">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 lg:p-8 bg-gray-50 text-center">
+                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 lg:p-8 bg-gray-50 text-center">
                         <div className="bg-gray-200 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                             <Image className="h-8 w-8 text-gray-400" />
                         </div>

@@ -785,7 +785,7 @@ const FundDepositsContent: React.FC = () => {
                                 placeholder="Search deposits..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
                             />
                         </div>
                     </div>
@@ -801,7 +801,7 @@ const FundDepositsContent: React.FC = () => {
                             </>
                         ) : (
                             <>
-                                <div className="bg-white rounded-lg shadow p-4 md:p-6">
+                                <div className="bg-white rounded-2xl shadow p-4 md:p-6">
                                     <div className="flex items-center">
                                         <Receipt className="h-6 w-6 md:h-8 md:w-8 text-blue-600 flex-shrink-0" />
                                         <div className="ml-3 md:ml-4 min-w-0 flex-1">
@@ -811,7 +811,7 @@ const FundDepositsContent: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-lg shadow p-4 md:p-6">
+                                <div className="bg-white rounded-2xl shadow p-4 md:p-6">
                                     <div className="flex items-center">
                                         <Clock className="h-6 w-6 md:h-8 md:w-8 text-yellow-600 flex-shrink-0" />
                                         <div className="ml-3 md:ml-4 min-w-0 flex-1">
@@ -821,7 +821,7 @@ const FundDepositsContent: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-lg shadow p-4 md:p-6">
+                                <div className="bg-white rounded-2xl shadow p-4 md:p-6">
                                     <div className="flex items-center">
                                         <Eye className="h-6 w-6 md:h-8 md:w-8 text-blue-600 flex-shrink-0" />
                                         <div className="ml-3 md:ml-4 min-w-0 flex-1">
@@ -831,7 +831,7 @@ const FundDepositsContent: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-lg shadow p-4 md:p-6">
+                                <div className="bg-white rounded-2xl shadow p-4 md:p-6">
                                     <div className="flex items-center">
                                         <XCircle className="h-6 w-6 md:h-8 md:w-8 text-red-600 flex-shrink-0" />
                                         <div className="ml-3 md:ml-4 min-w-0 flex-1">
@@ -841,7 +841,7 @@ const FundDepositsContent: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-lg shadow p-6">
+                                <div className="bg-white rounded-2xl shadow p-6">
                                     <div className="flex items-center">
                                         <Banknote className="h-8 w-8 text-green-600" />
                                         <div className="ml-4">
@@ -855,12 +855,12 @@ const FundDepositsContent: React.FC = () => {
                     </div>
 
                     {/* Filters */}
-                    <div className="bg-white rounded-lg shadow mb-6">
+                    <div className="bg-white rounded-2xl shadow mb-6">
                         <div className="p-6 border-b border-gray-200">
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <div className="flex gap-4">
                                     <select
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         value={statusFilter}
                                         onChange={(e) => setStatusFilter(e.target.value)}
                                     >
@@ -872,7 +872,7 @@ const FundDepositsContent: React.FC = () => {
 
                                     <button
                                         onClick={() => setShowNewDepositModal(true)}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 flex items-center gap-2"
                                     >
                                         <Plus className="w-4 h-4" />
                                         New Deposit
@@ -883,7 +883,7 @@ const FundDepositsContent: React.FC = () => {
                     </div>
 
                     {/* Deposits Table */}
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
+                    <div className="bg-white rounded-2xl shadow overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
@@ -1023,7 +1023,7 @@ const FundDepositsContent: React.FC = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.title ? 'border-red-500' : 'border-gray-300'}`}
+                                        className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.title ? 'border-red-500' : 'border-gray-300'}`}
                                         value={newDeposit.title}
                                         onChange={(e) => setNewDeposit({ ...newDeposit, title: e.target.value })}
                                         placeholder="e.g., Membership Dues Collection"
@@ -1041,7 +1041,7 @@ const FundDepositsContent: React.FC = () => {
                                         <input
                                             type="number"
                                             step="0.01"
-                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.amount ? 'border-red-500' : 'border-gray-300'}`}
+                                            className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.amount ? 'border-red-500' : 'border-gray-300'}`}
                                             value={newDeposit.amount}
                                             onChange={(e) => setNewDeposit({ ...newDeposit, amount: e.target.value })}
                                             placeholder="0.00"
@@ -1057,7 +1057,7 @@ const FundDepositsContent: React.FC = () => {
                                         </label>
                                         <input
                                             type="date"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             value={newDeposit.depositDate}
                                             onChange={(e) => setNewDeposit({ ...newDeposit, depositDate: e.target.value })}
                                         />
@@ -1069,7 +1069,7 @@ const FundDepositsContent: React.FC = () => {
                                         Deposit Method *
                                     </label>
                                     <select
-                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.depositMethod ? 'border-red-500' : 'border-gray-300'}`}
+                                        className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.depositMethod ? 'border-red-500' : 'border-gray-300'}`}
                                         value={newDeposit.depositMethod}
                                         onChange={(e) => setNewDeposit({ ...newDeposit, depositMethod: e.target.value as any })}
                                     >
@@ -1091,7 +1091,7 @@ const FundDepositsContent: React.FC = () => {
                                         </label>
                                         <input
                                             type="text"
-                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.otherDepositMethod ? 'border-red-500' : 'border-gray-300'}`}
+                                            className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.otherDepositMethod ? 'border-red-500' : 'border-gray-300'}`}
                                             value={newDeposit.otherDepositMethod}
                                             onChange={(e) => setNewDeposit({ ...newDeposit, otherDepositMethod: e.target.value })}
                                             placeholder="e.g., Venmo, PayPal, Wire Transfer, etc."
@@ -1108,7 +1108,7 @@ const FundDepositsContent: React.FC = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.purpose ? 'border-red-500' : 'border-gray-300'}`}
+                                        className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.purpose ? 'border-red-500' : 'border-gray-300'}`}
                                         value={newDeposit.purpose}
                                         onChange={(e) => setNewDeposit({ ...newDeposit, purpose: e.target.value })}
                                         placeholder="e.g., Membership Dues, Event Revenue, Sponsorship"
@@ -1123,7 +1123,7 @@ const FundDepositsContent: React.FC = () => {
                                         Description
                                     </label>
                                     <textarea
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         rows={3}
                                         value={newDeposit.description}
                                         onChange={(e) => setNewDeposit({ ...newDeposit, description: e.target.value })}
@@ -1137,7 +1137,7 @@ const FundDepositsContent: React.FC = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         value={newDeposit.referenceNumber}
                                         onChange={(e) => setNewDeposit({ ...newDeposit, referenceNumber: e.target.value })}
                                         placeholder="Check number, transaction ID, confirmation number for money sent to IEEE, etc."
@@ -1174,7 +1174,7 @@ const FundDepositsContent: React.FC = () => {
                                             IEEE Source *
                                         </label>
                                         <select
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             value={newDeposit.ieeeDepositSource}
                                             onChange={(e) => setNewDeposit({ ...newDeposit, ieeeDepositSource: e.target.value as any })}
                                         >
@@ -1192,14 +1192,14 @@ const FundDepositsContent: React.FC = () => {
                             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
                                 <button
                                     onClick={() => setShowNewDepositModal(false)}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSubmitDeposit}
                                     disabled={!newDeposit.title || !newDeposit.amount || !newDeposit.purpose}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Submit Deposit
                                 </button>
@@ -1365,7 +1365,7 @@ const FundDepositsContent: React.FC = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         value={editingDeposit.title}
                                         onChange={(e) => setEditingDeposit({ ...editingDeposit, title: e.target.value })}
                                         placeholder="e.g., Membership Dues Collection"
@@ -1380,7 +1380,7 @@ const FundDepositsContent: React.FC = () => {
                                         <input
                                             type="number"
                                             step="0.01"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             value={editingDeposit.amount}
                                             onChange={(e) => setEditingDeposit({ ...editingDeposit, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
                                             placeholder="0.00"
@@ -1393,7 +1393,7 @@ const FundDepositsContent: React.FC = () => {
                                         </label>
                                         <input
                                             type="date"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             value={editingDeposit.depositDate}
                                             onChange={(e) => setEditingDeposit({ ...editingDeposit, depositDate: e.target.value })}
                                         />
@@ -1405,7 +1405,7 @@ const FundDepositsContent: React.FC = () => {
                                         Deposit Method *
                                     </label>
                                     <select
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         value={editingDeposit.depositMethod}
                                         onChange={(e) => setEditingDeposit({ ...editingDeposit, depositMethod: e.target.value as any })}
                                     >
@@ -1422,7 +1422,7 @@ const FundDepositsContent: React.FC = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         value={editingDeposit.purpose}
                                         onChange={(e) => setEditingDeposit({ ...editingDeposit, purpose: e.target.value })}
                                         placeholder="e.g., Membership Dues, Event Revenue, Sponsorship"
@@ -1434,7 +1434,7 @@ const FundDepositsContent: React.FC = () => {
                                         Description
                                     </label>
                                     <textarea
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         rows={3}
                                         value={editingDeposit.description}
                                         onChange={(e) => setEditingDeposit({ ...editingDeposit, description: e.target.value })}
@@ -1448,7 +1448,7 @@ const FundDepositsContent: React.FC = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         value={editingDeposit.referenceNumber || ''}
                                         onChange={(e) => setEditingDeposit({ ...editingDeposit, referenceNumber: e.target.value })}
                                         placeholder="Check number, transaction ID, confirmation number for money sent to IEEE, etc."
@@ -1471,14 +1471,14 @@ const FundDepositsContent: React.FC = () => {
                             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
                                 <button
                                     onClick={() => setShowEditModal(false)}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleUpdateDeposit}
                                     disabled={!editingDeposit.title || !editingDeposit.amount || !editingDeposit.purpose}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
                                     <Save className="w-4 h-4" />
                                     Update Deposit
@@ -1491,7 +1491,7 @@ const FundDepositsContent: React.FC = () => {
                 {/* Rejection Modal */}
                 {showRejectionModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
                             <div className="flex items-center justify-between p-6 border-b border-gray-200">
                                 <h3 className="text-lg font-semibold text-gray-900">Reject Deposit</h3>
                                 <button
@@ -1510,7 +1510,7 @@ const FundDepositsContent: React.FC = () => {
                                     <textarea
                                         value={rejectionReason}
                                         onChange={(e) => setRejectionReason(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         rows={4}
                                         placeholder="Please provide a clear reason for rejecting this deposit..."
                                         required
@@ -1520,14 +1520,14 @@ const FundDepositsContent: React.FC = () => {
                                 <div className="flex items-center justify-end space-x-3">
                                     <button
                                         onClick={() => setShowRejectionModal(false)}
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         onClick={handleConfirmRejection}
                                         disabled={!rejectionReason.trim()}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                     >
                                         <X className="w-4 h-4" />
                                         Reject Deposit

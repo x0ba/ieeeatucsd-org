@@ -290,7 +290,7 @@ export default function BulkActionsModal({ events, users, onClose, onSuccess, on
                                 {events.map((event) => (
                                     <div
                                         key={event.id}
-                                        className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors ${selectedEvents.includes(event.id)
+                                        className={`flex items-center space-x-3 p-4 border rounded-xl cursor-pointer transition-colors ${selectedEvents.includes(event.id)
                                             ? 'border-blue-500 bg-blue-50'
                                             : 'border-gray-200 hover:bg-gray-50'
                                             }`}

@@ -257,14 +257,14 @@ export default function ReimbursementContent() {
                                 aria-label="Search reimbursements"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
                             />
                         </div>
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
                             aria-label="Filter reimbursements by status"
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] text-sm md:text-base"
+                            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] text-sm md:text-base"
                         >
                             <option value="all">All Status</option>
                             <option value="submitted">Submitted</option>
@@ -278,7 +278,7 @@ export default function ReimbursementContent() {
                     <div className="flex items-center justify-between mb-4 md:mb-6">
                         <button
                             onClick={() => setIsWizardOpen(true)}
-                            className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-md hover:shadow-lg min-h-[44px] text-sm md:text-base"
+                            className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-blue-700 text-white rounded-xl hover:bg-blue-800 transition-colors shadow-md hover:shadow-lg min-h-[44px] text-sm md:text-base"
                         >
                             <Plus className="w-4 h-4" />
                             <span className="hidden sm:inline">New Reimbursement Request</span>
@@ -297,7 +297,7 @@ export default function ReimbursementContent() {
                             </>
                         ) : (
                             <>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-gray-600">Total Submitted</p>
@@ -308,7 +308,7 @@ export default function ReimbursementContent() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-gray-600">Approved</p>
@@ -319,7 +319,7 @@ export default function ReimbursementContent() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-gray-600">Pending</p>
@@ -330,7 +330,7 @@ export default function ReimbursementContent() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium text-gray-600">This Month</p>
@@ -346,7 +346,7 @@ export default function ReimbursementContent() {
                     </div>
 
                     {/* Reimbursement Requests */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                         <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Requests</h2>
                         {loading ? (
                             <ReimbursementListSkeleton items={4} />
@@ -356,7 +356,7 @@ export default function ReimbursementContent() {
                                 <p className="text-gray-500">No reimbursement requests found</p>
                                 <button
                                     onClick={() => setIsWizardOpen(true)}
-                                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                                 >
                                     Submit Your First Request
                                 </button>
@@ -364,7 +364,7 @@ export default function ReimbursementContent() {
                         ) : (
                             <div className="space-y-4">
                                 {filteredReimbursements.map((reimbursement) => (
-                                    <div key={reimbursement.id} className="border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <div key={reimbursement.id} className="border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
                                         {/* Mobile Layout */}
                                         <div className="block md:hidden p-4">
                                             <div className="flex items-start space-x-3 mb-3">
@@ -399,7 +399,7 @@ export default function ReimbursementContent() {
                                                 </div>
                                                 <button
                                                     onClick={() => setViewReimbursement(reimbursement)}
-                                                    className="p-3 text-gray-400 hover:text-blue-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-gray-100"
+                                                    className="p-3 text-gray-400 hover:text-blue-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-gray-100"
                                                     title="View Details"
                                                 >
                                                     <Eye className="w-5 h-5" />

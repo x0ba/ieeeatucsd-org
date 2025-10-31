@@ -343,7 +343,7 @@ export default function MultiFileUpload({
                     role="button"
                     aria-label="Upload files by clicking or using drag and drop"
                     className={`
-                        relative border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer
+                        relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer
                         ${isDragOver
                             ? 'border-blue-500 bg-blue-50 scale-[1.02]'
                             : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50'

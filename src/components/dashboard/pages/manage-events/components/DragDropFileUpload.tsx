@@ -188,7 +188,7 @@ export default function DragDropFileUpload({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          relative border-2 border-dashed rounded-lg p-6 text-center transition-colors
+          relative border-2 border-dashed rounded-xl p-6 text-center transition-colors
           ${isDragOver
             ? 'border-blue-400 bg-blue-50'
             : className.includes('border-red')
@@ -226,7 +226,7 @@ export default function DragDropFileUpload({
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">Upload Progress</h4>
           {uploadProgress.map((item, index) => (
-            <div key={index} className="bg-gray-50 rounded-lg p-3 border">
+            <div key={index} className="bg-gray-50 rounded-xl p-3 border">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2 flex-1 min-w-0">
                   {getFileIcon(item.file.name)}

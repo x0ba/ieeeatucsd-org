@@ -127,7 +127,7 @@ const PDFExportDemo: React.FC<PDFExportDemoProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div
-                        className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${exportMethod === 'enhanced'
+                        className={`border-2 rounded-xl p-4 cursor-pointer transition-colors ${exportMethod === 'enhanced'
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300'
                             }`}
@@ -153,7 +153,7 @@ const PDFExportDemo: React.FC<PDFExportDemoProps> = ({
                     </div>
 
                     <div
-                        className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${exportMethod === 'standard'
+                        className={`border-2 rounded-xl p-4 cursor-pointer transition-colors ${exportMethod === 'standard'
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300'
                             }`}
@@ -333,7 +333,7 @@ const PDFExportDemo: React.FC<PDFExportDemoProps> = ({
 
             {/* Performance Stats */}
             {lastExportTime && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-sm text-green-700">
                         <CheckCircle className="h-4 w-4" />
                         <span className="font-medium">Export completed successfully!</span>

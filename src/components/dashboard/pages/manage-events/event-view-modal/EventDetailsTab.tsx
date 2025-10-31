@@ -208,7 +208,7 @@ export default function EventDetailsTab({
                                                 size="sm"
                                             />
                                             {showUserDropdown && filteredUsers.length > 0 && (
-                                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-2xl shadow-lg max-h-48 overflow-y-auto">
                                                     {filteredUsers.map(user => (
                                                         <button
                                                             key={user.id}
@@ -222,7 +222,7 @@ export default function EventDetailsTab({
                                                 </div>
                                             )}
                                             {showUserDropdown && userSearchQuery && filteredUsers.length === 0 && (
-                                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-sm text-gray-500">
+                                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-2xl shadow-lg p-3 text-sm text-gray-500">
                                                     No users found
                                                 </div>
                                             )}
@@ -266,13 +266,13 @@ export default function EventDetailsTab({
                                 )}
                             </div>
                             {request.declinedReason && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                                     <label className="text-xs font-medium text-red-700 uppercase tracking-wider">Declined Reason</label>
                                     <p className="text-sm text-red-900 mt-1">{request.declinedReason}</p>
                                 </div>
                             )}
                             {request.reviewFeedback && (
-                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
                                     <label className="text-xs font-medium text-orange-700 uppercase tracking-wider">Review Feedback</label>
                                     <p className="text-sm text-orange-900 mt-1">{request.reviewFeedback}</p>
                                 </div>

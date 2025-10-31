@@ -102,7 +102,7 @@ export default function ReceiptForm({
 
         {/* Upload Status Messages */}
         {isParsing && (
-          <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center space-x-3">
+          <div className="mb-3 bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center space-x-3">
             <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
             <div>
               <p className="text-sm font-medium text-blue-900">
@@ -117,7 +117,7 @@ export default function ReceiptForm({
 
         {parseResult && !isParsing && (
           <div
-            className={`mb-3 rounded-lg p-3 flex items-start space-x-3 ${
+            className={`mb-3 rounded-xl p-3 flex items-start space-x-3 ${
               parseResult.success
                 ? "bg-green-50 border border-green-200"
                 : "bg-yellow-50 border border-yellow-200"
@@ -142,7 +142,7 @@ export default function ReceiptForm({
 
         {/* Upload Area */}
         <div
-          className={`border-2 border-dashed rounded-lg transition-colors ${
+          className={`border-2 border-dashed rounded-xl transition-colors ${
             receipt.receiptFile
               ? "border-green-300 bg-green-50"
               : errors[`receipt_${receipt.id}_file`]
@@ -366,7 +366,7 @@ export default function ReceiptForm({
 
             <div className="space-y-3">
               {receipt.lineItems.length === 0 ? (
-                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-xl">
                   <p className="text-sm text-gray-500 mb-2">
                     No line items yet
                   </p>

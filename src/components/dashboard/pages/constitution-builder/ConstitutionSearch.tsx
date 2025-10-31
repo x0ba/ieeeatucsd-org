@@ -98,7 +98,7 @@ const ConstitutionSearch: React.FC<ConstitutionSearchProps> = ({
           value={searchQuery}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => searchQuery.length >= 2 && setIsSearchOpen(true)}
-          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
         />
         {searchQuery && (
           <button
@@ -112,7 +112,7 @@ const ConstitutionSearch: React.FC<ConstitutionSearchProps> = ({
 
       {/* Search Results Dropdown */}
       {isSearchOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 max-h-80 overflow-y-auto">
           {hasResults ? (
             <div className="py-2">
               {searchResults.map((result, index) => (

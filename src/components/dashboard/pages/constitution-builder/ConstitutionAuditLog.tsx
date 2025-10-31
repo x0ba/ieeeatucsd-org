@@ -326,7 +326,7 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({ cons
                             filteredEntries.map((entry) => (
                                 <div
                                     key={entry.id}
-                                    className="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                                    className="flex items-start gap-3 p-4 border rounded-xl hover:bg-gray-50 transition-colors"
                                 >
                                     <div className="flex-shrink-0 mt-1">
                                         {getChangeTypeIcon(entry.changeType)}

@@ -209,7 +209,7 @@ export default function InvoiceEditor({
     const displayName = truncateFilename(filename);
 
     return (
-      <div className="border rounded-lg p-3 bg-gray-50">
+      <div className="border rounded-xl p-3 bg-gray-50">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-700">{displayName}</span>
           <div className="flex space-x-1">
@@ -266,7 +266,7 @@ export default function InvoiceEditor({
         <h3 className="text-lg font-semibold text-gray-900">Invoice Editor</h3>
         <button
           onClick={() => setShowSampleJson(!showSampleJson)}
-          className="flex items-center space-x-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+          className="flex items-center space-x-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition-colors"
         >
           <FileText className="w-4 h-4" />
           <span>Sample JSON</span>
@@ -275,7 +275,7 @@ export default function InvoiceEditor({
 
       {/* Sample JSON Section */}
       {showSampleJson && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-medium text-gray-900">Sample Invoice JSON Format</h4>
             <button
@@ -302,7 +302,7 @@ export default function InvoiceEditor({
       )}
 
       {/* Field Descriptions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
         <h4 className="font-medium text-blue-900 mb-3 flex items-center">
           <HelpCircle className="w-4 h-4 mr-2" />
           Field Descriptions
@@ -320,7 +320,7 @@ export default function InvoiceEditor({
       {/* Invoices */}
       <div className="space-y-4">
         {invoices.map((invoice, invoiceIndex) => (
-          <div key={invoice.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+          <div key={invoice.id} className="border border-gray-200 rounded-xl p-4 bg-white">
             <div className="flex items-center justify-between mb-4">
               <h4 className="font-medium text-gray-900">Invoice #{invoiceIndex + 1}</h4>
               <button
@@ -342,7 +342,7 @@ export default function InvoiceEditor({
                 value={invoice.vendor}
                 onChange={(e) => updateInvoice(invoice.id, { vendor: e.target.value })}
                 disabled={disabled}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 placeholder="e.g., Costco Wholesale"
               />
             </div>
@@ -430,7 +430,7 @@ export default function InvoiceEditor({
                     recalculateInvoice(invoice.id, { tax });
                   }}
                   disabled={disabled}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                   step="0.01"
                   min="0"
                 />
@@ -446,7 +446,7 @@ export default function InvoiceEditor({
                     recalculateInvoice(invoice.id, { tip });
                   }}
                   disabled={disabled}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                   step="0.01"
                   min="0"
                 />
@@ -454,7 +454,7 @@ export default function InvoiceEditor({
             </div>
 
             {/* Totals */}
-            <div className="bg-gray-50 rounded-lg p-3 mb-4">
+            <div className="bg-gray-50 rounded-xl p-3 mb-4">
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600">Subtotal:</span>
@@ -510,7 +510,7 @@ export default function InvoiceEditor({
         <button
           onClick={addInvoice}
           disabled={disabled}
-          className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           + Add Another Invoice
         </button>

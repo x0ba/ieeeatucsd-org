@@ -280,7 +280,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                         <ModalBody>
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 {/* Reimbursement Summary */}
-                                <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="bg-gray-50 rounded-xl p-4">
                                     <div className="flex items-center justify-between mb-3">
                                         <h3 className="text-lg font-medium text-gray-900">{reimbursement.title}</h3>
                                         <Chip
@@ -529,7 +529,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
 
                                                     {paymentInfo.photoAttachment && (
                                                         <div className="mt-4 text-left w-full">
-                                                            <div className="p-3 border rounded-lg bg-white flex items-center gap-3 justify-between">
+                                                            <div className="p-3 border rounded-xl bg-white flex items-center gap-3 justify-between">
                                                                 <div className="flex items-center gap-3 min-w-0">
                                                                     {previewUrl ? (
                                                                         <img src={previewUrl} alt="Preview" className="h-14 w-14 object-cover rounded-md border" />

@@ -21,7 +21,7 @@ const SafariBrowserBlock: React.FC<SafariBrowserBlockProps> = ({ className = '' 
 
   return (
     <div className={`min-h-[60vh] flex items-center justify-center p-6 ${className}`}>
-      <div className="max-w-md w-full bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+      <div className="max-w-md w-full bg-red-50 border border-red-200 rounded-xl p-6 text-center">
         {/* Error Icon */}
         <div className="flex justify-center mb-4">
           <AlertTriangle className="h-12 w-12 text-red-600" />

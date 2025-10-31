@@ -109,7 +109,7 @@ const ConstitutionHeader: React.FC<ConstitutionHeaderProps> = ({
                 </div>
 
                 {/* View Toggle - Mobile */}
-                <div className="flex bg-gray-100 rounded-lg p-1 w-full">
+                <div className="flex bg-gray-100 rounded-xl p-1 w-full">
                     <button
                         onClick={() => onViewChange('editor')}
                         className={`flex-1 px-2 py-2 rounded-md text-xs font-medium transition-colors ${currentView === 'editor'
@@ -205,7 +205,7 @@ const ConstitutionHeader: React.FC<ConstitutionHeaderProps> = ({
 
                 <div className="flex items-center justify-between gap-4">
                     {/* View Toggle - Tablet */}
-                    <div className="flex bg-gray-100 rounded-lg p-1">
+                    <div className="flex bg-gray-100 rounded-xl p-1">
                         <button
                             onClick={() => onViewChange('editor')}
                             className={`px-3 py-2 rounded-md text-sm font-medium transition-colors min-h-[40px] ${currentView === 'editor'
@@ -298,7 +298,7 @@ const ConstitutionHeader: React.FC<ConstitutionHeaderProps> = ({
                     </div>
 
                     {/* View Toggle - Desktop */}
-                    <div className="flex bg-gray-100 rounded-lg p-1">
+                    <div className="flex bg-gray-100 rounded-xl p-1">
                         <button
                             onClick={() => onViewChange('editor')}
                             className={`px-3 py-2 rounded-md text-sm font-medium transition-colors min-h-[44px] ${currentView === 'editor'

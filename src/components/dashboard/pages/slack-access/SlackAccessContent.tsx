@@ -535,7 +535,7 @@ export default function SlackAccessContent() {
                 </div>
 
                 {/* Slack Workspace Information */}
-                <div className="mb-6 lg:mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+                <div className="mb-6 lg:mb-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
                     <div className="flex items-center space-x-3 mb-4 sm:mb-6">
                         <div className="p-2 bg-indigo-100 rounded-lg">
                             <MessageSquare className="w-5 h-5 text-indigo-600" />
@@ -564,9 +564,9 @@ export default function SlackAccessContent() {
 
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
                     {/* Email Generation Section */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
                         <div className="flex items-center space-x-3 mb-4 sm:mb-6">
-                            <div className="p-2 bg-blue-100 rounded-lg">
+                            <div className="p-2 bg-blue-100 rounded-xl">
                                 <Mail className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
@@ -726,7 +726,7 @@ export default function SlackAccessContent() {
                     </div>
 
                     {/* Email Inbox Preview Section */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
                         <div className="flex items-center justify-between mb-4 sm:mb-6">
                             <div className="flex items-center space-x-3">
                                 <div className="p-2 bg-purple-100 rounded-lg">
@@ -741,7 +741,7 @@ export default function SlackAccessContent() {
                                 <button
                                     onClick={refreshInbox}
                                     disabled={inboxState.isRefreshing}
-                                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Refresh inbox"
                                 >
                                     <RefreshCw className={`w-4 h-4 ${inboxState.isRefreshing ? 'animate-spin' : ''}`} />
@@ -856,7 +856,7 @@ export default function SlackAccessContent() {
                                                     <div
                                                         key={email.id}
                                                         onClick={() => openEmailModal(email)}
-                                                        className={`p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer ${email.isRead ? 'border-gray-200 bg-white' : 'border-blue-200 bg-blue-50'
+                                                        className={`p-3 border rounded-xl hover:bg-gray-50 transition-colors cursor-pointer ${email.isRead ? 'border-gray-200 bg-white' : 'border-blue-200 bg-blue-50'
                                                             }`}>
                                                         <div className="flex justify-between items-start mb-2">
                                                             <div className="flex items-center space-x-2 flex-1 min-w-0">
@@ -940,7 +940,7 @@ export default function SlackAccessContent() {
                 </div>
 
                 {/* Instructions Section */}
-                <div className="mt-6 lg:mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+                <div className="mt-6 lg:mt-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-6">How to Join IEEE UCSD Slack</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="flex items-start space-x-3">
@@ -1232,7 +1232,7 @@ function EmailModal({ email, credentials, onClose }: EmailModalProps) {
                 <div className="bg-white border-b border-gray-200 p-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
+                            <div className="p-2 bg-blue-100 rounded-xl">
                                 <Mail className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
@@ -1245,7 +1245,7 @@ function EmailModal({ email, credentials, onClose }: EmailModalProps) {
                         <div className="flex items-center space-x-3">
                             <button
                                 onClick={onClose}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 group"
+                                className="p-2 hover:bg-gray-100 rounded-xl transition-colors duration-200 group"
                             >
                                 <X className="w-5 h-5 text-gray-600 group-hover:text-gray-800" />
                             </button>
@@ -1276,7 +1276,7 @@ function EmailModal({ email, credentials, onClose }: EmailModalProps) {
                                 <p className="text-gray-600 mb-6">{error}</p>
                                 <button
                                     onClick={() => window.location.reload()}
-                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200"
                                 >
                                     <RefreshCw className="w-4 h-4 mr-2" />
                                     Try Again
@@ -1322,7 +1322,7 @@ function EmailModal({ email, credentials, onClose }: EmailModalProps) {
                             {emailContent.attachments && emailContent.attachments.length > 0 && (
                                 <div className="mb-6">
                                     <div className="flex items-center space-x-2 mb-4">
-                                        <div className="p-1.5 bg-blue-100 rounded-lg">
+                                        <div className="p-1.5 bg-blue-100 rounded-xl">
                                             <Paperclip className="w-4 h-4 text-blue-600" />
                                         </div>
                                         <h4 className="text-sm font-semibold text-gray-900">
@@ -1350,7 +1350,7 @@ function EmailModal({ email, credentials, onClose }: EmailModalProps) {
                                                     </div>
                                                 </div>
                                                 <button
-                                                    className="p-2 hover:bg-blue-100 rounded-lg transition-colors duration-200 group-hover:bg-blue-100"
+                                                    className="p-2 hover:bg-blue-100 rounded-xl transition-colors duration-200 group-hover:bg-blue-100"
                                                     title="Download attachment (feature coming soon)"
                                                     disabled
                                                 >
@@ -1372,7 +1372,7 @@ function EmailModal({ email, credentials, onClose }: EmailModalProps) {
                                         <h4 className="text-sm font-semibold text-gray-900">Message Content</h4>
                                     </div>
                                     {emailContent && (emailContent.htmlContent || emailContent.textContent) && (emailContent.htmlContent && emailContent.textContent) && (
-                                        <div className="flex bg-gradient-to-r from-gray-100 to-blue-100 rounded-lg p-1 border border-gray-200">
+                                        <div className="flex bg-gradient-to-r from-gray-100 to-blue-100 rounded-xl p-1 border border-gray-200">
                                             <button
                                                 onClick={() => setViewMode('html')}
                                                 className={`px-3 py-1.5 text-xs rounded-md font-medium transition-all duration-200 ${viewMode === 'html'

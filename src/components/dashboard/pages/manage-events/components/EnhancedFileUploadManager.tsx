@@ -175,7 +175,7 @@ export default function EnhancedFileUploadManager({
           </div>
           <div className="space-y-2">
             {normalizedExistingFiles.map((file, index) => (
-              <div key={index} className="group border border-gray-200 rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors">
+              <div key={index} className="group border border-gray-200 rounded-xl p-4 bg-white hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
                     <div className="flex-shrink-0">
@@ -243,7 +243,7 @@ export default function EnhancedFileUploadManager({
           </div>
           <div className="space-y-2">
             {newFilesArray.map((file, index) => (
-              <div key={index} className="group border border-blue-200 rounded-lg p-4 bg-blue-50 hover:bg-blue-100 transition-colors">
+              <div key={index} className="group border border-blue-200 rounded-xl p-4 bg-blue-50 hover:bg-blue-100 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
                     <div className="flex-shrink-0">
@@ -308,7 +308,7 @@ export default function EnhancedFileUploadManager({
       )}
 
       {/* File Requirements Info */}
-      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+      <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
         <div className="text-xs text-gray-600 space-y-1">
           <div className="flex items-center space-x-2">
             <span className="font-medium">Allowed types:</span>

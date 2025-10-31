@@ -270,7 +270,7 @@ export default function ResumeDatabaseContent() {
     if (currentUserRole && !SponsorPermissionService.hasSponsorAccess(currentUserRole, sponsorTier as any)) {
         return (
             <div className="flex-1 overflow-auto p-6">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6">
                     <div className="flex items-center">
                         <AlertCircle className="h-8 w-8 text-red-600" />
                         <div className="ml-4">
@@ -292,9 +292,9 @@ export default function ResumeDatabaseContent() {
             <div className="p-6 space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white rounded-lg shadow p-6">
+                    <div className="bg-white rounded-2xl shadow p-6">
                         <div className="flex items-center">
-                            <div className="p-3 bg-blue-100 rounded-lg">
+                            <div className="p-3 bg-blue-100 rounded-xl">
                                 <FileText className="w-6 h-6 text-blue-600" />
                             </div>
                             <div className="ml-4">
@@ -303,7 +303,7 @@ export default function ResumeDatabaseContent() {
                             </div>
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-6">
+                    <div className="bg-white rounded-2xl shadow p-6">
                         <div className="flex items-center">
                             <div className="p-3 bg-green-100 rounded-lg">
                                 <GraduationCap className="w-6 h-6 text-green-600" />
@@ -314,7 +314,7 @@ export default function ResumeDatabaseContent() {
                             </div>
                         </div>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-6">
+                    <div className="bg-white rounded-2xl shadow p-6">
                         <div className="flex items-center">
                             <div className="p-3 bg-purple-100 rounded-lg">
                                 <Briefcase className="w-6 h-6 text-purple-600" />
@@ -330,7 +330,7 @@ export default function ResumeDatabaseContent() {
                 </div>
 
                 {/* Search and Filters */}
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white rounded-2xl shadow p-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Search */}
                         <div className="relative">
@@ -340,7 +340,7 @@ export default function ResumeDatabaseContent() {
                                 placeholder="Search by name, email, or major..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                         </div>
 
@@ -350,7 +350,7 @@ export default function ResumeDatabaseContent() {
                             <select
                                 value={selectedMajor}
                                 onChange={(e) => setSelectedMajor(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                             >
                                 <option value="all">All Majors</option>
                                 {uniqueMajors.map(major => (
@@ -365,7 +365,7 @@ export default function ResumeDatabaseContent() {
                             <select
                                 value={selectedOfficerStatus}
                                 onChange={(e) => setSelectedOfficerStatus(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                             >
                                 <option value="all">All Members</option>
                                 <option value="officers">Officers Only</option>
@@ -377,19 +377,19 @@ export default function ResumeDatabaseContent() {
 
                 {/* Results */}
                 {loading ? (
-                    <div className="bg-white rounded-lg shadow p-12 text-center">
+                    <div className="bg-white rounded-2xl shadow p-12 text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                         <p className="mt-4 text-gray-600">Loading resumes...</p>
                     </div>
                 ) : error ? (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-6">
                         <div className="flex items-center">
                             <AlertCircle className="h-6 w-6 text-red-600" />
                             <p className="ml-3 text-red-700">{error}</p>
                         </div>
                     </div>
                 ) : filteredUsers.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow p-12 text-center">
+                    <div className="bg-white rounded-2xl shadow p-12 text-center">
                         <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">No Resumes Found</h3>
                         <p className="text-gray-600">
@@ -402,7 +402,7 @@ export default function ResumeDatabaseContent() {
                     <>
                         {/* Selection Actions */}
                         {selectedUsers.size > 0 && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
                                 <div className="flex items-center justify-between">
                                     <p className="text-sm text-blue-700">
                                         <strong>{selectedUsers.size}</strong> user{selectedUsers.size !== 1 ? 's' : ''} selected
@@ -410,7 +410,7 @@ export default function ResumeDatabaseContent() {
                                     <div className="flex items-center space-x-3">
                                         <button
                                             onClick={handleDownloadSelected}
-                                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium"
                                         >
                                             <Download className="w-4 h-4 mr-2" />
                                             Download {selectedUsers.size === 1 ? 'Resume' : 'as ZIP'}
@@ -426,7 +426,7 @@ export default function ResumeDatabaseContent() {
                             </div>
                         )}
 
-                        <div className="bg-white rounded-lg shadow overflow-hidden">
+                        <div className="bg-white rounded-2xl shadow overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
@@ -565,7 +565,7 @@ export default function ResumeDatabaseContent() {
                                             <button
                                                 onClick={goToPreviousPage}
                                                 disabled={currentPage === 1}
-                                                className={`p-2 rounded-lg transition-colors ${currentPage === 1
+                                                className={`p-2 rounded-xl transition-colors ${currentPage === 1
                                                     ? 'text-gray-400 cursor-not-allowed'
                                                     : 'text-gray-700 hover:bg-gray-200'
                                                     }`}
@@ -605,7 +605,7 @@ export default function ResumeDatabaseContent() {
                                             <button
                                                 onClick={goToNextPage}
                                                 disabled={currentPage === totalPages}
-                                                className={`p-2 rounded-lg transition-colors ${currentPage === totalPages
+                                                className={`p-2 rounded-xl transition-colors ${currentPage === totalPages
                                                     ? 'text-gray-400 cursor-not-allowed'
                                                     : 'text-gray-700 hover:bg-gray-200'
                                                     }`}
@@ -623,7 +623,7 @@ export default function ResumeDatabaseContent() {
                 {/* Resume Modal */}
                 {showResumeModal && selectedUserForModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
+                        <div className="bg-white rounded-2xl shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
                             {/* Modal Header */}
                             <div className="flex items-center justify-between p-6 border-b border-gray-200">
                                 <div>
@@ -634,7 +634,7 @@ export default function ResumeDatabaseContent() {
                                 </div>
                                 <button
                                     onClick={handleCloseModal}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                                 >
                                     <X className="w-6 h-6 text-gray-600" />
                                 </button>
@@ -645,7 +645,7 @@ export default function ResumeDatabaseContent() {
                                 {selectedUserForModal.resume ? (
                                     <iframe
                                         src={selectedUserForModal.resume}
-                                        className="w-full h-full min-h-[600px] border border-gray-300 rounded-lg"
+                                        className="w-full h-full min-h-[600px] border border-gray-300 rounded-xl"
                                         title={`${selectedUserForModal.name}'s Resume`}
                                     />
                                 ) : (
@@ -676,14 +676,14 @@ export default function ResumeDatabaseContent() {
                                             href={selectedUserForModal.resume}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                                         >
                                             Open in New Tab
                                         </a>
                                     )}
                                     <button
                                         onClick={handleCloseModal}
-                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
                                     >
                                         Close
                                     </button>

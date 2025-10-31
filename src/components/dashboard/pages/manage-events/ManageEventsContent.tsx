@@ -203,13 +203,13 @@ export default function ManageEventsContent() {
                                 placeholder="Search events..."
                                 value={searchTerm}
                                 onChange={(e) => handleSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
                             />
                         </div>
                         {searchTerm && (
                             <button
                                 onClick={handleClearFilters}
-                                className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors min-h-[44px] text-sm md:text-base"
+                                className="px-3 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors min-h-[44px] text-sm md:text-base"
                             >
                                 <span className="hidden sm:inline">Clear</span>
                                 <span className="sm:hidden">✕</span>
@@ -221,13 +221,13 @@ export default function ManageEventsContent() {
                     <EventManagementStats stats={stats} loading={loading} />
 
                     {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                             <p className="text-red-700">{error}</p>
                         </div>
                     )}
 
                     {success && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                             <p className="text-green-700">{success}</p>
                         </div>
                     )}

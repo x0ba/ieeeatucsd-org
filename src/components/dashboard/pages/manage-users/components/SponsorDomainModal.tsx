@@ -99,7 +99,7 @@ export default function SponsorDomainModal({
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <h3 className="text-lg font-medium text-gray-900">
                         {editingDomain ? 'Edit Sponsor Domain' : 'Add Sponsor Domain'}
@@ -115,7 +115,7 @@ export default function SponsorDomainModal({
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     {validationError && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                             <p className="text-sm text-red-800">{validationError}</p>
                         </div>
                     )}
@@ -130,7 +130,7 @@ export default function SponsorDomainModal({
                             value={formData.domain}
                             onChange={(e) => handleDomainChange(e.target.value)}
                             placeholder="@example.com"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             disabled={loading}
                             required
                         />
@@ -149,7 +149,7 @@ export default function SponsorDomainModal({
                             value={formData.organizationName}
                             onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
                             placeholder="TSMC"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             disabled={loading}
                             required
                         />
@@ -163,7 +163,7 @@ export default function SponsorDomainModal({
                         <select
                             value={formData.sponsorTier}
                             onChange={(e) => setFormData({ ...formData, sponsorTier: e.target.value as SponsorTier })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             disabled={loading}
                             required
                         >
@@ -180,14 +180,14 @@ export default function SponsorDomainModal({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50"
                             disabled={loading}
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={loading}
                         >
                             {loading ? 'Saving...' : editingDomain ? 'Update' : 'Add'}

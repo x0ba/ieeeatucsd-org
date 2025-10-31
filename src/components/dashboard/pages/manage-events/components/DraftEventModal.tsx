@@ -248,7 +248,7 @@ const DraftEventModal: React.FC<DraftEventModalProps> = ({
             />
 
             {/* Info Box */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="text-sm text-blue-800">
                 <strong>Note:</strong> This creates a draft event for planning purposes. You can convert it to a full event request later to add invoices, room bookings, and other details.
               </p>

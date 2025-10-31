@@ -193,7 +193,7 @@ export default function LeaderboardContent() {
                                 placeholder="Search members..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
                             />
                         </div>
                     </div>
@@ -208,7 +208,7 @@ export default function LeaderboardContent() {
                             </>
                         ) : (
                             <>
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-gray-600">Total Members</p>
@@ -220,7 +220,7 @@ export default function LeaderboardContent() {
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-gray-600">Total Points</p>
@@ -232,7 +232,7 @@ export default function LeaderboardContent() {
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium text-gray-600">Average Points</p>
@@ -244,7 +244,7 @@ export default function LeaderboardContent() {
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium text-gray-600">Your Rank</p>
@@ -268,7 +268,7 @@ export default function LeaderboardContent() {
                     {loading ? (
                         <CardSkeleton variant="content" size="lg" className="h-64" />
                     ) : topThree.length >= 3 && (
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                             <h2 className="text-lg font-semibold text-gray-900 mb-6 text-center">🏆 Top Performers 🏆</h2>
                             <div className="flex justify-center items-end space-x-4 mb-6">
                                 {/* Second Place */}
@@ -320,7 +320,7 @@ export default function LeaderboardContent() {
                     )}
 
                     {/* Full Leaderboard */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
                         <div className="px-6 py-4 border-b border-gray-200">
                             <h2 className="text-lg font-semibold text-gray-900">Full Leaderboard</h2>
                         </div>

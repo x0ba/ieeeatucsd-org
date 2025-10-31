@@ -258,7 +258,7 @@ const ConstitutionBuilderContent: React.FC<ConstitutionBuilderContentProps> = ()
                     /* Full-width layout for preview and audit views - better spacing on larger screens */
                     <div className="w-full">
                         {currentView === 'preview' ? (
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-[calc(100vh-200px)]">
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 h-[calc(100vh-200px)]">
                                 <PDFPreview
                                     constitution={constitution}
                                     sections={getSectionHierarchy(sections)}
@@ -269,7 +269,7 @@ const ConstitutionBuilderContent: React.FC<ConstitutionBuilderContentProps> = ()
                                 />
                             </div>
                         ) : (
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
                                 <ConstitutionAuditLog
                                     constitutionId={constitutionId}
                                 />

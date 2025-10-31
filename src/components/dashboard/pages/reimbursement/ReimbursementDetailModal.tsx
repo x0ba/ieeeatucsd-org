@@ -218,7 +218,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                                     {reimbursement.receipts ? (
                                         // New multi-receipt format
                                         reimbursement.receipts.map((receipt: any, receiptIndex: number) => (
-                                            <div key={receipt.id || receiptIndex} className="border border-gray-200 rounded-lg p-4">
+                                            <div key={receipt.id || receiptIndex} className="border border-gray-200 rounded-xl p-4">
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div>
                                                         <h5 className="font-medium text-gray-900">{receipt.vendorName}</h5>
@@ -272,7 +272,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                                                 {/* Receipt Image */}
                                                 {receipt.receiptFile && (
                                                     <div className="mt-3 pt-3 border-t">
-                                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
                                                             <div className="flex items-center space-x-2">
                                                                 <FileText className="w-4 h-4 text-blue-600" />
                                                                 <span className="text-sm font-medium text-blue-900">Receipt Image Available</span>
@@ -299,7 +299,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                                     ) : (
                                         // Legacy single-expense format
                                         reimbursement.expenses?.map((expense: any, index: number) => (
-                                            <div key={expense.id || index} className="border border-gray-200 rounded-lg p-4">
+                                            <div key={expense.id || index} className="border border-gray-200 rounded-xl p-4">
                                                 <div className="flex items-start justify-between mb-2 gap-4">
                                                     <h5 className="font-medium text-gray-900 break-words flex-1 min-w-0">{expense.description}</h5>
                                                     <span className="text-lg font-bold text-gray-900 flex-shrink-0">${expense.amount?.toFixed(2)}</span>
@@ -314,7 +314,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                                                     (typeof expense.receipt === 'string' && expense.receipt.startsWith('http')) ||
                                                     expense.receipt
                                                 ) && (
-                                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
                                                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                                                 <div className="flex items-center space-x-2 min-w-0 flex-1">
                                                                     <File className="w-4 h-4 text-blue-600 flex-shrink-0" />
@@ -410,7 +410,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                                                     !(typeof expense.receipt === 'string' && expense.receipt.startsWith('http')) &&
                                                     !expense.receipt
                                                 )) && (
-                                                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
                                                             <div className="flex items-center space-x-2">
                                                                 <FileText className="w-4 h-4 text-gray-400" />
                                                                 <span className="text-sm text-gray-500">No receipt attached</span>
@@ -434,7 +434,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                             {reimbursement.status === 'paid' && reimbursement.paymentConfirmation && (
                                 <div>
                                     <h4 className="text-md font-medium text-gray-900 mb-4">Payment Confirmation</h4>
-                                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                                         <div className="space-y-3">
                                             <div className="flex items-center space-x-2">
                                                 <CheckCircle className="w-5 h-5 text-green-600" />
@@ -538,7 +538,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                             {reimbursement.status === 'declined' && reimbursement.auditNotes && reimbursement.auditNotes.length > 0 && (
                                 <div>
                                     <h4 className="text-md font-medium text-gray-900 mb-4">Reason for Decline</h4>
-                                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                                         <div className="space-y-3">
                                             <div className="flex items-center space-x-2">
                                                 <X className="w-5 h-5 text-red-600" />
@@ -558,7 +558,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                                     <h4 className="text-md font-medium text-gray-900 mb-4">Audit Notes</h4>
                                     <div className="space-y-3">
                                         {reimbursement.auditNotes.map((note: any, index: number) => (
-                                            <div key={index} className="border border-gray-200 rounded-lg p-3">
+                                            <div key={index} className="border border-gray-200 rounded-xl p-3">
                                                 <p className="text-gray-700">{note.note}</p>
                                                 <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
                                                     <span>By: {note.createdByName || note.createdBy}</span>

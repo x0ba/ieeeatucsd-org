@@ -4,7 +4,7 @@ import { AlertTriangle, Clock, FileText, DollarSign } from 'lucide-react';
 export default function DisclaimerSection() {
     return (
         <div className="space-y-4">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                 <div className="flex items-start space-x-3">
                     <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1" />
                     <div>
@@ -20,7 +20,7 @@ export default function DisclaimerSection() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Timing Requirements */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                     <div className="flex items-start space-x-3">
                         <Clock className="w-5 h-5 text-blue-600 mt-1" />
                         <div>
@@ -37,7 +37,7 @@ export default function DisclaimerSection() {
                 </div>
 
                 {/* Documentation Requirements */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                     <div className="flex items-start space-x-3">
                         <FileText className="w-5 h-5 text-green-600 mt-1" />
                         <div>
@@ -53,7 +53,7 @@ export default function DisclaimerSection() {
                 </div>
 
                 {/* Funding Guidelines */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
                     <div className="flex items-start space-x-3">
                         <DollarSign className="w-5 h-5 text-purple-600 mt-1" />
                         <div>
@@ -69,7 +69,7 @@ export default function DisclaimerSection() {
                 </div>
 
                 {/* Approval Process */}
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
                     <div className="flex items-start space-x-3">
                         <AlertTriangle className="w-5 h-5 text-orange-600 mt-1" />
                         <div>
@@ -85,7 +85,7 @@ export default function DisclaimerSection() {
                 </div>
             </div>
 
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                 <div className="flex items-start space-x-3">
                     <AlertTriangle className="w-5 h-5 text-red-600 mt-1" />
                     <div>
@@ -113,7 +113,7 @@ export default function DisclaimerSection() {
                 </div>
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                 <h4 className="font-semibold text-gray-800 mb-2">Need Help?</h4>
                 <p className="text-sm text-gray-700">
                     If you have questions about any of these requirements or need assistance with your

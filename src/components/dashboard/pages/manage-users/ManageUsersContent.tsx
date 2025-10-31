@@ -246,7 +246,7 @@ export default function ManageUsersContent() {
   if (user && !permissions.hasUserManagementAccess) {
     return (
       <div className="space-y-6 p-6">
-        <div className="bg-white rounded-lg shadow p-8 text-center">
+        <div className="bg-white rounded-2xl shadow p-8 text-center">
           <div className="text-red-400 mb-4">
             <svg
               className="w-12 h-12 mx-auto"
@@ -280,7 +280,7 @@ export default function ManageUsersContent() {
   if (!user) {
     return (
       <div className="space-y-6 p-6">
-        <div className="bg-white rounded-lg shadow p-8 text-center">
+        <div className="bg-white rounded-2xl shadow p-8 text-center">
           <div className="text-gray-400 mb-4">
             <svg
               className="w-12 h-12 mx-auto"
@@ -312,7 +312,7 @@ export default function ManageUsersContent() {
       <div className="space-y-6 p-6 mx-">
         {/* Error/Success Messages */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg
@@ -354,7 +354,7 @@ export default function ManageUsersContent() {
         )}
 
         {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg

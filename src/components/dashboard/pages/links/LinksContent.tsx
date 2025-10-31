@@ -97,13 +97,13 @@ export default function LinksContent() {
               aria-label="Search links"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
             />
           </div>
           {canManageLinks && (
             <button
               onClick={handleAddLink}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px]"
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors min-h-[44px]"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Add Link</span>
@@ -115,14 +115,14 @@ export default function LinksContent() {
         {/* Messages */}
         {
           error && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm text-red-800">{error}</p>
               </div>
               <button
                 onClick={clearMessages}
-                className="text-red-600 hover:text-red-800"
+                className="text-red-600 hover:text-red-800 rounded-xl hover:bg-red-100 p-1"
                 aria-label="Close error message"
               >
                 ×
@@ -133,14 +133,14 @@ export default function LinksContent() {
 
         {
           success && (
-            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+            <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm text-green-800">{success}</p>
               </div>
               <button
                 onClick={clearMessages}
-                className="text-green-600 hover:text-green-800"
+                className="text-green-600 hover:text-green-800 rounded-xl hover:bg-green-100 p-1"
                 aria-label="Close success message"
               >
                 ×
@@ -165,14 +165,14 @@ export default function LinksContent() {
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 animate-pulse"
+                  className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 animate-pulse"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                    <div className="w-12 h-12 bg-gray-200 rounded-xl" />
                     <div className="flex-1 space-y-3">
-                      <div className="h-4 bg-gray-200 rounded w-3/4" />
-                      <div className="h-3 bg-gray-200 rounded w-full" />
-                      <div className="h-3 bg-gray-200 rounded w-2/3" />
+                      <div className="h-4 bg-gray-200 rounded-full w-3/4" />
+                      <div className="h-3 bg-gray-200 rounded-full w-full" />
+                      <div className="h-3 bg-gray-200 rounded-full w-2/3" />
                     </div>
                   </div>
                 </div>
@@ -198,7 +198,7 @@ export default function LinksContent() {
                 categoryFilter === "all" && (
                   <button
                     onClick={handleAddLink}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     Add Your First Link

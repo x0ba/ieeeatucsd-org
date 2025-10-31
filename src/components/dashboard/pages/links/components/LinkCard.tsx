@@ -60,7 +60,7 @@ export default function LinkCard({
   const isExpired = link.expireDate && link.expireDate.toMillis() < now.toMillis();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow p-4 h-full flex flex-col">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow p-4 h-full flex flex-col">
       {/* Header with Icon, Title, and Category */}
       <div className="flex items-start gap-3 mb-3">
         {/* Icon/Image */}
@@ -69,10 +69,10 @@ export default function LinkCard({
             <img
               src={link.iconUrl}
               alt={link.title}
-              className="w-10 h-10 rounded-lg object-cover"
+              className="w-10 h-10 rounded-xl object-cover"
             />
           ) : (
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
               <LinkIcon className="w-5 h-5 text-blue-600" />
             </div>
           )}
@@ -92,7 +92,7 @@ export default function LinkCard({
           </a>
           <div>
             <span
-              className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${categoryInfo.bgColor} ${categoryInfo.color}`}
+              className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${categoryInfo.bgColor} ${categoryInfo.color}`}
             >
               {link.category}
             </span>
@@ -114,7 +114,7 @@ export default function LinkCard({
             href={`/${link.shortUrl}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-full transition-colors"
           >
             <LinkIcon className="w-3 h-3" />
             <span>ieeeatucsd.org/{link.shortUrl}</span>
@@ -126,13 +126,13 @@ export default function LinkCard({
       {canManage && (isScheduled || isExpired) && (
         <div className="mb-3 space-y-1">
           {isScheduled && (
-            <div className="flex items-center gap-1.5 text-xs bg-yellow-50 text-yellow-700 px-2 py-1 rounded">
+            <div className="flex items-center gap-1.5 text-xs bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full">
               <Clock className="w-3 h-3" />
               <span>Scheduled: {formatDateTime(link.publishDate)}</span>
             </div>
           )}
           {isExpired && (
-            <div className="flex items-center gap-1.5 text-xs bg-red-50 text-red-700 px-2 py-1 rounded">
+            <div className="flex items-center gap-1.5 text-xs bg-red-50 text-red-700 px-2 py-1 rounded-full">
               <AlertCircle className="w-3 h-3" />
               <span>Expired: {formatDateTime(link.expireDate)}</span>
             </div>
@@ -153,14 +153,14 @@ export default function LinkCard({
           <div className="flex items-center gap-1">
             <button
               onClick={() => onEdit(link)}
-              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
               title="Edit link"
             >
               <Edit className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => onDelete(link.id)}
-              className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+              className="p-1.5 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
               title="Delete link"
             >
               <Trash2 className="w-3.5 h-3.5" />

@@ -90,7 +90,7 @@ export default function EnhancedFileViewer({
   };
 
   return (
-    <div className={`border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors ${className}`}>
+    <div className={`border rounded-xl p-4 bg-gray-50 hover:bg-gray-100 transition-colors ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2 flex-1 min-w-0">
           {getFileIcon()}

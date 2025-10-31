@@ -138,7 +138,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({
                 <p className="text-red-600 text-sm mb-4">{error}</p>
                 <button
                     onClick={handleRefresh}
-                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
                 >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Retry
@@ -153,7 +153,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({
                 <p className="text-gray-600 mb-4">No PDF preview available</p>
                 <button
                     onClick={handleRefresh}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                 >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Generate Preview
@@ -176,7 +176,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({
                 <div className="flex items-center space-x-2">
                     <button
                         onClick={handleRefresh}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
                         title="Refresh PDF"
                     >
                         <RefreshCw className="w-4 h-4" />
@@ -184,7 +184,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({
 
                     <button
                         onClick={handleOpenInNewTab}
-                        className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                     >
                         <ExternalLink className="w-4 h-4 mr-2" />
                         Open in New Tab

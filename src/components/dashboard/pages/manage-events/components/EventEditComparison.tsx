@@ -471,7 +471,7 @@ export default function EventEditComparison({
         </h4>
         <div className="space-y-3">
           {fileChanges.map((change, index) => (
-            <div key={index} className="border rounded-lg p-4 bg-gray-50">
+            <div key={index} className="border rounded-xl p-4 bg-gray-50">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   {change.type === 'added' && <Plus className="w-4 h-4 text-green-600" />}
@@ -517,7 +517,7 @@ export default function EventEditComparison({
         </h4>
         <div className="space-y-4">
           {invoiceChanges.map((change, index) => (
-            <div key={index} className="border rounded-lg p-4 bg-gray-50">
+            <div key={index} className="border rounded-xl p-4 bg-gray-50">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   {change.type === 'added' && <Plus className="w-4 h-4 text-green-600" />}
@@ -616,7 +616,7 @@ export default function EventEditComparison({
           ) : (
             <div className="space-y-6">
               {/* Summary */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">Change Summary</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                   <div className="text-center">
@@ -713,7 +713,7 @@ export default function EventEditComparison({
 
               {/* Critical Changes Warning */}
               {fieldChanges.some(change => ['name', 'startDateTime', 'endDateTime', 'location'].includes(change.field)) && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                   <div className="flex items-start">
                     <AlertCircle className="w-5 h-5 text-amber-600 mr-2 mt-0.5 flex-shrink-0" />
                     <div>
@@ -735,7 +735,7 @@ export default function EventEditComparison({
             <button
               onClick={onCancel}
               disabled={isSubmitting}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel Changes
             </button>
@@ -760,7 +760,7 @@ export default function EventEditComparison({
               <button
                 onClick={onConfirm}
                 disabled={isSubmitting || !hasChanges}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {isSubmitting ? (
                   <>
