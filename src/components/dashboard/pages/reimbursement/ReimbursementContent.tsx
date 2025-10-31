@@ -247,9 +247,10 @@ export default function ReimbursementContent() {
             {/* Reimbursement Content */}
             <main className="p-4 md:p-6">
                 <div className="grid grid-cols-1 gap-4 md:gap-6">
-                    {/* Search and Filter Bar */}
-                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
-                        <div className="relative flex-1 max-w-md w-full">
+                    {/* Search, Filter, and Action Bar */}
+                    <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center mb-4 md:mb-6">
+                        {/* Search Bar */}
+                        <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <input
                                 type="text"
@@ -260,11 +261,13 @@ export default function ReimbursementContent() {
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
                             />
                         </div>
+
+                        {/* Status Filter */}
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
                             aria-label="Filter reimbursements by status"
-                            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] text-sm md:text-base"
+                            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] text-sm md:text-base w-full lg:w-auto"
                         >
                             <option value="all">All Status</option>
                             <option value="submitted">Submitted</option>
@@ -272,13 +275,11 @@ export default function ReimbursementContent() {
                             <option value="paid">Paid</option>
                             <option value="declined">Declined</option>
                         </select>
-                    </div>
 
-                    {/* Page Header */}
-                    <div className="flex items-center justify-between mb-4 md:mb-6">
+                        {/* New Reimbursement Button */}
                         <button
                             onClick={() => setIsWizardOpen(true)}
-                            className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-blue-700 text-white rounded-xl hover:bg-blue-800 transition-colors shadow-md hover:shadow-lg min-h-[44px] text-sm md:text-base"
+                            className="flex items-center justify-center space-x-2 px-3 md:px-4 py-2 bg-blue-700 text-white rounded-xl hover:bg-blue-800 transition-colors shadow-md hover:shadow-lg min-h-[44px] text-sm md:text-base whitespace-nowrap"
                         >
                             <Plus className="w-4 h-4" />
                             <span className="hidden sm:inline">New Reimbursement Request</span>
