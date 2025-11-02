@@ -698,10 +698,12 @@ export default function ReimbursementModal({
                                                                         {receipt.lineItems.map((item: any, itemIndex: number) => (
                                                                             <div key={item.id || itemIndex} className="flex justify-between items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors">
                                                                                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                                    <p className="text-sm font-medium text-gray-900 truncate">{item.description}</p>
-                                                                                    <Chip size="sm" variant="flat" color="default" className="flex-shrink-0">
-                                                                                        {item.category}
-                                                                                    </Chip>
+                                                                                    <span className="text-sm font-medium text-gray-900 truncate">{item.description}</span>
+                                                                                    {item.category && item.category.trim() && (
+                                                                                        <Chip size="sm" variant="flat" color="default" className="flex-shrink-0">
+                                                                                            {item.category}
+                                                                                        </Chip>
+                                                                                    )}
                                                                                 </div>
                                                                                 <span className="text-sm font-semibold text-gray-900 flex-shrink-0">${item.amount?.toFixed(2)}</span>
                                                                             </div>

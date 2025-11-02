@@ -264,10 +264,10 @@ export default function ReviewStep({ formData, receipts, setFormData, setReceipt
                                         {receipt.lineItems.map((item) => (
                                             <div key={item.id} className="flex items-center justify-between text-sm">
                                                 <div className="flex-1">
-                                                    <p className="font-medium text-gray-900">{item.description}</p>
-                                                    <p className="text-xs text-gray-500">{item.category}</p>
+                                                    <span className="font-medium text-gray-900">{item.description}</span>
+                                                    <span className="block text-xs text-gray-500">{item.category}</span>
                                                 </div>
-                                                <p className="font-semibold text-gray-900">${item.amount.toFixed(2)}</p>
+                                                <span className="font-semibold text-gray-900">${item.amount.toFixed(2)}</span>
                                             </div>
                                         ))}
                                     </div>
