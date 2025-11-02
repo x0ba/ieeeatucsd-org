@@ -16,7 +16,15 @@ import icon from "astro-icon";
 // https://astro.build/config
 export default defineConfig({
   output: "server",
-  integrations: [tailwind(), expressiveCode(), react(), icon(), mdx()],
+  integrations: [
+    tailwind({
+      applyBaseStyles: true,
+    }),
+    expressiveCode(),
+    react(),
+    icon(),
+    mdx(),
+  ],
 
   adapter: node({
     mode: "standalone",
