@@ -204,7 +204,7 @@ function generateReimbursementSubmissionTestEmail(): string {
     contactEmail: "treasurer@ieeeatucsd.org",
     ctaButton: {
       text: "Review Reimbursement",
-      url: "https://ieeeucsd.org/dashboard/manage-reimbursements",
+      url: "https://ieeeatucsd.org/dashboard/manage-reimbursements",
     },
   });
 }
@@ -260,7 +260,7 @@ function generateReimbursementStatusChangeTestEmail(status: string): string {
     contactEmail: "treasurer@ieeeatucsd.org",
     ctaButton: {
       text: "View Reimbursement",
-      url: "https://ieeeucsd.org/dashboard/reimbursement",
+      url: "https://ieeeatucsd.org/dashboard/reimbursement",
     },
   });
 }
@@ -287,7 +287,7 @@ function generateAuditRequestTestEmail(): string {
     contactEmail: "treasurer@ieeeatucsd.org",
     ctaButton: {
       text: "View Reimbursement",
-      url: "https://ieeeucsd.org/dashboard/reimbursement",
+      url: "https://ieeeatucsd.org/dashboard/reimbursement",
     },
   });
 }
@@ -315,7 +315,7 @@ function generateEventSubmissionTestEmail(): string {
     contactEmail: "events@ieeeatucsd.org",
     ctaButton: {
       text: "Review Event",
-      url: "https://ieeeucsd.org/dashboard/manage-events",
+      url: "https://ieeeatucsd.org/dashboard/manage-events",
     },
   });
 }
@@ -342,7 +342,7 @@ function generateEventStatusChangeTestEmail(): string {
     contactEmail: "events@ieeeatucsd.org",
     ctaButton: {
       text: "View Event",
-      url: "https://ieeeucsd.org/dashboard/manage-events",
+      url: "https://ieeeatucsd.org/dashboard/manage-events",
     },
   });
 }
@@ -368,7 +368,7 @@ function generateEventEditTestEmail(): string {
     contactEmail: "events@ieeeatucsd.org",
     ctaButton: {
       text: "View Event",
-      url: "https://ieeeucsd.org/dashboard/manage-events",
+      url: "https://ieeeatucsd.org/dashboard/manage-events",
     },
   });
 }
@@ -415,7 +415,7 @@ function generateGraphicsUploadTestEmail(): string {
     contactEmail: "events@ieeeatucsd.org",
     ctaButton: {
       text: "View Event",
-      url: "https://ieeeucsd.org/dashboard/manage-events",
+      url: "https://ieeeatucsd.org/dashboard/manage-events",
     },
   });
 }
@@ -442,7 +442,7 @@ function generateFundDepositSubmissionTestEmail(): string {
     contactEmail: "treasurer@ieeeatucsd.org",
     ctaButton: {
       text: "Review Deposit",
-      url: "https://ieeeucsd.org/dashboard/manage-fund-deposits",
+      url: "https://ieeeatucsd.org/dashboard/manage-fund-deposits",
     },
   });
 }
@@ -469,7 +469,7 @@ function generateFundDepositStatusChangeTestEmail(): string {
     contactEmail: "treasurer@ieeeatucsd.org",
     ctaButton: {
       text: "View Deposit",
-      url: "https://ieeeucsd.org/dashboard/fund-deposits",
+      url: "https://ieeeatucsd.org/dashboard/fund-deposits",
     },
   });
 }
@@ -508,7 +508,7 @@ function generateUserProfileUpdateTestEmail(): string {
     contactEmail: "ieee@ucsd.edu",
     ctaButton: {
       text: "View Profile",
-      url: "https://ieeeucsd.org/dashboard",
+      url: "https://ieeeatucsd.org/dashboard",
     },
   });
 }
@@ -534,7 +534,7 @@ function generateUserRoleChangeTestEmail(): string {
     contactEmail: "ieee@ucsd.edu",
     ctaButton: {
       text: "Access Dashboard",
-      url: "https://ieeeucsd.org/dashboard",
+      url: "https://ieeeatucsd.org/dashboard",
     },
   });
 }

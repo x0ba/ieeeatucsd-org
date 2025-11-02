@@ -83,7 +83,7 @@ export async function sendFirebaseEventRequestSubmissionEmail(
         <title>${eventsSubject}</title>
         <style>
           .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
-          .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
+          .header { background: #003B5C; color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
           .content { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
           .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
           .info-table { width: 100%; border-collapse: collapse; }
@@ -205,7 +205,7 @@ export async function sendFirebaseEventRequestSubmissionEmail(
         <title>${userSubject}</title>
         <style>
           .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
-          .header { background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
+          .header { background: #003B5C; color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
           .content { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
           .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
           .info-table { width: 100%; border-collapse: collapse; }
@@ -409,7 +409,7 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
         <title>${userSubject}</title>
         <style>
           .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
+          .header { background: #003B5C; color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
           .content { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
           .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
           .info-table { width: 100%; border-collapse: collapse; }
@@ -679,7 +679,7 @@ export async function sendFirebaseEventEditEmail(
         <title>${subject}</title>
         <style>
           .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
-          .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
+          .header { background: #003B5C; color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
           .content { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
           .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
           .info-table { width: 100%; border-collapse: collapse; }
@@ -822,7 +822,7 @@ export async function sendFirebaseEventDeleteEmail(
         <title>${subject}</title>
         <style>
           .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
-          .header { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
+          .header { background: #003B5C; color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
           .content { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
           .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
           .info-table { width: 100%; border-collapse: collapse; }
@@ -1085,7 +1085,7 @@ export async function sendGraphicsUploadEmail(
       contactEmail: "events@ieeeatucsd.org",
       ctaButton: {
         text: "View Event Details",
-        url: "https://ieeeucsd.org/dashboard/manage-events",
+        url: "https://ieeeatucsd.org/dashboard/manage-events",
       },
     });
 
@@ -1099,7 +1099,7 @@ export async function sendGraphicsUploadEmail(
       contactEmail: "events@ieeeatucsd.org",
       ctaButton: {
         text: "View Event Details",
-        url: "https://ieeeucsd.org/dashboard/manage-events",
+        url: "https://ieeeatucsd.org/dashboard/manage-events",
       },
     });
 

@@ -172,7 +172,7 @@ Rules:
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "https://ieeeucsd.org",
+          "HTTP-Referer": "https://ieeeatucsd.org",
           "X-Title": "IEEE UCSD Reimbursement System",
         },
         body: JSON.stringify({

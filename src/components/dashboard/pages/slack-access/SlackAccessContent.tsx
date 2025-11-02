@@ -239,7 +239,7 @@ export default function SlackAccessContent() {
 
         try {
             const username = extractUsername(userData.email);
-            const proposedEmail = `${username}@ieeeucsd.org`;
+            const proposedEmail = `${username}@ieeeatucsd.org`;
 
             // First check if the email already exists
             const checkResponse = await fetch('/api/check-email-exists', {
@@ -591,7 +591,7 @@ export default function SlackAccessContent() {
                                         <p><span className="font-medium">Created:</span> {userData.ieeeEmailCreatedAt ? new Date(userData.ieeeEmailCreatedAt.toDate()).toLocaleDateString() : 'Unknown'}</p>
                                     </>
                                 ) : (
-                                    <p><span className="font-medium">Proposed IEEE Email:</span> {username}@ieeeucsd.org</p>
+                                    <p><span className="font-medium">Proposed IEEE Email:</span> {username}@ieeeatucsd.org</p>
                                 )}
                             </div>
                         </div>
@@ -954,7 +954,7 @@ export default function SlackAccessContent() {
                             <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">2</div>
                             <div>
                                 <h3 className="font-medium text-gray-900 mb-1">Sign up for Slack</h3>
-                                <p className="text-sm text-gray-600">Use the ieeeucsd.org email to sign up for Slack.</p>
+                                <p className="text-sm text-gray-600">Use the ieeeatucsd.org email to sign up for Slack.</p>
                             </div>
                         </div>
                         <div className="flex items-start space-x-3">

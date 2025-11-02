@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
       const baseUrl = process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
         : process.env.NODE_ENV === "production"
-          ? "https://ieeeucsd.org"
+          ? "https://ieeeatucsd.org"
           : `http://localhost:4321`; // Use the correct Astro dev server port
 
       const htmlContent = generatePrintHTML(constitution, sections, baseUrl);
@@ -193,7 +193,7 @@ export const PUT: APIRoute = async ({ request }) => {
       const baseUrl = process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
         : process.env.NODE_ENV === "production"
-          ? "https://ieeeucsd.org"
+          ? "https://ieeeatucsd.org"
           : `http://localhost:4321`; // Use the correct Astro dev server port
 
       const htmlContent = generatePrintHTML(constitution, sections, baseUrl);

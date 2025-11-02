@@ -119,7 +119,7 @@ export default function EmailManagementSection({
                                                         inputWrapper: "rounded-lg max-w-full h-11 shadow-sm border border-gray-200"
                                                     }}
                                                     endContent={
-                                                        <span className="text-sm text-gray-500 font-medium whitespace-nowrap">@ieeeucsd.org</span>
+                                                        <span className="text-sm text-gray-500 font-medium whitespace-nowrap">@ieeeatucsd.org</span>
                                                     }
                                                 />
                                             </div>

@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request }) => {
       import.meta.env.FROM_EMAIL ||
       "IEEE UCSD <noreply@transactional.ieeeatucsd.org>";
     const replyToEmail =
-      import.meta.env.REPLY_TO_EMAIL || "treasurer@ieeeucsd.org";
+      import.meta.env.REPLY_TO_EMAIL || "treasurer@ieeeatucsd.org";
 
     let success = false;
 

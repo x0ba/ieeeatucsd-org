@@ -125,7 +125,7 @@ export function generateEmailTemplate(options: EmailTemplateOptions): string {
 
     /* Header */
     .email-header {
-      background: linear-gradient(135deg, ${IEEE_COLORS.primary} 0%, ${IEEE_COLORS.primaryDark} 100%);
+      background: #003B5C;
       padding: 32px 24px;
       text-align: center;
     }
@@ -228,7 +228,7 @@ export function generateEmailTemplate(options: EmailTemplateOptions): string {
     .cta-button {
       display: inline-block;
       padding: 14px 28px;
-      background: linear-gradient(135deg, ${IEEE_COLORS.primary} 0%, ${IEEE_COLORS.primaryDark} 100%);
+      background: #003B5C;
       color: ${IEEE_COLORS.white} !important;
       text-decoration: none;
       border-radius: 8px;

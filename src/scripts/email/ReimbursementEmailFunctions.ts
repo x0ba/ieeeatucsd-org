@@ -9,6 +9,47 @@ import {
   IEEE_COLORS,
 } from "./templates/EmailTemplate";
 
+// Helper function to calculate receipt subtotal from line items
+function calculateReceiptSubtotal(receipt: any): number {
+  let subtotal = receipt.subtotal || 0;
+  if (subtotal === 0 && receipt.lineItems && receipt.lineItems.length > 0) {
+    subtotal = receipt.lineItems.reduce(
+      (sum: number, item: any) => sum + (item.amount || 0),
+      0,
+    );
+  }
+  return subtotal;
+}
+
+// Helper function to calculate total for a single receipt
+function calculateReceiptTotal(receipt: any): number {
+  if (receipt.total && receipt.total > 0) {
+    return receipt.total;
+  }
+  // Fallback: calculate from components
+  const subtotal = calculateReceiptSubtotal(receipt);
+  return (
+    subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0)
+  );
+}
+
+// Helper function to calculate total amount for a reimbursement
+function calculateReimbursementTotal(reimbursement: any): number {
+  // Handle new multi-receipt structure
+  if (reimbursement.receipts && reimbursement.receipts.length > 0) {
+    return reimbursement.receipts.reduce((sum: number, receipt: any) => {
+      return sum + calculateReceiptTotal(receipt);
+    }, 0);
+  }
+  // Handle legacy expenses structure
+  if (reimbursement.expenses && reimbursement.expenses.length > 0) {
+    return reimbursement.expenses.reduce((sum: number, expense: any) => {
+      return sum + (expense.amount || 0);
+    }, 0);
+  }
+  return 0;
+}
+
 export async function sendReimbursementSubmissionEmail(
   resend: any,
   fromEmail: string,
@@ -89,7 +130,7 @@ export async function sendReimbursementSubmissionEmail(
         <title>${treasurerSubject}</title>
         <style>
           .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-          .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px; }
+          .header { background: #003B5C; padding: 30px; border-radius: 10px; margin-bottom: 30px; }
           .content { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 25px; }
           .expense-item { background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin: 10px 0; }
           .footer { text-align: center; padding: 20px; border-top: 1px solid #eee; color: #666; font-size: 14px; }
@@ -122,7 +163,7 @@ export async function sendReimbursementSubmissionEmail(
                 </tr>
                 <tr>
                   <td style="font-weight: bold;">Total Amount</td>
-                  <td style="color: #28a745; font-weight: bold; font-size: 16px;">${formatCurrency(reimbursement.totalAmount)}</td>
+                  <td style="color: #28a745; font-weight: bold; font-size: 16px;">${formatCurrency(calculateReimbursementTotal(reimbursement))}</td>
                 </tr>
                 <tr>
                   <td style="font-weight: bold;">Purchase Date</td>
@@ -190,7 +231,7 @@ export async function sendReimbursementSubmissionEmail(
           
           <div class="footer">
             <p>Reference ID: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${reimbursement.id}</code></p>
-            <p>Access the dashboard at <a href="https://ieeeucsd.org/dashboard/manage-reimbursements" style="color: #28a745; text-decoration: none;">ieeeucsd.org/dashboard</a></p>
+            <p>Access the dashboard at <a href="https://ieeeatucsd.org/dashboard/manage-reimbursements" style="color: #28a745; text-decoration: none;">ieeeatucsd.org/dashboard</a></p>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
             <p style="font-size: 12px; color: #94a3b8;">IEEE UCSD Reimbursement Management System</p>
           </div>
@@ -209,7 +250,7 @@ export async function sendReimbursementSubmissionEmail(
         <title>${userSubject}</title>
         <style>
           .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px; }
+          .header { background: #003B5C; padding: 30px; border-radius: 10px; margin-bottom: 30px; }
           .content { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 25px; }
           .footer { text-align: center; padding: 20px; border-top: 1px solid #eee; color: #666; font-size: 14px; }
           table { width: 100%; border-collapse: collapse; }
@@ -242,7 +283,7 @@ export async function sendReimbursementSubmissionEmail(
                 </tr>
                 <tr>
                   <td style="font-weight: bold;">Total Amount</td>
-                  <td style="color: #28a745; font-weight: bold; font-size: 16px;">${formatCurrency(reimbursement.totalAmount)}</td>
+                  <td style="color: #28a745; font-weight: bold; font-size: 16px;">${formatCurrency(calculateReimbursementTotal(reimbursement))}</td>
                 </tr>
                 <tr>
                   <td style="font-weight: bold;">Expenses</td>
@@ -274,7 +315,7 @@ export async function sendReimbursementSubmissionEmail(
           <div class="footer">
             <p>Reference ID: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${reimbursement.id}</code></p>
             <p>Questions? Contact us at <a href="mailto:treasurer@ieeeatucsd.org" style="color: #3b82f6; text-decoration: none;">treasurer@ieeeatucsd.org</a></p>
-            <p>Track your request: <a href="https://ieeeucsd.org/dashboard/reimbursement" style="color: #3b82f6; text-decoration: none;">Dashboard</a></p>
+            <p>Track your request: <a href="https://ieeeatucsd.org/dashboard/reimbursement" style="color: #3b82f6; text-decoration: none;">Dashboard</a></p>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
             <p style="font-size: 12px; color: #94a3b8;">IEEE UCSD Reimbursement Management System</p>
           </div>
@@ -403,7 +444,7 @@ export async function sendAuditRequestEmail(
         <title>${subject}</title>
         <style>
           .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-          .header { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px; }
+          .header { background: #003B5C; padding: 30px; border-radius: 10px; margin-bottom: 30px; }
           .content { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 25px; }
           .expense-item { background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin: 10px 0; }
           .footer { text-align: center; padding: 20px; border-top: 1px solid #eee; color: #666; font-size: 14px; }
@@ -441,7 +482,7 @@ export async function sendAuditRequestEmail(
                 </tr>
                 <tr>
                   <td style="font-weight: bold;">Total Amount</td>
-                  <td style="color: #8b5cf6; font-weight: bold; font-size: 16px;">${formatCurrency(reimbursement.totalAmount)}</td>
+                  <td style="color: #8b5cf6; font-weight: bold; font-size: 16px;">${formatCurrency(calculateReimbursementTotal(reimbursement))}</td>
                 </tr>
                 <tr>
                   <td style="font-weight: bold;">Date of Purchase</td>
@@ -480,8 +521,8 @@ export async function sendAuditRequestEmail(
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="https://ieeeucsd.org/dashboard/manage-reimbursements" 
-                 style="background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; display: inline-block;">
+              <a href="https://ieeeatucsd.org/dashboard/manage-reimbursements"
+                 style="background: #003B5C; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; display: inline-block;">
                 Review Reimbursement
               </a>
             </div>
@@ -614,7 +655,7 @@ export async function sendReimbursementStatusChangeEmail(
     let detailsHtml = `
       <div style="background: ${IEEE_COLORS.gray[50]}; border-radius: 8px; padding: 20px; margin: 20px 0;">
         ${createDetailRow("Reimbursement Title", reimbursement.title)}
-        ${createDetailRow("Amount", formatCurrency(reimbursement.totalAmount))}
+        ${createDetailRow("Amount", formatCurrency(calculateReimbursementTotal(reimbursement)))}
         ${createDetailRow("Department", reimbursement.department.charAt(0).toUpperCase() + reimbursement.department.slice(1))}
         ${createDetailRow("Previous Status", data.previousStatus ? data.previousStatus.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A")}
         ${createDetailRow("New Status", `<span style="color: ${statusColor}; font-weight: 600;">${statusText}</span>`)}
@@ -672,7 +713,7 @@ export async function sendReimbursementStatusChangeEmail(
       contactEmail: "treasurer@ieeeatucsd.org",
       ctaButton: {
         text: "View Reimbursement Details",
-        url: "https://ieeeucsd.org/dashboard/reimbursement",
+        url: "https://ieeeatucsd.org/dashboard/reimbursement",
       },
     });
 

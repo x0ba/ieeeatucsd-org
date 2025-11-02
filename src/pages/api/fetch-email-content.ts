@@ -52,7 +52,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Create IMAP client with MXRoute settings
     const client = new ImapFlow({
-      host: "mail.ieeeucsd.org",
+      host: "mail.ieeeatucsd.org",
       port: 993,
       secure: true,
       auth: {

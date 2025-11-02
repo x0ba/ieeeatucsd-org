@@ -45,7 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
                 <title>${subject}</title>
             </head>
             <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">
+                <div style="background: #003B5C; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
                     <h1 style="color: white; margin: 0; font-size: 24px;">You're Invited to Join IEEE UCSD!</h1>
                 </div>
                 
