@@ -3,7 +3,7 @@ import { auth, db } from '../../../../firebase/client';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { app } from '../../../../firebase/client';
-import { User, GraduationCap, CreditCard, Upload, CheckCircle, ArrowRight, ArrowLeft, Menu, Sidebar } from 'lucide-react';
+import { User, GraduationCap, CreditCard, Upload, CheckCircle, ArrowRight, ArrowLeft, LayoutDashboard, Sidebar, PanelTop } from 'lucide-react';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { normalizeMajorName } from '../../../../utils/majorNormalization';
 import type { NavigationLayout } from '../../shared/types/firestore';
@@ -82,7 +82,7 @@ const questions: Question[] = [
         id: 'navigationLayout',
         title: 'Navigation Layout',
         description: 'Choose your preferred navigation style',
-        icon: Menu,
+        icon: LayoutDashboard,
         required: true,
         type: 'navigation-layout'
     }
@@ -179,7 +179,7 @@ export default function GetStartedContent() {
                 graduationYear: answers.graduationYear,
                 signedUp: true,
                 joinDate: new Date(), // Set join date when completing getting started
-                navigationLayout: answers.navigationLayout || 'sidebar', // Save navigation preference (default to sidebar)
+                a: answers.navigationLayout || 'sidebar', // Save navigation preference (default to sidebar)
             };
 
             // Only add optional fields if they have values
@@ -297,7 +297,7 @@ export default function GetStartedContent() {
                             <div className="flex items-center space-x-3 mb-4">
                                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${value === 'horizontal' ? 'bg-blue-100' : 'bg-gray-100'
                                     }`}>
-                                    <Menu className={`w-6 h-6 ${value === 'horizontal' ? 'text-blue-600' : 'text-gray-600'
+                                    <PanelTop className={`w-6 h-6 ${value === 'horizontal' ? 'text-blue-600' : 'text-gray-600'
                                         }`} />
                                 </div>
                                 <div className="flex-1">
