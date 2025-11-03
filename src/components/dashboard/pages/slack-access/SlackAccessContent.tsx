@@ -5,6 +5,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../../../../firebase/client';
 import type { User as UserType, UserRole } from '../../shared/types/firestore';
+import { Spinner } from '@heroui/react';
 
 interface EmailGenerationState {
     isGenerating: boolean;
@@ -1257,10 +1258,7 @@ function EmailModal({ email, credentials, onClose }: EmailModalProps) {
                 <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-16 px-6">
-                            <div className="relative">
-                                <div className="w-16 h-16 border-4 border-blue-200 rounded-full animate-pulse"></div>
-                                <div className="absolute inset-0 w-16 h-16 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
-                            </div>
+                            <Spinner size="lg" color="primary" />
                             <div className="mt-6 text-center">
                                 <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Email Content</h3>
                                 <p className="text-gray-600">Please wait while we fetch your email...</p>

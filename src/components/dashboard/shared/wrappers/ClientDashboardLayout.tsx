@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../DashboardLayout';
+import { Spinner } from '@heroui/react';
 
 interface ClientDashboardLayoutProps {
   currentPath?: string;
@@ -30,7 +31,7 @@ export default function ClientDashboardLayout({
       <div className="flex h-screen overflow-hidden bg-gray-50">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <Spinner size="lg" color="primary" className="mx-auto mb-4" />
             <p className="text-gray-600">Loading dashboard...</p>
           </div>
         </div>

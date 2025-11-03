@@ -10,7 +10,7 @@ import { ConstitutionAuditLog } from './ConstitutionAuditLog';
 
 import SafariBrowserBlock from './SafariBrowserBlock';
 import { useSafariDetection } from './hooks/useBrowserDetection';
-import { Skeleton } from '../../../ui/skeleton';
+import { Skeleton } from '@heroui/react';
 
 interface ConstitutionBuilderContentProps { }
 

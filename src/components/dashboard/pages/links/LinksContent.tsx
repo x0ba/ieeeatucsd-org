@@ -5,6 +5,7 @@ import LinkCard from "./components/LinkCard";
 import LinkModal from "./components/LinkModal";
 import LinkFilters from "./components/LinkFilters";
 import type { Link } from "../../shared/types/firestore";
+import { Skeleton } from "@heroui/react";
 
 export default function LinksContent() {
   const {
@@ -165,14 +166,14 @@ export default function LinksContent() {
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 animate-pulse"
+                  className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 bg-gray-200 rounded-xl" />
+                    <Skeleton className="w-12 h-12 rounded-xl" />
                     <div className="flex-1 space-y-3">
-                      <div className="h-4 bg-gray-200 rounded-full w-3/4" />
-                      <div className="h-3 bg-gray-200 rounded-full w-full" />
-                      <div className="h-3 bg-gray-200 rounded-full w-2/3" />
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="h-3 w-2/3" />
                     </div>
                   </div>
                 </div>

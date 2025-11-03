@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { ArrowRight, Calendar, MapPin, Users, DollarSign, FileText, AlertCircle, Upload, Trash2, Plus, Eye, Clock, RefreshCw } from 'lucide-react';
 import { extractFilename } from '../utils/filenameUtils';
 import { useChangeTracking } from '../hooks/useChangeTracking';
+import { Spinner } from '@heroui/react';
 
 interface FieldChange {
   field: string;
@@ -764,7 +765,7 @@ export default function EventEditComparison({
               >
                 {isSubmitting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <Spinner size="sm" color="current" className="mr-2" />
                     Saving Changes...
                   </>
                 ) : (

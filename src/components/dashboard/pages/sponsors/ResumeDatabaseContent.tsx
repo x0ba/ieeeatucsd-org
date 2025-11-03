@@ -11,6 +11,7 @@ import {
     getUniqueNormalizedMajors,
     getMajorNormalizationMap
 } from '../../../../utils/majorNormalization';
+import { Spinner } from '@heroui/react';
 
 interface UserWithResume extends Partial<FirestoreUser> {
     id: string;
@@ -378,7 +379,7 @@ export default function ResumeDatabaseContent() {
                 {/* Results */}
                 {loading ? (
                     <div className="bg-white rounded-2xl shadow p-12 text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <Spinner size="lg" color="primary" />
                         <p className="mt-4 text-gray-600">Loading resumes...</p>
                     </div>
                 ) : error ? (

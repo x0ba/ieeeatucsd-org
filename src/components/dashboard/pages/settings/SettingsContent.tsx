@@ -6,7 +6,7 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } f
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import type { User, NavigationLayout } from '../../shared/types/firestore';
 import { PublicProfileService } from '../../shared/services/publicProfile';
-import { Skeleton } from '../../../ui/skeleton';
+import { Skeleton } from '@heroui/react';
 import { normalizeMajorName } from '../../../../utils/majorNormalization';
 import { useNavigationPreference } from '../../shared/hooks/useNavigationPreference';
 

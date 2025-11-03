@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../../../hooks/useAuth';
 import SponsorDomainsSection from '../manage-users/components/SponsorDomainsSection';
+import { Spinner } from '@heroui/react';
 
 export default function ManageSponsorsContent() {
     const { userRole, loading } = useAuth();
@@ -9,7 +10,7 @@ export default function ManageSponsorsContent() {
         return (
             <div className="space-y-6 p-6">
                 <div className="flex items-center justify-center py-12" role="status" aria-label="Loading">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <Spinner size="lg" color="primary" />
                 </div>
             </div>
         );

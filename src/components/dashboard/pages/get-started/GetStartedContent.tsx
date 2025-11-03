@@ -7,6 +7,7 @@ import { User, GraduationCap, CreditCard, Upload, CheckCircle, ArrowRight, Arrow
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { normalizeMajorName } from '../../../../utils/majorNormalization';
 import type { NavigationLayout } from '../../shared/types/firestore';
+import { Spinner } from '@heroui/react';
 
 interface Question {
     id: string;
@@ -466,7 +467,7 @@ export default function GetStartedContent() {
                             >
                                 {loading ? (
                                     <>
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                        <Spinner size="sm" color="current" className="mr-2" />
                                         Finishing...
                                     </>
                                 ) : isLastStep ? (

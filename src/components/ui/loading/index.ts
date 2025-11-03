@@ -1,4 +1,5 @@
 import React from "react";
+import { Spinner } from "@heroui/react";
 
 // Export all loading components for easy importing
 export * from "./TableSkeleton";
@@ -62,20 +63,21 @@ export const LoadingPatterns = {
     content: T,
   ) => (isLoading ? skeleton : content),
 
-  // For form submissions - use DaisyUI spinners
+  // For form submissions - use HeroUI Spinner
   withSpinner: (isLoading: boolean, text: string = "Loading...") =>
     isLoading
       ? React.createElement(
           React.Fragment,
           null,
-          React.createElement("span", {
-            className: "loading loading-spinner loading-sm mr-2",
+          React.createElement(Spinner, {
+            size: "sm",
+            className: "mr-2",
           }),
           text,
         )
       : null,
 
-  // For button loading states - DaisyUI spinner in button
+  // For button loading states - HeroUI Spinner in button
   withButtonSpinner: (
     isLoading: boolean,
     text: string,
@@ -85,8 +87,10 @@ export const LoadingPatterns = {
       ? React.createElement(
           React.Fragment,
           null,
-          React.createElement("span", {
-            className: "loading loading-spinner loading-sm mr-2",
+          React.createElement(Spinner, {
+            size: "sm",
+            color: "current",
+            className: "mr-2",
           }),
           loadingText,
         )

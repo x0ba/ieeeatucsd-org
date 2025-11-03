@@ -10,6 +10,7 @@ import InvitationFlowTab from './components/InvitationFlowTab';
 import DirectOnboardingTab from './components/DirectOnboardingTab';
 import PendingInvitationsTab from './components/PendingInvitationsTab';
 import { useOnboarding } from './hooks/useOnboarding';
+import { Spinner } from '@heroui/react';
 
 export default function OnboardingContent() {
     const [user] = useAuthState(auth);
@@ -61,7 +62,7 @@ export default function OnboardingContent() {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <Spinner size="lg" color="primary" className="mx-auto mb-4" />
                     <p className="text-gray-600">Checking permissions...</p>
                 </div>
             </div>

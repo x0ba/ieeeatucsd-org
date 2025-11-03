@@ -1,5 +1,5 @@
 import React from 'react';
-import { Skeleton } from '../skeleton';
+import { Skeleton } from '@heroui/react';
 import { cn } from '@/lib/utils';
 
 interface PageSkeletonProps {
@@ -27,12 +27,12 @@ export function PageSkeleton({
             </div>
             <Skeleton className="h-10 w-32 rounded" />
           </div>
-          
+
           {/* Search bar */}
           <Skeleton className="h-10 w-full max-w-md rounded" />
         </div>
       )}
-      
+
       {/* Metrics cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {Array.from({ length: 4 }).map((_, index) => (
@@ -48,7 +48,7 @@ export function PageSkeleton({
           </div>
         ))}
       </div>
-      
+
       {/* Main content area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main chart/content */}
@@ -58,7 +58,7 @@ export function PageSkeleton({
             <Skeleton className="h-64 w-full rounded" />
           </div>
         </div>
-        
+
         {/* Sidebar content */}
         <div className="space-y-6">
           <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -97,7 +97,7 @@ export function PageSkeleton({
               <Skeleton className="h-10 w-32 rounded" />
             </div>
           </div>
-          
+
           {/* Filters and search */}
           <div className="flex items-center space-x-4">
             <Skeleton className="h-10 w-64 rounded" />
@@ -106,7 +106,7 @@ export function PageSkeleton({
           </div>
         </div>
       )}
-      
+
       {/* Table */}
       <div className="bg-white rounded-lg border border-gray-200">
         {/* Table header */}
@@ -119,7 +119,7 @@ export function PageSkeleton({
             ))}
           </div>
         </div>
-        
+
         {/* Table rows */}
         <div className="divide-y divide-gray-200">
           {Array.from({ length: 8 }).map((_, index) => (
@@ -154,7 +154,7 @@ export function PageSkeleton({
           <Skeleton className="h-4 w-64" />
         </div>
       )}
-      
+
       {/* Form */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="space-y-6">
@@ -172,7 +172,7 @@ export function PageSkeleton({
               </div>
             </div>
           ))}
-          
+
           {/* Form actions */}
           <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
             <Skeleton className="h-10 w-20 rounded" />
@@ -195,7 +195,7 @@ export function PageSkeleton({
           <Skeleton className="h-10 w-full max-w-md rounded" />
         </div>
       )}
-      
+
       {/* Content */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="space-y-6">
@@ -208,7 +208,7 @@ export function PageSkeleton({
               <Skeleton className="h-4 w-3/4" />
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <Skeleton className="h-6 w-40" />
             <div className="space-y-3">
@@ -236,7 +236,7 @@ export function PageSkeleton({
   };
 
   return (
-    <div 
+    <div
       className={cn("flex-1 overflow-auto", className)}
       role="status"
       aria-label="Loading page content"

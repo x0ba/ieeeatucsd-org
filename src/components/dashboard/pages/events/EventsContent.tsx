@@ -5,6 +5,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../../../firebase/client';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { EventCardSkeleton, MetricCardSkeleton } from '../../../ui/loading';
+import { Spinner } from '@heroui/react';
 
 interface Event {
     id: string;
@@ -480,7 +481,7 @@ export default function EventsContent() {
                                                     >
                                                         {checkingIn === event.id ? (
                                                             <>
-                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                <Spinner size="sm" color="current" />
                                                                 <span>Checking In...</span>
                                                             </>
                                                         ) : (

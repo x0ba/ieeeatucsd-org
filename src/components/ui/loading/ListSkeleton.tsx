@@ -1,5 +1,5 @@
 import React from 'react';
-import { Skeleton } from '../skeleton';
+import { Skeleton } from '@heroui/react';
 import { cn } from '@/lib/utils';
 
 interface ListSkeletonProps {
@@ -26,13 +26,13 @@ export function ListSkeleton({
       {/* Icon or Avatar */}
       {showIcon && <Skeleton className="w-5 h-5" />}
       {showAvatar && <Skeleton className="w-10 h-10 rounded-full" />}
-      
+
       {/* Content */}
       <div className="flex-1 space-y-1">
         <Skeleton className="h-4 w-3/4" />
         {showMetadata && <Skeleton className="h-3 w-1/2" />}
       </div>
-      
+
       {/* Actions */}
       {showActions && (
         <div className="flex space-x-2">
@@ -72,14 +72,14 @@ export function ListSkeleton({
           </div>
         )}
       </div>
-      
+
       {/* Content */}
       <div className="space-y-2">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-4/5" />
         <Skeleton className="h-4 w-3/5" />
       </div>
-      
+
       {/* Metadata */}
       {showMetadata && (
         <div className="flex items-center space-x-4 text-sm">
@@ -104,13 +104,13 @@ export function ListSkeleton({
         </div>
         <Skeleton className="h-3 w-20" />
       </div>
-      
+
       {/* Action description */}
       <div className="ml-11 space-y-2">
         <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-3 w-1/2" />
       </div>
-      
+
       {/* Changes or details */}
       <div className="ml-11 bg-gray-50 rounded p-3 space-y-2">
         <Skeleton className="h-3 w-full" />
@@ -126,7 +126,7 @@ export function ListSkeleton({
         <div className="flex-shrink-0">
           <Skeleton className="w-8 h-8 rounded-full" />
         </div>
-        
+
         {/* Content */}
         <div className="flex-1 space-y-2">
           <div className="flex items-center justify-between">
@@ -136,7 +136,7 @@ export function ListSkeleton({
           <Skeleton className="h-3 w-full" />
           <Skeleton className="h-3 w-3/4" />
         </div>
-        
+
         {/* Unread indicator */}
         <div className="flex-shrink-0">
           <Skeleton className="w-2 h-2 rounded-full" />
@@ -161,14 +161,14 @@ export function ListSkeleton({
   };
 
   return (
-    <div 
+    <div
       className={cn("space-y-0", className)}
       role="status"
       aria-label="Loading list items"
     >
       {Array.from({ length: items }).map((_, index) => (
-        <div 
-          key={index} 
+        <div
+          key={index}
           className={cn(
             "border-b border-gray-100 last:border-b-0",
             variant === 'compact' && "border-b-0"

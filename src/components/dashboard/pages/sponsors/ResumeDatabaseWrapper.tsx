@@ -5,6 +5,7 @@ import ResumeDatabaseTabs from './ResumeDatabaseTabs';
 import ResumeDatabaseContent from './ResumeDatabaseContent';
 import SponsorInformation from './SponsorInformation';
 import { AlertCircle } from 'lucide-react';
+import { Spinner } from '@heroui/react';
 
 export default function ResumeDatabaseWrapper() {
     const { userRole, loading } = useAuth();
@@ -13,7 +14,7 @@ export default function ResumeDatabaseWrapper() {
         return (
             <div className="flex-1 overflow-auto p-6">
                 <div className="flex items-center justify-center py-12">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <Spinner size="lg" color="primary" />
                 </div>
             </div>
         );

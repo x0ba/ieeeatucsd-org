@@ -1,5 +1,5 @@
 import React from 'react';
-import { Skeleton } from '../skeleton';
+import { Skeleton } from '@heroui/react';
 import { cn } from '@/lib/utils';
 
 interface TableSkeletonProps {
@@ -36,7 +36,7 @@ export function TableSkeleton({
   const rowHeight = variant === 'compact' ? 'h-10' : variant === 'detailed' ? 'h-16' : 'h-12';
 
   return (
-    <div 
+    <div
       className={cn("w-full", className)}
       role="status"
       aria-label="Loading table data"
@@ -56,7 +56,7 @@ export function TableSkeleton({
               </div>
             </div>
           )}
-          
+
           {/* Table Rows */}
           <div className="bg-white divide-y divide-gray-200">
             {Array.from({ length: rows }).map((_, rowIndex) => (
@@ -104,7 +104,7 @@ export function TableSkeleton({
                   <Skeleton className="h-3 w-2/3" />
                 )}
               </div>
-              
+
               {/* Metadata */}
               <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                 <Skeleton className="h-3 w-20" />

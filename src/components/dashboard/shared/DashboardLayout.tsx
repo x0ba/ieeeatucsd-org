@@ -5,6 +5,7 @@ import { auth } from '../../../firebase/client';
 import { ModalProvider } from './contexts/ModalContext.tsx';
 import { SyncStatusProvider } from './contexts/SyncStatusContext.tsx';
 import { useNavigationPreference } from './hooks/useNavigationPreference';
+import { Spinner } from '@heroui/react';
 
 interface DashboardLayoutProps {
     children?: ReactNode;
@@ -29,7 +30,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
         return (
             <div className="flex h-screen items-center justify-center bg-gray-50">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <Spinner size="lg" color="primary" className="mx-auto mb-4" />
                     <p className="text-gray-600">Loading dashboard...</p>
                 </div>
             </div>

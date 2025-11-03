@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Building2, Shield } from 'lucide-react';
 import { useSponsorDomains } from '../hooks/useSponsorDomains';
 import type { SponsorDomainWithId } from '../hooks/useSponsorDomains';
 import SponsorDomainModal from './SponsorDomainModal';
+import { Spinner } from '@heroui/react';
 
 interface SponsorDomainsSectionProps {
     isAdmin: boolean;
@@ -40,7 +41,7 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
         } else {
             await addDomain(formData);
         }
-        
+
         if (!error) {
             setShowModal(false);
             setEditingDomain(null);
@@ -156,7 +157,7 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
             <div className="p-6">
                 {loading ? (
                     <div className="text-center py-8">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <Spinner size="lg" color="primary" />
                         <p className="mt-2 text-sm text-gray-500">Loading sponsor domains...</p>
                     </div>
                 ) : domains.length === 0 ? (

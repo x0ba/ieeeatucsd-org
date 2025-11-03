@@ -3,6 +3,7 @@ import { AlertTriangle, Calendar, MapPin, Users, DollarSign, FileText, CheckCirc
 import { truncateFilename } from '../utils/filenameUtils';
 import type { EventFormData } from '../types/EventRequestTypes';
 import EventEditComparison from './EventEditComparison';
+import { Spinner } from '@heroui/react';
 
 interface EventReviewSectionProps {
   eventData?: any;
@@ -586,7 +587,7 @@ export default function EventReviewSection({
             >
               {isSubmitting ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <Spinner size="sm" color="current" className="mr-2" />
                   Submitting...
                 </>
               ) : (

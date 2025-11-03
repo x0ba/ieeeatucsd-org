@@ -21,6 +21,7 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Spinner,
 } from "@heroui/react";
 import { db } from "../../../../../firebase/client";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
@@ -250,7 +251,7 @@ export default function DirectOnboardingTab({
 
               {loadingSettings ? (
                 <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                  <Spinner size="sm" />
                   Loading settings...
                 </div>
               ) : googleSheetsUrl ? (

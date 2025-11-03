@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, signInWithPopup, GoogleAuthProvider, browserPopupRedirectResolver } from '../../../../firebase/client';
-import { Skeleton } from '../../../ui/skeleton';
+import { Skeleton } from '@heroui/react';
 
 // Blue IEEE Logo SVG Component
 const BlueIEEELogo = ({ className = "w-32 h-auto" }: { className?: string }) => (

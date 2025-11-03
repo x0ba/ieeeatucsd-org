@@ -8,6 +8,7 @@ import EnhancedFileViewer from './components/EnhancedFileViewer';
 import FilePreviewModal from './components/FilePreviewModal';
 import { extractPRRequirements } from './utils/prRequirementsUtils';
 import { uploadFilesForEvent } from './utils/fileUploadUtils';
+import { Spinner } from '@heroui/react';
 
 interface GraphicsUploadModalProps {
     request: any;
@@ -328,7 +329,7 @@ export default function GraphicsUploadModal({ request, onClose, onSuccess }: Gra
                         >
                             {uploading ? (
                                 <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    <Spinner size="sm" color="current" />
                                     <span>Uploading...</span>
                                 </>
                             ) : (
