@@ -280,10 +280,10 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
       isMenuOpen={isMenuOpen}
       onMenuOpenChange={setIsMenuOpen}
       maxWidth="full"
-      className="bg-[#0A2463]"
+      className="bg-sidebar border-b border-sidebar-border"
       classNames={{
         wrapper: "px-4 sm:px-6",
-        item: "text-white data-[active=true]:text-white",
+        item: "text-sidebar-foreground data-[active=true]:text-sidebar-foreground",
       }}
     >
       {/* Brand */}
@@ -293,9 +293,9 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
             <img
               src="/logos/blue_logo_only.svg"
               alt="IEEE UCSD Logo"
-              className="w-8 h-8 transition-transform group-hover:scale-105 brightness-0 invert"
+              className="w-8 h-8 transition-transform group-hover:scale-105"
             />
-            <span className="text-xl font-bold text-white hidden sm:block">
+            <span className="text-lg font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
               IEEE UCSD
             </span>
           </a>
@@ -315,8 +315,8 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
                   aria-label={`Navigate to ${item.label}`}
                   aria-current={isActive ? "page" : undefined}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${isActive
-                    ? "bg-white/20 text-white font-semibold"
-                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     }`}
                 >
                   <Icon className="w-4 h-4" aria-hidden="true" />
@@ -333,7 +333,7 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
               <DropdownTrigger>
                 <Button
                   disableRipple
-                  className="p-0 bg-transparent data-[hover=true]:bg-white/10 text-white/80 hover:text-white"
+                  className="p-0 bg-transparent data-[hover=true]:bg-sidebar-accent text-sidebar-foreground/80 hover:text-sidebar-accent-foreground"
                   endContent={<ChevronDown className="w-4 h-4" />}
                   radius="sm"
                   variant="light"
@@ -375,7 +375,7 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
                 isIconOnly
                 variant="light"
                 isDisabled
-                className="text-white/40 cursor-not-allowed"
+                className="text-sidebar-foreground/40 cursor-not-allowed"
                 aria-label="Notifications (Under Development)"
               >
                 <Badge content={unreadCount > 0 ? unreadCount : ""} color="danger" size="sm">
@@ -393,7 +393,7 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
               <Button
                 isIconOnly
                 variant="light"
-                className="text-white hover:bg-white/10"
+                className="text-sidebar-foreground hover:bg-sidebar-accent"
                 aria-label="Profile"
               >
                 <User className="w-5 h-5" />
@@ -437,16 +437,16 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
         {/* Mobile Menu Toggle */}
         <NavbarMenuToggle
           aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-          className="lg:hidden text-white"
+          className="lg:hidden text-sidebar-foreground"
         />
       </NavbarContent>
 
       {/* Mobile Menu */}
-      <NavbarMenu className="pt-6 bg-white">
+      <NavbarMenu className="pt-6 bg-sidebar border-t border-sidebar-border">
         {!isLoading &&
           filteredCategories.map((category) => (
             <div key={category.title} className="mb-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
+              <p className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2">
                 {category.title}
               </p>
               {filterBySponsorTier(category.items)
@@ -460,8 +460,8 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
                         aria-label={`Navigate to ${item.label}`}
                         aria-current={isActive ? "page" : undefined}
                         className={`flex items-center gap-3 px-2 py-2.5 rounded-lg transition-all w-full ${isActive
-                          ? "bg-blue-50 text-blue-700 font-semibold"
-                          : "text-gray-700 hover:bg-gray-100"
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           }`}
                       >
                         <Icon className="w-5 h-5" aria-hidden="true" />
