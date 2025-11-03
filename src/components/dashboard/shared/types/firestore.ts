@@ -13,6 +13,8 @@ export type UserRole =
 
 export type SponsorTier = "Bronze" | "Silver" | "Gold" | "Platinum" | "Diamond";
 
+export type NavigationLayout = "horizontal" | "sidebar";
+
 export interface User {
   email: string;
   emailVisibility: boolean;
@@ -29,6 +31,7 @@ export interface User {
   notificationPreferences: Record<string, unknown>;
   displayPreferences: Record<string, unknown>;
   accessibilitySettings: Record<string, unknown>;
+  navigationLayout?: NavigationLayout; // User's preferred navigation layout (horizontal navbar or sidebar)
   resume?: string;
   signedUp: boolean;
   requestedEmail: boolean;

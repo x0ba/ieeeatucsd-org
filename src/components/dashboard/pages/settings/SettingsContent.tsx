@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Shield, UserCircle, Upload, FileText, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { Save, Shield, UserCircle, Upload, FileText, AlertCircle, CheckCircle, Eye, EyeOff, Layout, Sidebar } from 'lucide-react';
 import { auth, db } from '../../../../firebase/client';
 import { doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, onAuthStateChanged } from 'firebase/auth';
-import type { User } from '../../shared/types/firestore';
+import type { User, NavigationLayout } from '../../shared/types/firestore';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { Skeleton } from '../../../ui/skeleton';
 import { normalizeMajorName } from '../../../../utils/majorNormalization';
+import { useNavigationPreference } from '../../shared/hooks/useNavigationPreference';
 
 export default function SettingsContent() {
     const [userData, setUserData] = useState<User | null>(null);
@@ -16,6 +17,10 @@ export default function SettingsContent() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [isGoogleUser, setIsGoogleUser] = useState(false);
+
+    // Navigation preference
+    const { navigationLayout, setNavigationLayout, loading: navPrefLoading } = useNavigationPreference();
+    const [savingNavPref, setSavingNavPref] = useState(false);
 
     // Profile form state
     const [profileData, setProfileData] = useState({
@@ -311,6 +316,26 @@ export default function SettingsContent() {
         }
     };
 
+    const handleNavigationLayoutChange = async (layout: NavigationLayout) => {
+        setSavingNavPref(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            await setNavigationLayout(layout);
+            setSuccess('Navigation layout updated successfully! The page will reload to apply changes.');
+
+            // Reload page after a short delay to apply the new layout
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } catch (err: any) {
+            setError('Failed to update navigation layout: ' + err.message);
+        } finally {
+            setSavingNavPref(false);
+        }
+    };
+
     // Helper function to detect if current user is OAuth user
     const isCurrentUserOAuth = () => {
         if (userData?.signInMethod) {
@@ -544,6 +569,104 @@ export default function SettingsContent() {
                                 <span>{saving ? 'Saving...' : 'Save Profile'}</span>
                             </button>
                         </div>
+                    </div>
+
+                    {/* Navigation Layout Preference */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                        <div className="flex items-center space-x-3 mb-4 md:mb-6">
+                            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Layout className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-base md:text-lg font-semibold text-gray-900">Navigation Layout</h2>
+                                <p className="text-xs md:text-sm text-gray-500">Choose your preferred navigation style</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Horizontal Navbar Option */}
+                            <button
+                                onClick={() => handleNavigationLayoutChange('horizontal')}
+                                disabled={savingNavPref || navPrefLoading}
+                                className={`relative p-4 border-2 rounded-lg transition-all text-left ${navigationLayout === 'horizontal'
+                                    ? 'border-blue-500 bg-blue-50'
+                                    : 'border-gray-200 hover:border-gray-300'
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                                <div className="flex items-start space-x-3">
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${navigationLayout === 'horizontal' ? 'bg-blue-100' : 'bg-gray-100'
+                                        }`}>
+                                        <Layout className={`w-5 h-5 ${navigationLayout === 'horizontal' ? 'text-blue-600' : 'text-gray-600'
+                                            }`} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-gray-900 mb-1">Horizontal Navbar</h3>
+                                        <p className="text-sm text-gray-600">Traditional top navigation bar with dropdown menus</p>
+                                    </div>
+                                </div>
+                                {navigationLayout === 'horizontal' && (
+                                    <div className="absolute top-2 right-2">
+                                        <CheckCircle className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                )}
+                                {/* Visual Preview */}
+                                <div className="mt-3 p-2 bg-white rounded border border-gray-200">
+                                    <div className="h-8 bg-blue-600 rounded mb-1"></div>
+                                    <div className="h-20 bg-gray-100 rounded"></div>
+                                </div>
+                            </button>
+
+                            {/* Sidebar Option */}
+                            <button
+                                onClick={() => handleNavigationLayoutChange('sidebar')}
+                                disabled={savingNavPref || navPrefLoading}
+                                className={`relative p-4 border-2 rounded-lg transition-all text-left ${navigationLayout === 'sidebar'
+                                    ? 'border-blue-500 bg-blue-50'
+                                    : 'border-gray-200 hover:border-gray-300'
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                                <div className="flex items-start space-x-3">
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${navigationLayout === 'sidebar' ? 'bg-blue-100' : 'bg-gray-100'
+                                        }`}>
+                                        <Sidebar className={`w-5 h-5 ${navigationLayout === 'sidebar' ? 'text-blue-600' : 'text-gray-600'
+                                            }`} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-gray-900 mb-1">Sidebar Navigation</h3>
+                                        <p className="text-sm text-gray-600">Collapsible sidebar with organized menu groups</p>
+                                    </div>
+                                </div>
+                                {navigationLayout === 'sidebar' && (
+                                    <div className="absolute top-2 right-2">
+                                        <CheckCircle className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                )}
+                                {/* Visual Preview - Detailed Sidebar Representation */}
+                                <div className="mt-3 p-2 bg-white rounded border border-gray-200 flex gap-1">
+                                    <div className="w-16 bg-gray-800 rounded p-1.5 flex flex-col gap-1">
+                                        {/* Logo area */}
+                                        <div className="h-2 bg-blue-500 rounded mb-1"></div>
+                                        {/* Menu items */}
+                                        <div className="space-y-0.5">
+                                            <div className="h-1.5 bg-gray-600 rounded"></div>
+                                            <div className="h-1.5 bg-gray-600 rounded"></div>
+                                            <div className="h-1.5 bg-gray-600 rounded"></div>
+                                        </div>
+                                        {/* Spacer */}
+                                        <div className="flex-1"></div>
+                                        {/* User section at bottom */}
+                                        <div className="h-2 bg-gray-600 rounded mt-auto"></div>
+                                    </div>
+                                    <div className="flex-1 bg-gray-100 rounded"></div>
+                                </div>
+                            </button>
+                        </div>
+
+                        {savingNavPref && (
+                            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p className="text-sm text-blue-700">Updating navigation layout...</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Resume Settings */}

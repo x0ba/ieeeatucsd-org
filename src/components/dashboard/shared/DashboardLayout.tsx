@@ -1,8 +1,10 @@
 import { type ReactNode, useEffect } from 'react';
 import { TopNavbar } from './TopNavbar.tsx';
+import { SidebarNavigation } from './SidebarNavigation.tsx';
 import { auth } from '../../../firebase/client';
 import { ModalProvider } from './contexts/ModalContext.tsx';
 import { SyncStatusProvider } from './contexts/SyncStatusContext.tsx';
+import { useNavigationPreference } from './hooks/useNavigationPreference';
 
 interface DashboardLayoutProps {
     children?: ReactNode;
@@ -10,6 +12,8 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, currentPath }: DashboardLayoutProps) {
+    const { navigationLayout, loading: prefLoading } = useNavigationPreference();
+
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged(user => {
             if (!user) {
@@ -20,18 +24,35 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
         return () => unsubscribeAuth();
     }, []);
 
+    // Show loading state while preference is being loaded to prevent layout flash
+    if (prefLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading dashboard...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <SyncStatusProvider>
             <ModalProvider>
-                <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
-                    {/* Top Navigation Bar */}
-                    <TopNavbar currentPath={currentPath} />
-
-                    {/* Main Content Area */}
-                    <div className="flex-1 min-h-0 overflow-y-auto">
+                {navigationLayout === 'sidebar' ? (
+                    // Sidebar Layout
+                    <SidebarNavigation currentPath={currentPath}>
                         {children || <DefaultContent />}
+                    </SidebarNavigation>
+                ) : (
+                    // Horizontal Navbar Layout (default)
+                    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+                        <TopNavbar currentPath={currentPath} />
+                        <div className="flex-1 min-h-0 overflow-y-auto">
+                            {children || <DefaultContent />}
+                        </div>
                     </div>
-                </div>
+                )}
             </ModalProvider>
         </SyncStatusProvider>
     );

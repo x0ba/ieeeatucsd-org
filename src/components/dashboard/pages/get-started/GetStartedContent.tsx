@@ -3,9 +3,10 @@ import { auth, db } from '../../../../firebase/client';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { app } from '../../../../firebase/client';
-import { User, GraduationCap, CreditCard, Upload, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { User, GraduationCap, CreditCard, Upload, CheckCircle, ArrowRight, ArrowLeft, Layout, Sidebar } from 'lucide-react';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { normalizeMajorName } from '../../../../utils/majorNormalization';
+import type { NavigationLayout } from '../../shared/types/firestore';
 
 interface Question {
     id: string;
@@ -13,7 +14,7 @@ interface Question {
     description: string;
     icon: React.ComponentType<{ className?: string }>;
     required: boolean;
-    type: 'text' | 'number' | 'file';
+    type: 'text' | 'number' | 'file' | 'navigation-layout';
     placeholder?: string;
     min?: number;
     max?: number;
@@ -76,6 +77,14 @@ const questions: Question[] = [
         required: false,
         type: 'file',
         accept: '.pdf,.doc,.docx'
+    },
+    {
+        id: 'navigationLayout',
+        title: 'Navigation Layout',
+        description: 'Choose your preferred navigation style',
+        icon: Layout,
+        required: true,
+        type: 'navigation-layout'
     }
 ];
 
@@ -170,6 +179,7 @@ export default function GetStartedContent() {
                 graduationYear: answers.graduationYear,
                 signedUp: true,
                 joinDate: new Date(), // Set join date when completing getting started
+                navigationLayout: answers.navigationLayout || 'sidebar', // Save navigation preference (default to sidebar)
             };
 
             // Only add optional fields if they have values
@@ -181,6 +191,11 @@ export default function GetStartedContent() {
             }
             if (resumeUrl) {
                 updateData.resume = resumeUrl;
+            }
+
+            // Also save navigation layout to localStorage for immediate access
+            if (typeof window !== 'undefined' && answers.navigationLayout) {
+                localStorage.setItem('ieee_navigation_layout', answers.navigationLayout);
             }
 
             // Update private user document
@@ -265,6 +280,88 @@ export default function GetStartedContent() {
                         {value && (
                             <p className="text-green-600 font-medium">✓ {value.name} selected</p>
                         )}
+                    </div>
+                );
+            case 'navigation-layout':
+                return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Horizontal Navbar Option */}
+                        <button
+                            type="button"
+                            onClick={() => handleInputChange('horizontal')}
+                            className={`relative p-6 border-2 rounded-lg transition-all text-left ${value === 'horizontal'
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                        >
+                            <div className="flex items-start space-x-3 mb-4">
+                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${value === 'horizontal' ? 'bg-blue-100' : 'bg-gray-100'
+                                    }`}>
+                                    <Layout className={`w-6 h-6 ${value === 'horizontal' ? 'text-blue-600' : 'text-gray-600'
+                                        }`} />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-lg text-gray-900 mb-1">Horizontal Navbar</h3>
+                                    <p className="text-sm text-gray-600">Traditional top navigation bar with dropdown menus</p>
+                                </div>
+                            </div>
+                            {value === 'horizontal' && (
+                                <div className="absolute top-3 right-3">
+                                    <CheckCircle className="w-6 h-6 text-blue-600" />
+                                </div>
+                            )}
+                            {/* Visual Preview */}
+                            <div className="mt-3 p-2 bg-white rounded border border-gray-200">
+                                <div className="h-8 bg-blue-600 rounded mb-1"></div>
+                                <div className="h-24 bg-gray-100 rounded"></div>
+                            </div>
+                        </button>
+
+                        {/* Sidebar Option */}
+                        <button
+                            type="button"
+                            onClick={() => handleInputChange('sidebar')}
+                            className={`relative p-6 border-2 rounded-lg transition-all text-left ${value === 'sidebar'
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                        >
+                            <div className="flex items-start space-x-3 mb-4">
+                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${value === 'sidebar' ? 'bg-blue-100' : 'bg-gray-100'
+                                    }`}>
+                                    <Sidebar className={`w-6 h-6 ${value === 'sidebar' ? 'text-blue-600' : 'text-gray-600'
+                                        }`} />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-lg text-gray-900 mb-1">Sidebar Navigation</h3>
+                                    <p className="text-sm text-gray-600">Collapsible sidebar with organized menu groups</p>
+                                </div>
+                            </div>
+                            {value === 'sidebar' && (
+                                <div className="absolute top-3 right-3">
+                                    <CheckCircle className="w-6 h-6 text-blue-600" />
+                                </div>
+                            )}
+                            {/* Visual Preview - Detailed Sidebar Representation */}
+                            <div className="mt-3 p-2 bg-white rounded border border-gray-200 flex gap-1">
+                                <div className="w-20 bg-gray-800 rounded p-2 flex flex-col gap-1.5">
+                                    {/* Logo area */}
+                                    <div className="h-3 bg-blue-500 rounded mb-2"></div>
+                                    {/* Menu items */}
+                                    <div className="space-y-1">
+                                        <div className="h-2 bg-gray-600 rounded"></div>
+                                        <div className="h-2 bg-gray-600 rounded"></div>
+                                        <div className="h-2 bg-gray-600 rounded"></div>
+                                        <div className="h-2 bg-gray-600 rounded"></div>
+                                    </div>
+                                    {/* Spacer */}
+                                    <div className="flex-1"></div>
+                                    {/* User section at bottom */}
+                                    <div className="h-3 bg-gray-600 rounded mt-auto"></div>
+                                </div>
+                                <div className="flex-1 bg-gray-100 rounded"></div>
+                            </div>
+                        </button>
                     </div>
                 );
             default:
