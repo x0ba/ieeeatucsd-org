@@ -588,25 +588,25 @@ export default function SettingsContent() {
                             <button
                                 onClick={() => handleNavigationLayoutChange('horizontal')}
                                 disabled={savingNavPref || navPrefLoading}
-                                className={`relative p-4 border-2 rounded-lg transition-all text-left ${navigationLayout === 'horizontal'
+                                className={`relative p-6 border-2 rounded-lg transition-all text-left ${navigationLayout === 'horizontal'
                                     ? 'border-blue-500 bg-blue-50'
                                     : 'border-gray-200 hover:border-gray-300'
                                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
-                                <div className="flex items-center space-x-3">
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${navigationLayout === 'horizontal' ? 'bg-blue-100' : 'bg-gray-100'
+                                <div className="flex items-center space-x-3 mb-4">
+                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${navigationLayout === 'horizontal' ? 'bg-blue-100' : 'bg-gray-100'
                                         }`}>
-                                        <PanelTop className={`w-5 h-5 ${navigationLayout === 'horizontal' ? 'text-blue-600' : 'text-gray-600'
+                                        <PanelTop className={`w-6 h-6 ${navigationLayout === 'horizontal' ? 'text-blue-600' : 'text-gray-600'
                                             }`} />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-gray-900 mb-1">Horizontal Navbar</h3>
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold text-lg text-gray-900 mb-1">Horizontal Navbar</h3>
                                         <p className="text-sm text-gray-600">Traditional top navigation bar with dropdown menus</p>
                                     </div>
                                 </div>
                                 {navigationLayout === 'horizontal' && (
-                                    <div className="absolute top-2 right-2">
-                                        <CheckCircle className="w-5 h-5 text-blue-600" />
+                                    <div className="absolute top-3 right-3">
+                                        <CheckCircle className="w-6 h-6 text-blue-600" />
                                     </div>
                                 )}
                                 {/* Visual Preview - Horizontal Navbar Only */}
@@ -629,25 +629,25 @@ export default function SettingsContent() {
                             <button
                                 onClick={() => handleNavigationLayoutChange('sidebar')}
                                 disabled={savingNavPref || navPrefLoading}
-                                className={`relative p-4 border-2 rounded-lg transition-all text-left ${navigationLayout === 'sidebar'
+                                className={`relative p-6 border-2 rounded-lg transition-all text-left ${navigationLayout === 'sidebar'
                                     ? 'border-blue-500 bg-blue-50'
                                     : 'border-gray-200 hover:border-gray-300'
                                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
-                                <div className="flex items-center space-x-3">
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${navigationLayout === 'sidebar' ? 'bg-blue-100' : 'bg-gray-100'
+                                <div className="flex items-center space-x-3 mb-4">
+                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${navigationLayout === 'sidebar' ? 'bg-blue-100' : 'bg-gray-100'
                                         }`}>
-                                        <Sidebar className={`w-5 h-5 ${navigationLayout === 'sidebar' ? 'text-blue-600' : 'text-gray-600'
+                                        <Sidebar className={`w-6 h-6 ${navigationLayout === 'sidebar' ? 'text-blue-600' : 'text-gray-600'
                                             }`} />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-gray-900 mb-1">Sidebar Navigation</h3>
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold text-lg text-gray-900 mb-1">Sidebar Navigation</h3>
                                         <p className="text-sm text-gray-600">Collapsible sidebar with organized menu groups</p>
                                     </div>
                                 </div>
                                 {navigationLayout === 'sidebar' && (
-                                    <div className="absolute top-2 right-2">
-                                        <CheckCircle className="w-5 h-5 text-blue-600" />
+                                    <div className="absolute top-3 right-3">
+                                        <CheckCircle className="w-6 h-6 text-blue-600" />
                                     </div>
                                 )}
                                 {/* Visual Preview - Sidebar Only */}
