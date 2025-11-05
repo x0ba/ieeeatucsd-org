@@ -180,7 +180,7 @@ export function useOnboarding() {
       }
 
       showToast.success(`Invitation sent successfully to ${formData.name}!`);
-      await fetchInvitations();
+      // Real-time listener will automatically update invitations
     } catch (err) {
       console.error("Error sending invitation:", err);
       showToast.error(
@@ -258,7 +258,7 @@ export function useOnboarding() {
       }
 
       showToast.success("Invitation resent successfully!");
-      await fetchInvitations();
+      // Real-time listener will automatically update invitations
     } catch (err) {
       console.error("Error resending invitation:", err);
       showToast.error(
@@ -269,9 +269,9 @@ export function useOnboarding() {
     }
   };
 
-  // Refresh invitations
+  // Refresh invitations (no-op since real-time listener handles updates)
   const refreshInvitations = async () => {
-    await fetchInvitations();
+    // Real-time listener automatically updates invitations
   };
 
   return {

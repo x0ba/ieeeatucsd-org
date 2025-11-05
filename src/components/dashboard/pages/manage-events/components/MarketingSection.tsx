@@ -102,9 +102,9 @@ export default function MarketingSection({
                     onFilesChange={(files) => {
                       if (Array.isArray(files)) {
                         const fileList = {
+                          ...files,
                           length: files.length,
                           item: (index: number) => files[index] || null,
-                          ...files,
                         } as FileList;
                         onFileChange("otherFlyerFiles", fileList);
                       } else {

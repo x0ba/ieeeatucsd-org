@@ -184,14 +184,8 @@ export default function ManageUsersContent() {
           // Continue with the operation even if Firebase update fails
         }
 
-        // Refresh the users list
-        try {
-          await fetchUsers();
-        } catch (fetchError) {
-          console.error("Error refreshing users list:", fetchError);
-        }
-
         // Close the modal and show success message
+        // Real-time listener will automatically update the users list
         setShowUserModal(false);
         setEditingUser(null);
 

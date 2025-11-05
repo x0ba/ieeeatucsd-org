@@ -175,7 +175,6 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
                 onClose={() => {
                     setShowModal(false);
                     setEditingDomain(null);
-                    clearMessages();
                 }}
                 onSave={handleSave}
                 editingDomain={editingDomain}

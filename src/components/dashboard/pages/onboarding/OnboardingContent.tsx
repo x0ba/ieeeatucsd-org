@@ -137,7 +137,6 @@ export default function OnboardingContent() {
                                         key={tab.id}
                                         onClick={() => {
                                             setActiveTab(tab.id);
-                                            clearMessages();
                                         }}
                                         className={`
                                             group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm
