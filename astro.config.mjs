@@ -39,6 +39,9 @@ export default defineConfig({
       mode: "production",
       base: "/dashboard/",
       scope: "/dashboard/",
+      srcDir: "src",
+      filename: "sw.js",
+      strategies: "generateSW",
       includeAssets: [
         "favicon.svg",
         "favicon.ico",
@@ -47,9 +50,6 @@ export default defineConfig({
       ],
       registerType: "autoUpdate",
       manifest: false, // Use custom manifest at /dashboard/manifest.json
-      injectManifest: {
-        globPatterns: ["**/*.{css,js,html,svg,png,ico,txt,woff2}"],
-      },
       workbox: {
         navigateFallback: "/dashboard/offline",
         navigateFallbackAllowlist: [/^\/dashboard\/.*/],
