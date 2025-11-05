@@ -117,11 +117,10 @@ export default function ReceiptForm({
 
         {parseResult && !isParsing && (
           <div
-            className={`mb-3 rounded-xl p-3 flex items-start space-x-3 ${
-              parseResult.success
+            className={`mb-3 rounded-xl p-3 flex items-start space-x-3 ${parseResult.success
                 ? "bg-green-50 border border-green-200"
                 : "bg-yellow-50 border border-yellow-200"
-            }`}
+              }`}
           >
             {parseResult.success ? (
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -130,9 +129,8 @@ export default function ReceiptForm({
             )}
             <div>
               <p
-                className={`text-sm font-medium ${
-                  parseResult.success ? "text-green-900" : "text-yellow-900"
-                }`}
+                className={`text-sm font-medium ${parseResult.success ? "text-green-900" : "text-yellow-900"
+                  }`}
               >
                 {parseResult.message}
               </p>
@@ -142,13 +140,12 @@ export default function ReceiptForm({
 
         {/* Upload Area */}
         <div
-          className={`border-2 border-dashed rounded-xl transition-colors ${
-            receipt.receiptFile
+          className={`border-2 border-dashed rounded-xl transition-colors ${receipt.receiptFile
               ? "border-green-300 bg-green-50"
               : errors[`receipt_${receipt.id}_file`]
                 ? "border-red-300 bg-red-50"
                 : "border-gray-300 hover:border-gray-400"
-          }`}
+            }`}
           onDragOver={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -433,7 +430,7 @@ export default function ReceiptForm({
                           aria-label={`Item ${index + 1} category`}
                         >
                           {EXPENSE_CATEGORIES.map((cat) => (
-                            <SelectItem key={cat} value={cat}>
+                            <SelectItem key={cat}>
                               {cat}
                             </SelectItem>
                           ))}

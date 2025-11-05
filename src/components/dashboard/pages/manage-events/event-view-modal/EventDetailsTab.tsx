@@ -4,7 +4,7 @@ import { AlertTriangle, Calendar, CheckCircle2, Clock, MapPin, Megaphone, Settin
 import { canApproveOrPublish } from '../utils/permissionUtils';
 import { formatDate, formatDateTime, getStatusColor, getUserName } from './utils';
 import type { EventRequest, UserDirectory, UserOption } from './types';
-import type { UserRole } from '../../shared/types/firestore';
+import type { UserRole } from '../../../shared/types/firestore';
 
 interface EventDetailsTabProps {
     request: EventRequest;
@@ -254,10 +254,10 @@ export default function EventDetailsTab({
                                         className="mt-1"
                                         aria-label="Event Status"
                                     >
-                                        <SelectItem key="submitted" value="submitted">Submitted</SelectItem>
-                                        <SelectItem key="needs_review" value="needs_review">Needs Review</SelectItem>
-                                        <SelectItem key="approved" value="approved">Approved</SelectItem>
-                                        <SelectItem key="declined" value="declined">Declined</SelectItem>
+                                        <SelectItem key="submitted">Submitted</SelectItem>
+                                        <SelectItem key="needs_review">Needs Review</SelectItem>
+                                        <SelectItem key="approved">Approved</SelectItem>
+                                        <SelectItem key="declined">Declined</SelectItem>
                                     </Select>
                                 ) : (
                                     <Chip color={getStatusColor(request.status)} variant="flat" size="sm" className="mt-1 capitalize">

@@ -5,11 +5,14 @@ import { FaGear, FaMicrochip, FaCode } from "react-icons/fa6";
 import { LuBrainCircuit } from "react-icons/lu";
 ---
 
-<div class="flex flex-col items-center md:my-[10%] my-[20%] relative overflow-x-clip">
+<div
+  class="flex flex-col items-center md:my-[10%] my-[20%] relative overflow-x-clip"
+>
   <Subtitle title="Subteams" />
-    <div class="grid grid-cols-2 gap-[3vw] md:w-[50vw]">
-      {subteams.map((subteam, index) => (
-        <div class="relative md:w-[22vw] w-[25vw]" key={index}>
+  <div class="grid grid-cols-2 gap-[3vw] md:w-[50vw]">
+    {
+      subteams.map((subteam, index) => (
+        <div class="relative md:w-[22vw] w-[25vw]">
           <div class="relative w-full h-full backdrop-blur-md overflow-hidden rounded-[2vw]">
             <div class="px-[8%] flex flex-col justify-center items-center md:w-[22vw] w-[25vw] md:h-[23vw] h-[30vw] bg-gradient-to-b from-ieee-blue-100/25 to-ieee-black backdrop-blur rounded-[2vw] border-white/40 border-[0.1vw]">
               <p class="md:text-[1.7vw] text-[2.3vw] mb-[10%] font-semibold pt-[10%]">
@@ -29,6 +32,7 @@ import { LuBrainCircuit } from "react-icons/lu";
             {subteam.title === "Embedded" && <FaCode />}
           </div>
         </div>
-      ))}
-    </div>
+      ))
+    }
+  </div>
 </div>

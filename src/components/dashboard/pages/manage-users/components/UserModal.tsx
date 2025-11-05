@@ -201,7 +201,7 @@ export default function UserModal({
                         }}
                       >
                         {availableRoles.map((role) => (
-                          <SelectItem key={role} value={role}>
+                          <SelectItem key={role}>
                             {role}
                           </SelectItem>
                         ))}
@@ -295,13 +295,13 @@ export default function UserModal({
                       label: "text-sm font-medium text-gray-700 mb-2",
                     }}
                   >
-                    <SelectItem key="active" value="active">
+                    <SelectItem key="active">
                       Active
                     </SelectItem>
-                    <SelectItem key="inactive" value="inactive">
+                    <SelectItem key="inactive">
                       Inactive
                     </SelectItem>
-                    <SelectItem key="suspended" value="suspended">
+                    <SelectItem key="suspended">
                       Suspended
                     </SelectItem>
                   </Select>

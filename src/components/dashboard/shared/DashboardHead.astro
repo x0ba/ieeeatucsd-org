@@ -56,6 +56,37 @@ const {
 <meta name="robots" content="noindex, nofollow" />
 
 <link rel="stylesheet" href="/src/styles/global.css" />
+
+<!-- Service Worker Registration -->
+<script is:inline>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/dashboard/sw.js", { scope: "/dashboard/" })
+        .then((registration) => {
+          console.log("[PWA] Service Worker registered:", registration.scope);
+
+          // Check for updates
+          registration.addEventListener("updatefound", () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener("statechange", () => {
+              if (
+                newWorker.state === "installed" &&
+                navigator.serviceWorker.controller
+              ) {
+                console.log("[PWA] New service worker available");
+                // Optionally notify user about update
+              }
+            });
+          });
+        })
+        .catch((error) => {
+          console.error("[PWA] Service Worker registration failed:", error);
+        });
+    });
+  }
+</script>
+
 <style>
   body {
     font-family:
@@ -73,4 +104,3 @@ const {
     height: 100vh;
   }
 </style>
-

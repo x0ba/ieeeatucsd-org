@@ -15,7 +15,7 @@ import icon from "astro-icon";
 
 import sitemap from "@astrojs/sitemap";
 
-import AstroPWA from "@vite-pwa/astro";
+// import AstroPWA from "@vite-pwa/astro";
 
 // https://astro.build/config
 export default defineConfig({
@@ -35,118 +35,8 @@ export default defineConfig({
         !page.includes("/api/") &&
         !page.includes("/accept-invitation/"),
     }),
-    AstroPWA({
-      mode: "production",
-      base: "/dashboard/",
-      scope: "/dashboard/",
-      srcDir: "src",
-      filename: "sw.js",
-      strategies: "generateSW",
-      includeAssets: [
-        "favicon.svg",
-        "favicon.ico",
-        "robots.txt",
-        "apple-touch-icon.png",
-      ],
-      registerType: "autoUpdate",
-      manifest: false, // Use custom manifest at /dashboard/manifest.json
-      workbox: {
-        navigateFallback: "/dashboard/offline",
-        navigateFallbackAllowlist: [/^\/dashboard\/.*/],
-        navigateFallbackDenylist: [/^\/dashboard\/api\/.*/],
-        globPatterns: ["**/*.{css,js,html,svg,png,ico,txt,woff2}"],
-        // Only cache dashboard routes
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "google-fonts-cache",
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "gstatic-fonts-cache",
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/code\.iconify\.design\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "iconify-cache",
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /\/dashboard\/.*\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "dashboard-images-cache",
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-              },
-            },
-          },
-          {
-            urlPattern: /\/dashboard\/api\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "dashboard-api-cache",
-              networkTimeoutSeconds: 10,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5, // 5 minutes
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: /\/dashboard\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "dashboard-pages-cache",
-              networkTimeoutSeconds: 5,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
-              },
-            },
-          },
-        ],
-      },
-      devOptions: {
-        enabled: false,
-        navigateFallbackAllowlist: [/^\/dashboard\/.*/],
-      },
-      experimental: {
-        directoryAndTrailingSlashHandler: true,
-      },
-    }),
+    // PWA support is implemented manually for dashboard-only scope
+    // See public/dashboard/sw.js and src/components/dashboard/shared/DashboardHead.astro
   ],
 
   adapter: node({

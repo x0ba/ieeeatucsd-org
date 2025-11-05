@@ -892,7 +892,10 @@ export default function EventRequestModal({
             0: file,
             length: 1,
             item: (index: number) => (index === 0 ? file : null),
-          } as FileList;
+            [Symbol.iterator]: function* () {
+              yield file;
+            },
+          } as unknown as FileList;
           handleFileChange("roomBookingFile", fileList);
           showToast.success(
             `Image added to Room Booking Confirmation: ${file.name}`,

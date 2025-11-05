@@ -112,7 +112,7 @@ export default function InvitationFlowTab({
                 }}
               >
                 {OFFICER_ROLES.map((role) => (
-                  <SelectItem key={role} value={role}>
+                  <SelectItem key={role}>
                     {role}
                   </SelectItem>
                 ))}

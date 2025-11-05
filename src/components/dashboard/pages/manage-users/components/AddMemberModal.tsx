@@ -178,7 +178,7 @@ export default function AddMemberModal({
                                 }}
                             >
                                 {availableRoles.filter(role => role !== 'Member').map(role => (
-                                    <SelectItem key={role} value={role}>
+                                    <SelectItem key={role}>
                                         {role}
                                     </SelectItem>
                                 ))}

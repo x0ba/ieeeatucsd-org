@@ -51,9 +51,9 @@ export default function UserFilters({
                                 }}
                                 aria-label="Filter by role"
                             >
-                                <SelectItem key="all" value="all">All Roles</SelectItem>
+                                <SelectItem key="all">All Roles</SelectItem>
                                 {USER_ROLES.map(role => (
-                                    <SelectItem key={role} value={role}>{role}</SelectItem>
+                                    <SelectItem key={role}>{role}</SelectItem>
                                 ))}
                             </Select>
                         </div>
@@ -69,7 +69,7 @@ export default function UserFilters({
                                 aria-label="Filter by status"
                             >
                                 {USER_STATUSES.map(status => (
-                                    <SelectItem key={status} value={status}>
+                                    <SelectItem key={status}>
                                         {status === 'all' ? 'All Status' : status.charAt(0).toUpperCase() + status.slice(1)}
                                     </SelectItem>
                                 ))}

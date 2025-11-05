@@ -9,6 +9,7 @@ export type ModalType =
   | "event-graphics"
   | "event-file-management"
   | "event-request"
+  | "example-modal"
   | null;
 
 interface UseGlobalImagePasteOptions {

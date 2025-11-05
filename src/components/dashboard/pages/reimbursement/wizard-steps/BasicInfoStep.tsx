@@ -61,7 +61,7 @@ export default function BasicInfoStep({ formData, setFormData, errors }: BasicIn
                             aria-required="true"
                         >
                             {DEPARTMENTS.map((dept) => (
-                                <SelectItem key={dept.value} value={dept.value}>
+                                <SelectItem key={dept.value}>
                                     {dept.label}
                                 </SelectItem>
                             ))}
@@ -88,7 +88,7 @@ export default function BasicInfoStep({ formData, setFormData, errors }: BasicIn
                             aria-required="true"
                         >
                             {PAYMENT_METHODS.map((method) => (
-                                <SelectItem key={method} value={method}>
+                                <SelectItem key={method}>
                                     {method}
                                 </SelectItem>
                             ))}
