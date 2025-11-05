@@ -13,45 +13,67 @@ import Competition from "../../components/signal/Competition.astro";
 import roboTimeline from "../../data/roboTimeline.json";
 import roboLinks from "../../data/roboLinks.json";
 import Sponsors from "../../components/robocub/Sponsors.astro";
+
+const seoProps = {
+  title: "TritonBots FC - RoboCup Small-Size League - IEEE at UC San Diego",
+  description:
+    "Join TritonBots FC, UCSD's RoboCup Small-Size League team. Develop fully autonomous soccer-playing robots with custom hardware and software. Compete internationally in RoboCup.",
+  keywords: [
+    "RoboCup",
+    "TritonBots",
+    "autonomous robots",
+    "robot soccer",
+    "small-size league",
+    "robotics competition",
+    "UCSD robotics",
+    "computer vision",
+    "autonomous systems",
+  ],
+  image: "/robocup.webp",
+};
 ---
-<Layout>
-    <Image
-        src={roboborder}
-        alt="JOIN US"
-        class="absolute left-[1vw] w-[4vw] top-[60vh] z-10"
-    />
-    <Image
-        src={roboborder}
-        alt="JOIN US"
-        class="absolute right-[1vw] w-[4vw] top-[60vh] z-10"
-    />
-    <RoboTitle />
-    <About
-        title="What is RoboCup?"
-        text = "TritonBots FC is UCSD’s RoboCup Small-Size League Team. Students develop fully autonomous soccer playing robots to compete in the annual RoboCup International Competition. All hardware is custom built and software programmed from the ground up. Position, velocity, and field data is received in real time through computer vision."    />
-    <div class="w-full flex justify-center">
-        <div class="w-3/5 flex justify-between mb-[15%]">
-            {roboLinks.map((roboLink) => (
-                <Link
-                    data-inview
-                    href={roboLink.link}
-                    target="_blank"
-                    className={`hover:font-semibold in-view:animate-fade-down animate-de animate-delay-${roboLink.delay} w-[30%] text-center z-10 cursor-pointer px-[2%] py-[1%] md:text-[1.2vw] text-[2vw] border-[0.1vw] border-white rounded-[0.5vw] hover:bg-ieee-yellow/80 duration-300 font-light`}
-                >
-                    {roboLink.text}
-                </Link>
-            ))}
-        </div>
+
+<Layout {...seoProps}>
+  <Image
+    src={roboborder}
+    alt="JOIN US"
+    class="absolute left-[1vw] w-[4vw] top-[60vh] z-10"
+  />
+  <Image
+    src={roboborder}
+    alt="JOIN US"
+    class="absolute right-[1vw] w-[4vw] top-[60vh] z-10"
+  />
+  <RoboTitle />
+  <About
+    title="What is RoboCup?"
+    text="TritonBots FC is UCSD’s RoboCup Small-Size League Team. Students develop fully autonomous soccer playing robots to compete in the annual RoboCup International Competition. All hardware is custom built and software programmed from the ground up. Position, velocity, and field data is received in real time through computer vision."
+  />
+  <div class="w-full flex justify-center">
+    <div class="w-3/5 flex justify-between mb-[15%]">
+      {
+        roboLinks.map((roboLink) => (
+          <Link
+            data-inview
+            href={roboLink.link}
+            target="_blank"
+            className={`hover:font-semibold in-view:animate-fade-down animate-de animate-delay-${roboLink.delay} w-[30%] text-center z-10 cursor-pointer px-[2%] py-[1%] md:text-[1.2vw] text-[2vw] border-[0.1vw] border-white rounded-[0.5vw] hover:bg-ieee-yellow/80 duration-300 font-light`}
+          >
+            {roboLink.text}
+          </Link>
+        ))
+      }
     </div>
-    <Competition
-        picture="/robocup.webp"
-        name="Preparing for RoboCup 2026"
-        description="Our team submitted this year’s qualification video to compete in the RoboCup 2026 International Competition held in Incheon, Korea."
-        link="https://drive.google.com/file/d/1dX9MjNjK_A-GmBK_ELF-zYO38qwvRm0L/view?usp=drive_link"
-        linktext = "Qualification Video"
-    />
-    <Subteams />
-    <Timeline timeline={roboTimeline}/>
-    <Questions faq={roboFaq} />
-    <Sponsors/>
+  </div>
+  <Competition
+    picture="/robocup.webp"
+    name="Preparing for RoboCup 2026"
+    description="Our team submitted this year’s qualification video to compete in the RoboCup 2026 International Competition held in Incheon, Korea."
+    link="https://drive.google.com/file/d/1dX9MjNjK_A-GmBK_ELF-zYO38qwvRm0L/view?usp=drive_link"
+    linktext="Qualification Video"
+  />
+  <Subteams />
+  <Timeline timeline={roboTimeline} />
+  <Questions faq={roboFaq} />
+  <Sponsors />
 </Layout>

@@ -5,9 +5,26 @@ import QP from "../components/projects/QP.astro";
 import AP from "../components/projects/AP.astro";
 import { Image } from "astro:assets";
 import projectsborder from "../images/projectsborder.webp";
+
+const seoProps = {
+  title: "Projects - IEEE at UC San Diego",
+  description:
+    "Explore IEEE UCSD's technical projects including Quarterly Projects, RoboCup SSL robotics, Signal Processing, and Supercomputing. Gain hands-on experience in cutting-edge technology.",
+  keywords: [
+    "IEEE UCSD projects",
+    "quarterly projects",
+    "RoboCup",
+    "robotics",
+    "signal processing",
+    "supercomputing",
+    "student projects",
+    "engineering projects UCSD",
+  ],
+  image: "/project.webp",
+};
 ---
 
-<Layout>
+<Layout {...seoProps}>
   <Image
     src={projectsborder}
     alt="JOIN US"

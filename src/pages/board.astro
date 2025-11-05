@@ -3,18 +3,32 @@ import Layout from "../layouts/Layout.astro";
 import Officers from "../components/board/Officers.astro";
 import { Image } from "astro:assets";
 import board from "../images/board.webp";
+
+const seoProps = {
+  title: "Board Members - IEEE at UC San Diego",
+  description:
+    "Meet the dedicated board members and officers leading IEEE at UC San Diego. Our team is committed to empowering students through technical excellence and professional development.",
+  keywords: [
+    "IEEE UCSD board",
+    "student officers",
+    "IEEE leadership",
+    "UCSD engineering leaders",
+    "student organization board",
+  ],
+  image: "/logos/blue_logo_only.png",
+};
 ---
 
-<Layout>
-    <Image
-        src={board}
-        alt="BOARD"
-        class="absolute left-[1vw] w-[4vw] top-[15vh]"
-    />
-    <Image
-        src={board}
-        alt="BOARD"
-        class="absolute right-[1vw] w-[4vw] top-[15vh]"
-    />
-    <Officers />
+<Layout {...seoProps}>
+  <Image
+    src={board}
+    alt="BOARD"
+    class="absolute left-[1vw] w-[4vw] top-[15vh]"
+  />
+  <Image
+    src={board}
+    alt="BOARD"
+    class="absolute right-[1vw] w-[4vw] top-[15vh]"
+  />
+  <Officers />
 </Layout>

@@ -9,23 +9,39 @@ import Findus from "../components/join/Findus.astro";
 import { Image } from "astro:assets";
 import join from "../images/join.webp";
 import faq from "../data/faq.json";
+
+const seoProps = {
+  title: "Join IEEE at UC San Diego - Get Involved Today",
+  description:
+    "Become a member of IEEE at UC San Diego! Access exclusive workshops, projects, networking opportunities, and resources. No experience required - all majors welcome!",
+  keywords: [
+    "join IEEE UCSD",
+    "IEEE membership",
+    "UCSD student organization",
+    "engineering club",
+    "get involved UCSD",
+    "student membership",
+    "IEEE benefits",
+  ],
+  image: "/logos/blue_logo_only.png",
+};
 ---
 
-<Layout>
-    <Image
-        src={join}
-        alt="JOIN US"
-        class="absolute left-[1vw] md:w-[4vw] w-[10vw] md:top-[60vh] top-[70vw]"
-    />
-    <Image
-        src={join}
-        alt="JOIN US"
-        class="absolute right-[1vw] md:w-[4vw] w-[10vw] md:top-[60vh] top-[70vw]"
-    />
-    <JoinTitle />
-    <Involvements />
-    <Social />
-    <Questions faq={faq} />
-    <Resources />
-    <Findus />
+<Layout {...seoProps}>
+  <Image
+    src={join}
+    alt="JOIN US"
+    class="absolute left-[1vw] md:w-[4vw] w-[10vw] md:top-[60vh] top-[70vw]"
+  />
+  <Image
+    src={join}
+    alt="JOIN US"
+    class="absolute right-[1vw] md:w-[4vw] w-[10vw] md:top-[60vh] top-[70vw]"
+  />
+  <JoinTitle />
+  <Involvements />
+  <Social />
+  <Questions faq={faq} />
+  <Resources />
+  <Findus />
 </Layout>

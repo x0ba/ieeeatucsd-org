@@ -17,6 +17,7 @@
     "@astrojs/mdx": "4.3.3",
     "@astrojs/node": "9.3.3",
     "@astrojs/react": "4.3.0",
+    "@astrojs/sitemap": "^3.6.0",
     "@astrojs/tailwind": "^6.0.2",
     "@heroui/react": "^2.7.5",
     "@hookform/resolvers": "^5.1.1",

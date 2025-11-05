@@ -11,37 +11,54 @@ import qpborder from "../../images/qpborder.webp";
 import Join from "../../components/qp/Join.astro";
 import Carousel from "../../components/qp/Carousel.astro";
 import Timeline from "../../components/qp/Timeline.astro";
-import qpTimeline from "../../data/qpTimeline.json"
+import qpTimeline from "../../data/qpTimeline.json";
+
+const seoProps = {
+  title: "Quarterly Projects - IEEE at UC San Diego",
+  description:
+    "Build your own hardware project in 10 weeks! IEEE's Quarterly Projects provides hands-on experience with C++, prototyping, and mentorship. Showcase your work to students, professors, and industry professionals.",
+  keywords: [
+    "quarterly projects",
+    "IEEE UCSD QP",
+    "hardware development",
+    "C++ projects",
+    "prototyping",
+    "student projects",
+    "project showcase",
+    "engineering mentorship",
+  ],
+  image: "/project.webp",
+};
 ---
 
-<Layout>
+<Layout {...seoProps}>
+  <Image
+    src={qpborder}
+    alt="JOIN US"
+    class="absolute left-[1vw] w-[4vw] top-[70vh]"
+  />
+  <Image
+    src={qpborder}
+    alt="JOIN US"
+    class="absolute right-[1vw] w-[4vw] top-[70vh]"
+  />
+  <Title title="Quarterly Project" />
+  <div class="w-full flex justify-center my-[3%]">
     <Image
-        src={qpborder}
-        alt="JOIN US"
-        class="absolute left-[1vw] w-[4vw] top-[70vh]"
+      data-inview
+      src={qp}
+      alt="board group photos"
+      class="in-view:animate-fade md:w-2/3 w-[75vw] rounded-full object-cover aspect-[2.5/1]"
     />
-    <Image
-        src={qpborder}
-        alt="JOIN US"
-        class="absolute right-[1vw] w-[4vw] top-[70vh]"
-    />
-    <Title title="Quarterly Project" />
-    <div class="w-full flex justify-center my-[3%]">
-        <Image
-            data-inview
-            src={qp}
-            alt="board group photos"
-            class="in-view:animate-fade md:w-2/3 w-[75vw] rounded-full object-cover aspect-[2.5/1]"
-        />
-    </div>
-    <About
-        title="What is Quarterly Project?"
-        text="Getting started on hardware development or want to make your own project? Need something to put on your resume? IEEE's Quarterly Projects aims to provide students with project experience in a span of 10 weeks. During QP, students will acquire skills used in the industry such as C++ and the prototyping process with the assistance of our mentors. At the end of the quarter, students will demonstrate their projects at QP Showcase in front of other students, professors, and industry professionals!"
-    />
-    <Steps />
-    <Timeline timeline={qpTimeline} />
-    <PastProjects />
-    <Mentorship />
-    <Join />
-    <Carousel />
+  </div>
+  <About
+    title="What is Quarterly Project?"
+    text="Getting started on hardware development or want to make your own project? Need something to put on your resume? IEEE's Quarterly Projects aims to provide students with project experience in a span of 10 weeks. During QP, students will acquire skills used in the industry such as C++ and the prototyping process with the assistance of our mentors. At the end of the quarter, students will demonstrate their projects at QP Showcase in front of other students, professors, and industry professionals!"
+  />
+  <Steps />
+  <Timeline timeline={qpTimeline} />
+  <PastProjects />
+  <Mentorship />
+  <Join />
+  <Carousel />
 </Layout>

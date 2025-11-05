@@ -13,8 +13,11 @@ import node from "@astrojs/node";
 
 import icon from "astro-icon";
 
+import sitemap from "@astrojs/sitemap";
+
 // https://astro.build/config
 export default defineConfig({
+  site: "https://ieeeucsd.org",
   output: "server",
   integrations: [
     tailwind({
@@ -24,6 +27,12 @@ export default defineConfig({
     react(),
     icon(),
     mdx(),
+    sitemap({
+      filter: (page) =>
+        !page.includes("/dashboard/") &&
+        !page.includes("/api/") &&
+        !page.includes("/accept-invitation/"),
+    }),
   ],
 
   adapter: node({

@@ -6,9 +6,24 @@ import FindTitle from "../components/find/FindTitle.astro";
 import { Image } from "astro:assets";
 import event from "../images/event.webp";
 import contactbroder from "../images/contactbroder.webp";
+
+const seoProps = {
+  title: "Find Us - IEEE at UC San Diego",
+  description:
+    "Visit the IEEE Project Space at EBU1-4710 or contact us at ieee@ucsd.edu. Connect with us on social media and discover our open-access collaborative workspace with electronics tools and resources.",
+  keywords: [
+    "IEEE UCSD location",
+    "contact IEEE UCSD",
+    "project space",
+    "EBU1-4710",
+    "ieee@ucsd.edu",
+    "UCSD engineering space",
+  ],
+  image: "/logos/blue_logo_only.png",
+};
 ---
 
-<Layout>
+<Layout {...seoProps}>
   <Image
     src={contactbroder}
     alt="JOIN US"
