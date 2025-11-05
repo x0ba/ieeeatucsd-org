@@ -243,15 +243,16 @@ export default function EventsContent() {
             });
 
             // Update user with event attendance and points
+            // Use setDoc with merge to handle cases where user document might not exist
             const userRef = doc(db, 'users', user.uid);
             const newPoints = userStats.totalPointsEarned + event.pointsToReward;
             const newEventsAttended = userStats.totalEventsAttended + 1;
 
-            await updateDoc(userRef, {
+            await setDoc(userRef, {
                 lastEventAttended: event.eventName,
                 points: newPoints,
                 eventsAttended: newEventsAttended
-            });
+            }, { merge: true });
 
             // Sync to public profile
             try {

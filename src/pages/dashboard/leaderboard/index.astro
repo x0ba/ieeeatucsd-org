@@ -1,5 +1,6 @@
 ---
 import DashboardLayout from "../../../components/dashboard/shared/DashboardLayout.tsx";
+import DashboardHead from "../../../components/dashboard/shared/DashboardHead.astro";
 import LeaderboardContent from "../../../components/dashboard/pages/leaderboard/LeaderboardContent.tsx";
 import { NAVIGATION_PATHS } from "../../../components/dashboard/shared/types/navigation";
 
@@ -10,28 +11,7 @@ const currentPath = NAVIGATION_PATHS.LEADERBOARD;
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="stylesheet" href="/src/styles/global.css" />
-    <style>
-      body {
-        font-family:
-          system-ui,
-          -apple-system,
-          sans-serif;
-        background: #f8fafc;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        height: 100vh;
-      }
-      html {
-        overflow: hidden;
-        height: 100vh;
-      }
-    </style>
+    <DashboardHead title={title} />
   </head>
   <body>
     <DashboardLayout currentPath={currentPath} client:load>

@@ -4,6 +4,8 @@
  * Provides consistent head tags, meta tags, and PWA configuration for all dashboard pages
  */
 
+import "../../../styles/global.css";
+
 export interface Props {
   title?: string;
   description?: string;
@@ -54,8 +56,6 @@ const {
 
 <!-- Prevent indexing of dashboard pages -->
 <meta name="robots" content="noindex, nofollow" />
-
-<link rel="stylesheet" href="/src/styles/global.css" />
 
 <!-- Service Worker Registration -->
 <script is:inline>
