@@ -15,11 +15,10 @@ import {
   Briefcase,
   Building2,
   UserPlus,
-  Bell,
   User,
-  Award,
   ChevronDown,
   ChevronRight,
+  Award,
 } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -39,15 +38,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
-  useSidebar,
 } from "../../ui/sidebar";
-import { Badge } from "../../ui/badge";
+import {
+  Navbar,
+  NavbarContent,
+  NavbarMenu,
+  NavbarMenuItem,
+  NavbarMenuToggle,
+} from "@heroui/react";
 import { Button } from "../../ui/button";
 import {
   DropdownMenu,
@@ -57,7 +58,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../ui/tooltip";
 
 interface SidebarNavigationProps {
   currentPath?: string;
@@ -367,11 +367,221 @@ function SidebarNavigationContent({ currentPath = "" }: { currentPath?: string }
 }
 
 export function SidebarNavigation({ currentPath, children }: SidebarNavigationProps) {
+  const [user, userLoading] = useAuthState(auth);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+  const [sponsorTier, setSponsorTier] = useState<string | null>(null);
+  const [isLoadingRole, setIsLoadingRole] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userData, setUserData] = useState<UserType | null>(null);
+
+  // Helper function to filter navigation items based on sponsor tier
+  const filterBySponsorTier = (items: typeof navigationCategories[0]["items"]) => {
+    return items.filter((item) => {
+      // Hide Resume Database for Bronze tier sponsors
+      if (
+        item.href === NAVIGATION_PATHS.RESUME_DATABASE &&
+        currentUserRole === "Sponsor" &&
+        sponsorTier === "Bronze"
+      ) {
+        return false;
+      }
+      return true;
+    });
+  };
+
+  useEffect(() => {
+    if (userLoading) return;
+
+    if (!user) {
+      setCurrentUserRole(null);
+      setIsLoadingRole(false);
+      return;
+    }
+
+    setIsLoadingRole(true);
+
+    const unsubscribe = onSnapshot(
+      doc(db, "users", user.uid),
+      (userDoc) => {
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setCurrentUserRole(data.role || "Member");
+          setSponsorTier(data.sponsorTier || null);
+          setUserData({
+            name: data.name || "User",
+            email: data.email || user.email || "",
+            points: data.points || 0,
+            role: data.role || "Member",
+          });
+        } else {
+          setCurrentUserRole("Member");
+        }
+        setIsLoadingRole(false);
+      },
+      (error) => {
+        console.error("Error fetching user role:", error);
+        setCurrentUserRole("Member");
+        setIsLoadingRole(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user, userLoading]);
+
+  const isActiveRoute = (href: string): boolean => {
+    if (currentPath === "/dashboard" || currentPath === "/dashboard/") {
+      return href === NAVIGATION_PATHS.OVERVIEW;
+    }
+    return currentPath === href;
+  };
+
+  const canAccessCategory = (category: NavigationCategory): boolean => {
+    if (!category.requiresRole || !currentUserRole) return true;
+    return category.requiresRole.includes(currentUserRole);
+  };
+
+  const isLoading = userLoading || isLoadingRole;
+  const filteredCategories = currentUserRole
+    ? navigationCategories.filter(canAccessCategory)
+    : [];
+
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full overflow-hidden">
-        <SidebarNavigationContent currentPath={currentPath} />
+        {/* Desktop Sidebar - Hidden on mobile */}
+        <div className="hidden md:block">
+          <SidebarNavigationContent currentPath={currentPath} />
+        </div>
+
         <SidebarInset className="flex-1 overflow-auto">
+          {/* Mobile Navigation Bar with HeroUI Navbar - Only visible on mobile */}
+          <Navbar
+            isMenuOpen={isMenuOpen}
+            onMenuOpenChange={setIsMenuOpen}
+            maxWidth="full"
+            className="md:hidden bg-sidebar border-b border-sidebar-border sticky top-0 z-50"
+            classNames={{
+              wrapper: "px-4",
+            }}
+          >
+            {/* Mobile Brand */}
+            <NavbarContent justify="start">
+              <div className="flex items-center gap-2">
+                <img
+                  src="/logos/blue_logo_only.svg"
+                  alt="IEEE UCSD Logo"
+                  className="w-6 h-6"
+                />
+                <span className="text-sm font-bold text-sidebar-foreground">
+                  IEEE UCSD
+                </span>
+              </div>
+            </NavbarContent>
+
+            {/* Mobile Menu Toggle on the right */}
+            <NavbarContent justify="end">
+              <NavbarMenuToggle
+                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+                className="text-sidebar-foreground"
+              />
+            </NavbarContent>
+
+            {/* Mobile Menu - Full screen overlay */}
+            <NavbarMenu className="pt-6 bg-sidebar border-t border-sidebar-border">
+              {!isLoading &&
+                filteredCategories.map((category) => (
+                  <div key={category.title} className="mb-4">
+                    <p className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2">
+                      {category.title}
+                    </p>
+                    {filterBySponsorTier(category.items).map((item) => {
+                      const isActive = isActiveRoute(item.href);
+                      const Icon = item.icon;
+                      return (
+                        <NavbarMenuItem key={item.href} isActive={isActive}>
+                          <a
+                            href={item.href}
+                            aria-label={`Navigate to ${item.label}`}
+                            aria-current={isActive ? "page" : undefined}
+                            className={`flex items-center gap-3 px-2 py-2.5 rounded-lg transition-all w-full ${isActive
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                              }`}
+                          >
+                            <Icon className="w-5 h-5" aria-hidden="true" />
+                            <span>{item.label}</span>
+                          </a>
+                        </NavbarMenuItem>
+                      );
+                    })}
+                  </div>
+                ))}
+
+              {/* Mobile Profile Section */}
+              {!isLoading && userData && (
+                <div className="mt-6 pt-4 border-t border-sidebar-border">
+                  <p className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider mb-2 px-2">
+                    Account
+                  </p>
+
+                  {/* User Info */}
+                  <div className="px-2 py-3 mb-2">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center">
+                        <User className="w-5 h-5 text-sidebar-accent-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sidebar-foreground truncate">
+                          {userData.name}
+                        </p>
+                        <p className="text-sm text-sidebar-foreground/60 truncate">
+                          {userData.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Points Display */}
+                    <div className="flex items-center justify-between px-3 py-2 bg-sidebar-accent/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-4 h-4 text-yellow-600" />
+                        <span className="text-sm text-sidebar-foreground">Points</span>
+                      </div>
+                      <span className="font-bold text-yellow-600">
+                        {userData.points || 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Settings Link */}
+                  <NavbarMenuItem>
+                    <a
+                      href={NAVIGATION_PATHS.SETTINGS}
+                      className="flex items-center gap-3 px-2 py-2.5 rounded-lg transition-all w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    >
+                      <Settings className="w-5 h-5" aria-hidden="true" />
+                      <span>Settings</span>
+                    </a>
+                  </NavbarMenuItem>
+
+                  {/* Sign Out Button */}
+                  <NavbarMenuItem>
+                    <button
+                      onClick={async () => {
+                        await auth.signOut();
+                        window.location.href = "/";
+                      }}
+                      className="flex items-center gap-3 px-2 py-2.5 rounded-lg transition-all w-full text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="w-5 h-5" aria-hidden="true" />
+                      <span>Sign Out</span>
+                    </button>
+                  </NavbarMenuItem>
+                </div>
+              )}
+            </NavbarMenu>
+          </Navbar>
+
+          {/* Main Content */}
           <div className="flex-1">{children}</div>
         </SidebarInset>
       </div>
