@@ -4,6 +4,7 @@ import type { Link } from "../../../shared/types/firestore";
 import { PRESET_CATEGORIES } from "../utils/linkPermissions";
 import { uploadFilesForEvent } from "../../manage-events/utils/fileUploadUtils";
 import { Timestamp } from "firebase/firestore";
+import { showToast } from "../../../shared/utils/toast";
 
 interface LinkModalProps {
   isOpen: boolean;
@@ -295,7 +296,7 @@ export default function LinkModal({
       setErrors({});
     } catch (error) {
       console.error("Error saving link:", error);
-      setErrors({ submit: "Failed to save link. Please try again." });
+      showToast.error("Failed to save link. Please try again.");
       setUploadingIcon(false);
     }
   };
@@ -592,12 +593,6 @@ export default function LinkModal({
               )}
             </div>
 
-            {/* Submit Error */}
-            {errors.submit && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                <p className="text-sm text-red-600">{errors.submit}</p>
-              </div>
-            )}
           </div>
         </div>
 

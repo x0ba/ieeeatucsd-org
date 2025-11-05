@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { toast } from "react-hot-toast";
+import { showToast } from "../../../shared/utils/toast";
 import type {
   InvoiceFormData,
   ItemizedInvoiceItem,
@@ -152,7 +152,7 @@ export const useInvoiceManagement = (
   const handleJsonImport = (invoiceId: string) => {
     const jsonText = jsonImportData[invoiceId]?.trim();
     if (!jsonText) {
-      toast.error("Please enter JSON data to import");
+      showToast.error("Please enter JSON data to import");
       return;
     }
 
@@ -195,10 +195,12 @@ export const useInvoiceManagement = (
         [invoiceId]: "details",
       }));
 
-      toast.success("Invoice data imported successfully");
+      showToast.success("Invoice data imported successfully");
     } catch (error) {
       console.error("Error parsing JSON:", error);
-      toast.error("Invalid JSON format. Please check your data and try again.");
+      showToast.error(
+        "Invalid JSON format. Please check your data and try again.",
+      );
     }
   };
 

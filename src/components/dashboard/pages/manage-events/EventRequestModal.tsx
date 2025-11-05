@@ -13,7 +13,7 @@ import { app, db } from "../../../../firebase/client";
 import { auth } from "../../../../firebase/client";
 import { EventAuditService } from "../../shared/services/eventAuditService";
 import { EmailClient } from "../../../../scripts/email/EmailClient";
-import { toast } from "react-hot-toast";
+import { showToast } from "../../shared/utils/toast";
 import {
   Modal,
   ModalContent,
@@ -64,7 +64,6 @@ export default function EventRequestModal({
 }: EventRequestModalProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldError>({});
 
   // Track original data for comparison when editing
@@ -339,14 +338,13 @@ export default function EventRequestModal({
   const validateCurrentStep = () => {
     const validation = validateStep(currentStep, formData);
     if (!validation.isValid) {
-      setError(
+      showToast.error(
         validation.errorMessage || "Please fix the errors before continuing",
       );
       setFieldErrors(validation.errors);
       scrollToTop();
       return false;
     }
-    setError(null);
     setFieldErrors({});
     return true;
   };
@@ -366,7 +364,7 @@ export default function EventRequestModal({
   const handleSubmit = async () => {
     const validation = validateCompleteForm(formData);
     if (!validation.isValid) {
-      setError(
+      showToast.error(
         validation.errorMessage || "Please fix all errors before submitting",
       );
       setFieldErrors(validation.errors);
@@ -375,7 +373,6 @@ export default function EventRequestModal({
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       // For new requests, create a temporary ID for file organization
@@ -578,7 +575,7 @@ export default function EventRequestModal({
         const successMessage = editingRequest.isDraft
           ? "Draft event converted to full submission successfully!"
           : "Event request updated successfully!";
-        toast.success(successMessage);
+        showToast.success(successMessage);
       } else {
         // Create new event request
         eventRequestRef = await addDoc(
@@ -653,7 +650,7 @@ export default function EventRequestModal({
           console.error("Error logging event creation:", error);
         }
 
-        toast.success("Event request submitted successfully!");
+        showToast.success("Event request submitted successfully!");
       }
 
       // Handle corresponding event in events collection
@@ -715,8 +712,7 @@ export default function EventRequestModal({
       onClose();
     } catch (error) {
       console.error("Error submitting event request:", error);
-      setError("Failed to submit event request. Please try again.");
-      toast.error("Failed to submit event request");
+      showToast.error("Failed to submit event request. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -855,12 +851,12 @@ export default function EventRequestModal({
               : [];
           const newFiles = [...existingFiles, file];
           const fileList = {
+            ...newFiles,
             length: newFiles.length,
             item: (index: number) => newFiles[index] || null,
-            ...newFiles,
           } as FileList;
           handleFileChange("otherFlyerFiles", fileList);
-          toast.success(
+          showToast.success(
             `Image added to Other Flyer Reference Files: ${file.name}`,
           );
         }
@@ -878,26 +874,31 @@ export default function EventRequestModal({
               : [];
           const newFiles = [...existingFiles, file];
           const fileList = {
+            ...newFiles,
             length: newFiles.length,
             item: (index: number) => newFiles[index] || null,
-            ...newFiles,
           } as FileList;
           handleFileChange("otherLogoFiles", fileList);
-          toast.success(`Image added to Other Logo Files: ${file.name}`);
+          showToast.success(`Image added to Other Logo Files: ${file.name}`);
         } else {
-          toast(
+          showToast.info(
             `Paste functionality available when "Other" options are selected`,
           );
         }
       } else if (stepTitle === "Logistics") {
         // Add to room booking file if room booking is enabled
         if (formData.hasRoomBooking) {
-          handleFileChange("roomBookingFile", file);
-          toast.success(
+          const fileList = {
+            0: file,
+            length: 1,
+            item: (index: number) => (index === 0 ? file : null),
+          } as FileList;
+          handleFileChange("roomBookingFile", fileList);
+          showToast.success(
             `Image added to Room Booking Confirmation: ${file.name}`,
           );
         } else {
-          toast(`Enable room booking to paste files`);
+          showToast.info(`Enable room booking to paste files`);
         }
       } else if (stepTitle === "Funding Details") {
         // Add to active invoice's files
@@ -916,15 +917,15 @@ export default function EventRequestModal({
               invoiceFiles: newFiles,
               invoiceFile: newFiles[0] || file,
             });
-            toast.success(`Image added to invoice: ${file.name}`);
+            showToast.success(`Image added to invoice: ${file.name}`);
           } else {
-            toast(`Select an invoice to paste files`);
+            showToast.info(`Select an invoice to paste files`);
           }
         } else {
-          toast(`Add an invoice first to paste files`);
+          showToast.info(`Add an invoice first to paste files`);
         }
       } else {
-        toast(
+        showToast.info(
           `Image paste is available in Marketing, Logistics, and Funding steps`,
         );
       }
@@ -977,12 +978,6 @@ export default function EventRequestModal({
 
               {/* Content */}
               <div className="p-6">
-                {error && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-800 text-sm">{error}</p>
-                  </div>
-                )}
-
                 {steps[currentStep]?.component()}
               </div>
             </ModalBody>

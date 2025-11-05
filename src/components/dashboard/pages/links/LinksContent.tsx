@@ -13,8 +13,6 @@ export default function LinksContent() {
     visibleLinks,
     allLinks,
     loading,
-    error,
-    success,
     searchTerm,
     categoryFilter,
     canManageLinks,
@@ -23,7 +21,6 @@ export default function LinksContent() {
     deleteLink,
     setSearchTerm,
     setCategoryFilter,
-    clearMessages,
   } = useLinksManagement();
 
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -112,43 +109,6 @@ export default function LinksContent() {
             </button>
           )}
         </div>
-
-        {/* Messages */}
-        {
-          error && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-              <button
-                onClick={clearMessages}
-                className="text-red-600 hover:text-red-800 rounded-xl hover:bg-red-100 p-1"
-                aria-label="Close error message"
-              >
-                ×
-              </button>
-            </div>
-          )
-        }
-
-        {
-          success && (
-            <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-green-800">{success}</p>
-              </div>
-              <button
-                onClick={clearMessages}
-                className="text-green-600 hover:text-green-800 rounded-xl hover:bg-green-100 p-1"
-                aria-label="Close success message"
-              >
-                ×
-              </button>
-            </div>
-          )
-        }
 
         {/* Filters */}
         <div className="mb-6">

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { RefreshCw, Mail, CheckCircle, XCircle, Clock, AlertCircle, Send } from 'lucide-react';
 import { Card, CardBody, Button, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Tooltip } from '@heroui/react';
 import type { OfficerInvitation } from '../../../shared/types/firestore';
-import toast from 'react-hot-toast';
+import { showToast } from '../../../shared/utils/toast';
 
 interface PendingInvitationsTabProps {
     invitations: (OfficerInvitation & { id: string })[];
@@ -25,9 +25,9 @@ export default function PendingInvitationsTab({ invitations, loading, onRefresh,
         setResendingId(invitationId);
         try {
             await onResend(invitationId);
-            toast.success(`Invitation resent to ${name}`);
+            showToast.success(`Invitation resent to ${name}`);
         } catch (error) {
-            toast.error(`Failed to resend invitation to ${name}`);
+            showToast.error(`Failed to resend invitation to ${name}`);
         } finally {
             setResendingId(null);
         }

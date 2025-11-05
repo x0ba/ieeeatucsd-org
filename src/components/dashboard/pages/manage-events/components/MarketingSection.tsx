@@ -77,61 +77,61 @@ export default function MarketingSection({
           {formData.flyerType.includes(
             "Other (please specify in additional requests)",
           ) && (
-            <div className="space-y-4">
-              <Input
-                type="text"
-                label="Please specify the other flyer type"
-                placeholder="Specify other flyer type"
-                value={formData.otherFlyerType}
-                onValueChange={(value) =>
-                  onInputChange("otherFlyerType", value)
-                }
-                isRequired
-                classNames={{
-                  label: "text-sm font-medium",
-                }}
-              />
-
-              {/* Other Flyer Files Upload */}
-              <div>
-                <EnhancedFileUploadManager
-                  title="Other Flyer Reference Files"
-                  description="Upload reference files, examples, or specifications for your custom flyer type. Max size: 10MB each. You can also paste images directly."
-                  existingFiles={formData.existingOtherFlyerFiles || []}
-                  newFiles={formData.otherFlyerFiles || []}
-                  onFilesChange={(files) => {
-                    if (Array.isArray(files)) {
-                      const fileList = {
-                        length: files.length,
-                        item: (index: number) => files[index] || null,
-                        ...files,
-                      } as FileList;
-                      onFileChange("otherFlyerFiles", fileList);
-                    } else {
-                      onFileChange("otherFlyerFiles", null);
-                    }
-                  }}
-                  onRemoveExistingFile={(fileUrl) =>
-                    onRemoveExistingFile?.(fileUrl, "otherFlyerFiles")
+              <div className="space-y-4">
+                <Input
+                  type="text"
+                  label="Please specify the other flyer type"
+                  placeholder="Specify other flyer type"
+                  value={formData.otherFlyerType}
+                  onValueChange={(value) =>
+                    onInputChange("otherFlyerType", value)
                   }
-                  allowedTypes={[
-                    "pdf",
-                    "png",
-                    "jpg",
-                    "jpeg",
-                    "gif",
-                    "doc",
-                    "docx",
-                  ]}
-                  maxSizeInMB={10}
-                  maxFiles={5}
-                  multiple={true}
-                  required={false}
-                  eventRequestId={eventRequestId}
+                  isRequired
+                  classNames={{
+                    label: "text-sm font-medium",
+                  }}
                 />
+
+                {/* Other Flyer Files Upload */}
+                <div>
+                  <EnhancedFileUploadManager
+                    title="Other Flyer Reference Files"
+                    description="Upload reference files, examples, or specifications for your custom flyer type. Max size: 10MB each. You can also paste images directly."
+                    existingFiles={formData.existingOtherFlyerFiles || []}
+                    newFiles={formData.otherFlyerFiles || []}
+                    onFilesChange={(files) => {
+                      if (Array.isArray(files)) {
+                        const fileList = {
+                          length: files.length,
+                          item: (index: number) => files[index] || null,
+                          ...files,
+                        } as FileList;
+                        onFileChange("otherFlyerFiles", fileList);
+                      } else {
+                        onFileChange("otherFlyerFiles", null);
+                      }
+                    }}
+                    onRemoveExistingFile={(fileUrl) =>
+                      onRemoveExistingFile?.(fileUrl, "otherFlyerFiles")
+                    }
+                    allowedTypes={[
+                      "pdf",
+                      "png",
+                      "jpg",
+                      "jpeg",
+                      "gif",
+                      "doc",
+                      "docx",
+                    ]}
+                    maxSizeInMB={10}
+                    maxFiles={5}
+                    multiple={true}
+                    required={false}
+                    eventRequestId={eventRequestId}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Required Logos */}
           <div>
@@ -157,36 +157,36 @@ export default function MarketingSection({
           {formData.requiredLogos.includes(
             "OTHER (please upload transparent logo files)",
           ) && (
-            <div>
-              <EnhancedFileUploadManager
-                title="Other Logo Files"
-                description="Please upload transparent PNG files for best quality. Max size: 10MB each. You can also paste images directly."
-                existingFiles={formData.existingOtherLogos || []}
-                newFiles={formData.otherLogoFiles || []}
-                onFilesChange={(files) => {
-                  if (Array.isArray(files)) {
-                    const fileList = {
-                      length: files.length,
-                      item: (index: number) => files[index] || null,
-                      ...files,
-                    } as FileList;
-                    onFileChange("otherLogoFiles", fileList);
-                  } else {
-                    onFileChange("otherLogoFiles", null);
+              <div>
+                <EnhancedFileUploadManager
+                  title="Other Logo Files"
+                  description="Please upload transparent PNG files for best quality. Max size: 10MB each. You can also paste images directly."
+                  existingFiles={formData.existingOtherLogos || []}
+                  newFiles={formData.otherLogoFiles || []}
+                  onFilesChange={(files) => {
+                    if (Array.isArray(files)) {
+                      const fileList = {
+                        ...files,
+                        length: files.length,
+                        item: (index: number) => files[index] || null,
+                      } as FileList;
+                      onFileChange("otherLogoFiles", fileList);
+                    } else {
+                      onFileChange("otherLogoFiles", null);
+                    }
+                  }}
+                  onRemoveExistingFile={(fileUrl) =>
+                    onRemoveExistingFile?.(fileUrl, "otherLogos")
                   }
-                }}
-                onRemoveExistingFile={(fileUrl) =>
-                  onRemoveExistingFile?.(fileUrl, "otherLogos")
-                }
-                allowedTypes={["png", "jpg", "jpeg", "svg", "gif"]}
-                maxSizeInMB={10}
-                maxFiles={5}
-                multiple={true}
-                required={true}
-                eventRequestId={eventRequestId}
-              />
-            </div>
-          )}
+                  allowedTypes={["png", "jpg", "jpeg", "svg", "gif"]}
+                  maxSizeInMB={10}
+                  maxFiles={5}
+                  multiple={true}
+                  required={true}
+                  eventRequestId={eventRequestId}
+                />
+              </div>
+            )}
 
           {/* Advertising Format */}
           <Select
@@ -205,7 +205,7 @@ export default function MarketingSection({
             }}
           >
             {formatTypes.map((format) => (
-              <SelectItem key={format} value={format}>
+              <SelectItem key={format}>
                 {format}
               </SelectItem>
             ))}

@@ -5,7 +5,7 @@ import { auth } from '../../../firebase/client';
 import { ModalProvider } from './contexts/ModalContext.tsx';
 import { SyncStatusProvider } from './contexts/SyncStatusContext.tsx';
 import { useNavigationPreference } from './hooks/useNavigationPreference';
-import { Spinner } from '@heroui/react';
+import { Spinner, ToastProvider } from '@heroui/react';
 
 interface DashboardLayoutProps {
     children?: ReactNode;
@@ -38,24 +38,33 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
     }
 
     return (
-        <SyncStatusProvider>
-            <ModalProvider>
-                {navigationLayout === 'sidebar' ? (
-                    // Sidebar Layout
-                    <SidebarNavigation currentPath={currentPath}>
-                        {children || <DefaultContent />}
-                    </SidebarNavigation>
-                ) : (
-                    // Horizontal Navbar Layout (default)
-                    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
-                        <TopNavbar currentPath={currentPath} />
-                        <div className="flex-1 min-h-0 overflow-y-auto">
+        <>
+            <ToastProvider
+                placement="bottom-right"
+                maxVisibleToasts={3}
+                toastProps={{
+                    variant: "flat",
+                }}
+            />
+            <SyncStatusProvider>
+                <ModalProvider>
+                    {navigationLayout === 'sidebar' ? (
+                        // Sidebar Layout
+                        <SidebarNavigation currentPath={currentPath}>
                             {children || <DefaultContent />}
+                        </SidebarNavigation>
+                    ) : (
+                        // Horizontal Navbar Layout (default)
+                        <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+                            <TopNavbar currentPath={currentPath} />
+                            <div className="flex-1 min-h-0 overflow-y-auto">
+                                {children || <DefaultContent />}
+                            </div>
                         </div>
-                    </div>
-                )}
-            </ModalProvider>
-        </SyncStatusProvider>
+                    )}
+                </ModalProvider>
+            </SyncStatusProvider>
+        </>
     );
 }
 

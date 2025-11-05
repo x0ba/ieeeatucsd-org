@@ -16,6 +16,7 @@ import { PublicProfileService } from "../../../shared/services/publicProfile";
 import { EmailClient } from "../../../../../scripts/email/EmailClient";
 import type { UserRole } from "../../../shared/types/firestore";
 import type { EventStats } from "../types";
+import { showToast } from "../../../shared/utils/toast";
 
 interface EventRequest {
   id: string;
@@ -42,8 +43,6 @@ export function useEventManagement(userId: string | undefined) {
     Record<string, { name: string; email: string }>
   >({});
   const [loading, setLoading] = useState(false); // Start false to show cached data immediately
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>("Member");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<string>("date-desc");
@@ -172,7 +171,7 @@ export function useEventManagement(userId: string | undefined) {
       },
       (error) => {
         console.error("Error in real-time listener:", error);
-        setError("Failed to fetch event requests: " + error.message);
+        showToast.error("Failed to fetch event requests: " + error.message);
         setLoading(false);
       },
     );
@@ -191,8 +190,6 @@ export function useEventManagement(userId: string | undefined) {
     }
 
     try {
-      setError(null);
-
       const eventRequestDoc = await getDoc(
         doc(db, "event_requests", requestId),
       );
@@ -234,10 +231,10 @@ export function useEventManagement(userId: string | undefined) {
         }
       }
 
-      setSuccess(`Event request "${eventName}" deleted successfully`);
+      showToast.success(`Event request "${eventName}" deleted successfully`);
     } catch (error) {
       console.error("Error deleting event request:", error);
-      setError("Failed to delete event request");
+      showToast.error("Failed to delete event request");
     }
   };
 
@@ -248,8 +245,6 @@ export function useEventManagement(userId: string | undefined) {
     declinedReason?: string,
   ) => {
     try {
-      setError(null);
-
       const currentEventRequest = eventRequests.find(
         (req) => req.id === requestId,
       );
@@ -295,12 +290,12 @@ export function useEventManagement(userId: string | undefined) {
         }
       }
 
-      setSuccess(
+      showToast.success(
         `Event request status updated to ${newStatus}${newStatus === "approved" ? " and published" : ""}`,
       );
     } catch (error) {
       console.error("Error updating event status:", error);
-      setError("Failed to update event status");
+      showToast.error("Failed to update event status");
     }
   };
 
@@ -404,8 +399,6 @@ export function useEventManagement(userId: string | undefined) {
     sortedEventRequests,
     users,
     loading,
-    error,
-    success,
     currentUserRole,
     searchTerm,
     sortBy,
@@ -415,8 +408,6 @@ export function useEventManagement(userId: string | undefined) {
     endIndex,
     eventsPerPage,
     stats,
-    setError,
-    setSuccess,
     setSearchTerm,
     setSortBy,
     setCurrentPage,

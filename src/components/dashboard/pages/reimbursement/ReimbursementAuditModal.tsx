@@ -4,6 +4,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, Button, Input, Textarea, S
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { showToast } from '../../shared/utils/toast';
 
 interface ReimbursementAuditModalProps {
     reimbursement: any;
@@ -178,7 +179,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                     };
                 } catch (err) {
                     console.error('Failed to upload confirmation file:', err);
-                    alert(`Failed to upload the payment confirmation file: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                    showToast.error(`Failed to upload the payment confirmation file: ${err instanceof Error ? err.message : 'Unknown error'}`);
                     setIsUploading(false);
                     return;
                 } finally {
@@ -225,7 +226,7 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                         if (!note) note = 'Audit requested from another executive';
                     } catch (error) {
                         console.error('Failed to send audit request email:', error);
-                        alert(`Failed to send audit request: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+                        showToast.error(`Failed to send audit request: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
                         return;
                     }
                 }
@@ -489,11 +490,11 @@ export default function ReimbursementAuditModal({ reimbursement, onClose, onUpda
                                                         const isAllowed = file.type.startsWith('image/') || file.type === 'application/pdf';
                                                         const underLimit = file.size <= 10 * 1024 * 1024; // 10MB
                                                         if (!isAllowed) {
-                                                            alert('Please drop an image or PDF file.');
+                                                            showToast.error('Please drop an image or PDF file.');
                                                             return;
                                                         }
                                                         if (!underLimit) {
-                                                            alert('File is too large. Max 10MB.');
+                                                            showToast.error('File is too large. Max 10MB.');
                                                             return;
                                                         }
                                                         setPaymentInfo(prev => ({ ...prev, photoAttachment: file }));

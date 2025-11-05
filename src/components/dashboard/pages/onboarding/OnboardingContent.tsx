@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Mail, List, AlertCircle, CheckCircle, Lock } from 'lucide-react';
+import { UserPlus, Mail, List, Lock } from 'lucide-react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../../../firebase/client';
 import { doc, getDoc } from 'firebase/firestore';
-import { Alert, AlertDescription } from '../../../ui/alert';
 import type { OnboardingTab } from './types/OnboardingTypes';
 import type { UserRole } from '../../shared/types/firestore';
 import InvitationFlowTab from './components/InvitationFlowTab';
@@ -22,13 +21,10 @@ export default function OnboardingContent() {
         invitations,
         stats,
         loading,
-        error,
-        success,
         sendInvitation,
         sendDirectOnboarding,
         resendInvitation,
         refreshInvitations,
-        clearMessages,
     } = useOnboarding();
 
     // Check user permissions
@@ -129,21 +125,6 @@ export default function OnboardingContent() {
         <div className="flex-1 overflow-auto">
             {/* Main Content */}
             <main className="p-4 md:p-6">
-                {/* Error/Success Messages */}
-                {error && (
-                    <Alert variant="destructive" className="mb-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                )}
-
-                {success && (
-                    <Alert className="mb-4 border-green-200 bg-green-50 text-green-800">
-                        <CheckCircle className="h-4 w-4" />
-                        <AlertDescription>{success}</AlertDescription>
-                    </Alert>
-                )}
-
                 {/* Tab Navigation */}
                 <div className="mb-6">
                     <div className="border-b border-gray-200">

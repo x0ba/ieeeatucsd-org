@@ -8,6 +8,7 @@ import type { UserRole } from '../../shared/types/firestore';
 import { useGlobalImagePaste } from '../../shared/hooks/useGlobalImagePaste';
 import { useModalRegistration } from '../../shared/contexts/ModalContext';
 import { usePasteNotification } from '../../shared/components/PasteNotification';
+import { showToast } from '../../shared/utils/toast';
 
 interface ReimbursementModalProps {
     reimbursement: any;
@@ -209,7 +210,7 @@ export default function ReimbursementModal({
             };
             reader.readAsDataURL(file);
         } else {
-            alert('Please select an image file');
+            showToast.error('Please select an image file');
         }
     };
 
@@ -263,7 +264,7 @@ export default function ReimbursementModal({
                     break;
                 case 'decline':
                     if (!note) {
-                        alert('Please provide a reason for declining this request.');
+                        showToast.error('Please provide a reason for declining this request.');
                         setIsUploading(false);
                         return;
                     }
@@ -271,7 +272,7 @@ export default function ReimbursementModal({
                     break;
                 case 'approve_paid':
                     if (!paymentInfo.confirmationNumber.trim()) {
-                        alert('Please provide a payment confirmation number.');
+                        showToast.error('Please provide a payment confirmation number.');
                         setIsUploading(false);
                         return;
                     }
@@ -316,7 +317,7 @@ export default function ReimbursementModal({
                             console.log('Payment confirmation uploaded successfully:', { photoUrl, storagePath });
                         } catch (err) {
                             console.error('Failed to upload confirmation file:', err);
-                            alert(`Failed to upload the payment confirmation file: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                            showToast.error(`Failed to upload the payment confirmation file: ${err instanceof Error ? err.message : 'Unknown error'}`);
                             setIsUploading(false);
                             return;
                         }
@@ -336,7 +337,7 @@ export default function ReimbursementModal({
                     break;
                 case 'request_audit':
                     if (!selectedAuditor) {
-                        alert('Please select an executive to request audit from.');
+                        showToast.error('Please select an executive to request audit from.');
                         setIsUploading(false);
                         return;
                     }
@@ -352,7 +353,7 @@ export default function ReimbursementModal({
             onClose();
         } catch (error) {
             console.error('Error submitting action:', error);
-            alert('Failed to submit action. Please try again.');
+            showToast.error('Failed to submit action. Please try again.');
         } finally {
             setIsUploading(false);
         }
@@ -364,7 +365,7 @@ export default function ReimbursementModal({
 
         // Check if receipt has a file
         if (!receipt.receiptFile) {
-            alert('No receipt file found to recalculate.');
+            showToast.error('No receipt file found to recalculate.');
             return;
         }
 
@@ -374,7 +375,7 @@ export default function ReimbursementModal({
             : receipt.receiptFile.url;
 
         if (!receiptFileUrl) {
-            alert('Receipt file URL not found.');
+            showToast.error('Receipt file URL not found.');
             return;
         }
 
@@ -456,7 +457,7 @@ export default function ReimbursementModal({
                 onUpdate(reimbursement.id, reimbursement.status);
             }
 
-            alert('Receipt recalculated successfully!');
+            showToast.success('Receipt recalculated successfully!');
         } catch (error) {
             console.error('Error recalculating receipt:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -465,7 +466,7 @@ export default function ReimbursementModal({
                 newMap.set(receiptIndex, errorMessage);
                 return newMap;
             });
-            alert(`Failed to recalculate receipt: ${errorMessage}`);
+            showToast.error(`Failed to recalculate receipt: ${errorMessage}`);
         } finally {
             setRecalculatingReceipts(prev => {
                 const newSet = new Set(prev);

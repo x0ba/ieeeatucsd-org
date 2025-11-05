@@ -19,6 +19,7 @@ import UserTable from "./components/UserTable";
 import UserModal from "./components/UserModal";
 import InviteModal from "./components/InviteModal";
 import AddMemberModal from "./components/AddMemberModal";
+import { showToast } from "../../shared/utils/toast";
 
 export default function ManageUsersContent() {
   const {
@@ -30,8 +31,6 @@ export default function ManageUsersContent() {
 
     // State
     loading,
-    error,
-    success,
     filters,
     sortConfig,
 
@@ -42,8 +41,6 @@ export default function ManageUsersContent() {
     addExistingMember,
     updateFilters,
     updateSort,
-    clearMessages,
-    fetchUsers,
 
     // Permissions
     permissions,
@@ -103,17 +100,13 @@ export default function ManageUsersContent() {
 
   const handleSaveUser = async (userData: UserModalData) => {
     await updateUser(userData);
-    if (!error) {
-      setShowUserModal(false);
-      setEditingUser(null);
-    }
+    setShowUserModal(false);
+    setEditingUser(null);
   };
 
   const handleSendInvite = async (inviteData: InviteModalData) => {
     await sendInvite(inviteData);
-    if (!error) {
-      setShowInviteModal(false);
-    }
+    setShowInviteModal(false);
   };
 
   const handleAddExistingMember = async (
@@ -122,9 +115,7 @@ export default function ManageUsersContent() {
     newPosition: string,
   ) => {
     await addExistingMember(userId, newRole, newPosition);
-    if (!error) {
-      setShowAddMemberModal(false);
-    }
+    setShowAddMemberModal(false);
   };
 
   const handleEmailAction = async (
@@ -136,9 +127,6 @@ export default function ManageUsersContent() {
       console.error("Missing required parameters for email action");
       return;
     }
-
-    // Clear any existing messages
-    clearMessages();
 
     try {
       let endpoint = "";
@@ -207,22 +195,19 @@ export default function ManageUsersContent() {
         setShowUserModal(false);
         setEditingUser(null);
 
-        console.log(`Email ${action} successful:`, result.message);
+        showToast.success(`Email ${action}d successfully`);
       } else {
         throw new Error(result.message || `Failed to ${action} email`);
       }
     } catch (error) {
       console.error(`Email ${action} failed:`, error);
 
-      // Set error message that will be displayed in the UI
       const errorMessage =
         error instanceof Error
           ? error.message
           : `Failed to ${action} email. Please try again.`;
 
-      // You can add a toast notification here or set an error state
-      // For now, we'll just log the error
-      console.error("Email operation error:", errorMessage);
+      showToast.error(errorMessage);
     }
   };
 
@@ -310,91 +295,6 @@ export default function ManageUsersContent() {
   return (
     <div className="">
       <div className="space-y-6 p-6 mx-">
-        {/* Error/Success Messages */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-red-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-              <div className="ml-auto pl-3">
-                <button
-                  onClick={clearMessages}
-                  className="text-red-400 hover:text-red-600"
-                >
-                  <span className="sr-only">Dismiss</span>
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-green-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-green-800">{success}</p>
-              </div>
-              <div className="ml-auto pl-3">
-                <button
-                  onClick={clearMessages}
-                  className="text-green-400 hover:text-green-600"
-                >
-                  <span className="sr-only">Dismiss</span>
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Stats Cards */}
         <UserStatsCards stats={stats} />
 

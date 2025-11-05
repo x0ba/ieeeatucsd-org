@@ -23,6 +23,7 @@ import type {
   DirectOnboardingFormData,
   OnboardingStats,
 } from "../types/OnboardingTypes";
+import { showToast } from "../../../shared/utils/toast";
 
 export function useOnboarding() {
   const [user] = useAuthState(auth);
@@ -36,8 +37,6 @@ export function useOnboarding() {
     declinedInvitations: 0,
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   // Real-time listener for invitations
   useEffect(() => {
@@ -76,7 +75,7 @@ export function useOnboarding() {
       },
       (err) => {
         console.error("Error fetching invitations:", err);
-        setError("Failed to fetch invitations");
+        showToast.error("Failed to fetch invitations");
         setLoading(false);
       },
     );
@@ -103,14 +102,12 @@ export function useOnboarding() {
   // Send invitation email
   const sendInvitation = async (formData: InvitationFormData) => {
     if (!user) {
-      setError("You must be logged in to send invitations");
+      showToast.error("You must be logged in to send invitations");
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
-      setSuccess(null);
 
       // Parse the acceptance deadline from datetime-local input
       const expiresAt = new Date(formData.acceptanceDeadline);
@@ -182,11 +179,11 @@ export function useOnboarding() {
         throw new Error(result.error || "Failed to send invitation email");
       }
 
-      setSuccess(`Invitation sent successfully to ${formData.name}!`);
+      showToast.success(`Invitation sent successfully to ${formData.name}!`);
       await fetchInvitations();
     } catch (err) {
       console.error("Error sending invitation:", err);
-      setError(
+      showToast.error(
         err instanceof Error ? err.message : "Failed to send invitation",
       );
     } finally {
@@ -197,14 +194,12 @@ export function useOnboarding() {
   // Send direct onboarding
   const sendDirectOnboarding = async (formData: DirectOnboardingFormData) => {
     if (!user) {
-      setError("You must be logged in to onboard officers");
+      showToast.error("You must be logged in to onboard officers");
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
-      setSuccess(null);
 
       // Send onboarding email and create user via API
       const response = await fetch("/api/onboarding/send-direct-onboarding", {
@@ -228,10 +223,10 @@ export function useOnboarding() {
         throw new Error(result.error || "Failed to send onboarding email");
       }
 
-      setSuccess(`${formData.name} has been onboarded successfully!`);
+      showToast.success(`${formData.name} has been onboarded successfully!`);
     } catch (err) {
       console.error("Error sending direct onboarding:", err);
-      setError(
+      showToast.error(
         err instanceof Error ? err.message : "Failed to onboard officer",
       );
     } finally {
@@ -242,14 +237,12 @@ export function useOnboarding() {
   // Resend invitation
   const resendInvitation = async (invitationId: string) => {
     if (!user) {
-      setError("You must be logged in to resend invitations");
+      showToast.error("You must be logged in to resend invitations");
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
-      setSuccess(null);
 
       // Call API to resend invitation
       const response = await fetch("/api/onboarding/resend-invitation", {
@@ -264,11 +257,11 @@ export function useOnboarding() {
         throw new Error(result.error || "Failed to resend invitation");
       }
 
-      setSuccess("Invitation resent successfully!");
+      showToast.success("Invitation resent successfully!");
       await fetchInvitations();
     } catch (err) {
       console.error("Error resending invitation:", err);
-      setError(
+      showToast.error(
         err instanceof Error ? err.message : "Failed to resend invitation",
       );
     } finally {
@@ -281,22 +274,13 @@ export function useOnboarding() {
     await fetchInvitations();
   };
 
-  // Clear messages
-  const clearMessages = () => {
-    setError(null);
-    setSuccess(null);
-  };
-
   return {
     invitations,
     stats,
     loading,
-    error,
-    success,
     sendInvitation,
     sendDirectOnboarding,
     resendInvitation,
     refreshInvitations,
-    clearMessages,
   };
 }

@@ -9,6 +9,7 @@ import ReimbursementModal from '../reimbursement/ReimbursementModal';
 import type { UserRole } from '../../shared/types/firestore';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { TableSkeleton } from '../../../ui/loading';
+import { showToast } from '../../shared/utils/toast';
 
 interface Reimbursement {
     id: string;
@@ -335,7 +336,7 @@ export default function ManageReimbursementsContent() {
             setDeleteConfirmation({ isOpen: false, reimbursement: null });
         } catch (error) {
             console.error('Error deleting reimbursement:', error);
-            alert('Failed to delete reimbursement. Please try again.');
+            showToast.error('Failed to delete reimbursement. Please try again.');
         } finally {
             setIsDeleting(false);
         }

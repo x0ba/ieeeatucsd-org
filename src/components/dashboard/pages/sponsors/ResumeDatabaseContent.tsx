@@ -12,6 +12,7 @@ import {
     getMajorNormalizationMap
 } from '../../../../utils/majorNormalization';
 import { Spinner } from '@heroui/react';
+import { showToast } from '../../shared/utils/toast';
 
 interface UserWithResume extends Partial<FirestoreUser> {
     id: string;
@@ -262,7 +263,7 @@ export default function ResumeDatabaseContent() {
                 URL.revokeObjectURL(link.href);
             } catch (err) {
                 console.error('Failed to create ZIP:', err);
-                alert('Failed to download resumes. Please try again.');
+                showToast.error('Failed to download resumes. Please try again.');
             }
         }
     };

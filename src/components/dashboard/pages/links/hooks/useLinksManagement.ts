@@ -16,6 +16,7 @@ import { db } from "../../../../../firebase/client";
 import { useAuth } from "../../../../../hooks/useAuth";
 import type { Link, UserRole } from "../../../shared/types/firestore";
 import { LinkPermissionService } from "../utils/linkPermissions";
+import { showToast } from "../../../shared/utils/toast";
 
 export interface LinkFormData {
   url: string;
@@ -30,8 +31,6 @@ export interface LinkFormData {
 
 export function useLinksManagement() {
   const { user, userRole: currentUserRole, loading: authLoading } = useAuth();
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [links, setLinks] = useState<Link[]>([]);
@@ -62,6 +61,7 @@ export function useLinksManagement() {
         console.error("Error fetching links:", error);
         setLinksError(error);
         setLinksLoading(false);
+        showToast.error("Failed to load links. Please refresh the page.");
       },
     );
 
@@ -110,18 +110,17 @@ export function useLinksManagement() {
   // Create a new link
   const createLink = async (linkData: LinkFormData) => {
     if (!user) {
-      setError("You must be logged in to create links");
+      showToast.error("You must be logged in to create links");
       return;
     }
 
     if (!LinkPermissionService.canManageLinks(currentUserRole)) {
-      setError("You don't have permission to create links");
+      showToast.error("You don't have permission to create links");
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
 
       // Build the link object, omitting undefined fields
       const newLink: any = {
@@ -152,11 +151,10 @@ export function useLinksManagement() {
       }
 
       await addDoc(collection(db, "links"), newLink);
-      setSuccess("Link created successfully!");
-      setTimeout(() => setSuccess(null), 3000);
+      showToast.success("Link created successfully!");
     } catch (error) {
       console.error("Error creating link:", error);
-      setError("Failed to create link. Please try again.");
+      showToast.error("Failed to create link. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -165,18 +163,17 @@ export function useLinksManagement() {
   // Update an existing link
   const updateLink = async (linkId: string, linkData: LinkFormData) => {
     if (!user) {
-      setError("You must be logged in to update links");
+      showToast.error("You must be logged in to update links");
       return;
     }
 
     if (!LinkPermissionService.canManageLinks(currentUserRole)) {
-      setError("You don't have permission to update links");
+      showToast.error("You don't have permission to update links");
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
 
       // Get the existing link to check what fields need to be cleared
       const linkRef = doc(db, "links", linkId);
@@ -230,11 +227,10 @@ export function useLinksManagement() {
 
       await updateDoc(linkRef, updateData);
 
-      setSuccess("Link updated successfully!");
-      setTimeout(() => setSuccess(null), 3000);
+      showToast.success("Link updated successfully!");
     } catch (error) {
       console.error("Error updating link:", error);
-      setError("Failed to update link. Please try again.");
+      showToast.error("Failed to update link. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -243,34 +239,26 @@ export function useLinksManagement() {
   // Delete a link
   const deleteLink = async (linkId: string) => {
     if (!user) {
-      setError("You must be logged in to delete links");
+      showToast.error("You must be logged in to delete links");
       return;
     }
 
     if (!LinkPermissionService.canManageLinks(currentUserRole)) {
-      setError("You don't have permission to delete links");
+      showToast.error("You don't have permission to delete links");
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
 
       await deleteDoc(doc(db, "links", linkId));
-      setSuccess("Link deleted successfully!");
-      setTimeout(() => setSuccess(null), 3000);
+      showToast.success("Link deleted successfully!");
     } catch (error) {
       console.error("Error deleting link:", error);
-      setError("Failed to delete link. Please try again.");
+      showToast.error("Failed to delete link. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
-
-  // Clear messages
-  const clearMessages = () => {
-    setError(null);
-    setSuccess(null);
   };
 
   // Permission checks
@@ -285,8 +273,6 @@ export function useLinksManagement() {
 
     // State
     loading: authLoading || linksLoading,
-    error: error || (linksError ? linksError.message : null),
-    success,
     searchTerm,
     categoryFilter,
 
@@ -296,7 +282,6 @@ export function useLinksManagement() {
     deleteLink,
     setSearchTerm,
     setCategoryFilter,
-    clearMessages,
 
     // Permissions
     canManageLinks,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { SponsorTier } from '../../../shared/types/firestore';
 import type { SponsorDomainWithId } from '../hooks/useSponsorDomains';
+import { showToast } from '../../../shared/utils/toast';
 
 interface SponsorDomainModalProps {
     isOpen: boolean;
@@ -26,8 +27,6 @@ export default function SponsorDomainModal({
         sponsorTier: 'Bronze' as SponsorTier
     });
 
-    const [validationError, setValidationError] = useState<string | null>(null);
-
     useEffect(() => {
         if (isOpen) {
             if (editingDomain) {
@@ -43,7 +42,6 @@ export default function SponsorDomainModal({
                     sponsorTier: 'Bronze'
                 });
             }
-            setValidationError(null);
         }
     }, [isOpen, editingDomain]);
 
@@ -71,17 +69,16 @@ export default function SponsorDomainModal({
         // Validate domain
         const domainError = validateDomain(formData.domain);
         if (domainError) {
-            setValidationError(domainError);
+            showToast.error(domainError);
             return;
         }
 
         // Validate organization name
         if (!formData.organizationName.trim()) {
-            setValidationError('Organization name is required');
+            showToast.error('Organization name is required');
             return;
         }
 
-        setValidationError(null);
         onSave(formData);
     };
 
@@ -92,7 +89,6 @@ export default function SponsorDomainModal({
             processedValue = '@' + processedValue;
         }
         setFormData({ ...formData, domain: processedValue });
-        setValidationError(null);
     };
 
     if (!isOpen) return null;
@@ -114,12 +110,6 @@ export default function SponsorDomainModal({
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {validationError && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                            <p className="text-sm text-red-800">{validationError}</p>
-                        </div>
-                    )}
-
                     {/* Domain Input */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">

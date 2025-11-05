@@ -28,13 +28,12 @@ import { UserFilteringService } from "../utils/userFiltering";
 import { UserPermissionService } from "../utils/userPermissions";
 import { PublicProfileService } from "../../../shared/services/publicProfile";
 import { normalizeMajorName } from "../../../../../utils/majorNormalization";
+import { showToast } from "../../../shared/utils/toast";
 
 export const useUserManagement = () => {
   const [user, userLoading, userError] = useAuthState(auth);
   const [users, setUsers] = useState<(FirestoreUser & { id: string })[]>([]);
   const [loading, setLoading] = useState(true); // Start true for better UX (data fetching begins immediately)
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<
     (FirestoreUser & { id: string }) | null
   >(null);
@@ -59,7 +58,7 @@ export const useUserManagement = () => {
     if (userLoading) return;
 
     if (!user) {
-      setError("Please log in to access user management");
+      showToast.error("Please log in to access user management");
       setLoading(false);
       return;
     }
@@ -89,7 +88,9 @@ export const useUserManagement = () => {
       },
       (error) => {
         console.error("Error fetching current user:", error);
-        setError("Failed to load your user data. Please refresh the page.");
+        showToast.error(
+          "Failed to load your user data. Please refresh the page.",
+        );
         setRoleLoading(false);
         setLoading(false);
         // Clean up users listener if it exists
@@ -138,7 +139,7 @@ export const useUserManagement = () => {
       },
       (error) => {
         console.error("Error fetching users:", error);
-        setError("Failed to load users. Please try again.");
+        showToast.error("Failed to load users. Please try again.");
         setLoading(false);
         // Clean up current user listener if it exists
         if (currentUserUnsubscribe) {
@@ -167,7 +168,7 @@ export const useUserManagement = () => {
     try {
       const targetUser = users.find((u) => u.id === userData.id);
       if (!targetUser) {
-        setError("User not found");
+        showToast.error("User not found");
         return;
       }
 
@@ -179,7 +180,9 @@ export const useUserManagement = () => {
           currentUser?.id,
         )
       ) {
-        setError("You do not have permission to change this user's role");
+        showToast.error(
+          "You do not have permission to change this user's role",
+        );
         return;
       }
 
@@ -190,7 +193,9 @@ export const useUserManagement = () => {
           currentUser?.id,
         )
       ) {
-        setError("You do not have permission to change this user's position");
+        showToast.error(
+          "You do not have permission to change this user's position",
+        );
         return;
       }
 
@@ -247,11 +252,11 @@ export const useUserManagement = () => {
         console.error("Error syncing public profile:", error);
       }
 
-      setSuccess("User updated successfully");
+      showToast.success("User updated successfully");
       // Data will auto-update via real-time listener
     } catch (error) {
       console.error("Error updating user:", error);
-      setError(
+      showToast.error(
         error instanceof Error
           ? error.message
           : "Failed to update user. Please try again.",
@@ -263,12 +268,12 @@ export const useUserManagement = () => {
   const deleteUser = async (userId: string) => {
     const targetUser = users.find((u) => u.id === userId);
     if (!targetUser) {
-      setError("User not found");
+      showToast.error("User not found");
       return;
     }
 
     if (!UserPermissionService.canDeleteUser(currentUserRole, targetUser)) {
-      setError("You do not have permission to delete this user");
+      showToast.error("You do not have permission to delete this user");
       return;
     }
 
@@ -290,11 +295,11 @@ export const useUserManagement = () => {
         // Don't fail the whole operation if public profile deletion fails
       }
 
-      setSuccess("User deleted successfully");
+      showToast.success("User deleted successfully");
       // Data will auto-update via real-time listener
     } catch (error) {
       console.error("Error deleting user:", error);
-      setError("Failed to delete user. Please try again.");
+      showToast.error("Failed to delete user. Please try again.");
     }
   };
 
@@ -307,7 +312,9 @@ export const useUserManagement = () => {
           inviteData.role,
         )
       ) {
-        setError("You do not have permission to invite users with this role");
+        showToast.error(
+          "You do not have permission to invite users with this role",
+        );
         return;
       }
 
@@ -343,10 +350,10 @@ export const useUserManagement = () => {
         throw new Error("Failed to send invite email");
       }
 
-      setSuccess("Invite sent successfully");
+      showToast.success("Invite sent successfully");
     } catch (error) {
       console.error("Error sending invite:", error);
-      setError("Failed to send invite. Please try again.");
+      showToast.error("Failed to send invite. Please try again.");
     }
   };
 
@@ -380,11 +387,11 @@ export const useUserManagement = () => {
         console.error("Error syncing public profile:", error);
       }
 
-      setSuccess("Member added successfully");
+      showToast.success("Member added successfully");
       // Data will auto-update via real-time listener
     } catch (error) {
       console.error("Error adding member:", error);
-      setError("Failed to add member. Please try again.");
+      showToast.error("Failed to add member. Please try again.");
     }
   };
 
@@ -400,12 +407,6 @@ export const useUserManagement = () => {
       direction:
         prev.field === field && prev.direction === "asc" ? "desc" : "asc",
     }));
-  };
-
-  // Clear messages
-  const clearMessages = () => {
-    setError(null);
-    setSuccess(null);
   };
 
   // Calculate stats
@@ -464,8 +465,6 @@ export const useUserManagement = () => {
 
     // State
     loading: userLoading || roleLoading || loading,
-    error,
-    success,
     filters,
     sortConfig,
 
@@ -476,7 +475,6 @@ export const useUserManagement = () => {
     addExistingMember,
     updateFilters,
     updateSort,
-    clearMessages,
 
     // Permissions
     permissions,

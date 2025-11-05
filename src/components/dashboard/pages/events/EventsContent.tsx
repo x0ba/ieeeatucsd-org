@@ -6,6 +6,7 @@ import { auth, db } from '../../../../firebase/client';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { EventCardSkeleton, MetricCardSkeleton } from '../../../ui/loading';
 import { Spinner } from '@heroui/react';
+import { showToast } from '../../shared/utils/toast';
 
 interface Event {
     id: string;
@@ -191,13 +192,13 @@ export default function EventsContent() {
             const endDate = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
 
             if (now < startDate) {
-                alert(`This event hasn't started yet. Check-in opens on ${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()}.`);
+                showToast.warning(`This event hasn't started yet. Check-in opens on ${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()}.`);
                 return;
             } else if (now > endDate) {
-                alert('This event has already ended. Check-in is no longer available.');
+                showToast.warning('This event has already ended. Check-in is no longer available.');
                 return;
             } else if (!event.published) {
-                alert('This event is not currently available for check-in.');
+                showToast.warning('This event is not currently available for check-in.');
                 return;
             }
         }
@@ -214,7 +215,7 @@ export default function EventsContent() {
 
             // Validate event code
             if (enteredCode.toUpperCase() !== event.eventCode?.toUpperCase()) {
-                alert('Incorrect event code. Please try again.');
+                showToast.error('Incorrect event code. Please try again.');
                 setCheckingIn(null);
                 return;
             }
@@ -269,7 +270,7 @@ export default function EventsContent() {
             const message = event.hasFood && foodPreference
                 ? `Successfully checked in to ${event.eventName}! You earned ${event.pointsToReward} points. Food preference: ${foodPreference}`
                 : `Successfully checked in to ${event.eventName}! You earned ${event.pointsToReward} points.`;
-            alert(message);
+            showToast.success(message);
 
         } catch (error) {
             setError('Failed to check in to event: ' + (error as Error).message);

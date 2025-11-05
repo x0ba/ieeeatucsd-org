@@ -16,6 +16,7 @@ import type {
   SponsorDomain,
   SponsorTier,
 } from "../../../shared/types/firestore";
+import { showToast } from "../../../shared/utils/toast";
 
 export interface SponsorDomainWithId extends SponsorDomain {
   id: string;
@@ -31,8 +32,6 @@ export const useSponsorDomains = () => {
   const [user] = useAuthState(auth);
   const [domains, setDomains] = useState<SponsorDomainWithId[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   // Fetch all sponsor domains
   const fetchDomains = async () => {
@@ -48,10 +47,9 @@ export const useSponsorDomains = () => {
       })) as SponsorDomainWithId[];
 
       setDomains(domainsList);
-      setError(null);
     } catch (err: any) {
       console.error("Error fetching sponsor domains:", err);
-      setError(err.message || "Failed to fetch sponsor domains");
+      showToast.error(err.message || "Failed to fetch sponsor domains");
     } finally {
       setLoading(false);
     }
@@ -64,19 +62,19 @@ export const useSponsorDomains = () => {
   // Add a new sponsor domain
   const addDomain = async (formData: SponsorDomainFormData) => {
     if (!user) {
-      setError("You must be logged in to add a sponsor domain");
+      showToast.error("You must be logged in to add a sponsor domain");
       return;
     }
 
     try {
       // Validate domain format
       if (!formData.domain.startsWith("@")) {
-        setError("Domain must start with @");
+        showToast.error("Domain must start with @");
         return;
       }
 
       if (formData.domain.length < 3) {
-        setError("Domain must have at least one character after @");
+        showToast.error("Domain must have at least one character after @");
         return;
       }
 
@@ -85,7 +83,7 @@ export const useSponsorDomains = () => {
         (d) => d.domain.toLowerCase() === formData.domain.toLowerCase(),
       );
       if (existingDomain) {
-        setError("This domain already exists");
+        showToast.error("This domain already exists");
         return;
       }
 
@@ -99,12 +97,11 @@ export const useSponsorDomains = () => {
         };
 
       await addDoc(collection(db, "sponsorDomains"), domainData);
-      setSuccess("Sponsor domain added successfully");
-      setError(null);
+      showToast.success("Sponsor domain added successfully");
       await fetchDomains();
     } catch (err: any) {
       console.error("Error adding sponsor domain:", err);
-      setError(err.message || "Failed to add sponsor domain");
+      showToast.error(err.message || "Failed to add sponsor domain");
     }
   };
 
@@ -114,19 +111,19 @@ export const useSponsorDomains = () => {
     formData: SponsorDomainFormData,
   ) => {
     if (!user) {
-      setError("You must be logged in to update a sponsor domain");
+      showToast.error("You must be logged in to update a sponsor domain");
       return;
     }
 
     try {
       // Validate domain format
       if (!formData.domain.startsWith("@")) {
-        setError("Domain must start with @");
+        showToast.error("Domain must start with @");
         return;
       }
 
       if (formData.domain.length < 3) {
-        setError("Domain must have at least one character after @");
+        showToast.error("Domain must have at least one character after @");
         return;
       }
 
@@ -137,7 +134,7 @@ export const useSponsorDomains = () => {
           d.id !== domainId,
       );
       if (existingDomain) {
-        setError("This domain already exists");
+        showToast.error("This domain already exists");
         return;
       }
 
@@ -150,49 +147,38 @@ export const useSponsorDomains = () => {
         lastModifiedBy: user.uid,
       });
 
-      setSuccess("Sponsor domain updated successfully");
-      setError(null);
+      showToast.success("Sponsor domain updated successfully");
       await fetchDomains();
     } catch (err: any) {
       console.error("Error updating sponsor domain:", err);
-      setError(err.message || "Failed to update sponsor domain");
+      showToast.error(err.message || "Failed to update sponsor domain");
     }
   };
 
   // Delete a sponsor domain
   const deleteDomain = async (domainId: string) => {
     if (!user) {
-      setError("You must be logged in to delete a sponsor domain");
+      showToast.error("You must be logged in to delete a sponsor domain");
       return;
     }
 
     try {
       const domainRef = doc(db, "sponsorDomains", domainId);
       await deleteDoc(domainRef);
-      setSuccess("Sponsor domain deleted successfully");
-      setError(null);
+      showToast.success("Sponsor domain deleted successfully");
       await fetchDomains();
     } catch (err: any) {
       console.error("Error deleting sponsor domain:", err);
-      setError(err.message || "Failed to delete sponsor domain");
+      showToast.error(err.message || "Failed to delete sponsor domain");
     }
-  };
-
-  // Clear messages
-  const clearMessages = () => {
-    setError(null);
-    setSuccess(null);
   };
 
   return {
     domains,
     loading,
-    error,
-    success,
     addDomain,
     updateDomain,
     deleteDomain,
-    clearMessages,
     fetchDomains,
   };
 };

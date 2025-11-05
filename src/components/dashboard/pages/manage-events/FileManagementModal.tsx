@@ -7,11 +7,11 @@ import { Button } from '../../../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Badge } from '../../../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
-import { Alert, AlertDescription } from '../../../ui/alert';
 import { Separator } from '../../../ui/separator';
 import { Label } from '../../../ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../ui/dialog';
 import { uploadFilesForEvent, extractStoragePathFromUrl } from './utils/fileUploadUtils';
+import { showToast } from '../../shared/utils/toast';
 
 interface FileManagementModalProps {
     request: {
@@ -42,8 +42,6 @@ export default function FileManagementModal({ request, onClose }: FileManagement
     const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
     const [uploadTarget, setUploadTarget] = useState<'public' | 'private'>('private');
     const [uploadCategory, setUploadCategory] = useState<'invoice' | 'room-booking' | 'logo' | 'event' | 'other'>('other');
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
     const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
 
     // Use db from client
@@ -60,7 +58,6 @@ export default function FileManagementModal({ request, onClose }: FileManagement
     const fetchFiles = async () => {
         try {
             setLoading(true);
-            setError(null);
             const allFiles: FileItem[] = [];
 
             // Fetch files from event_request (private files)
@@ -127,7 +124,7 @@ export default function FileManagementModal({ request, onClose }: FileManagement
             setFiles(allFiles);
         } catch (err) {
             console.error('Error fetching files:', err);
-            setError('Failed to fetch files');
+            showToast.error('Failed to fetch files');
         } finally {
             setLoading(false);
         }
@@ -149,13 +146,12 @@ export default function FileManagementModal({ request, onClose }: FileManagement
 
     const handleFileUpload = async () => {
         if (!selectedFiles || selectedFiles.length === 0) {
-            setError('Please select files to upload');
+            showToast.error('Please select files to upload');
             return;
         }
 
         try {
             setUploading(true);
-            setError(null);
 
             // Use the new event-based upload system
             const category = uploadTarget === 'public' ? 'public' : uploadCategory;
@@ -195,11 +191,11 @@ export default function FileManagementModal({ request, onClose }: FileManagement
                 await updateDoc(doc(db, 'event_requests', request.id), updateData);
             }
 
-            setSuccess(`Successfully uploaded ${uploadedUrls.length} file(s)`);
+            showToast.success(`Successfully uploaded ${uploadedUrls.length} file(s)`);
             setSelectedFiles(null);
             fetchFiles(); // Refresh the file list
         } catch (err) {
-            setError('Failed to upload files: ' + (err as Error).message);
+            showToast.error('Failed to upload files: ' + (err as Error).message);
         } finally {
             setUploading(false);
         }
@@ -252,11 +248,11 @@ export default function FileManagementModal({ request, onClose }: FileManagement
                 await updateDoc(doc(db, 'event_requests', request.id), updateData);
             }
 
-            setSuccess('File deleted successfully');
+            showToast.success('File deleted successfully');
             fetchFiles(); // Refresh the file list
         } catch (err) {
             console.error('Error deleting file:', err);
-            setError('Failed to delete file: ' + (err as Error).message);
+            showToast.error('Failed to delete file: ' + (err as Error).message);
         }
     };
 
@@ -454,18 +450,6 @@ export default function FileManagementModal({ request, onClose }: FileManagement
                                     </Button>
                                 </CardContent>
                             </Card>
-
-                            {/* Status Messages */}
-                            {error && (
-                                <Alert className="border-red-200 bg-red-50">
-                                    <AlertDescription className="text-red-800">{error}</AlertDescription>
-                                </Alert>
-                            )}
-                            {success && (
-                                <Alert className="border-green-200 bg-green-50">
-                                    <AlertDescription className="text-green-800">{success}</AlertDescription>
-                                </Alert>
-                            )}
 
                             {/* Files Section */}
                             <Card>

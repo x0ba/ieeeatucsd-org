@@ -135,7 +135,7 @@ export default function BasicInformationSection({
           }}
         >
           {departmentOptions.map((dept) => (
-            <SelectItem key={dept} value={dept}>
+            <SelectItem key={dept}>
               {dept}
             </SelectItem>
           ))}

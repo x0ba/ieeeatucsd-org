@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Calendar, Building, CreditCard, FileText, MapPin, Download, Eye, File, Image, CheckCircle, Trash2 } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Chip } from '@heroui/react';
 import type { UserRole } from '../../shared/types/firestore';
+import { showToast } from '../../shared/utils/toast';
 
 interface ReimbursementDetailModalProps {
     reimbursement: any;
@@ -95,7 +96,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
             onClose(); // Close modal after successful deletion
         } catch (error) {
             console.error('Error deleting reimbursement:', error);
-            alert('Failed to delete reimbursement. Please try again.');
+            showToast.error('Failed to delete reimbursement. Please try again.');
         } finally {
             setIsDeleting(false);
             setShowDeleteConfirm(false);
@@ -375,11 +376,11 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                                                                                     window.open(url, '_blank');
                                                                                 } else {
                                                                                     console.error('Unable to resolve receipt URL');
-                                                                                    alert(`Unable to open receipt. The receipt may have been uploaded with an older system or there may be an issue with the file storage. Receipt data: ${JSON.stringify(expense.receipt)}`);
+                                                                                    showToast.error(`Unable to open receipt. The receipt may have been uploaded with an older system or there may be an issue with the file storage. Receipt data: ${JSON.stringify(expense.receipt)}`);
                                                                                 }
                                                                             } catch (error) {
                                                                                 console.error('Error opening receipt:', error);
-                                                                                alert('An error occurred while trying to open the receipt. Please try again.');
+                                                                                showToast.error('An error occurred while trying to open the receipt. Please try again.');
                                                                             }
                                                                         }}
                                                                         className="flex items-center justify-center space-x-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors min-h-[44px] flex-1 sm:flex-initial"
@@ -480,7 +481,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
 
                                                                 if (!storagePath) {
                                                                     console.error('No storage path available for payment confirmation');
-                                                                    alert('Unable to find the payment confirmation file path.');
+                                                                    showToast.error('Unable to find the payment confirmation file path.');
                                                                     return;
                                                                 }
 
@@ -515,11 +516,11 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                                                                     window.open(url, '_blank');
                                                                 } else {
                                                                     console.error('Unable to resolve payment confirmation URL');
-                                                                    alert('Unable to open payment confirmation. There may be an issue with the file storage.');
+                                                                    showToast.error('Unable to open payment confirmation. There may be an issue with the file storage.');
                                                                 }
                                                             } catch (error) {
                                                                 console.error('Error opening payment confirmation:', error);
-                                                                alert(`An error occurred while trying to open the payment confirmation: ${error instanceof Error ? error.message : String(error)}`);
+                                                                showToast.error(`An error occurred while trying to open the payment confirmation: ${error instanceof Error ? error.message : String(error)}`);
                                                             }
                                                         }}
                                                         className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"

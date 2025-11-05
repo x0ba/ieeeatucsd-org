@@ -13,7 +13,7 @@ import { Calendar, MapPin, FileText } from 'lucide-react';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../../../../firebase/client';
 import { getAuth } from 'firebase/auth';
-import toast from 'react-hot-toast';
+import { showToast } from '../../../shared/utils/toast';
 import type { DraftEventModalProps, DraftEventFormData } from '../types/EventRequestTypes';
 
 const DraftEventModal: React.FC<DraftEventModalProps> = ({
@@ -92,7 +92,7 @@ const DraftEventModal: React.FC<DraftEventModalProps> = ({
     }
 
     if (!auth.currentUser) {
-      toast.error('You must be logged in to create a draft event');
+      showToast.error('You must be logged in to create a draft event');
       return;
     }
 
@@ -138,12 +138,12 @@ const DraftEventModal: React.FC<DraftEventModalProps> = ({
 
       await addDoc(collection(db, 'event_requests'), draftEventData);
 
-      toast.success('Draft event created successfully!');
+      showToast.success('Draft event created successfully!');
       onSuccess?.();
       onClose();
     } catch (error) {
       console.error('Error creating draft event:', error);
-      toast.error('Failed to create draft event. Please try again.');
+      showToast.error('Failed to create draft event. Please try again.');
     } finally {
       setLoading(false);
     }

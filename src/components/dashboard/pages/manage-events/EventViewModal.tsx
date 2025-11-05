@@ -14,6 +14,7 @@ import ActivityHistoryTab from './event-view-modal/ActivityHistoryTab';
 import ReviewFeedbackModal from './event-view-modal/ReviewFeedbackModal';
 import { formatInvoiceData, getStatusColor, getUserName } from './event-view-modal/utils';
 import type { EventViewModalProps, UserOption, AttendeeRecord } from './event-view-modal/types';
+import { showToast } from '../../shared/utils/toast';
 
 export default function EventViewModal({ request, users, onClose, onSuccess }: EventViewModalProps) {
     const [user] = useAuthState(auth);
@@ -127,7 +128,7 @@ export default function EventViewModal({ request, users, onClose, onSuccess }: E
 
     const handlePublishToggle = async () => {
         if (request.status !== 'approved') {
-            alert('Events can only be published when their status is "Approved"');
+            showToast.warning('Events can only be published when their status is "Approved"');
             return;
         }
 
@@ -146,11 +147,11 @@ export default function EventViewModal({ request, users, onClose, onSuccess }: E
                 });
                 setPublishStatus(newStatus);
             } else {
-                alert('Error: No corresponding event found to update');
+                showToast.error('Error: No corresponding event found to update');
             }
         } catch (error) {
             console.error('Error updating publish status:', error);
-            alert('Error updating publish status: ' + (error as Error).message);
+            showToast.error('Error updating publish status: ' + (error as Error).message);
         } finally {
             setUpdating(false);
         }
@@ -164,7 +165,7 @@ export default function EventViewModal({ request, users, onClose, onSuccess }: E
             setTimeout(() => setCopiedInvoice(false), 2000);
         } catch (error) {
             console.error('Failed to copy invoice data:', error);
-            alert('Failed to copy invoice data to clipboard');
+            showToast.error('Failed to copy invoice data to clipboard');
         }
     };
 
@@ -247,13 +248,13 @@ export default function EventViewModal({ request, users, onClose, onSuccess }: E
             onClose();
         } catch (error) {
             console.error('Error updating status:', error);
-            alert('Failed to update status: ' + (error as Error).message);
+            showToast.error('Failed to update status: ' + (error as Error).message);
         }
     };
 
     const handleReviewSubmit = async () => {
         if (!reviewFeedback.trim()) {
-            alert('Please provide feedback for the review');
+            showToast.error('Please provide feedback for the review');
             return;
         }
 
@@ -299,7 +300,7 @@ export default function EventViewModal({ request, users, onClose, onSuccess }: E
             onClose();
         } catch (error) {
             console.error('Error submitting review:', error);
-            alert('Failed to submit review: ' + (error as Error).message);
+            showToast.error('Failed to submit review: ' + (error as Error).message);
         }
     };
 
@@ -342,7 +343,7 @@ export default function EventViewModal({ request, users, onClose, onSuccess }: E
             onClose();
         } catch (error) {
             console.error('Error updating submitted user:', error);
-            alert('Failed to update submitted user: ' + (error as Error).message);
+            showToast.error('Failed to update submitted user: ' + (error as Error).message);
         }
     };
 

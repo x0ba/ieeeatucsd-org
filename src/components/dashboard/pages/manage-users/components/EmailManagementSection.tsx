@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Mail, AlertTriangle, Trash2, Power, PowerOff, Edit3, Save, XCircle } from 'lucide-react';
 import { Card, CardBody, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Spacer } from '@heroui/react';
 import type { UserModalData } from '../types/UserManagementTypes';
+import { showToast } from '../../../shared/utils/toast';
 
 interface EmailManagementSectionProps {
     editingUser: UserModalData;
@@ -73,7 +74,7 @@ export default function EmailManagementSection({
         // Validate alias format
         const aliasRegex = /^[a-zA-Z0-9._-]+$/;
         if (!aliasRegex.test(newAlias)) {
-            alert('Invalid alias format. Only letters, numbers, dots, hyphens, and underscores are allowed.');
+            showToast.error('Invalid alias format. Only letters, numbers, dots, hyphens, and underscores are allowed.');
             return;
         }
 
@@ -127,7 +128,7 @@ export default function EmailManagementSection({
                 setGeneratedPassword(result.data.password);
                 setShowPasswordModal(true);
             } else {
-                alert(result.data?.message || 'Email alias updated successfully!');
+                showToast.success(result.data?.message || 'Email alias updated successfully!');
             }
 
             setIsEditingAlias(false);
@@ -137,7 +138,7 @@ export default function EmailManagementSection({
             window.location.reload();
         } catch (error) {
             console.error('Alias update failed:', error);
-            alert(error instanceof Error ? error.message : 'Failed to update email alias');
+            showToast.error(error instanceof Error ? error.message : 'Failed to update email alias');
         } finally {
             setEmailOperationLoading(false);
         }
@@ -570,7 +571,7 @@ export default function EmailManagementSection({
                                 color="primary"
                                 onPress={() => {
                                     navigator.clipboard.writeText(`Email: ${generatedEmail}\nPassword: ${generatedPassword}`);
-                                    alert('Email and password copied to clipboard!');
+                                    showToast.success('Email and password copied to clipboard!');
                                 }}
                                 size="lg"
                                 className="rounded-lg font-medium px-6"

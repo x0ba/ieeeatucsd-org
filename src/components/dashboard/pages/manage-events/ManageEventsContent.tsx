@@ -3,6 +3,7 @@ import { Plus, List, CalendarDays, Search } from 'lucide-react';
 import { Card, CardHeader, CardBody, Button, Tabs, Tab, Switch } from '@heroui/react';
 import { auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { showToast } from '../../shared/utils/toast';
 import { EventManagementStats } from './EventManagementStats';
 import EventRequestModal from './EventRequestModal';
 import EventViewModal from './EventViewModal';
@@ -66,8 +67,6 @@ export default function ManageEventsContent() {
         sortedEventRequests,
         users,
         loading,
-        error,
-        success,
         currentUserRole,
         searchTerm,
         sortBy,
@@ -76,8 +75,6 @@ export default function ManageEventsContent() {
         startIndex,
         endIndex,
         stats,
-        setError,
-        setSuccess,
         setSearchTerm,
         setSortBy,
         setCurrentPage,
@@ -119,7 +116,7 @@ export default function ManageEventsContent() {
                 setShowGraphicsUploadModal(true);
             }
         } else {
-            setError('You do not have permission to manage graphics');
+            showToast.error('You do not have permission to manage graphics');
         }
     };
 
@@ -219,18 +216,6 @@ export default function ManageEventsContent() {
 
                     {/* Stats Overview */}
                     <EventManagementStats stats={stats} loading={loading} />
-
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                            <p className="text-red-700">{error}</p>
-                        </div>
-                    )}
-
-                    {success && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                            <p className="text-green-700">{success}</p>
-                        </div>
-                    )}
 
                     {/* Tabs for View Switcher */}
                     <Card shadow="sm" className="border border-gray-200">
@@ -375,7 +360,7 @@ export default function ManageEventsContent() {
                             preselectedDate={selectedDate}
                             onSuccess={() => {
                                 // Real-time updates will handle the refresh automatically
-                                setSuccess(editingRequest ? 'Event request updated successfully' : 'Event request created successfully');
+                                showToast.success(editingRequest ? 'Event request updated successfully' : 'Event request created successfully');
                                 setSelectedDate(null);
                             }}
                         />
@@ -437,8 +422,8 @@ export default function ManageEventsContent() {
                                 events={sortedEventRequests}
                                 users={users}
                                 onClose={() => setShowBulkActionsModal(false)}
-                                onSuccess={(message: string) => setSuccess(message)}
-                                onError={(message: string) => setError(message)}
+                                onSuccess={(message: string) => showToast.success(message)}
+                                onError={(message: string) => showToast.error(message)}
                             />
                         )
                     }
@@ -453,7 +438,7 @@ export default function ManageEventsContent() {
                                     setGraphicsUploadRequest(null);
                                 }}
                                 onSuccess={() => {
-                                    setSuccess('Graphics files uploaded and marked as completed');
+                                    showToast.success('Graphics files uploaded and marked as completed');
                                     // Real-time listener will automatically update the data
                                 }}
                             />

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { ConstitutionSection } from '../../shared/types/firestore';
+import { showToast } from '../../shared/utils/toast';
 
 interface AddSectionModalProps {
     onClose: () => void;
@@ -53,12 +54,12 @@ const AddSectionModal: React.FC<AddSectionModalProps> = ({
 
         // Validation rules
         if (selectedType === 'article' && !title.trim()) {
-            alert('Articles must have a title');
+            showToast.error('Articles must have a title');
             return;
         }
 
         if (selectedType === 'preamble' && !content.trim()) {
-            alert('Preamble must have content');
+            showToast.error('Preamble must have content');
             return;
         }
 
@@ -66,7 +67,7 @@ const AddSectionModal: React.FC<AddSectionModalProps> = ({
             // Check if preamble already exists
             const existingPreamble = sections.find(s => s.type === 'preamble');
             if (existingPreamble) {
-                alert('Only one preamble is allowed');
+                showToast.warning('Only one preamble is allowed');
                 return;
             }
         }

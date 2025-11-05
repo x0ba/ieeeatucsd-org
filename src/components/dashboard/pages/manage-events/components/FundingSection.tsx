@@ -26,7 +26,7 @@ import type {
 } from "../types/EventRequestTypes";
 import { calculateGrandTotal } from "../utils/eventRequestUtils";
 import EnhancedFileUploadManager from "./EnhancedFileUploadManager";
-import { toast } from "react-hot-toast";
+import { showToast } from "../../../shared/utils/toast";
 import { uploadFilesForEvent } from "../utils/fileUploadUtils";
 
 interface FundingSectionProps {
@@ -179,7 +179,7 @@ export default function FundingSection({
         return newSet;
       });
 
-      toast.error(errorMessage);
+      showToast.error(errorMessage);
 
       // Clear the failed file from state
       onUpdateInvoice(invoiceId, {
@@ -208,7 +208,7 @@ export default function FundingSection({
     }
 
     if (!invoiceImageUrl) {
-      toast.error("Please upload an invoice file first before parsing");
+      showToast.error("Please upload an invoice file first before parsing");
       return;
     }
 
@@ -245,19 +245,19 @@ export default function FundingSection({
       // Map parsed receipt data to invoice format
       const items = Array.isArray(parsedData.lineItems)
         ? parsedData.lineItems.map((item: any) => ({
-            description: item.description || "",
-            quantity: 1,
-            unitPrice: parseFloat(item.amount) || 0,
-            total: parseFloat(item.amount) || 0,
-          }))
+          description: item.description || "",
+          quantity: 1,
+          unitPrice: parseFloat(item.amount) || 0,
+          total: parseFloat(item.amount) || 0,
+        }))
         : [
-            {
-              description: "Invoice Total",
-              quantity: 1,
-              unitPrice: parseFloat(parsedData.total) || 0,
-              total: parseFloat(parsedData.total) || 0,
-            },
-          ];
+          {
+            description: "Invoice Total",
+            quantity: 1,
+            unitPrice: parseFloat(parsedData.total) || 0,
+            total: parseFloat(parsedData.total) || 0,
+          },
+        ];
 
       const updates: Partial<InvoiceFormData> = {
         vendor: parsedData.vendorName || parsedData.location || "",
@@ -277,7 +277,7 @@ export default function FundingSection({
         },
       }));
 
-      toast.success("Invoice parsed successfully!");
+      showToast.success("Invoice parsed successfully!");
     } catch (error) {
       console.error("Error parsing invoice:", error);
       const errorMessage =
@@ -291,7 +291,7 @@ export default function FundingSection({
         },
       }));
 
-      toast.error(errorMessage);
+      showToast.error(errorMessage);
     } finally {
       setParsingInvoices((prev) => {
         const newSet = new Set(prev);
@@ -369,10 +369,11 @@ export default function FundingSection({
                         {invoice.vendor && ` - ${invoice.vendor}`}
                       </span>
                       {hasMissingFiles && (
-                        <AlertTriangle
-                          className="w-4 h-4 text-red-500"
-                          title="Missing invoice file"
-                        />
+                        <span title="Missing invoice file">
+                          <AlertTriangle
+                            className="w-4 h-4 text-red-500"
+                          />
+                        </span>
                       )}
                       {total > 0 && (
                         <Chip size="sm" variant="flat">
@@ -486,7 +487,7 @@ export default function FundingSection({
                                 eventRequestId={eventRequestId}
                                 className={
                                   !hasInvoiceFiles(invoice) &&
-                                  !uploadingInvoices.has(invoice.id)
+                                    !uploadingInvoices.has(invoice.id)
                                     ? "border-2 border-red-300 bg-red-50 rounded-lg"
                                     : ""
                                 }
@@ -544,7 +545,7 @@ export default function FundingSection({
 
                             {/* Show processing overlay when uploading or parsing */}
                             {uploadingInvoices.has(invoice.id) ||
-                            parsingInvoices.has(invoice.id) ? (
+                              parsingInvoices.has(invoice.id) ? (
                               <div className="text-center py-12 bg-blue-50 border border-blue-200 rounded-lg">
                                 <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
                                 <p className="text-lg font-semibold text-blue-900 mb-2">
