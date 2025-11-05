@@ -285,6 +285,12 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
         wrapper: "px-4 sm:px-6",
         item: "text-sidebar-foreground data-[active=true]:text-sidebar-foreground",
       }}
+      motionProps={{
+        initial: { opacity: 0, y: -20 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -20 },
+        transition: { duration: 0.2, ease: "easeInOut" },
+      }}
     >
       {/* Brand */}
       <NavbarContent justify="start">

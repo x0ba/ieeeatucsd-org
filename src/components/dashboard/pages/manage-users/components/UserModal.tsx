@@ -31,6 +31,7 @@ interface UserModalProps {
     email?: string,
   ) => Promise<void>;
   loading?: boolean;
+  currentUserId?: string;
 }
 
 export default function UserModal({
@@ -45,6 +46,7 @@ export default function UserModal({
   canManageEmails = false,
   onEmailAction,
   loading = false,
+  currentUserId,
 }: UserModalProps) {
   const [formData, setFormData] = useState<UserModalData>({
     name: "",
@@ -429,6 +431,7 @@ export default function UserModal({
                   <EmailManagementSection
                     editingUser={editingUser}
                     onEmailAction={onEmailAction}
+                    currentUserId={currentUserId}
                   />
                 )}
               </form>

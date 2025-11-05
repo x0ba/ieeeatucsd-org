@@ -145,9 +145,12 @@ export class UserPermissionService {
     return false;
   }
 
-  // Email management permissions - only Administrators can manage emails
+  // Email management permissions - Executive Officers and Administrators can manage emails
   static canManageEmails(currentUserRole: UserRole): boolean {
-    return currentUserRole === "Administrator";
+    return (
+      currentUserRole === "Executive Officer" ||
+      currentUserRole === "Administrator"
+    );
   }
 
   static canEditUserEmail(
@@ -155,28 +158,32 @@ export class UserPermissionService {
     targetUser: FirestoreUser & { id: string },
     currentUserId?: string,
   ): boolean {
-    // Only Administrators can edit email addresses
-    if (currentUserRole !== "Administrator") {
-      return false;
-    }
-
-    // Administrators can edit any user's email
-    return true;
+    // Executive Officers and Administrators can edit email addresses
+    return (
+      currentUserRole === "Executive Officer" ||
+      currentUserRole === "Administrator"
+    );
   }
 
   static canDisableUserEmail(
     currentUserRole: UserRole,
     targetUser: FirestoreUser & { id: string },
   ): boolean {
-    // Only Administrators can disable email addresses
-    return currentUserRole === "Administrator";
+    // Executive Officers and Administrators can disable email addresses
+    return (
+      currentUserRole === "Executive Officer" ||
+      currentUserRole === "Administrator"
+    );
   }
 
   static canDeleteUserEmail(
     currentUserRole: UserRole,
     targetUser: FirestoreUser & { id: string },
   ): boolean {
-    // Only Administrators can delete email addresses
-    return currentUserRole === "Administrator";
+    // Executive Officers and Administrators can delete email addresses
+    return (
+      currentUserRole === "Executive Officer" ||
+      currentUserRole === "Administrator"
+    );
   }
 }

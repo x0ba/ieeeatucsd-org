@@ -324,19 +324,19 @@ export default function EventsContent() {
                 {/* Search and Actions Bar */}
                 <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                     <div className="relative flex-1 max-w-md w-full">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
                         <input
                             type="text"
                             placeholder="Search events..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px] bg-white"
                         />
                     </div>
-                    {/* Real-time sync - no manual refresh needed */}
-                    <div className="flex items-center space-x-2 px-3 md:px-4 py-2 text-gray-600 text-sm">
-                        <Calendar className="w-4 h-4" />
-                        <span className="hidden sm:inline">Auto-syncing</span>
+                    {/* Real-time sync - hidden on mobile, visible on desktop */}
+                    <div className="hidden sm:flex items-center space-x-2 px-4 py-2 text-gray-600 text-sm flex-shrink-0">
+                        <Calendar className="w-4 h-4 flex-shrink-0" />
+                        <span>Auto-syncing</span>
                     </div>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:gap-6">

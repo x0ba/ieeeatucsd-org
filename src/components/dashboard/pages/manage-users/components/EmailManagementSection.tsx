@@ -6,11 +6,13 @@ import type { UserModalData } from '../types/UserManagementTypes';
 interface EmailManagementSectionProps {
     editingUser: UserModalData;
     onEmailAction: (action: 'disable' | 'enable' | 'delete', userId: string, email?: string) => Promise<void>;
+    currentUserId?: string;
 }
 
 export default function EmailManagementSection({
     editingUser,
-    onEmailAction
+    onEmailAction,
+    currentUserId
 }: EmailManagementSectionProps) {
     const [emailOperationLoading, setEmailOperationLoading] = useState(false);
     const [showEmailConfirmDialog, setShowEmailConfirmDialog] = useState<{
@@ -19,6 +21,15 @@ export default function EmailManagementSection({
     } | null>(null);
     const [isEditingAlias, setIsEditingAlias] = useState(false);
     const [newAlias, setNewAlias] = useState('');
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [generatedPassword, setGeneratedPassword] = useState('');
+    const [generatedEmail, setGeneratedEmail] = useState('');
+    const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+    const [confirmationData, setConfirmationData] = useState<{
+        message: string;
+        existingEmail: string;
+        currentOwner: { id: string; name: string; email: string } | null;
+    } | null>(null);
 
     const handleEmailAction = async (action: 'disable' | 'enable' | 'delete') => {
         if (!editingUser?.ieeeEmail) return;
@@ -56,8 +67,8 @@ export default function EmailManagementSection({
         setNewAlias('');
     };
 
-    const handleSaveAlias = async () => {
-        if (!editingUser?.ieeeEmail || !newAlias.trim()) return;
+    const handleSaveAlias = async (confirmed = false) => {
+        if (!newAlias.trim()) return;
 
         // Validate alias format
         const aliasRegex = /^[a-zA-Z0-9._-]+$/;
@@ -66,21 +77,75 @@ export default function EmailManagementSection({
             return;
         }
 
-        const currentAlias = editingUser.ieeeEmail.split('@')[0];
-        if (newAlias === currentAlias) {
-            setIsEditingAlias(false);
-            return;
+        // If user has existing email, check if alias changed
+        if (editingUser?.ieeeEmail) {
+            const currentAlias = editingUser.ieeeEmail.split('@')[0];
+            if (newAlias === currentAlias) {
+                setIsEditingAlias(false);
+                return;
+            }
         }
 
         setEmailOperationLoading(true);
         try {
-            alert('Email alias updates require manual intervention. Please contact the webmaster to change the email alias.');
+            const response = await fetch('/api/update-ieee-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: editingUser.id,
+                    newAlias: newAlias.trim(),
+                    adminUserId: currentUserId || editingUser.id,
+                    confirmed: confirmed,
+                }),
+            });
+
+            const result = await response.json();
+
+            // Check if confirmation is required BEFORE checking response.ok
+            // This is important because 409 responses are not "ok" but are expected
+            if (result.requiresConfirmation) {
+                setConfirmationData({
+                    message: result.message,
+                    existingEmail: result.data?.existingEmail,
+                    currentOwner: result.data?.currentOwner || null,
+                });
+                setShowConfirmationModal(true);
+                setEmailOperationLoading(false);
+                return;
+            }
+
+            // Now check for other errors
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Failed to update email alias');
+            }
+
+            // Show success message with password if this was a new email creation
+            if (result.data?.password) {
+                setGeneratedEmail(result.data.ieeeEmail);
+                setGeneratedPassword(result.data.password);
+                setShowPasswordModal(true);
+            } else {
+                alert(result.data?.message || 'Email alias updated successfully!');
+            }
+
             setIsEditingAlias(false);
+            setNewAlias('');
+
+            // Refresh the page to show updated email
+            window.location.reload();
         } catch (error) {
             console.error('Alias update failed:', error);
+            alert(error instanceof Error ? error.message : 'Failed to update email alias');
         } finally {
             setEmailOperationLoading(false);
         }
+    };
+
+    const handleConfirmClaim = async () => {
+        setShowConfirmationModal(false);
+        await handleSaveAlias(true);
     };
 
     return (
@@ -92,7 +157,7 @@ export default function EmailManagementSection({
                     </div>
                     <div>
                         <h3 className="text-sm font-semibold text-gray-900">IEEE Email Management</h3>
-                        <p className="text-xs text-gray-500 mt-1">Manage user's IEEE email account</p>
+                        <p className="text-xs text-gray-500 mt-1">Manage user's IEEE email account (Executive Officers and Administrators)</p>
                     </div>
                 </div>
 
@@ -119,7 +184,7 @@ export default function EmailManagementSection({
                                                         inputWrapper: "rounded-lg max-w-full h-11 shadow-sm border border-gray-200"
                                                     }}
                                                     endContent={
-                                                        <span className="text-sm text-gray-500 font-medium whitespace-nowrap">@ieeeatucsd.org</span>
+                                                        <span className="text-sm text-gray-500 font-medium whitespace-nowrap">@ieeeucsd.org</span>
                                                     }
                                                 />
                                             </div>
@@ -128,7 +193,7 @@ export default function EmailManagementSection({
                                                 color="success"
                                                 variant="flat"
                                                 size="md"
-                                                onPress={handleSaveAlias}
+                                                onPress={() => handleSaveAlias(false)}
                                                 isDisabled={emailOperationLoading || !newAlias.trim()}
                                                 className="rounded-lg flex-shrink-0 h-11 w-11 shadow-sm"
                                             >
@@ -235,15 +300,51 @@ export default function EmailManagementSection({
                     </div>
                 ) : (
                     <Card shadow="sm" className="rounded-xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white">
-                        <CardBody className="p-6 text-center">
-                            <div className="flex flex-col items-center gap-3">
+                        <CardBody className="p-6">
+                            <div className="flex flex-col items-center gap-4 mb-6">
                                 <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
                                     <Mail className="w-6 h-6 text-gray-400" />
                                 </div>
-                                <div>
+                                <div className="text-center">
                                     <p className="text-sm font-medium text-gray-900 mb-1">No IEEE Email</p>
-                                    <p className="text-xs text-gray-500">This user has not created an IEEE email address yet.</p>
+                                    <p className="text-xs text-gray-500">Create an IEEE email account for this user</p>
                                 </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Email Alias
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        value={newAlias}
+                                        onChange={(e) => setNewAlias(e.target.value)}
+                                        placeholder="Enter desired alias"
+                                        size="lg"
+                                        classNames={{
+                                            inputWrapper: "rounded-lg shadow-sm border border-gray-200"
+                                        }}
+                                        endContent={
+                                            <span className="text-sm text-gray-500 font-medium whitespace-nowrap">@ieeeucsd.org</span>
+                                        }
+                                    />
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        Only letters, numbers, dots, hyphens, and underscores are allowed
+                                    </p>
+                                </div>
+
+                                <Button
+                                    color="primary"
+                                    size="lg"
+                                    onPress={() => handleSaveAlias(false)}
+                                    isLoading={emailOperationLoading}
+                                    isDisabled={!newAlias.trim() || emailOperationLoading}
+                                    className="w-full rounded-lg font-medium"
+                                    startContent={!emailOperationLoading && <Mail className="w-4 h-4" />}
+                                >
+                                    Create IEEE Email
+                                </Button>
                             </div>
                         </CardBody>
                     </Card>
@@ -315,6 +416,179 @@ export default function EmailManagementSection({
                             >
                                 {showEmailConfirmDialog.action === 'delete' ? 'Delete Email' :
                                     showEmailConfirmDialog.action === 'disable' ? 'Disable Email' : 'Enable Email'}
+                            </Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </Modal>
+            )}
+
+            {/* Email Claim Confirmation Modal */}
+            {showConfirmationModal && confirmationData && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => {
+                        setShowConfirmationModal(false);
+                        setConfirmationData(null);
+                    }}
+                    size="lg"
+                    classNames={{
+                        base: "rounded-xl",
+                        header: "border-b border-gray-200 py-5 px-6",
+                        body: "py-6 px-6",
+                        footer: "border-t border-gray-200 py-5 px-6"
+                    }}
+                >
+                    <ModalContent>
+                        <ModalHeader className="flex-col items-start gap-1">
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-warning-50">
+                                    <AlertTriangle className="w-5 h-5 text-warning" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    Email Already Exists
+                                </h3>
+                            </div>
+                        </ModalHeader>
+
+                        <ModalBody>
+                            <div className="space-y-4">
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    {confirmationData.message}
+                                </p>
+
+                                {confirmationData.currentOwner && (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <p className="text-sm font-semibold text-gray-900 mb-2">
+                                            ℹ️ Shared Email Account
+                                        </p>
+                                        <p className="text-sm text-gray-700">
+                                            This email is currently assigned to <strong>{confirmationData.currentOwner.name}</strong> ({confirmationData.currentOwner.email}).
+                                            This email will be shared between multiple users - it will NOT be removed from other users.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <p className="text-sm font-semibold text-gray-900 mb-2">
+                                        What will happen:
+                                    </p>
+                                    <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                                        <li>The email <strong>{confirmationData.existingEmail}</strong> will be assigned to this user in Firebase</li>
+                                        <li>No changes will be made to the MXRoute email account</li>
+                                        {confirmationData.currentOwner && (
+                                            <li>Other users will keep access to this shared email</li>
+                                        )}
+                                        <li>No password will be generated (shared account)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </ModalBody>
+
+                        <ModalFooter>
+                            <Button
+                                variant="flat"
+                                onPress={() => {
+                                    setShowConfirmationModal(false);
+                                    setConfirmationData(null);
+                                }}
+                                size="lg"
+                                className="rounded-lg font-medium px-6"
+                            >
+                                Cancel
+                            </Button>
+                            <Spacer />
+                            <Button
+                                color="primary"
+                                onPress={handleConfirmClaim}
+                                isLoading={emailOperationLoading}
+                                size="lg"
+                                className="rounded-lg font-medium px-6"
+                            >
+                                {confirmationData.currentOwner ? 'Share Email' : 'Assign Email'}
+                            </Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </Modal>
+            )}
+
+            {/* Password Display Modal */}
+            {showPasswordModal && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => {
+                        setShowPasswordModal(false);
+                        setGeneratedPassword('');
+                        setGeneratedEmail('');
+                    }}
+                    size="md"
+                    classNames={{
+                        base: "rounded-xl",
+                        header: "border-b border-gray-200 py-5 px-6",
+                        body: "py-6 px-6",
+                        footer: "border-t border-gray-200 py-5 px-6"
+                    }}
+                >
+                    <ModalContent>
+                        <ModalHeader className="flex-col items-start gap-1">
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-success-50">
+                                    <Mail className="w-5 h-5 text-success" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    IEEE Email Created Successfully
+                                </h3>
+                            </div>
+                        </ModalHeader>
+
+                        <ModalBody>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Email Address
+                                    </label>
+                                    <div className="bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
+                                        <p className="text-base font-semibold text-gray-900 font-mono">{generatedEmail}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Temporary Password
+                                    </label>
+                                    <div className="bg-yellow-50 rounded-lg px-4 py-3 border border-yellow-200">
+                                        <p className="text-base font-semibold text-gray-900 font-mono break-all">{generatedPassword}</p>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        ⚠️ Save this password securely. It will not be shown again.
+                                    </p>
+                                </div>
+                            </div>
+                        </ModalBody>
+
+                        <ModalFooter>
+                            <Button
+                                color="primary"
+                                onPress={() => {
+                                    navigator.clipboard.writeText(`Email: ${generatedEmail}\nPassword: ${generatedPassword}`);
+                                    alert('Email and password copied to clipboard!');
+                                }}
+                                size="lg"
+                                className="rounded-lg font-medium px-6"
+                            >
+                                Copy to Clipboard
+                            </Button>
+                            <Spacer />
+                            <Button
+                                variant="flat"
+                                onPress={() => {
+                                    setShowPasswordModal(false);
+                                    setGeneratedPassword('');
+                                    setGeneratedEmail('');
+                                }}
+                                size="lg"
+                                className="rounded-lg font-medium px-6"
+                            >
+                                Close
                             </Button>
                         </ModalFooter>
                     </ModalContent>

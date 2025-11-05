@@ -463,6 +463,12 @@ export function SidebarNavigation({ currentPath, children }: SidebarNavigationPr
             classNames={{
               wrapper: "px-4",
             }}
+            motionProps={{
+              initial: { opacity: 0, y: -20 },
+              animate: { opacity: 1, y: 0 },
+              exit: { opacity: 0, y: -20 },
+              transition: { duration: 0.2, ease: "easeInOut" },
+            }}
           >
             {/* Mobile Brand */}
             <NavbarContent justify="start">

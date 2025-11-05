@@ -468,6 +468,7 @@ export default function ManageUsersContent() {
           canManageEmails={permissions.canManageEmails}
           onEmailAction={handleEmailAction}
           loading={loading}
+          currentUserId={currentUser?.id}
         />
 
         {/* Invite Modal */}

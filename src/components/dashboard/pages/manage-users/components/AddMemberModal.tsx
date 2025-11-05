@@ -82,8 +82,7 @@ export default function AddMemberModal({
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = () => {
         if (selectedMember) {
             onSave(selectedMember.id, newRole, newPosition);
         }

@@ -11,7 +11,6 @@ import {
   query,
   where,
   orderBy,
-  limit,
 } from "firebase/firestore";
 import { app, auth, db } from "../../../../../firebase/client";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -112,7 +111,6 @@ export const useUserManagement = () => {
           "Sponsor",
         ]),
         orderBy("name", "asc"),
-        limit(100), // Limit to 100 users for performance
       ),
       (snapshot) => {
         const usersData = snapshot.docs.map((doc) => {
