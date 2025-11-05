@@ -6,14 +6,17 @@
     {
       "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
       "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
     },
     {
       "src": "/logos/blue_logo_only.png",
@@ -23,12 +26,8 @@
   ],
   "theme_color": "#00629B",
   "background_color": "#0A0E1A",
-  "display": "standalone",
-  "start_url": "/",
-  "scope": "/",
-  "orientation": "portrait-primary",
+  "display": "browser",
   "categories": ["education", "engineering", "technology"],
   "lang": "en-US",
   "dir": "ltr"
 }
-

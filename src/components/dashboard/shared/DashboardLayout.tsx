@@ -6,6 +6,7 @@ import { ModalProvider } from './contexts/ModalContext.tsx';
 import { SyncStatusProvider } from './contexts/SyncStatusContext.tsx';
 import { useNavigationPreference } from './hooks/useNavigationPreference';
 import { Spinner, ToastProvider } from '@heroui/react';
+import PWAInstallPrompt from '../../core/PWAInstallPrompt.tsx';
 
 interface DashboardLayoutProps {
     children?: ReactNode;
@@ -64,6 +65,9 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
                     )}
                 </ModalProvider>
             </SyncStatusProvider>
+
+            {/* PWA Install Prompt - Only shown on dashboard pages */}
+            <PWAInstallPrompt client:load />
         </>
     );
 }
