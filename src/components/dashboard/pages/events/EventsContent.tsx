@@ -156,8 +156,10 @@ export default function EventsContent() {
         }
 
         // Create a single query to get all events where user is an attendee
+        // Must filter by published=true to satisfy Firestore security rules
         const attendeesQuery = query(
             collection(db, 'events'),
+            where('published', '==', true),
             where('attendees', 'array-contains', user.uid)
         );
 
@@ -227,32 +229,60 @@ export default function EventsContent() {
             }
 
             // Create check-in record in attendees subcollection
-            const attendeeRef = doc(db, 'events', event.id, 'attendees', user.uid);
-            await setDoc(attendeeRef, {
-                userId: user.uid,
-                timeCheckedIn: new Date(),
-                food: foodPreference,
-                pointsEarned: event.pointsToReward,
-                eventCode: enteredCode // Store the code they used to check in
-            });
+            try {
+                console.log('Step 1: Creating attendee record...');
+                console.log('User UID:', user.uid);
+                console.log('Event ID:', event.id);
+
+                const attendeeRef = doc(db, 'events', event.id, 'attendees', user.uid);
+                console.log('Attendee ref path:', attendeeRef.path);
+
+                await setDoc(attendeeRef, {
+                    userId: user.uid,
+                    timeCheckedIn: new Date(),
+                    food: foodPreference,
+                    pointsEarned: event.pointsToReward,
+                    eventCode: enteredCode
+                });
+                console.log('Step 1: Success');
+            } catch (error) {
+                console.error('Step 1 FAILED: Creating attendee record', error);
+                console.error('Full error:', error);
+                throw new Error('Failed at step 1 (attendee record): ' + (error as Error).message);
+            }
 
             // Update event's attendees array for real-time tracking
-            const eventRef = doc(db, 'events', event.id);
-            await updateDoc(eventRef, {
-                attendees: arrayUnion(user.uid)
-            });
+            try {
+                console.log('Step 2: Updating event attendees array...');
+                const eventRef = doc(db, 'events', event.id);
+                await updateDoc(eventRef, {
+                    attendees: arrayUnion(user.uid)
+                });
+                console.log('Step 2: Success');
+            } catch (error) {
+                console.error('Step 2 FAILED: Updating event attendees array', error);
+                throw new Error('Failed at step 2 (event attendees array): ' + (error as Error).message);
+            }
 
             // Update user with event attendance and points
             // Use setDoc with merge to handle cases where user document might not exist
-            const userRef = doc(db, 'users', user.uid);
             const newPoints = userStats.totalPointsEarned + event.pointsToReward;
             const newEventsAttended = userStats.totalEventsAttended + 1;
 
-            await setDoc(userRef, {
-                lastEventAttended: event.eventName,
-                points: newPoints,
-                eventsAttended: newEventsAttended
-            }, { merge: true });
+            try {
+                console.log('Step 3: Updating user stats...');
+                const userRef = doc(db, 'users', user.uid);
+
+                await setDoc(userRef, {
+                    lastEventAttended: event.eventName,
+                    points: newPoints,
+                    eventsAttended: newEventsAttended
+                }, { merge: true });
+                console.log('Step 3: Success');
+            } catch (error) {
+                console.error('Step 3 FAILED: Updating user stats', error);
+                throw new Error('Failed at step 3 (user stats): ' + (error as Error).message);
+            }
 
             // Sync to public profile
             try {
@@ -274,7 +304,9 @@ export default function EventsContent() {
             showToast.success(message);
 
         } catch (error) {
-            setError('Failed to check in to event: ' + (error as Error).message);
+            const errorMessage = 'Failed to check in to event: ' + (error as Error).message;
+            setError(errorMessage);
+            showToast.error('Check-in failed', errorMessage);
         } finally {
             setCheckingIn(null);
         }

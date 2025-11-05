@@ -7,6 +7,7 @@ import { auth } from '../../../../firebase/client';
 import ReimbursementWizardModal from './ReimbursementWizardModal';
 import ReimbursementDetailModal from './ReimbursementDetailModal';
 import { ReimbursementListSkeleton, MetricCardSkeleton } from '../../../ui/loading';
+import { showToast } from '../../shared/utils/toast';
 
 interface Reimbursement {
     id: string;
@@ -215,8 +216,12 @@ export default function ReimbursementContent() {
                 console.error('Failed to send notification emails:', emailError);
                 // Don't fail the submission if email fails
             }
+
+            // Show success toast
+            showToast.success('Reimbursement submitted successfully!', 'Your request has been submitted for review.');
         } catch (error) {
             console.error('Error submitting reimbursement:', error);
+            showToast.error('Failed to submit reimbursement', 'Please try again or contact support if the issue persists.');
         }
     };
 
