@@ -2,10 +2,15 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../../../../firebase/client";
+import {
+  safeLocalStorageGet,
+  safeLocalStorageSet,
+} from "../utils/storage";
 import type { NavigationLayout } from "../types/firestore";
 
 const STORAGE_KEY = "ieee_navigation_layout";
 const DEFAULT_LAYOUT: NavigationLayout = "sidebar";
+const NAV_PREF_TIMEOUT_MS = 4000;
 
 interface UseNavigationPreferenceResult {
   navigationLayout: NavigationLayout;
@@ -28,12 +33,9 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
   const [user] = useAuthState(auth);
   const [navigationLayout, setNavigationLayoutState] =
     useState<NavigationLayout>(() => {
-      // Initialize from localStorage immediately to prevent flash
-      if (typeof window !== "undefined") {
-        const cached = localStorage.getItem(STORAGE_KEY);
-        if (cached === "horizontal" || cached === "sidebar") {
-          return cached;
-        }
+      const cached = safeLocalStorageGet(STORAGE_KEY);
+      if (cached === "horizontal" || cached === "sidebar") {
+        return cached;
       }
       return DEFAULT_LAYOUT;
     });
@@ -50,10 +52,30 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
     setLoading(true);
     setError(null);
 
+    let isActive = true;
+    let hasResolved = false;
+
+    const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
+      if (!hasResolved && isActive) {
+        console.warn(
+          "Timed out waiting for navigation preference; falling back to cached/default layout.",
+        );
+        setLoading(false);
+        hasResolved = true;
+      }
+    }, NAV_PREF_TIMEOUT_MS);
+
     const userRef = doc(db, "users", user.uid);
     const unsubscribe = onSnapshot(
       userRef,
       (snapshot) => {
+        if (!isActive) {
+          return;
+        }
+
+        hasResolved = true;
+        clearTimeout(timeoutId);
+
         if (snapshot.exists()) {
           const data = snapshot.data();
           const firestoreLayout = data.navigationLayout as
@@ -66,28 +88,46 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
           ) {
             // Update state and cache if Firestore has a valid preference
             setNavigationLayoutState(firestoreLayout);
-            localStorage.setItem(STORAGE_KEY, firestoreLayout);
+            if (!safeLocalStorageSet(STORAGE_KEY, firestoreLayout)) {
+              console.warn(
+                "Failed to persist navigation layout preference to localStorage.",
+              );
+            }
           } else {
             // If no preference in Firestore, use cached or default
-            const cached = localStorage.getItem(STORAGE_KEY);
+            const cached = safeLocalStorageGet(STORAGE_KEY);
             if (cached === "horizontal" || cached === "sidebar") {
               setNavigationLayoutState(cached);
             } else {
               setNavigationLayoutState(DEFAULT_LAYOUT);
-              localStorage.setItem(STORAGE_KEY, DEFAULT_LAYOUT);
+              if (!safeLocalStorageSet(STORAGE_KEY, DEFAULT_LAYOUT)) {
+                console.warn(
+                  "Failed to persist default navigation layout to localStorage.",
+                );
+              }
             }
           }
         }
         setLoading(false);
       },
       (err) => {
+        if (!isActive) {
+          return;
+        }
+
+        hasResolved = true;
+        clearTimeout(timeoutId);
         console.error("Error loading navigation preference:", err);
         setError(err.message);
         setLoading(false);
       },
     );
 
-    return () => unsubscribe();
+    return () => {
+      isActive = false;
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, [user]);
 
   // Update preference
@@ -101,7 +141,11 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
 
       try {
         // Update localStorage immediately for instant feedback
-        localStorage.setItem(STORAGE_KEY, layout);
+        if (!safeLocalStorageSet(STORAGE_KEY, layout)) {
+          console.warn(
+            "Failed to persist navigation layout preference to localStorage.",
+          );
+        }
         setNavigationLayoutState(layout);
 
         // Update Firestore

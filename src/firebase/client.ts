@@ -57,16 +57,28 @@ const disablePersistence =
       (import.meta as any).env.PUBLIC_DISABLE_FIREBASE_PERSISTENCE === "true"));
 const supportsIndexedDB = typeof indexedDB !== "undefined";
 
-export const db = initializeFirestore(
-  app,
-  !disablePersistence && supportsIndexedDB
-    ? {
-        localCache: persistentLocalCache({
-          tabManager: persistentMultipleTabManager(),
-        }),
-      }
-    : {}, // Empty configuration object when persistence is disabled or IndexedDB is not supported
-);
+let firestoreInstance;
+
+try {
+  firestoreInstance = initializeFirestore(
+    app,
+    !disablePersistence && supportsIndexedDB
+      ? {
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager(),
+          }),
+        }
+      : {},
+  );
+} catch (error) {
+  console.warn(
+    "[firebase] Persistent cache initialization failed, falling back to memory-only Firestore.",
+    error,
+  );
+  firestoreInstance = initializeFirestore(app, {});
+}
+
+export const db = firestoreInstance;
 
 export const storage = getStorage(app);
 

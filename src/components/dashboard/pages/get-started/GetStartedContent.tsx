@@ -8,6 +8,7 @@ import { PublicProfileService } from '../../shared/services/publicProfile';
 import { normalizeMajorName } from '../../../../utils/majorNormalization';
 import type { NavigationLayout } from '../../shared/types/firestore';
 import { Spinner } from '@heroui/react';
+import { safeLocalStorageSet } from '../../shared/utils/storage';
 
 interface Question {
     id: string;
@@ -195,8 +196,10 @@ export default function GetStartedContent() {
             }
 
             // Also save navigation layout to localStorage for immediate access
-            if (typeof window !== 'undefined' && answers.navigationLayout) {
-                localStorage.setItem('ieee_navigation_layout', answers.navigationLayout);
+            if (answers.navigationLayout) {
+                if (!safeLocalStorageSet('ieee_navigation_layout', answers.navigationLayout)) {
+                    console.warn('Failed to persist navigation layout preference to localStorage.');
+                }
             }
 
             // Update private user document
