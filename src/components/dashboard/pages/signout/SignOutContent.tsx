@@ -29,7 +29,7 @@ export default function SignOutContent() {
         try {
             await auth.signOut();
             await fetch('/api/logout', { method: 'POST' });
-            window.location.href = '/';
+            window.location.href = '/dashboard/signin';
         } catch (error) {
             console.error('Logout failed', error);
             setLoading(false);

@@ -539,9 +539,9 @@ export function TopNavbar({ currentPath = "" }: TopNavbarProps) {
               <button
                 onClick={async () => {
                   await auth.signOut();
-                  window.location.href = "/";
+                  window.location.href = "/dashboard/signin";
                 }}
-                className="flex items-center gap-3 px-2 py-2.5 rounded-lg transition-all w-full text-red-600 hover:bg-red-50"
+                className="flex items-center gap-3 px-4 py-4 rounded-lg transition-all w-full text-red-600 hover:bg-red-50 min-h-[48px]"
               >
                 <LogOut className="w-5 h-5" aria-hidden="true" />
                 <span>Sign Out</span>

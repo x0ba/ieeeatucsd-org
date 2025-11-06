@@ -38,11 +38,29 @@ export default function PWAInstallPrompt() {
       return /iphone|ipad|ipod/.test(userAgent);
     };
 
-    setIsStandalone(isInStandaloneMode());
-    setIsIOS(checkIsIOS());
+    // Check if mobile device (not desktop)
+    const checkIsMobile = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      // Check for mobile devices (phones and tablets)
+      return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(userAgent) ||
+        // Also check screen width as a fallback
+        window.innerWidth <= 768;
+    };
+
+    const standalone = isInStandaloneMode();
+    const iOS = checkIsIOS();
+    const mobile = checkIsMobile();
+
+    setIsStandalone(standalone);
+    setIsIOS(iOS);
 
     // Don't show prompt if already installed
-    if (isInStandaloneMode()) {
+    if (standalone) {
+      return;
+    }
+
+    // Don't show prompt if not on mobile device
+    if (!mobile) {
       return;
     }
 
@@ -57,7 +75,7 @@ export default function PWAInstallPrompt() {
     }
 
     // For iOS devices
-    if (checkIsIOS() && !isInStandaloneMode()) {
+    if (iOS && !standalone) {
       // Show iOS prompt after a short delay
       const timer = setTimeout(() => {
         setShowPrompt(true);
@@ -69,7 +87,7 @@ export default function PWAInstallPrompt() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      
+
       // Show prompt after a short delay
       setTimeout(() => {
         setShowPrompt(true);
@@ -121,7 +139,7 @@ export default function PWAInstallPrompt() {
         {/* Background decoration */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12" />
-        
+
         {/* Close button */}
         <button
           onClick={handleDismiss}
@@ -135,9 +153,9 @@ export default function PWAInstallPrompt() {
           {/* Icon */}
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <img 
-                src="/android-chrome-192x192.png" 
-                alt="IEEE UCSD" 
+              <img
+                src="/android-chrome-192x192.png"
+                alt="IEEE UCSD"
                 className="w-10 h-10 rounded-lg"
               />
             </div>
