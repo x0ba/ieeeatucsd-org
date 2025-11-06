@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Calendar, MapPin, Clock, Users, UserCheck, X, Award, FileText, Eye, Download } from 'lucide-react';
-import { collection, query, where, doc, updateDoc, setDoc, onSnapshot, arrayUnion } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, onSnapshot, runTransaction, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../../../firebase/client';
 import { PublicProfileService } from '../../shared/services/publicProfile';
@@ -228,23 +228,29 @@ export default function EventsContent() {
                 foodPreference = prompt('This event has food! What would you like? (e.g., Vegetarian, Vegan, No preference, etc.)') || 'No preference';
             }
 
-            // Create check-in record in attendees subcollection
+            // Create check-in record in attendees subcollection (only if one does not exist yet)
+            let attendeeRecordCreated = false;
             try {
                 console.log('Step 1: Creating attendee record...');
                 console.log('User UID:', user.uid);
                 console.log('Event ID:', event.id);
-
                 const attendeeRef = doc(db, 'events', event.id, 'attendees', user.uid);
                 console.log('Attendee ref path:', attendeeRef.path);
 
-                await setDoc(attendeeRef, {
-                    userId: user.uid,
-                    timeCheckedIn: new Date(),
-                    food: foodPreference,
-                    pointsEarned: event.pointsToReward,
-                    eventCode: enteredCode
-                });
-                console.log('Step 1: Success');
+                const existingAttendee = await getDoc(attendeeRef);
+                if (existingAttendee.exists()) {
+                    console.log('Step 1: Attendee record already exists, skipping creation');
+                } else {
+                    await setDoc(attendeeRef, {
+                        userId: user.uid,
+                        timeCheckedIn: new Date(),
+                        food: foodPreference,
+                        pointsEarned: event.pointsToReward,
+                        eventCode: enteredCode
+                    });
+                    attendeeRecordCreated = true;
+                    console.log('Step 1: Success');
+                }
             } catch (error) {
                 console.error('Step 1 FAILED: Creating attendee record', error);
                 console.error('Full error:', error);
@@ -255,8 +261,25 @@ export default function EventsContent() {
             try {
                 console.log('Step 2: Updating event attendees array...');
                 const eventRef = doc(db, 'events', event.id);
-                await updateDoc(eventRef, {
-                    attendees: arrayUnion(user.uid)
+
+                await runTransaction(db, async (transaction) => {
+                    const eventSnap = await transaction.get(eventRef);
+                    if (!eventSnap.exists()) {
+                        throw new Error('Event not found');
+                    }
+
+                    const existingAttendees = Array.isArray(eventSnap.data().attendees)
+                        ? (eventSnap.data().attendees as string[])
+                        : [];
+
+                    if (existingAttendees.includes(user.uid)) {
+                        console.log('Step 2: User already in attendees array, skipping update');
+                        return;
+                    }
+
+                    transaction.update(eventRef, {
+                        attendees: [...existingAttendees, user.uid],
+                    });
                 });
                 console.log('Step 2: Success');
             } catch (error) {
@@ -266,42 +289,42 @@ export default function EventsContent() {
 
             // Update user with event attendance and points
             // Use setDoc with merge to handle cases where user document might not exist
-            const newPoints = userStats.totalPointsEarned + event.pointsToReward;
-            const newEventsAttended = userStats.totalEventsAttended + 1;
+            if (attendeeRecordCreated) {
+                const newPoints = userStats.totalPointsEarned + event.pointsToReward;
+                const newEventsAttended = userStats.totalEventsAttended + 1;
 
-            try {
-                console.log('Step 3: Updating user stats...');
-                const userRef = doc(db, 'users', user.uid);
+                try {
+                    console.log('Step 3: Updating user stats...');
+                    const userRef = doc(db, 'users', user.uid);
 
-                await setDoc(userRef, {
-                    lastEventAttended: event.eventName,
-                    points: newPoints,
-                    eventsAttended: newEventsAttended
-                }, { merge: true });
-                console.log('Step 3: Success');
-            } catch (error) {
-                console.error('Step 3 FAILED: Updating user stats', error);
-                throw new Error('Failed at step 3 (user stats): ' + (error as Error).message);
+                    await setDoc(userRef, {
+                        lastEventAttended: event.eventName,
+                        points: newPoints,
+                        eventsAttended: newEventsAttended
+                    }, { merge: true });
+                    console.log('Step 3: Success');
+                } catch (error) {
+                    console.error('Step 3 FAILED: Updating user stats', error);
+                    throw new Error('Failed at step 3 (user stats): ' + (error as Error).message);
+                }
+
+                // Sync to public profile
+                try {
+                    await PublicProfileService.updateUserStats(user.uid, {
+                        points: newPoints,
+                        eventsAttended: newEventsAttended
+                    });
+                } catch (error) {
+                    // Don't fail whole check-in process if public profile sync fails
+                }
+
+                const message = event.hasFood && foodPreference
+                    ? `Successfully checked in to ${event.eventName}! You earned ${event.pointsToReward} points. Food preference: ${foodPreference}`
+                    : `Successfully checked in to ${event.eventName}! You earned ${event.pointsToReward} points.`;
+                showToast.success(message);
+            } else {
+                showToast.info(`You're already checked in to ${event.eventName}.`);
             }
-
-            // Sync to public profile
-            try {
-                await PublicProfileService.updateUserStats(user.uid, {
-                    points: newPoints,
-                    eventsAttended: newEventsAttended
-                });
-            } catch (error) {
-                // Don't fail whole check-in process if public profile sync fails
-            }
-
-            // User stats will auto-update via real-time listener
-            // checkedInEvents will auto-update via real-time attendee listeners
-
-            // Show success message
-            const message = event.hasFood && foodPreference
-                ? `Successfully checked in to ${event.eventName}! You earned ${event.pointsToReward} points. Food preference: ${foodPreference}`
-                : `Successfully checked in to ${event.eventName}! You earned ${event.pointsToReward} points.`;
-            showToast.success(message);
 
         } catch (error) {
             const errorMessage = 'Failed to check in to event: ' + (error as Error).message;
