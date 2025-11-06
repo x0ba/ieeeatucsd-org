@@ -531,13 +531,11 @@ export function SidebarNavigation({ currentPath, children }: SidebarNavigationPr
                   </p>
 
                   {/* User Info */}
-                  <div className="px-2 py-3 mb-2">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center">
-                        <User className="w-5 h-5 text-sidebar-accent-foreground" />
-                      </div>
+                  <NavbarMenuItem>
+                    <div className="flex items-center gap-3 px-2 py-2.5 rounded-lg w-full text-sidebar-foreground">
+                      <User className="w-5 h-5" aria-hidden="true" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sidebar-foreground truncate">
+                        <p className="font-semibold truncate">
                           {userData.name}
                         </p>
                         <p className="text-sm text-sidebar-foreground/60 truncate">
@@ -545,18 +543,20 @@ export function SidebarNavigation({ currentPath, children }: SidebarNavigationPr
                         </p>
                       </div>
                     </div>
+                  </NavbarMenuItem>
 
-                    {/* Points Display */}
-                    <div className="flex items-center justify-between px-3 py-2 bg-sidebar-accent/50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Award className="w-4 h-4 text-yellow-600" />
-                        <span className="text-sm text-sidebar-foreground">Points</span>
+                  {/* Points Display */}
+                  <NavbarMenuItem>
+                    <div className="flex items-center gap-3 px-2 py-2.5 rounded-lg w-full text-sidebar-foreground">
+                      <Award className="w-5 h-5 text-yellow-600" aria-hidden="true" />
+                      <div className="flex-1 flex items-center justify-between">
+                        <span>Points</span>
+                        <span className="font-bold text-yellow-600">
+                          {userData.points || 0}
+                        </span>
                       </div>
-                      <span className="font-bold text-yellow-600">
-                        {userData.points || 0}
-                      </span>
                     </div>
-                  </div>
+                  </NavbarMenuItem>
 
                   {/* Settings Link */}
                   <NavbarMenuItem>
@@ -576,7 +576,7 @@ export function SidebarNavigation({ currentPath, children }: SidebarNavigationPr
                         await auth.signOut();
                         window.location.href = "/dashboard/signin";
                       }}
-                      className="flex items-center gap-3 px-4 py-4 rounded-lg transition-all w-full text-red-600 hover:bg-red-50 min-h-[48px]"
+                      className="flex items-center gap-3 px-2 py-2.5 rounded-lg transition-all w-full text-red-600 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     >
                       <LogOut className="w-5 h-5" aria-hidden="true" />
                       <span>Sign Out</span>
