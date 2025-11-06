@@ -39,3 +39,62 @@ export function safeLocalStorageRemove(key: string): boolean {
     return false;
   }
 }
+
+/**
+ * Clear all Firestore IndexedDB caches to resolve cache corruption issues.
+ * This is useful when users experience infinite loading states due to stale cache.
+ *
+ * @returns Promise that resolves to true if cache was cleared successfully
+ */
+export async function clearFirestoreCache(): Promise<boolean> {
+  if (typeof window === "undefined" || typeof indexedDB === "undefined") {
+    return false;
+  }
+
+  try {
+    // Get all IndexedDB databases
+    const databases = await indexedDB.databases();
+
+    // Delete all Firebase-related databases
+    const deletePromises = databases
+      .filter(
+        (db) =>
+          db.name &&
+          (db.name.includes("firestore") ||
+            db.name.includes("firebase") ||
+            db.name.startsWith("google-cloud-firestore")),
+      )
+      .map((db) => {
+        return new Promise<void>((resolve, reject) => {
+          const request = indexedDB.deleteDatabase(db.name!);
+          request.onsuccess = () => {
+            console.log(`[clearFirestoreCache] Deleted database: ${db.name}`);
+            resolve();
+          };
+          request.onerror = () => {
+            console.error(
+              `[clearFirestoreCache] Failed to delete database: ${db.name}`,
+            );
+            reject(request.error);
+          };
+          request.onblocked = () => {
+            console.warn(
+              `[clearFirestoreCache] Delete blocked for database: ${db.name}`,
+            );
+            // Still resolve as the database will be deleted when unblocked
+            resolve();
+          };
+        });
+      });
+
+    await Promise.all(deletePromises);
+    console.log("[clearFirestoreCache] Successfully cleared Firestore cache");
+    return true;
+  } catch (error) {
+    console.error(
+      "[clearFirestoreCache] Error clearing Firestore cache:",
+      error,
+    );
+    return false;
+  }
+}
