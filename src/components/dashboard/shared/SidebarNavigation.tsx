@@ -493,7 +493,7 @@ export function SidebarNavigation({ currentPath, children }: SidebarNavigationPr
             </NavbarContent>
 
             {/* Mobile Menu - Full screen overlay */}
-            <NavbarMenu className="pt-6 bg-sidebar border-t border-sidebar-border">
+            <NavbarMenu className="pt-6 pb-[33vh] bg-sidebar border-t border-sidebar-border">
               {!isLoading &&
                 filteredCategories.map((category) => (
                   <div key={category.title} className="mb-4">
