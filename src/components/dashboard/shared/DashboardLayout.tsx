@@ -67,7 +67,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
             </SyncStatusProvider>
 
             {/* PWA Install Prompt - Only shown on dashboard pages */}
-            <PWAInstallPrompt client:load />
+            <PWAInstallPrompt />
         </>
     );
 }
