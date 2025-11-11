@@ -57,6 +57,7 @@ export default function ManageEventsContent() {
     const [showGraphicsUploadModal, setShowGraphicsUploadModal] = useState(false);
     const [graphicsUploadRequest, setGraphicsUploadRequest] = useState<EventRequest | null>(null);
     const [editingRequest, setEditingRequest] = useState<EventRequest | null>(null);
+    const [editingDraft, setEditingDraft] = useState<EventRequest | null>(null);
     const [viewingRequest, setViewingRequest] = useState<EventRequest | null>(null);
     const [viewingDraft, setViewingDraft] = useState<EventRequest | null>(null);
     const [managingFilesRequest, setManagingFilesRequest] = useState<EventRequest | null>(null);
@@ -84,8 +85,18 @@ export default function ManageEventsContent() {
 
     // Event handlers
     const handleEditRequest = (request: EventRequest) => {
-        setEditingRequest(request);
-        setShowEventRequestModal(true);
+        // Check if this is a draft event
+        const isDraftEvent = request.isDraft === true || request.status === 'draft';
+
+        if (isDraftEvent) {
+            // Open draft edit modal for draft events
+            setEditingDraft(request);
+            setShowDraftEventModal(true);
+        } else {
+            // Open full event request modal for non-draft events
+            setEditingRequest(request);
+            setShowEventRequestModal(true);
+        }
     };
 
     const handleViewRequest = (request: EventRequest) => {
@@ -166,6 +177,14 @@ export default function ManageEventsContent() {
             setEditingRequest(viewingDraft);
             setShowEventRequestModal(true);
             setViewingDraft(null); // Clear the viewingDraft state
+        }
+    };
+
+    const handleEditDraftFromView = () => {
+        if (viewingDraft) {
+            setShowDraftViewModal(false);
+            setEditingDraft(viewingDraft);
+            setShowDraftEventModal(true);
         }
     };
 
@@ -340,11 +359,14 @@ export default function ManageEventsContent() {
                         onClose={() => {
                             setShowDraftEventModal(false);
                             setSelectedDate(null);
+                            setEditingDraft(null);
                         }}
                         preselectedDate={selectedDate}
+                        editingDraft={editingDraft}
                         onSuccess={() => {
                             setShowDraftEventModal(false);
                             setSelectedDate(null);
+                            setEditingDraft(null);
                         }}
                     />
 
@@ -378,6 +400,7 @@ export default function ManageEventsContent() {
                                 }}
                                 draftEvent={viewingDraft}
                                 onConvertToFull={handleConvertDraftFromView}
+                                onEdit={handleEditDraftFromView}
                                 onDelete={handleDeleteDraft}
                                 userName={getUserName(viewingDraft.requestedUser)}
                             />

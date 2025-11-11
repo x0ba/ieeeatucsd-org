@@ -10,7 +10,7 @@ import {
   Textarea,
 } from '@heroui/react';
 import { Calendar, MapPin, FileText } from 'lucide-react';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../../../../../firebase/client';
 import { getAuth } from 'firebase/auth';
 import { showToast } from '../../../shared/utils/toast';
@@ -21,9 +21,10 @@ const DraftEventModal: React.FC<DraftEventModalProps> = ({
   onClose,
   preselectedDate,
   onSuccess,
+  editingDraft,
 }) => {
   const auth = getAuth();
-  // Use db from client import
+  const isEditMode = !!editingDraft;
 
   const [formData, setFormData] = useState<DraftEventFormData>({
     name: '',
@@ -36,17 +37,32 @@ const DraftEventModal: React.FC<DraftEventModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  // Pre-fill start date if provided
+  // Pre-fill form data when editing or when preselected date is provided
   useEffect(() => {
-    if (preselectedDate && isOpen) {
-      const dateString = preselectedDate.toISOString().split('T')[0];
-      setFormData((prev) => ({
-        ...prev,
-        startDate: dateString,
-        endDate: dateString, // Default end date to same as start date
-      }));
+    if (isOpen) {
+      if (editingDraft) {
+        // Pre-fill form with existing draft data
+        const startDate = editingDraft.startDateTime?.toDate?.() || new Date(editingDraft.startDateTime);
+        const endDate = editingDraft.endDateTime?.toDate?.() || new Date(editingDraft.endDateTime);
+
+        setFormData({
+          name: editingDraft.name || '',
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+          description: editingDraft.eventDescription || '',
+          location: editingDraft.location || '',
+        });
+      } else if (preselectedDate) {
+        // Pre-fill start date if provided for new draft
+        const dateString = preselectedDate.toISOString().split('T')[0];
+        setFormData((prev) => ({
+          ...prev,
+          startDate: dateString,
+          endDate: dateString, // Default end date to same as start date
+        }));
+      }
     }
-  }, [preselectedDate, isOpen]);
+  }, [preselectedDate, isOpen, editingDraft]);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -92,7 +108,7 @@ const DraftEventModal: React.FC<DraftEventModalProps> = ({
     }
 
     if (!auth.currentUser) {
-      showToast.error('You must be logged in to create a draft event');
+      showToast.error('You must be logged in to save a draft event');
       return;
     }
 
@@ -105,45 +121,60 @@ const DraftEventModal: React.FC<DraftEventModalProps> = ({
         ? Timestamp.fromDate(new Date(`${formData.endDate}T23:59:59`))
         : startDateTime;
 
-      // Create draft event request with minimal fields
-      const draftEventData = {
-        name: formData.name,
-        location: formData.location || '',
-        startDateTime,
-        endDateTime,
-        eventDescription: formData.description || '',
-        status: 'draft',
-        isDraft: true,
-        requestedUser: auth.currentUser.uid,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-        // Set default values for required fields (will be filled when converting to full event)
-        department: 'General',
-        eventCode: '',
-        pointsToReward: 0,
-        flyersNeeded: false,
-        flyerType: [],
-        flyersCompleted: false,
-        photographyNeeded: false,
-        requiredLogos: [],
-        willOrHaveRoomBooking: false,
-        expectedAttendance: 0,
-        roomBookingFiles: [],
-        asFundingRequired: false,
-        foodDrinksBeingServed: false,
-        invoices: [],
-        needsGraphics: false,
-        needsAsFunding: false,
-      };
+      if (isEditMode && editingDraft) {
+        // Update existing draft
+        const updateData = {
+          name: formData.name,
+          location: formData.location || '',
+          startDateTime,
+          endDateTime,
+          eventDescription: formData.description || '',
+          updatedAt: Timestamp.now(),
+        };
 
-      await addDoc(collection(db, 'event_requests'), draftEventData);
+        await updateDoc(doc(db, 'event_requests', editingDraft.id), updateData);
+        showToast.success('Draft event updated successfully!');
+      } else {
+        // Create new draft event request with minimal fields
+        const draftEventData = {
+          name: formData.name,
+          location: formData.location || '',
+          startDateTime,
+          endDateTime,
+          eventDescription: formData.description || '',
+          status: 'draft',
+          isDraft: true,
+          requestedUser: auth.currentUser.uid,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+          // Set default values for required fields (will be filled when converting to full event)
+          department: 'General',
+          eventCode: '',
+          pointsToReward: 0,
+          flyersNeeded: false,
+          flyerType: [],
+          flyersCompleted: false,
+          photographyNeeded: false,
+          requiredLogos: [],
+          willOrHaveRoomBooking: false,
+          expectedAttendance: 0,
+          roomBookingFiles: [],
+          asFundingRequired: false,
+          foodDrinksBeingServed: false,
+          invoices: [],
+          needsGraphics: false,
+          needsAsFunding: false,
+        };
 
-      showToast.success('Draft event created successfully!');
+        await addDoc(collection(db, 'event_requests'), draftEventData);
+        showToast.success('Draft event created successfully!');
+      }
+
       onSuccess?.();
       onClose();
     } catch (error) {
-      console.error('Error creating draft event:', error);
-      showToast.error('Failed to create draft event. Please try again.');
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} draft event:`, error);
+      showToast.error(`Failed to ${isEditMode ? 'update' : 'create'} draft event. Please try again.`);
     } finally {
       setLoading(false);
     }
@@ -164,9 +195,14 @@ const DraftEventModal: React.FC<DraftEventModalProps> = ({
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
-          <h2 className="text-2xl font-bold text-[#0A2463]">Create Draft Event</h2>
+          <h2 className="text-2xl font-bold text-[#0A2463]">
+            {isEditMode ? 'Edit Draft Event' : 'Create Draft Event'}
+          </h2>
           <p className="text-sm text-gray-600 font-normal">
-            Quickly create a draft event for planning. You can add full details later.
+            {isEditMode
+              ? 'Update the draft event details. You can convert it to a full event request later.'
+              : 'Quickly create a draft event for planning. You can add full details later.'
+            }
           </p>
         </ModalHeader>
 
@@ -250,7 +286,10 @@ const DraftEventModal: React.FC<DraftEventModalProps> = ({
             {/* Info Box */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> This creates a draft event for planning purposes. You can convert it to a full event request later to add invoices, room bookings, and other details.
+                <strong>Note:</strong> {isEditMode
+                  ? 'This draft event is for planning purposes. You can convert it to a full event request later to add invoices, room bookings, and other details.'
+                  : 'This creates a draft event for planning purposes. You can convert it to a full event request later to add invoices, room bookings, and other details.'
+                }
               </p>
             </div>
           </div>
@@ -271,7 +310,7 @@ const DraftEventModal: React.FC<DraftEventModalProps> = ({
             onPress={handleSubmit}
             isLoading={loading}
           >
-            Create Draft
+            {isEditMode ? 'Save Changes' : 'Create Draft'}
           </Button>
         </ModalFooter>
       </ModalContent>

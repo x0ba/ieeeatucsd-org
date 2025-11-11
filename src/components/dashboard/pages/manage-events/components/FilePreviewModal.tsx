@@ -20,6 +20,8 @@ export default function FilePreviewModal({ url, onClose, filename }: FilePreview
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.stopPropagation(); // Prevent event from bubbling to parent modals
+        e.preventDefault();
         onClose();
       }
     };
@@ -28,11 +30,12 @@ export default function FilePreviewModal({ url, onClose, filename }: FilePreview
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener('keydown', handleEscape);
+    // Use capture phase to intercept the event before it reaches parent modals
+    document.addEventListener('keydown', handleEscape, true);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleEscape, true);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, [onClose]);
@@ -71,13 +74,25 @@ export default function FilePreviewModal({ url, onClose, filename }: FilePreview
 
   if (!url) return null;
 
+  // Handle backdrop click - close modal but prevent propagation
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      e.stopPropagation();
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4">
-      <div 
+    <div
+      data-file-preview-modal="true"
+      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4"
+      onClick={handleBackdropClick}
+    >
+      <div
         id="file-preview-container"
-        className={`bg-white rounded-lg w-full h-full max-w-6xl max-h-[95vh] flex flex-col ${
-          isFullscreen ? 'max-w-none max-h-none rounded-none' : ''
-        }`}
+        className={`bg-white rounded-lg w-full h-full max-w-6xl max-h-[95vh] flex flex-col ${isFullscreen ? 'max-w-none max-h-none rounded-none' : ''
+          }`}
+        onClick={(e) => e.stopPropagation()} // Prevent clicks inside modal from closing it
       >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b px-4 py-3 flex justify-between items-center z-10 rounded-t-lg">

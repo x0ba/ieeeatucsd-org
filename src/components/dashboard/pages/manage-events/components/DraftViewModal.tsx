@@ -6,8 +6,9 @@ import {
   ModalFooter,
   Button,
   Chip,
+  Spacer,
 } from '@heroui/react';
-import { Calendar, MapPin, FileText, Trash2, FileUp, Clock } from 'lucide-react';
+import { Calendar, MapPin, FileText, Trash2, FileUp, Clock, Edit } from 'lucide-react';
 import { formatDateTime, formatDate } from '../event-view-modal/utils';
 
 interface DraftViewModalProps {
@@ -26,6 +27,7 @@ interface DraftViewModalProps {
   } | null;
   onConvertToFull: () => void;
   onDelete: () => void;
+  onEdit: () => void;
   userName: string;
 }
 
@@ -35,6 +37,7 @@ export function DraftViewModal({
   draftEvent,
   onConvertToFull,
   onDelete,
+  onEdit,
   userName,
 }: DraftViewModalProps) {
   if (!draftEvent) return null;
@@ -183,14 +186,25 @@ export function DraftViewModal({
               Delete Draft
             </Button>
           </div>
-          <Button
-            style={{ backgroundColor: '#0A2463' }}
-            className="text-white"
-            startContent={<FileUp className="w-4 h-4" />}
-            onPress={onConvertToFull}
-          >
-            Convert to Full Event Request
-          </Button>
+          <Spacer />
+          <div className="flex gap-2">
+            <Button
+              color="primary"
+              variant="flat"
+              startContent={<Edit className="w-4 h-4" />}
+              onPress={onEdit}
+            >
+              Edit Draft
+            </Button>
+            <Button
+              style={{ backgroundColor: '#0A2463' }}
+              className="text-white"
+              startContent={<FileUp className="w-4 h-4" />}
+              onPress={onConvertToFull}
+            >
+              Convert to Full Event Request
+            </Button>
+          </div>
         </ModalFooter>
       </ModalContent>
     </Modal>

@@ -353,7 +353,8 @@ export default function EventViewModal({ request, users, onClose, onSuccess }: E
         <>
             <Modal
                 isOpen
-                onClose={onClose}
+                onClose={selectedFile ? undefined : onClose}
+                isDismissable={!selectedFile}
                 size="5xl"
                 scrollBehavior="inside"
                 classNames={{

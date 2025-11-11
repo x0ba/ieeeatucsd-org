@@ -10,6 +10,7 @@ export interface DraftEventModalProps {
   onClose: () => void;
   preselectedDate?: Date | null;
   onSuccess?: () => void;
+  editingDraft?: any | null; // Draft event being edited
 }
 
 export interface DraftEventFormData {
