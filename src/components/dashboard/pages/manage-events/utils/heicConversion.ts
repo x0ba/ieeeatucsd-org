@@ -1,12 +1,13 @@
 /**
  * HEIC to JPG Conversion Utility
- * 
+ *
  * Provides functionality to convert HEIC image files to JPG format.
  * Used across file upload components for event requests, reimbursement receipts,
  * and fund deposits to ensure browser compatibility.
+ *
+ * IMPORTANT: Conversion now happens server-side via /api/convert-heic-to-jpg
+ * to avoid browser compatibility issues with the heic-convert package.
  */
-
-import heicConvert from 'heic-convert';
 
 /**
  * Checks if a file is in HEIC format based on extension and MIME type
@@ -23,12 +24,12 @@ export function isHeicFile(file: File): boolean {
 }
 
 /**
- * Converts a HEIC file to JPG format
- * 
+ * Converts a HEIC file to JPG format using server-side API
+ *
  * @param file - The HEIC file to convert
  * @returns Promise resolving to a new File object in JPG format
  * @throws Error if the conversion fails or if the input is not a HEIC file
- * 
+ *
  * @example
  * ```typescript
  * const jpgFile = await convertHeicToJpg(heicFile);
@@ -42,24 +43,46 @@ export async function convertHeicToJpg(file: File): Promise<File> {
   }
 
   try {
-    // Read the file as ArrayBuffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Create form data with the HEIC file
+    const formData = new FormData();
+    formData.append('file', file);
 
-    // Convert HEIC to JPG with high quality
-    const jpegBuffer = await heicConvert({
-      buffer,
-      format: 'JPEG',
-      quality: 0.9, // 90% quality for optimal balance
+    // Call the server-side conversion API
+    const response = await fetch('/api/convert-heic-to-jpg', {
+      method: 'POST',
+      credentials: 'include', // Include session cookie for authentication
+      body: formData,
     });
 
-    // Generate new filename with .jpg extension
-    const originalName = file.name.replace(/\.(heic|heif)$/i, '');
-    const jpgFileName = `${originalName}.jpg`;
+    if (!response.ok) {
+      // Try to parse error message from response
+      let errorMessage = 'Failed to convert HEIC file';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        // If JSON parsing fails, use default error message
+      }
+      throw new Error(errorMessage);
+    }
+
+    // Get the converted JPG blob from the response
+    const blob = await response.blob();
+    
+    // Extract filename from Content-Disposition header or use default
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let jpgFileName = file.name.replace(/\.(heic|heif)$/i, '.jpg');
+    
+    if (contentDisposition) {
+      const matches = /filename="([^"]+)"/.exec(contentDisposition);
+      if (matches?.[1]) {
+        jpgFileName = matches[1];
+      }
+    }
 
     // Create new File object with JPG data
     const jpgFile = new File(
-      [jpegBuffer],
+      [blob],
       jpgFileName,
       {
         type: 'image/jpeg',

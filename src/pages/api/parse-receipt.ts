@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import sharp from "sharp";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -58,7 +59,50 @@ export const POST: APIRoute = async ({ request }) => {
         console.log("[parse-receipt] Content type:", contentType);
 
         const arrayBuffer = await fileResponse.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        let buffer: Buffer = Buffer.from(arrayBuffer);
+
+        // Log original file size
+        console.log(
+          "[parse-receipt] Original file size:",
+          buffer.length,
+          "bytes",
+        );
+
+        // Resize and compress image if it's not a PDF
+        const isPdf = contentType && /application\/pdf/i.test(contentType);
+        if (!isPdf) {
+          try {
+            // Resize image to max 2048px on longest side and compress
+            // Convert to PNG or JPEG based on original format
+            const isJpeg = contentType && /image\/jpe?g/i.test(contentType);
+            const outputFormat = isJpeg ? "jpeg" : "png";
+
+            const resizedBuffer: Buffer = await sharp(buffer)
+              .resize(2048, 2048, {
+                fit: "inside",
+                withoutEnlargement: true,
+              })
+              [outputFormat]({
+                quality: outputFormat === "jpeg" ? 85 : undefined,
+                compressionLevel: outputFormat === "png" ? 8 : undefined,
+              })
+              .toBuffer();
+
+            buffer = resizedBuffer;
+            contentType = outputFormat === "jpeg" ? "image/jpeg" : "image/png";
+
+            console.log(
+              "[parse-receipt] Resized file size:",
+              buffer.length,
+              "bytes",
+            );
+            console.log("[parse-receipt] Output format:", outputFormat);
+          } catch (resizeError) {
+            console.error("[parse-receipt] Error resizing image:", resizeError);
+            // Continue with original buffer if resize fails
+          }
+        }
+
         const base64 = buffer.toString("base64");
 
         // Use detected contentType; fall back to image/jpeg if unknown
@@ -69,6 +113,7 @@ export const POST: APIRoute = async ({ request }) => {
           "[parse-receipt] Data URL prefix:",
           finalUrl.substring(0, 50),
         );
+        console.log("[parse-receipt] Final data URL length:", finalUrl.length);
       } catch (error) {
         console.error(
           "[parse-receipt] Error fetching Firebase Storage file:",
@@ -206,16 +251,36 @@ Rules:
 
     const data = await response.json();
 
+    console.log(
+      "[parse-receipt] AI response data:",
+      JSON.stringify(data, null, 2),
+    );
+
     const content = data.choices?.[0]?.message?.content;
     if (!content) {
+      console.error(
+        "[parse-receipt] No content in AI response. Full response:",
+        data,
+      );
+      console.error("[parse-receipt] Choices array:", data.choices);
+      console.error("[parse-receipt] First choice:", data.choices?.[0]);
+      console.error("[parse-receipt] Message:", data.choices?.[0]?.message);
+
       return new Response(
-        JSON.stringify({ error: "No content returned from AI" }),
+        JSON.stringify({
+          error: "No content returned from AI",
+          details:
+            "The AI service returned an empty response. This may be due to image size or format issues.",
+          aiResponse: data,
+        }),
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
         },
       );
     }
+
+    console.log("[parse-receipt] AI content received, length:", content.length);
 
     let parsedData;
     try {
