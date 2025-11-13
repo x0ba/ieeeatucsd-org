@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Input, Textarea, Select, SelectItem, Button } from "@heroui/react";
 import {
   Upload,
@@ -15,6 +15,8 @@ import {
   type ReimbursementReceipt,
   type LineItem,
 } from "../types";
+import { convertHeicIfNeeded } from "../../manage-events/utils/heicConversion";
+import { toast } from "@/hooks/use-toast";
 
 interface ReceiptFormProps {
   receipt: ReimbursementReceipt;
@@ -38,6 +40,83 @@ export default function ReceiptForm({
   const isUploading = uploadingFiles.has(receipt.id);
   const isParsing = parsingReceipts.has(receipt.id);
   const parseResult = parseResults[receipt.id];
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Helper function to validate file with server
+  const validateFileWithServer = async (file: File): Promise<{ valid: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/validate-receipt-files', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          filename: file.name,
+          mimeType: file.type,
+          size: file.size,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          return { valid: false, error: 'Authentication required. Please sign in again.' };
+        } else if (response.status === 413) {
+          return { valid: false, error: data.error || 'File is too large. Maximum size is 10MB.' };
+        } else if (response.status === 415) {
+          return { valid: false, error: data.error || 'File type not supported.' };
+        } else if (response.status === 400) {
+          return { valid: false, error: data.error || 'Invalid file format or size.' };
+        } else if (response.status === 500) {
+          return { valid: false, error: 'Server error during validation. Please try again.' };
+        } else {
+          return { valid: false, error: data.error || 'File validation failed.' };
+        }
+      }
+
+      return { valid: data.valid, error: data.error };
+    } catch (error) {
+      console.error('Error validating file:', error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return { valid: false, error: 'Network error. Please check your connection and try again.' };
+      }
+      return { valid: false, error: 'Unable to validate file. Please try again.' };
+    }
+  };
+
+  // Helper function to process and validate file
+  const processAndValidateFile = async (file: File): Promise<File | null> => {
+    try {
+      // Convert HEIC to JPG if needed
+      const convertedFile = await convertHeicIfNeeded(file);
+      
+      // Validate file with server
+      const validationResult = await validateFileWithServer(convertedFile);
+      
+      if (!validationResult.valid) {
+        setValidationError(validationResult.error || 'File validation failed');
+        toast({
+          title: 'File validation failed',
+          description: validationResult.error || 'Please check your file and try again.',
+          variant: 'destructive',
+        });
+        return null;
+      }
+      
+      setValidationError(null);
+      return convertedFile;
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast({
+        title: 'Error processing file',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        variant: 'destructive',
+      });
+      return null;
+    }
+  };
 
   const addLineItem = () => {
     const newLineItem: LineItem = {
@@ -100,6 +179,21 @@ export default function ReceiptForm({
           Receipt File (Image or PDF) <span className="text-red-500">*</span>
         </label>
 
+        {/* Validation Error Message */}
+        {validationError && (
+          <div className="mb-3 bg-red-50 border border-red-200 rounded-xl p-3 flex items-start space-x-3">
+            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-900">
+                Validation Error
+              </p>
+              <p className="text-xs text-red-700">
+                {validationError}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Upload Status Messages */}
         {isParsing && (
           <div className="mb-3 bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center space-x-3">
@@ -150,12 +244,15 @@ export default function ReceiptForm({
             e.preventDefault();
             e.stopPropagation();
           }}
-          onDrop={(e) => {
+          onDrop={async (e) => {
             e.preventDefault();
             e.stopPropagation();
             const files = e.dataTransfer.files;
             if (files && files[0]) {
-              onFileUpload(receipt.id, files[0]);
+              const validatedFile = await processAndValidateFile(files[0]);
+              if (validatedFile) {
+                onFileUpload(receipt.id, validatedFile);
+              }
             }
           }}
           onPaste={async (e) => {
@@ -181,7 +278,10 @@ export default function ReceiptForm({
                       lastModified: Date.now(),
                     },
                   );
-                  onFileUpload(receipt.id, newFile);
+                  const validatedFile = await processAndValidateFile(newFile);
+                  if (validatedFile) {
+                    onFileUpload(receipt.id, validatedFile);
+                  }
                   break; // Only handle the first image
                 }
               }
@@ -231,11 +331,16 @@ export default function ReceiptForm({
                       <input
                         type="file"
                         className="sr-only"
-                        accept="image/png,image/jpeg,image/jpg,application/pdf"
+                        accept="image/png,image/jpeg,image/jpg,image/heic,image/heif,.heic,.heif,application/pdf"
                         aria-label="Replace receipt file"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
-                          if (file) onFileUpload(receipt.id, file);
+                          if (file) {
+                            const validatedFile = await processAndValidateFile(file);
+                            if (validatedFile) {
+                              onFileUpload(receipt.id, validatedFile);
+                            }
+                          }
                         }}
                       />
                     </label>
@@ -255,11 +360,16 @@ export default function ReceiptForm({
                   <input
                     type="file"
                     className="sr-only"
-                    accept="image/png,image/jpeg,image/jpg,application/pdf"
+                    accept="image/png,image/jpeg,image/jpg,image/heic,image/heif,.heic,.heif,application/pdf"
                     aria-label="Upload receipt file"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const file = e.target.files?.[0];
-                      if (file) onFileUpload(receipt.id, file);
+                      if (file) {
+                        const validatedFile = await processAndValidateFile(file);
+                        if (validatedFile) {
+                          onFileUpload(receipt.id, validatedFile);
+                        }
+                      }
                     }}
                   />
                 </label>
@@ -267,7 +377,7 @@ export default function ReceiptForm({
                   or drag and drop or paste
                 </p>
                 <p className="text-xs text-gray-500">
-                  PNG, JPG, or PDF up to 10MB
+                  PNG, JPG, HEIC, or PDF up to 10MB
                 </p>
               </div>
             </div>

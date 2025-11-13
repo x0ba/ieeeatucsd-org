@@ -75,6 +75,7 @@
     "firebase-admin": "^13.4.0",
     "framer-motion": "^12.6.2",
     "googleapis": "^163.0.0",
+    "heic-convert": "^2.1.0",
     "highlight.js": "^11.11.1",
     "html2pdf.js": "^0.10.3",
     "imapflow": "^1.0.193",

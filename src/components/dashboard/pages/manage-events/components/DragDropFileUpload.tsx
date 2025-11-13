@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Upload, X, CheckCircle, AlertCircle, FileText, Image } from 'lucide-react';
 import { truncateFilename, formatFileSize, isFileTypeAllowed, isFileSizeValid, isImageFile, isPdfFile } from '../utils/filenameUtils';
+import { convertHeicIfNeeded } from '../utils/heicConversion';
 
 interface FileUploadProgress {
   file: File;
@@ -29,7 +30,7 @@ export default function DragDropFileUpload({
   onFileUploaded,
   onUploadProgress,
   onUploadError,
-  allowedTypes = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'],
+  allowedTypes = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'],
   maxSizeInMB = 10,
   maxFiles = 5,
   multiple = true,
@@ -53,13 +54,72 @@ export default function DragDropFileUpload({
     return null;
   };
 
-  const handleFiles = useCallback((files: FileList | File[]) => {
+  const validateFileServerSide = async (file: File): Promise<{ valid: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/validate-event-files', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          filename: file.name,
+          mimeType: file.type,
+          size: file.size,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle different HTTP status codes
+        if (response.status === 401) {
+          return { valid: false, error: 'Authentication required. Please sign in again.' };
+        } else if (response.status === 413) {
+          return { valid: false, error: data.error || 'File is too large.' };
+        } else if (response.status === 415) {
+          return { valid: false, error: data.error || 'File type not supported.' };
+        } else {
+          return { valid: false, error: data.error || 'Server validation failed.' };
+        }
+      }
+
+      return { valid: data.valid, error: data.error };
+    } catch (error) {
+      // Network or other errors
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return { valid: false, error: 'Network error. Please check your connection and try again.' };
+      }
+      return { valid: false, error: 'Failed to validate file. Please try again.' };
+    }
+  };
+
+  const handleFiles = useCallback(async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
-    const validFiles: File[] = [];
     const errors: string[] = [];
 
-    // Validate files
-    for (const file of fileArray) {
+    // Convert HEIC files before validation
+    let processedFiles: File[];
+    try {
+      processedFiles = await Promise.all(
+        fileArray.map(async (file) => {
+          try {
+            return await convertHeicIfNeeded(file);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Conversion failed';
+            errors.push(`${file.name}: ${errorMessage}`);
+            return file; // Return original file to allow error handling to proceed
+          }
+        })
+      );
+    } catch (error) {
+      onUploadError?.(fileArray[0] || new File([], 'unknown'), 'Failed to process files');
+      return;
+    }
+
+    // Validate files after conversion
+    const validFiles: File[] = [];
+    for (const file of processedFiles) {
       const error = validateFile(file);
       if (error) {
         errors.push(`${file.name}: ${error}`);
