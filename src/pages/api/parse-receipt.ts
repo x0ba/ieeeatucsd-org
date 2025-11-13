@@ -221,7 +221,7 @@ Rules:
           "X-Title": "IEEE UCSD Reimbursement System",
         },
         body: JSON.stringify({
-          model: "openai/gpt-5-nano",
+          model: "openai/gpt-4o-mini",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: contentParts },

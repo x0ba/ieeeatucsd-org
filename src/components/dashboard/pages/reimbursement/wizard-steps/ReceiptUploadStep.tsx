@@ -220,19 +220,19 @@ export default function ReceiptUploadStep({
         dateOfPurchase: parsedData.dateOfPurchase || "",
         lineItems: Array.isArray(parsedData.lineItems)
           ? parsedData.lineItems.map((item: any, index: number) => ({
-              id: `parsed_${Date.now()}_${index}`,
-              description: item.description || "",
-              category: item.category || "Other",
-              amount: parseFloat(item.amount) || 0,
-            }))
+            id: `parsed_${Date.now()}_${index}`,
+            description: item.description || "",
+            category: item.category || "Other",
+            amount: parseFloat(item.amount) || 0,
+          }))
           : [
-              {
-                id: `parsed_${Date.now()}_0`,
-                description: "Receipt Total",
-                category: "Other",
-                amount: parsedData.total || 0,
-              },
-            ],
+            {
+              id: `parsed_${Date.now()}_0`,
+              description: "Receipt Total",
+              category: "Other",
+              amount: parsedData.total || 0,
+            },
+          ],
         subtotal: parseFloat(parsedData.subtotal) || 0,
         tax: parseFloat(parsedData.tax) || 0,
         tip: parseFloat(parsedData.tip) || 0,
@@ -348,16 +348,24 @@ export default function ReceiptUploadStep({
                   <Receipt className="w-4 h-4" />
                   <span>Receipt {index + 1}</span>
                   {receipts.length > 1 && (
-                    <button
-                      type="button"
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={(e) => {
                         e.stopPropagation();
                         removeReceipt(receipt.id);
                       }}
-                      className="ml-2 text-red-500 hover:text-red-700"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          removeReceipt(receipt.id);
+                        }
+                      }}
+                      className="ml-2 text-red-500 hover:text-red-700 cursor-pointer"
                     >
                       <X className="w-3 h-3" />
-                    </button>
+                    </div>
                   )}
                 </div>
               }
