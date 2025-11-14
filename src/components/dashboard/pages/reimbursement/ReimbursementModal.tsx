@@ -43,7 +43,7 @@ export default function ReimbursementModal({
         }
         // Fallback: calculate from components
         const subtotal = calculateReceiptSubtotal(receipt);
-        return subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0);
+        return subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0) + (receipt.otherCharges || 0);
     };
 
     // Calculate total amount for all receipts
@@ -428,6 +428,7 @@ export default function ReimbursementModal({
                 tax: parsedData.tax || 0,
                 tip: parsedData.tip || 0,
                 shipping: parsedData.shipping || 0,
+                otherCharges: parsedData.otherCharges || 0,
                 total: parsedData.total || 0,
             };
 
@@ -729,6 +730,12 @@ export default function ReimbursementModal({
                                                                             <div className="flex justify-between text-sm text-gray-600">
                                                                                 <span>Shipping</span>
                                                                                 <span className="font-medium">${receipt.shipping?.toFixed(2)}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {receipt.otherCharges > 0 && (
+                                                                            <div className="flex justify-between text-sm text-gray-600">
+                                                                                <span>Other Charges</span>
+                                                                                <span className="font-medium">${receipt.otherCharges?.toFixed(2)}</span>
                                                                             </div>
                                                                         )}
                                                                         <Divider className="my-2" />

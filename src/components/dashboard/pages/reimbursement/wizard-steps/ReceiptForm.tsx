@@ -91,10 +91,10 @@ export default function ReceiptForm({
     try {
       // Convert HEIC to JPG if needed
       const convertedFile = await convertHeicIfNeeded(file);
-      
+
       // Validate file with server
       const validationResult = await validateFileWithServer(convertedFile);
-      
+
       if (!validationResult.valid) {
         setValidationError(validationResult.error || 'File validation failed');
         toast({
@@ -104,7 +104,7 @@ export default function ReceiptForm({
         });
         return null;
       }
-      
+
       setValidationError(null);
       return convertedFile;
     } catch (error) {
@@ -159,7 +159,8 @@ export default function ReceiptForm({
       subtotal +
       (receipt.tax || 0) +
       (receipt.tip || 0) +
-      (receipt.shipping || 0);
+      (receipt.shipping || 0) +
+      (receipt.otherCharges || 0);
 
     updateReceipt(receipt.id, {
       subtotal,
@@ -169,7 +170,7 @@ export default function ReceiptForm({
 
   React.useEffect(() => {
     calculateTotals();
-  }, [receipt.lineItems, receipt.tax, receipt.tip, receipt.shipping]);
+  }, [receipt.lineItems, receipt.tax, receipt.tip, receipt.shipping, receipt.otherCharges]);
 
   return (
     <div className="space-y-6">
@@ -212,8 +213,8 @@ export default function ReceiptForm({
         {parseResult && !isParsing && (
           <div
             className={`mb-3 rounded-xl p-3 flex items-start space-x-3 ${parseResult.success
-                ? "bg-green-50 border border-green-200"
-                : "bg-yellow-50 border border-yellow-200"
+              ? "bg-green-50 border border-green-200"
+              : "bg-yellow-50 border border-yellow-200"
               }`}
           >
             {parseResult.success ? (
@@ -235,10 +236,10 @@ export default function ReceiptForm({
         {/* Upload Area */}
         <div
           className={`border-2 border-dashed rounded-xl transition-colors ${receipt.receiptFile
-              ? "border-green-300 bg-green-50"
-              : errors[`receipt_${receipt.id}_file`]
-                ? "border-red-300 bg-red-50"
-                : "border-gray-300 hover:border-gray-400"
+            ? "border-green-300 bg-green-50"
+            : errors[`receipt_${receipt.id}_file`]
+              ? "border-red-300 bg-red-50"
+              : "border-gray-300 hover:border-gray-400"
             }`}
           onDragOver={(e) => {
             e.preventDefault();
@@ -576,7 +577,7 @@ export default function ReceiptForm({
           </div>
 
           {/* Additional Charges */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tax
@@ -641,6 +642,28 @@ export default function ReceiptForm({
                 }
                 size="sm"
                 aria-label="Shipping amount in dollars"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Other Charges
+              </label>
+              <Input
+                type="number"
+                value={receipt.otherCharges?.toString() || "0"}
+                onChange={(e) =>
+                  updateReceipt(receipt.id, {
+                    otherCharges: parseFloat(e.target.value) || 0,
+                  })
+                }
+                startContent={
+                  <DollarSign
+                    className="w-3 h-3 text-gray-400"
+                    aria-hidden="true"
+                  />
+                }
+                size="sm"
+                aria-label="Other charges amount in dollars"
               />
             </div>
             <div>

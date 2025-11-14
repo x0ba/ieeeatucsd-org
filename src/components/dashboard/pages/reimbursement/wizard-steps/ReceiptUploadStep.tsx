@@ -71,6 +71,7 @@ export default function ReceiptUploadStep({
       tax: 0,
       tip: 0,
       shipping: 0,
+      otherCharges: 0,
       total: 0,
     };
     setReceipts([...receipts, newReceipt]);
@@ -98,6 +99,7 @@ export default function ReceiptUploadStep({
           tax: 0,
           tip: 0,
           shipping: 0,
+          otherCharges: 0,
           total: 0,
         },
       ]);
@@ -237,6 +239,7 @@ export default function ReceiptUploadStep({
         tax: parseFloat(parsedData.tax) || 0,
         tip: parseFloat(parsedData.tip) || 0,
         shipping: parseFloat(parsedData.shipping) || 0,
+        otherCharges: parseFloat(parsedData.otherCharges) || 0,
         total: parseFloat(parsedData.total) || 0,
       };
 

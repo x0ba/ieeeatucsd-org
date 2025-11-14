@@ -141,7 +141,7 @@ export const POST: APIRoute = async ({ request }) => {
       finalUrl.length,
     );
 
-    const systemPrompt = `You are a receipt parsing assistant. Extract information from receipt images and PDF documents and return ONLY valid JSON with no additional text or markdown formatting.
+    const systemPrompt = `You are a precise receipt parsing assistant. Extract information from receipt images and PDF documents and return ONLY valid JSON with no additional text or markdown formatting.
 
 Required JSON structure:
 {
@@ -159,18 +159,27 @@ Required JSON structure:
   "tax": 0.00,
   "tip": 0.00,
   "shipping": 0.00,
+  "otherCharges": 0.00,
   "total": 0.00
 }
 
 Categories must be one of: Food & Beverages, Transportation, Materials & Supplies, Registration Fees, Equipment, Software/Subscriptions, Printing/Marketing, Other
 
-Rules:
+IMPORTANT - otherCharges Field Guidelines:
+- ONLY include fees that don't fit into tax, tip, or shipping categories
+- INCLUDE: service fees, processing fees, environmental fees, convenience fees, bag fees, delivery fees (if not shipping), handling fees, restocking fees
+- EXCLUDE: sales tax, gratuity/tip, shipping/delivery charges, discounts, refunds, item prices
+- If no such fees exist, set otherCharges to 0.00
+- Be consistent: the same receipt should always produce the same otherCharges value
+
+Strict Rules:
 - Return ONLY the JSON object, no markdown code blocks
-- All amounts must be numbers (not strings)
+- All amounts must be numbers (not strings) with 2 decimal places
 - Date must be in YYYY-MM-DD format
 - If a field is not found, use empty string for text or 0 for numbers
-- Subtotal should be the sum of line items before tax
-- Total should be subtotal + tax + tip + shipping`;
+- Subtotal should be sum of line items before any additional charges
+- Verify calculation: total should equal subtotal + tax + tip + shipping + otherCharges
+- Round all monetary values to exactly 2 decimal places`;
 
     const userPrompt = `Please analyze this receipt (image or PDF) and extract all information according to the JSON schema provided.`;
 
@@ -228,7 +237,7 @@ Rules:
           ],
           ...(plugins ? { plugins } : {}),
           response_format: { type: "json_object" },
-          temperature: 0.1,
+          temperature: 0.0,
           max_tokens: 2000,
         }),
       },
@@ -300,6 +309,10 @@ Rules:
       );
     }
 
+    // Round and normalize all monetary values to 2 decimal places
+    const roundToTwo = (num: number | string) =>
+      Math.round((parseFloat(String(num)) || 0) * 100) / 100;
+
     const normalizedData = {
       vendorName: parsedData.vendorName || "Unknown Vendor",
       location: parsedData.location || "",
@@ -308,12 +321,69 @@ Rules:
       lineItems: Array.isArray(parsedData.lineItems)
         ? parsedData.lineItems
         : [],
-      subtotal: parsedData.subtotal || 0,
-      tax: parsedData.tax || 0,
-      tip: parsedData.tip || 0,
-      shipping: parsedData.shipping || 0,
-      total: parsedData.total || 0,
+      subtotal: roundToTwo(parsedData.subtotal),
+      tax: roundToTwo(parsedData.tax),
+      tip: roundToTwo(parsedData.tip),
+      shipping: roundToTwo(parsedData.shipping),
+      otherCharges: roundToTwo(parsedData.otherCharges),
+      total: roundToTwo(parsedData.total),
     };
+
+    // Validation and consistency checks
+    console.log("[parse-receipt] Performing validation checks...");
+
+    // Check for duplicate charges in otherCharges
+    if (normalizedData.otherCharges > 0) {
+      const hasTax = normalizedData.tax > 0;
+      const hasTip = normalizedData.tip > 0;
+      const hasShipping = normalizedData.shipping > 0;
+
+      console.log("[parse-receipt] Charge breakdown:", {
+        otherCharges: normalizedData.otherCharges,
+        hasTax,
+        hasTip,
+        hasShipping,
+        subtotal: normalizedData.subtotal,
+        total: normalizedData.total,
+      });
+
+      // If otherCharges seems to duplicate other charges, reset it
+      const calculatedTotal =
+        normalizedData.subtotal +
+        normalizedData.tax +
+        normalizedData.tip +
+        normalizedData.shipping +
+        normalizedData.otherCharges;
+      const totalDifference = Math.abs(calculatedTotal - normalizedData.total);
+
+      if (totalDifference > 0.05) {
+        // Allow 5 cent tolerance
+        console.log(
+          "[parse-receipt] Total mismatch detected, adjusting otherCharges",
+        );
+        const adjustedOtherCharges =
+          normalizedData.total -
+          (normalizedData.subtotal +
+            normalizedData.tax +
+            normalizedData.tip +
+            normalizedData.shipping);
+
+        if (adjustedOtherCharges >= -0.01 && adjustedOtherCharges <= 0.01) {
+          normalizedData.otherCharges = 0;
+          console.log(
+            "[parse-receipt] otherCharges adjusted to 0 due to total match",
+          );
+        } else {
+          normalizedData.otherCharges = roundToTwo(
+            Math.max(0, adjustedOtherCharges),
+          );
+          console.log(
+            "[parse-receipt] otherCharges adjusted to match total:",
+            normalizedData.otherCharges,
+          );
+        }
+      }
+    }
 
     if (!normalizedData.lineItems || normalizedData.lineItems.length === 0) {
       normalizedData.lineItems = [
@@ -329,9 +399,40 @@ Rules:
       (item: any, index: number) => ({
         description: item.description || `Item ${index + 1}`,
         category: item.category || "Other",
-        amount: parseFloat(item.amount) || 0,
+        amount: roundToTwo(item.amount),
       }),
     );
+
+    // Final validation log
+    const finalCalculatedTotal =
+      normalizedData.subtotal +
+      normalizedData.tax +
+      normalizedData.tip +
+      normalizedData.shipping +
+      normalizedData.otherCharges;
+    const finalDifference = Math.abs(
+      finalCalculatedTotal - normalizedData.total,
+    );
+
+    console.log("[parse-receipt] Final validation:", {
+      calculatedTotal: finalCalculatedTotal,
+      reportedTotal: normalizedData.total,
+      difference: finalDifference,
+      breakdown: {
+        subtotal: normalizedData.subtotal,
+        tax: normalizedData.tax,
+        tip: normalizedData.tip,
+        shipping: normalizedData.shipping,
+        otherCharges: normalizedData.otherCharges,
+      },
+    });
+
+    // Add warning if totals don't match
+    if (finalDifference > 0.05) {
+      console.warn(
+        "[parse-receipt] WARNING: Total calculation mismatch exceeds tolerance",
+      );
+    }
 
     return new Response(
       JSON.stringify({ success: true, data: normalizedData }),

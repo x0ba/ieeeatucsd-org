@@ -29,7 +29,11 @@ function calculateReceiptTotal(receipt: any): number {
   // Fallback: calculate from components
   const subtotal = calculateReceiptSubtotal(receipt);
   return (
-    subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0)
+    subtotal +
+    (receipt.tax || 0) +
+    (receipt.tip || 0) +
+    (receipt.shipping || 0) +
+    (receipt.otherCharges || 0)
   );
 }
 

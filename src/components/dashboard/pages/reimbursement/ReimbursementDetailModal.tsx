@@ -33,7 +33,7 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
         }
         // Fallback: calculate from components
         const subtotal = calculateReceiptSubtotal(receipt);
-        return subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0);
+        return subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0) + (receipt.otherCharges || 0);
     };
 
     // Calculate total amount for all receipts
@@ -262,6 +262,12 @@ export default function ReimbursementDetailModal({ reimbursement, onClose, userR
                                                         <div className="flex justify-between">
                                                             <span>Shipping:</span>
                                                             <span>${receipt.shipping?.toFixed(2)}</span>
+                                                        </div>
+                                                    )}
+                                                    {receipt.otherCharges > 0 && (
+                                                        <div className="flex justify-between">
+                                                            <span>Other Charges:</span>
+                                                            <span>${receipt.otherCharges?.toFixed(2)}</span>
                                                         </div>
                                                     )}
                                                     <div className="flex justify-between font-medium">

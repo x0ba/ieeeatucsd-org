@@ -110,7 +110,7 @@ export default function ManageReimbursementsContent() {
         if (subtotal === 0 && receipt.lineItems && receipt.lineItems.length > 0) {
             subtotal = receipt.lineItems.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
         }
-        return subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0);
+        return subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0) + (receipt.otherCharges || 0);
     };
 
     // Calculate total amount for a reimbursement
@@ -844,4 +844,4 @@ export default function ManageReimbursementsContent() {
             </Modal>
         </div >
     );
-} 
+}
