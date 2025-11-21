@@ -42,9 +42,23 @@ export function safeLocalStorageRemove(key: string): boolean {
 
 /**
  * Clear all Firestore IndexedDB caches to resolve cache corruption issues.
- * This is useful when users experience infinite loading states due to stale cache.
+ *
+ * ⚠️ WARNING: This function is generally NOT RECOMMENDED because:
+ * 1. It cannot delete databases while they're in use (will trigger "blocked" events)
+ * 2. Requires a page refresh to take effect
+ * 3. Doesn't solve the root cause of most loading issues
+ * 4. Firestore's built-in cache management is usually sufficient
+ *
+ * Instead of clearing cache, consider:
+ * - Using Firestore's cache-first pattern (default onSnapshot behavior)
+ * - Checking network connectivity
+ * - Verifying Firestore security rules
+ * - Using getDocFromCache/getDocFromServer for explicit cache control
+ *
+ * This function is kept for emergency debugging purposes only.
  *
  * @returns Promise that resolves to true if cache was cleared successfully
+ * @deprecated Prefer Firestore's built-in cache management
  */
 export async function clearFirestoreCache(): Promise<boolean> {
   if (typeof window === "undefined" || typeof indexedDB === "undefined") {

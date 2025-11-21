@@ -49,10 +49,17 @@ export { browserPopupRedirectResolver };
 //     2) localStorage flag: DISABLE_FIREBASE_PERSISTENCE=true
 // - We also auto-fallback to in-memory cache when IndexedDB is unavailable (e.g., some private modes).
 // IMPORTANT: This must be the FIRST initialization of Firestore for this app
+
+// Detect Safari browser - Safari has unreliable IndexedDB that can fail at runtime
+const isSafari =
+  typeof window !== "undefined" &&
+  /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
 const disablePersistence =
   typeof window !== "undefined" &&
-  ((typeof localStorage !== "undefined" &&
-    localStorage.getItem("DISABLE_FIREBASE_PERSISTENCE") === "true") ||
+  (isSafari || // Disable persistence for Safari due to unreliable IndexedDB
+    (typeof localStorage !== "undefined" &&
+      localStorage.getItem("DISABLE_FIREBASE_PERSISTENCE") === "true") ||
     (!!(import.meta as any)?.env?.PUBLIC_DISABLE_FIREBASE_PERSISTENCE &&
       (import.meta as any).env.PUBLIC_DISABLE_FIREBASE_PERSISTENCE === "true"));
 const supportsIndexedDB = typeof indexedDB !== "undefined";
@@ -60,16 +67,26 @@ const supportsIndexedDB = typeof indexedDB !== "undefined";
 let firestoreInstance;
 
 try {
-  firestoreInstance = initializeFirestore(
-    app,
-    !disablePersistence && supportsIndexedDB
-      ? {
-          localCache: persistentLocalCache({
-            tabManager: persistentMultipleTabManager(),
-          }),
-        }
-      : {},
-  );
+  if (!disablePersistence && supportsIndexedDB) {
+    console.log(
+      "[firebase] Initializing Firestore with persistent cache (multi-tab IndexedDB)",
+    );
+    firestoreInstance = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    });
+  } else {
+    const reason = isSafari
+      ? "Safari browser detected (unreliable IndexedDB)"
+      : disablePersistence
+        ? "Persistence disabled via config"
+        : "IndexedDB not supported";
+    console.log(
+      `[firebase] Initializing Firestore with memory-only cache (${reason})`,
+    );
+    firestoreInstance = initializeFirestore(app, {});
+  }
 } catch (error) {
   console.warn(
     "[firebase] Persistent cache initialization failed, falling back to memory-only Firestore.",
