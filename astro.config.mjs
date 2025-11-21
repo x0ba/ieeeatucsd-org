@@ -75,6 +75,7 @@ export default defineConfig({
     },
     optimizeDeps: {
       exclude: [
+        "chunk-GP4JL5D5.js",
         // Avoid scanning Node-only scripts that contain require/module usage
       ],
     },

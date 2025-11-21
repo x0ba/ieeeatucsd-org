@@ -454,12 +454,22 @@ export default function EventRequestModal({
         : otherLogoUrls;
 
       // Create event request data
+      // Parse the date from user input (MM/DD/YYYY) to YYYY-MM-DD format for storage
+      const { parseDateMMDDYY } = await import('./utils/eventRequestUtils');
+      const parsedDate = parseDateMMDDYY(formData.startDate);
+      
+      if (!parsedDate) {
+        showToast.error('Invalid date format. Please use MM/DD/YYYY format.');
+        setLoading(false);
+        return;
+      }
+      
       const startDateTime = createSafeDateTime(
-        formData.startDate,
+        parsedDate,
         formData.startTime,
       );
       const endDateTime = createSafeDateTime(
-        formData.startDate,
+        parsedDate,
         formData.endTime,
       );
 

@@ -1,5 +1,6 @@
 import React from "react";
 import { Spinner } from "@heroui/react";
+import { PageSkeleton } from "./PageSkeleton";
 
 // Export all loading components for easy importing
 export * from "./TableSkeleton";
@@ -102,7 +103,6 @@ export const LoadingPatterns = {
     content: T,
     layout: "dashboard" | "table" | "form" | "content" = "content",
   ) => {
-    const { PageSkeleton } = require("./PageSkeleton");
     return isLoading ? React.createElement(PageSkeleton, { layout }) : content;
   },
 };

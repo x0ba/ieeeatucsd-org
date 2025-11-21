@@ -1,4 +1,5 @@
 import type { EventFormData, FieldError } from "../types/EventRequestTypes";
+import { parseDateMMDDYY } from "./eventRequestUtils";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -25,8 +26,19 @@ export const validateBasicInformation = (
   if (!formData.startDate) {
     errors.startDate = true;
     errorMessages.push("Start date is required");
+  } else {
+    const parsedDate = parseDateMMDDYY(formData.startDate);
+    if (!parsedDate) {
+      errors.startDate = true;
+      errorMessages.push(
+        "Invalid date format. Use MM/DD/YYYY, DD/MM/YYYY, MM/DD/YY, or MMDDYYYY (e.g., 12/25/2023, 25/12/23)",
+      );
+    }
   }
 
+  // Time validation - both startTime and endTime should be populated
+  // They are stored as 24-hour format times (e.g., "09:00", "22:00")
+  // The UI ensures they come from a time range input
   if (!formData.startTime) {
     errors.startTime = true;
     errorMessages.push("Start time is required");
@@ -37,18 +49,43 @@ export const validateBasicInformation = (
     errorMessages.push("End time is required");
   }
 
+  // Validate that both times are in valid HH:MM format
+  const timeFormatRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+
+  if (formData.startTime && !timeFormatRegex.test(formData.startTime)) {
+    errors.startTime = true;
+    errorMessages.push(
+      'Invalid start time format. Please enter a time range (e.g., "10am-2pm")',
+    );
+  }
+
+  if (formData.endTime && !timeFormatRegex.test(formData.endTime)) {
+    errors.endTime = true;
+    errorMessages.push(
+      'Invalid end time format. Please enter a time range (e.g., "10am-2pm")',
+    );
+  }
+
   if (!formData.eventDescription) {
     errors.eventDescription = true;
     errorMessages.push("Event description is required");
   }
 
-  // Validate end time is after start time
-  if (formData.startDate && formData.startTime && formData.endTime) {
-    const startDateTime = new Date(
-      `${formData.startDate}T${formData.startTime}`,
-    );
-    const endDateTime = new Date(`${formData.startDate}T${formData.endTime}`);
-    if (endDateTime <= startDateTime) {
+  // Cross-field time validation
+  // Validate that end time is after start time
+  if (
+    formData.startTime &&
+    formData.endTime &&
+    timeFormatRegex.test(formData.startTime) &&
+    timeFormatRegex.test(formData.endTime)
+  ) {
+    const [startHour, startMinute] = formData.startTime.split(":").map(Number);
+    const [endHour, endMinute] = formData.endTime.split(":").map(Number);
+
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+
+    if (endMinutes <= startMinutes) {
       errors.endTime = true;
       errorMessages.push("End time must be after start time");
     }

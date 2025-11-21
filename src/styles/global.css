@@ -399,3 +399,21 @@
   [data-sidebar="content"].sidebar-thin-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.35) !important;
 }
+
+/* Custom border colors for form validation */
+.border-success {
+  border-color: #22c55e !important;
+}
+
+.border-danger {
+  border-color: #ef4444 !important;
+}
+
+/* Custom text colors for validation feedback */
+.text-success {
+  color: #22c55e !important;
+}
+
+.text-danger {
+  color: #ef4444 !important;
+}
