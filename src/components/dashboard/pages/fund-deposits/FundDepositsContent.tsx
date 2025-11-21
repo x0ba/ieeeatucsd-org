@@ -12,6 +12,8 @@ import { useGlobalImagePaste } from '../../shared/hooks/useGlobalImagePaste';
 import { useModalRegistration } from '../../shared/contexts/ModalContext';
 import { usePasteNotification } from '../../shared/components/PasteNotification';
 import MultiFileUpload from './components/MultiFileUpload';
+import { useAsyncOperation, useFileUpload } from '../../shared/hooks/useAsyncOperation';
+import { useLoadingOperation } from '../../shared/contexts/LoadingContext';
 
 interface FundDeposit {
     id: string;
@@ -101,6 +103,14 @@ const FundDepositsContent: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [userRole, setUserRole] = useState<UserRole>('Member');
+    
+    // Enhanced loading hooks
+    const dataFetchOperation = useAsyncOperation<FundDeposit[]>();
+    const submitOperation = useAsyncOperation();
+    const fileUploadOperation = useFileUpload({ timeoutMs: 120000 }); // 2 minute timeout for file uploads
+    const { start: startDataLoading, stop: stopDataLoading } = useLoadingOperation('deposits-fetch');
+    const { start: startSubmitLoading, stop: stopSubmitLoading } = useLoadingOperation('deposit-submit');
+    const { start: startUploadLoading, stop: stopUploadLoading } = useLoadingOperation('deposit-file-upload');
     const [showNewDepositModal, setShowNewDepositModal] = useState(false);
     const [selectedDeposit, setSelectedDeposit] = useState<FundDeposit | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
@@ -258,6 +268,8 @@ const FundDepositsContent: React.FC = () => {
     useEffect(() => {
         if (!user) return;
 
+        startDataLoading('Loading fund deposits...', 20000); // 20 second timeout
+
         const fetchUserRole = async () => {
             try {
                 const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -289,21 +301,27 @@ const FundDepositsContent: React.FC = () => {
                         })) as FundDeposit[];
                         setDeposits(depositsData);
                         setIsLoading(false);
+                        stopDataLoading();
                     }, (error) => {
                         console.error('Error fetching deposits:', error);
                         setIsLoading(false);
+                        stopDataLoading(error?.message || 'Failed to fetch deposits');
                     });
 
-                    return () => unsubscribe();
+                    return () => {
+                        stopDataLoading();
+                        unsubscribe();
+                    };
                 }
             } catch (error) {
                 console.error('Error fetching user role:', error);
                 setIsLoading(false);
+                stopDataLoading(error?.message || 'Failed to fetch user role');
             }
         };
 
         fetchUserRole();
-    }, [user]);
+    }, [user, startDataLoading, stopDataLoading]);
 
     useEffect(() => {
         let filtered = deposits;
@@ -327,17 +345,37 @@ const FundDepositsContent: React.FC = () => {
     }, [deposits, searchTerm, statusFilter, userRole, user]);
 
     const uploadFiles = async (files: File[], path: string): Promise<string[]> => {
-        // For fund deposits, we'll keep user-based organization for now
-        // as they're not directly tied to specific events
-        const uploadPromises = files.map(async (file) => {
-            const storageRef = ref(storage, `${path}/${user?.uid}/${Date.now()}_${file.name}`);
-            const uploadTask = uploadBytesResumable(storageRef, file);
-            await new Promise((resolve, reject) => {
-                uploadTask.on('state_changed', null, reject, () => resolve(uploadTask.snapshot.ref));
+        startUploadLoading(`Uploading ${files.length} file${files.length > 1 ? 's' : ''}...`, 120000); // 2 minute timeout
+
+        try {
+            // For fund deposits, we'll keep user-based organization for now
+            // as they're not directly tied to specific events
+            const uploadPromises = files.map(async (file) => {
+                return await fileUploadOperation.uploadFile(file, async (file, progressCallback) => {
+                    const storageRef = ref(storage, `${path}/${user?.uid}/${Date.now()}_${file.name}`);
+                    const uploadTask = uploadBytesResumable(storageRef, file);
+                    await new Promise((resolve, reject) => {
+                        uploadTask.on('state_changed',
+                            (snapshot) => {
+                                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                progressCallback(progress);
+                            },
+                            reject,
+                            () => resolve(uploadTask.snapshot.ref)
+                        );
+                    });
+                    return await getDownloadURL(storageRef);
+                });
             });
-            return await getDownloadURL(storageRef);
-        });
-        return await Promise.all(uploadPromises);
+            
+            const results = await Promise.all(uploadPromises);
+            stopUploadLoading();
+            return results;
+        } catch (error) {
+            console.error('Error uploading files:', error);
+            stopUploadLoading(error?.message || 'Failed to upload files');
+            throw error;
+        }
     };
 
     const handleSubmitDeposit = async () => {
@@ -363,6 +401,8 @@ const FundDepositsContent: React.FC = () => {
             setValidationErrors(errors);
             return;
         }
+
+        startSubmitLoading('Submitting deposit...', 45000); // 45 second timeout
 
         try {
             // Upload receipt files if any
@@ -451,6 +491,8 @@ const FundDepositsContent: React.FC = () => {
             setValidationErrors({});
         } catch (error) {
             console.error('Error submitting deposit:', error);
+        } finally {
+            stopSubmitLoading();
         }
     };
 
