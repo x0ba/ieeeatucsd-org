@@ -1,15 +1,4 @@
 /**
- * Cached data structure with validation metadata
- */
-interface CachedData<T> {
-  value: T;
-  timestamp: number;
-  version: string;
-}
-
-const CACHE_VERSION = "1.0.0";
-
-/**
  * Safe localStorage helpers that guard against environments where storage is
  * unavailable (e.g. Safari private mode) or throws quota errors.
  */
@@ -47,55 +36,6 @@ export function safeLocalStorageRemove(key: string): boolean {
     window.localStorage.removeItem(key);
     return true;
   } catch {
-    return false;
-  }
-}
-
-/**
- * Get cached data with validation. Returns null if cache is corrupted or invalid.
- */
-export function getValidatedCache<T>(key: string): T | null {
-  try {
-    const raw = safeLocalStorageGet(key);
-    if (!raw) return null;
-
-    const cached = JSON.parse(raw) as CachedData<T>;
-    
-    // Validate cache structure
-    if (!cached || typeof cached !== "object" || !("value" in cached) || !("timestamp" in cached) || !("version" in cached)) {
-      console.warn(`[getValidatedCache] Invalid cache structure for key: ${key}`);
-      safeLocalStorageRemove(key);
-      return null;
-    }
-
-    // Validate version
-    if (cached.version !== CACHE_VERSION) {
-      console.warn(`[getValidatedCache] Cache version mismatch for key: ${key}. Expected ${CACHE_VERSION}, got ${cached.version}`);
-      safeLocalStorageRemove(key);
-      return null;
-    }
-
-    return cached.value;
-  } catch (error) {
-    console.error(`[getValidatedCache] Error parsing cache for key ${key}:`, error);
-    safeLocalStorageRemove(key);
-    return null;
-  }
-}
-
-/**
- * Set cached data with validation metadata
- */
-export function setValidatedCache<T>(key: string, value: T): boolean {
-  try {
-    const cached: CachedData<T> = {
-      value,
-      timestamp: Date.now(),
-      version: CACHE_VERSION,
-    };
-    return safeLocalStorageSet(key, JSON.stringify(cached));
-  } catch (error) {
-    console.error(`[setValidatedCache] Error setting cache for key ${key}:`, error);
     return false;
   }
 }

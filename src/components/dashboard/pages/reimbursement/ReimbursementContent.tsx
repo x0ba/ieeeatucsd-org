@@ -8,8 +8,6 @@ import ReimbursementWizardModal from './ReimbursementWizardModal';
 import ReimbursementDetailModal from './ReimbursementDetailModal';
 import { ReimbursementListSkeleton, MetricCardSkeleton } from '../../../ui/loading';
 import { showToast } from '../../shared/utils/toast';
-import { useAsyncOperation } from '../../shared/hooks/useAsyncOperation';
-import { useLoadingOperation } from '../../shared/contexts/LoadingContext';
 
 interface Reimbursement {
     id: string;
@@ -82,12 +80,6 @@ export default function ReimbursementContent() {
     const [viewReimbursement, setViewReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    
-    // Enhanced loading hooks
-    const dataFetchOperation = useAsyncOperation<Reimbursement[]>();
-    const submitOperation = useAsyncOperation();
-    const { start: startDataLoading, stop: stopDataLoading } = useLoadingOperation('reimbursements-fetch');
-    const { start: startSubmitLoading, stop: stopSubmitLoading } = useLoadingOperation('reimbursement-submit');
 
     // Calculate receipt total if it's 0 or missing
     const calculateReceiptTotal = (receipt: any) => {
@@ -122,8 +114,6 @@ export default function ReimbursementContent() {
     useEffect(() => {
         if (!user) return;
 
-        startDataLoading('Loading reimbursements...', 15000); // 15 second timeout
-
         const q = query(
             collection(db, 'reimbursements'),
             where('submittedBy', '==', user.uid),
@@ -140,26 +130,19 @@ export default function ReimbursementContent() {
 
                 setReimbursements(reimbursementData);
                 setLoading(false);
-                stopDataLoading();
             },
             (error) => {
                 console.error('Error fetching reimbursements:', error);
                 setLoading(false);
-                stopDataLoading(error?.message || 'Failed to fetch reimbursements');
                 // Keep existing data on error
             }
         );
 
-        return () => {
-            stopDataLoading();
-            unsubscribe();
-        };
-    }, [user, startDataLoading, stopDataLoading]);
+        return () => unsubscribe();
+    }, [user]);
 
     const handleSubmitReimbursement = async (data: any) => {
         if (!user) return;
-
-        startSubmitLoading('Submitting reimbursement...', 30000); // 30 second timeout
 
         try {
             // Handle both old format (expenses) and new format (receipts)
