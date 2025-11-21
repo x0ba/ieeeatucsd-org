@@ -211,25 +211,6 @@ export default function MarketingSection({
             ))}
           </Select>
 
-          {/* Advertising Start Date */}
-          <div>
-            <Input
-              type="datetime-local"
-              label="When should advertising start?"
-              placeholder=" "
-              value={formData.flyerAdvertisingStartDate}
-              onValueChange={(value) =>
-                onInputChange("flyerAdvertisingStartDate", value)
-              }
-              isRequired
-              description="This helps us plan the marketing timeline for your event"
-              classNames={{
-                label: "text-sm font-medium",
-                input: "[color-scheme:light]",
-              }}
-            />
-          </div>
-
           {/* Additional Specifications */}
           <Textarea
             label="Additional specifications or requests"

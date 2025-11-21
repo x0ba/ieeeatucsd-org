@@ -210,7 +210,6 @@ export default function EventEditComparison({
       { field: 'requiredLogos', label: 'Required Logos', type: 'array' },
       { field: 'advertisingFormat', label: 'Advertising Format', type: 'text' },
       { field: 'additionalSpecifications', label: 'Additional Specifications', type: 'text' },
-      { field: 'flyerAdvertisingStartDate', label: 'Flyer Start Date', type: 'date' },
       { field: 'flyerAdditionalRequests', label: 'Flyer Additional Requests', type: 'text' },
     ];
 

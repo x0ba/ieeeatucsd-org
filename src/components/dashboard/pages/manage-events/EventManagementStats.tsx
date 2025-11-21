@@ -53,9 +53,12 @@ export function EventManagementStats({ stats, loading = false }: EventManagement
             <Card shadow="sm" className="border border-gray-200">
                 <CardBody className="p-6">
                     <div className="flex items-center justify-between">
-                        <div>
+                        <div className="flex-1">
                             <p className="text-sm font-medium text-gray-600">Total Attendees</p>
                             <p className="text-2xl font-bold text-purple-600 mt-1">{stats.totalAttendees}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                                {stats.uniqueAttendees} unique attendee{stats.uniqueAttendees !== 1 ? 's' : ''}
+                            </p>
                         </div>
                         <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
                             <Users className="w-6 h-6 text-purple-600" />

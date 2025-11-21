@@ -18,6 +18,7 @@ export interface EventStats {
   published: number;
   drafts: number;
   totalAttendees: number;
+  uniqueAttendees: number;
 }
 
 export interface EventFilters {

@@ -65,7 +65,6 @@ export interface EventRequest {
   flyersNeeded?: boolean;
   flyerType?: string[];
   otherFlyerType?: string;
-  flyerAdvertisingStartDate?: any;
   flyerAdditionalRequests?: string;
   flyersCompleted?: boolean;
   photographyNeeded?: boolean;

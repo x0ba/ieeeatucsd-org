@@ -14,6 +14,8 @@ import { TableSkeleton } from '../../../ui/loading';
 import { EventsTable } from './components/EventsTable';
 import { EventsPagination } from './components/EventsPagination';
 import { EventCalendarView } from './components/EventCalendarView';
+import { DateRangeFilter } from './components/DateRangeFilter';
+import { StatusFilter } from './components/StatusFilter';
 import DraftEventModal from './components/DraftEventModal';
 import { DraftViewModal } from './components/DraftViewModal';
 import { useEventManagement } from './hooks/useEventManagement';
@@ -76,9 +78,13 @@ export default function ManageEventsContent() {
         startIndex,
         endIndex,
         stats,
+        dateRangeFilter,
+        statusFilter,
         setSearchTerm,
         setSortBy,
         setCurrentPage,
+        setDateRangeFilter,
+        setStatusFilter,
         handleDeleteRequest,
         getUserName
     } = useEventManagement(user?.uid);
@@ -139,6 +145,8 @@ export default function ManageEventsContent() {
     const handleClearFilters = () => {
         setSearchTerm('');
         setSortBy('date-desc');
+        setDateRangeFilter('all');
+        setStatusFilter('all');
         setCurrentPage(1);
     };
 
@@ -243,10 +251,15 @@ export default function ManageEventsContent() {
                                 selectedKey={activeTab}
                                 onSelectionChange={(key) => setActiveTab(key as string)}
                                 aria-label="Event management views"
+                                variant="underlined"
+                                color="primary"
                                 classNames={{
                                     base: "w-full",
-                                    tabList: "w-full px-6 pt-4",
-                                    panel: "px-6 py-4"
+                                    tabList: "w-full px-6 pt-6 gap-8 relative",
+                                    tab: "px-0 py-4 h-12 font-semibold text-gray-600 data-[selected=true]:text-primary data-[hover=true]:text-primary transition-all duration-200 ease-in-out",
+                                    tabContent: "group-data-[selected=true]:text-primary group-data-[selected=true]:font-semibold",
+                                    cursor: "bg-primary rounded-full h-0.5 transition-all duration-200 ease-in-out",
+                                    panel: "px-6 py-6 mt-2"
                                 }}
                             >
                                 <Tab
@@ -254,7 +267,7 @@ export default function ManageEventsContent() {
                                     title={
                                         <div className="flex items-center gap-2">
                                             <List className="w-4 h-4" />
-                                            <span>Events List</span>
+                                            <span className="font-medium">Events List</span>
                                         </div>
                                     }
                                 >
@@ -262,10 +275,22 @@ export default function ManageEventsContent() {
 
                                     {/* Event Requests Table */}
                                     <Card key={currentUserRole} shadow="sm" className="border border-gray-200">
-                                        <CardHeader className="flex flex-row items-center justify-between px-4 md:px-6 py-4">
-                                            <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                                                Event Requests ({sortedEventRequests.length})
-                                            </h2>
+                                        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 md:px-6 py-4">
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                                <h2 className="text-base md:text-lg font-semibold text-gray-900">
+                                                    Event Requests ({sortedEventRequests.length})
+                                                </h2>
+                                                <div className="flex gap-2">
+                                                    <DateRangeFilter
+                                                        selectedRange={dateRangeFilter}
+                                                        onRangeChange={setDateRangeFilter}
+                                                    />
+                                                    <StatusFilter
+                                                        selectedStatus={statusFilter}
+                                                        onStatusChange={setStatusFilter}
+                                                    />
+                                                </div>
+                                            </div>
                                             {/* Action Buttons */}
                                             {canCreateEvent(currentUserRole) && (
                                                 <Button
@@ -336,7 +361,7 @@ export default function ManageEventsContent() {
                                     title={
                                         <div className="flex items-center gap-2">
                                             <CalendarDays className="w-4 h-4" />
-                                            <span>Event Planning</span>
+                                            <span className="font-medium">Event Planning</span>
                                         </div>
                                     }
                                 >

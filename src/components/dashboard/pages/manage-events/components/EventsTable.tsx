@@ -90,7 +90,7 @@ export function EventsTable({
             case 'draft':
                 return 'default';
             case 'submitted':
-                return 'primary';
+                return 'secondary';
             case 'pending':
             case 'needs_review':
                 return 'warning';

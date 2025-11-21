@@ -144,12 +144,6 @@ export const validateMarketingGraphics = (
         "Please select an advertising format when graphics are needed";
       return { isValid: false, errors, errorMessage };
     }
-
-    if (!formData.flyerAdvertisingStartDate) {
-      errorMessage =
-        "Advertising start date is required when graphics are needed";
-      return { isValid: false, errors, errorMessage };
-    }
   }
 
   return { isValid: true, errors };

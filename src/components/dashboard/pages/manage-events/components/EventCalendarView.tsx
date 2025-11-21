@@ -89,6 +89,7 @@ export function EventCalendarView({
             case 'approved':
                 return 'bg-blue-100 border-blue-400 text-blue-800';
             case 'submitted':
+                return 'bg-purple-100 border-purple-400 text-purple-800';
             case 'pending':
                 return 'bg-yellow-100 border-yellow-400 text-yellow-800';
             case 'needs_review':
@@ -192,6 +193,10 @@ export function EventCalendarView({
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 rounded bg-blue-100 border-2 border-blue-400"></div>
                             <span className="text-gray-600">Approved</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-purple-100 border-2 border-purple-400"></div>
+                            <span className="text-gray-600">Submitted</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 rounded bg-yellow-100 border-2 border-yellow-400"></div>

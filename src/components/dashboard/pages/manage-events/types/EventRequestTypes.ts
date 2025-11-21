@@ -54,7 +54,6 @@ export interface EventFormData {
   flyersNeeded: boolean;
   flyerType: string[];
   otherFlyerType: string;
-  flyerAdvertisingStartDate: string;
   flyerAdditionalRequests: string;
   flyersCompleted: boolean;
   photographyNeeded: boolean;

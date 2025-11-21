@@ -94,11 +94,6 @@ export function useChangeTracking(
       type: "text",
     },
     {
-      field: "flyerAdvertisingStartDate",
-      label: "Flyer Start Date",
-      type: "date",
-    },
-    {
       field: "flyerAdditionalRequests",
       label: "Flyer Additional Requests",
       type: "text",

@@ -58,10 +58,6 @@ export default function FilesGraphicsTab({
                                                 <p className="text-sm text-gray-900 mt-0.5">{request.otherFlyerType}</p>
                                             </div>
                                         )}
-                                        <div>
-                                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Advertising Start</label>
-                                            <p className="text-sm text-gray-900 mt-0.5">{formatDate(request.flyerAdvertisingStartDate)}</p>
-                                        </div>
                                         {request.flyerAdditionalRequests && (
                                             <div>
                                                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Additional Requests</label>

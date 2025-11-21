@@ -83,7 +83,6 @@ export default function EventRequestModal({
     flyersNeeded: false,
     flyerType: [],
     otherFlyerType: "",
-    flyerAdvertisingStartDate: "",
     flyerAdditionalRequests: "",
     flyersCompleted: false,
     photographyNeeded: false,
@@ -179,9 +178,6 @@ export default function EventRequestModal({
         requiredLogos: editingRequest.requiredLogos || [],
         advertisingFormat: editingRequest.advertisingFormat || "",
         additionalSpecifications: editingRequest.additionalSpecifications || "",
-        flyerAdvertisingStartDate: safeGetDateTimeString(
-          editingRequest.flyerAdvertisingStartDate,
-        ),
         flyerAdditionalRequests: editingRequest.flyerAdditionalRequests || "",
         // File fields
         existingRoomBookingFiles: editingRequest.roomBookingFiles || [],
@@ -206,9 +202,6 @@ export default function EventRequestModal({
           editingRequest.needsGraphics || editingRequest.flyersNeeded || false,
         flyerType: editingRequest.flyerType || [],
         otherFlyerType: editingRequest.otherFlyerType || "",
-        flyerAdvertisingStartDate: safeGetDateTimeString(
-          editingRequest.flyerAdvertisingStartDate,
-        ),
         flyerAdditionalRequests: editingRequest.flyerAdditionalRequests || "",
         flyersCompleted: editingRequest.flyersCompleted || false,
         photographyNeeded: editingRequest.photographyNeeded || false,
@@ -487,9 +480,6 @@ export default function EventRequestModal({
         flyersNeeded: formData.flyersNeeded,
         flyerType: formData.flyerType,
         otherFlyerType: formData.otherFlyerType,
-        flyerAdvertisingStartDate: formData.flyerAdvertisingStartDate
-          ? new Date(formData.flyerAdvertisingStartDate)
-          : null,
         flyerAdditionalRequests: formData.flyerAdditionalRequests,
         flyersCompleted: formData.flyersCompleted,
         photographyNeeded: formData.photographyNeeded,
