@@ -67,24 +67,15 @@ try {
           localCache: persistentLocalCache({
             tabManager: persistentMultipleTabManager(),
           }),
-          // Experimental cache size configurations to prevent cache-related issues
-          experimentalForceLongPolling: false,
-          experimentalAutoDetectLongPolling: true,
         }
-      : {
-          // Even without persistence, enable auto-detect for better reliability
-          experimentalAutoDetectLongPolling: true,
-        },
+      : {},
   );
 } catch (error) {
   console.warn(
     "[firebase] Persistent cache initialization failed, falling back to memory-only Firestore.",
     error,
   );
-  // Fallback with minimal configuration
-  firestoreInstance = initializeFirestore(app, {
-    experimentalAutoDetectLongPolling: true,
-  });
+  firestoreInstance = initializeFirestore(app, {});
 }
 
 export const db = firestoreInstance;
