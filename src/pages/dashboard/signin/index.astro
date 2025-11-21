@@ -1,6 +1,7 @@
 ---
 import "../../../styles/global.css";
 import SignInContent from "../../../components/dashboard/pages/signin/SignInContent.tsx";
+import { LoadingProvider } from "../../../components/dashboard/shared/contexts/LoadingContext.tsx";
 
 const title = "Sign In - IEEE UCSD";
 const description =
@@ -73,7 +74,9 @@ const description =
   </head>
   <body>
     <div class="signin-container">
-      <SignInContent client:load />
+      <LoadingProvider client:load>
+        <SignInContent client:load />
+      </LoadingProvider>
     </div>
   </body>
 </html>

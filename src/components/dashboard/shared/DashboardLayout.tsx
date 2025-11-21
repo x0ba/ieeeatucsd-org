@@ -1,4 +1,6 @@
-import { type ReactNode, useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import pkg from 'react';
+const { ReactNode } = pkg;
 import { TopNavbar } from './TopNavbar.tsx';
 import { SidebarNavigation } from './SidebarNavigation.tsx';
 import { auth } from '../../../firebase/client';
@@ -7,14 +9,21 @@ import { SyncStatusProvider } from './contexts/SyncStatusContext.tsx';
 import { useNavigationPreference } from './hooks/useNavigationPreference';
 import { Spinner, ToastProvider } from '@heroui/react';
 import PWAInstallPrompt from '../../core/PWAInstallPrompt.tsx';
+import { LayoutErrorBoundary } from './LayoutErrorBoundary.tsx';
+import { FallbackLayout } from './FallbackLayout.tsx';
 
 interface DashboardLayoutProps {
     children?: ReactNode;
     currentPath?: string;
 }
 
+const FALLBACK_TIMEOUT_MS = 500;
+
 export default function DashboardLayout({ children, currentPath }: DashboardLayoutProps) {
-    const { navigationLayout, loading: prefLoading } = useNavigationPreference();
+    const { navigationLayout } = useNavigationPreference();
+    const [useFallback, setUseFallback] = useState(false);
+    const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hasRenderedRef = useRef(false);
 
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged(user => {
@@ -26,49 +35,86 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
         return () => unsubscribeAuth();
     }, []);
 
-    // Show loading state while preference is being loaded to prevent layout flash
-    if (prefLoading) {
+    // Global timeout mechanism - last resort fallback
+    useEffect(() => {
+        // Clear any existing timeout
+        if (fallbackTimeoutRef.current) {
+            clearTimeout(fallbackTimeoutRef.current);
+        }
+
+        // Set a timeout to force fallback if layout hasn't rendered
+        fallbackTimeoutRef.current = setTimeout(() => {
+            if (!hasRenderedRef.current) {
+                console.warn(
+                    '[DashboardLayout] Layout render timeout exceeded. Activating fallback mode.'
+                );
+                setUseFallback(true);
+            }
+        }, FALLBACK_TIMEOUT_MS);
+
+        // Mark as rendered after first render
+        hasRenderedRef.current = true;
+
+        return () => {
+            if (fallbackTimeoutRef.current) {
+                clearTimeout(fallbackTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // If fallback is triggered, render minimal layout
+    if (useFallback) {
         return (
-            <div className="flex h-screen items-center justify-center bg-gray-50">
-                <div className="text-center">
-                    <Spinner size="lg" color="primary" className="mx-auto mb-4" />
-                    <p className="text-gray-600">Loading dashboard...</p>
-                </div>
-            </div>
+            <LayoutErrorBoundary>
+                <ToastProvider
+                    placement="bottom-right"
+                    maxVisibleToasts={3}
+                    toastProps={{
+                        variant: "flat",
+                    }}
+                />
+                <FallbackLayout reason="timeout">
+                    {children || <DefaultContent />}
+                </FallbackLayout>
+                <PWAInstallPrompt />
+            </LayoutErrorBoundary>
         );
     }
 
+    // Normal layout rendering with error boundary protection
     return (
-        <>
-            <ToastProvider
-                placement="bottom-right"
-                maxVisibleToasts={3}
-                toastProps={{
-                    variant: "flat",
-                }}
-            />
-            <SyncStatusProvider>
-                <ModalProvider>
-                    {navigationLayout === 'sidebar' ? (
-                        // Sidebar Layout
-                        <SidebarNavigation currentPath={currentPath}>
-                            {children || <DefaultContent />}
-                        </SidebarNavigation>
-                    ) : (
-                        // Horizontal Navbar Layout (default)
-                        <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
-                            <TopNavbar currentPath={currentPath} />
-                            <div className="flex-1 min-h-0 overflow-y-auto">
+        <LayoutErrorBoundary>
+            <>
+                <ToastProvider
+                    placement="bottom-right"
+                    maxVisibleToasts={3}
+                    toastProps={{
+                        variant: "flat",
+                    }}
+                />
+                <SyncStatusProvider>
+                    <ModalProvider>
+                        {navigationLayout === 'sidebar' ? (
+                            // Sidebar Layout
+                            <SidebarNavigation currentPath={currentPath}>
                                 {children || <DefaultContent />}
+                            </SidebarNavigation>
+                        ) : (
+                            // Horizontal Navbar Layout (default)
+                            <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+                                <TopNavbar currentPath={currentPath} />
+                                <div className="flex-1 min-h-0 overflow-y-auto">
+                                    {children || <DefaultContent />}
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </ModalProvider>
-            </SyncStatusProvider>
+                        )}
+                    </ModalProvider>
+                </SyncStatusProvider>
 
-            {/* PWA Install Prompt - Only shown on dashboard pages */}
-            <PWAInstallPrompt />
-        </>
+                {/* PWA Install Prompt - Only shown on dashboard pages */}
+                <PWAInstallPrompt />
+            </>
+        </LayoutErrorBoundary>
     );
 }
 

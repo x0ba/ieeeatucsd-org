@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../../../../firebase/client";
 import {
-  safeLocalStorageGet,
-  safeLocalStorageSet,
+  getValidatedCache,
+  setValidatedCache,
   clearFirestoreCache,
 } from "../utils/storage";
 import { showToast } from "../utils/toast";
@@ -12,9 +12,8 @@ import type { NavigationLayout } from "../types/firestore";
 
 const STORAGE_KEY = "ieee_navigation_layout";
 const DEFAULT_LAYOUT: NavigationLayout = "sidebar";
-// Reduced timeout from 4000ms to 2000ms for better UX
-// This prevents infinite loading when Firestore cache is stale or corrupted
-const NAV_PREF_TIMEOUT_MS = 2000;
+// Timeout for Firebase operations - aggressive to ensure cache-first experience
+const NAV_PREF_TIMEOUT_MS = 1500;
 // Track timeout occurrences to detect persistent cache issues
 const TIMEOUT_TRACKER_KEY = "ieee_nav_pref_timeout_count";
 const MAX_TIMEOUTS_BEFORE_CACHE_CLEAR = 3;
@@ -24,6 +23,7 @@ interface UseNavigationPreferenceResult {
   setNavigationLayout: (layout: NavigationLayout) => Promise<void>;
   loading: boolean;
   error: string | null;
+  isReady: boolean; // Indicates layout is ready to use
 }
 
 /**
@@ -40,38 +40,53 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
   const [user] = useAuthState(auth);
   const [navigationLayout, setNavigationLayoutState] =
     useState<NavigationLayout>(() => {
-      const cached = safeLocalStorageGet(STORAGE_KEY);
+      // Cache-first: try validated cache first
+      const cached = getValidatedCache<NavigationLayout>(STORAGE_KEY);
       if (cached === "horizontal" || cached === "sidebar") {
         return cached;
       }
       return DEFAULT_LAYOUT;
     });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start as false - cache is immediate
   const [error, setError] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(true); // Ready immediately with cache
 
-  // Sync with Firestore
+  // Use refs to persist state across re-renders and prevent timeout resets
+  const hasResolvedRef = useRef(false);
+  const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSyncingRef = useRef(false);
+
+  // Sync with Firestore in background (cache-first approach)
   useEffect(() => {
     if (!user) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    // Don't show loading state - cache is already loaded
     setError(null);
+    isSyncingRef.current = true;
+    
+    // Reset the resolved flag for this user session
+    hasResolvedRef.current = false;
 
     let isActive = true;
-    let hasResolved = false;
 
-    // Timeout to prevent infinite loading - this is critical for handling
-    // cases where Firestore cache is corrupted or onSnapshot never fires
-    const timeoutId: ReturnType<typeof setTimeout> = setTimeout(async () => {
-      if (!hasResolved && isActive) {
+    // Clear any existing timeout before creating a new one
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = null;
+    }
+
+    // Timeout for Firebase sync - won't affect UI since we have cache
+    timeoutIdRef.current = setTimeout(async () => {
+      if (!hasResolvedRef.current && isActive) {
         console.warn(
-          "[useNavigationPreference] Timed out waiting for navigation preference; falling back to cached/default layout.",
+          "[useNavigationPreference] Firebase sync timed out; continuing with cached layout.",
         );
 
-        // Track timeout occurrences to detect persistent cache issues
-        const timeoutCountStr = safeLocalStorageGet(TIMEOUT_TRACKER_KEY);
+        // Track timeout occurrences to detect persistent Firebase issues
+        const timeoutCountStr = getValidatedCache<string>(TIMEOUT_TRACKER_KEY);
         const timeoutCount = timeoutCountStr
           ? parseInt(timeoutCountStr, 10)
           : 0;
@@ -79,22 +94,22 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
 
         if (newTimeoutCount >= MAX_TIMEOUTS_BEFORE_CACHE_CLEAR) {
           console.warn(
-            `[useNavigationPreference] Detected ${newTimeoutCount} consecutive timeouts. Clearing Firestore cache to resolve potential corruption.`,
+            `[useNavigationPreference] Detected ${newTimeoutCount} consecutive timeouts. Clearing Firestore cache.`,
           );
           // Clear the cache asynchronously
           clearFirestoreCache()
             .then((success) => {
               if (success) {
                 console.log(
-                  "[useNavigationPreference] Cache cleared successfully. Please refresh the page.",
+                  "[useNavigationPreference] Cache cleared successfully.",
                 );
                 // Reset the timeout counter
-                safeLocalStorageSet(TIMEOUT_TRACKER_KEY, "0");
+                setValidatedCache(TIMEOUT_TRACKER_KEY, "0");
                 // Notify user
                 showToast.warning(
                   "Cache Cleared",
-                  "We've cleared your local cache to fix loading issues. Please refresh the page.",
-                  8000,
+                  "We've cleared your local cache to fix sync issues. Please refresh if needed.",
+                  6000,
                 );
               }
             })
@@ -106,11 +121,11 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
             });
         } else {
           // Increment timeout counter
-          safeLocalStorageSet(TIMEOUT_TRACKER_KEY, newTimeoutCount.toString());
+          setValidatedCache(TIMEOUT_TRACKER_KEY, newTimeoutCount.toString());
         }
 
-        setLoading(false);
-        hasResolved = true;
+        isSyncingRef.current = false;
+        hasResolvedRef.current = true;
       }
     }, NAV_PREF_TIMEOUT_MS);
 
@@ -123,7 +138,7 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
       unsubscribe = onSnapshot(
         userRef,
         {
-          // Include metadata changes to detect cache vs server data
+          // Don't include metadata changes - only real data updates
           includeMetadataChanges: false,
         },
         (snapshot) => {
@@ -131,11 +146,14 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
             return;
           }
 
-          hasResolved = true;
-          clearTimeout(timeoutId);
+          hasResolvedRef.current = true;
+          if (timeoutIdRef.current) {
+            clearTimeout(timeoutIdRef.current);
+            timeoutIdRef.current = null;
+          }
 
-          // Reset timeout counter on successful load
-          safeLocalStorageSet(TIMEOUT_TRACKER_KEY, "0");
+          // Reset timeout counter on successful sync
+          setValidatedCache(TIMEOUT_TRACKER_KEY, "0");
 
           if (snapshot.exists()) {
             const data = snapshot.data();
@@ -149,56 +167,41 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
                 firestoreLayout === "sidebar")
             ) {
               // Update state and cache if Firestore has a valid preference
-              setNavigationLayoutState(firestoreLayout);
-              if (!safeLocalStorageSet(STORAGE_KEY, firestoreLayout)) {
-                console.warn(
-                  "[useNavigationPreference] Failed to persist navigation layout preference to localStorage.",
+              const currentCache = getValidatedCache<NavigationLayout>(STORAGE_KEY);
+              
+              // Only update if different from cache to avoid unnecessary re-renders
+              if (currentCache !== firestoreLayout) {
+                console.log(
+                  `[useNavigationPreference] Synced from Firebase: ${firestoreLayout}`,
                 );
-              }
-            } else {
-              // If no preference in Firestore, use cached or default
-              const cached = safeLocalStorageGet(STORAGE_KEY);
-              if (cached === "horizontal" || cached === "sidebar") {
-                setNavigationLayoutState(cached);
-              } else {
-                setNavigationLayoutState(DEFAULT_LAYOUT);
-                if (!safeLocalStorageSet(STORAGE_KEY, DEFAULT_LAYOUT)) {
+                setNavigationLayoutState(firestoreLayout);
+                if (!setValidatedCache(STORAGE_KEY, firestoreLayout)) {
                   console.warn(
-                    "[useNavigationPreference] Failed to persist default navigation layout to localStorage.",
+                    "[useNavigationPreference] Failed to persist navigation layout to cache.",
                   );
                 }
               }
             }
-          } else {
-            // Document doesn't exist - use cached or default
-            const cached = safeLocalStorageGet(STORAGE_KEY);
-            if (cached === "horizontal" || cached === "sidebar") {
-              setNavigationLayoutState(cached);
-            } else {
-              setNavigationLayoutState(DEFAULT_LAYOUT);
-              if (!safeLocalStorageSet(STORAGE_KEY, DEFAULT_LAYOUT)) {
-                console.warn(
-                  "[useNavigationPreference] Failed to persist default navigation layout to localStorage.",
-                );
-              }
-            }
           }
-          setLoading(false);
+          
+          isSyncingRef.current = false;
         },
         (err) => {
           if (!isActive) {
             return;
           }
 
-          hasResolved = true;
-          clearTimeout(timeoutId);
+          hasResolvedRef.current = true;
+          if (timeoutIdRef.current) {
+            clearTimeout(timeoutIdRef.current);
+            timeoutIdRef.current = null;
+          }
           console.error(
-            "[useNavigationPreference] Error loading navigation preference:",
+            "[useNavigationPreference] Error syncing with Firebase:",
             err,
           );
           setError(err.message);
-          // Even on error, stop loading and use cached/default value
-          setLoading(false);
+          isSyncingRef.current = false;
         },
       );
     } catch (err) {
@@ -207,14 +210,20 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
         "[useNavigationPreference] Failed to set up Firestore listener:",
         err,
       );
-      hasResolved = true;
-      clearTimeout(timeoutId);
-      setLoading(false);
+      hasResolvedRef.current = true;
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+      isSyncingRef.current = false;
     }
 
     return () => {
       isActive = false;
-      clearTimeout(timeoutId);
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
       if (unsubscribe) {
         try {
           unsubscribe();
@@ -228,7 +237,7 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
     };
   }, [user]);
 
-  // Update preference
+  // Update preference - cache-first with Firebase background sync
   const setNavigationLayout = useCallback(
     async (layout: NavigationLayout) => {
       if (!user) {
@@ -238,18 +247,24 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
       }
 
       try {
-        // Update localStorage immediately for instant feedback
-        if (!safeLocalStorageSet(STORAGE_KEY, layout)) {
+        // Update cache immediately for instant feedback
+        if (!setValidatedCache(STORAGE_KEY, layout)) {
           console.warn(
-            "Failed to persist navigation layout preference to localStorage.",
+            "Failed to persist navigation layout preference to cache.",
           );
         }
         setNavigationLayoutState(layout);
 
-        // Update Firestore
+        // Update Firebase in background (don't await)
         const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, {
+        updateDoc(userRef, {
           navigationLayout: layout,
+        }).catch((err) => {
+          console.error("Error syncing navigation preference to Firebase:", err);
+          // Don't throw - cache update succeeded, which is what matters for UX
+          setError(
+            err instanceof Error ? err.message : "Failed to sync with Firebase",
+          );
         });
       } catch (err) {
         console.error("Error updating navigation preference:", err);
@@ -267,5 +282,6 @@ export function useNavigationPreference(): UseNavigationPreferenceResult {
     setNavigationLayout,
     loading,
     error,
+    isReady,
   };
 }
