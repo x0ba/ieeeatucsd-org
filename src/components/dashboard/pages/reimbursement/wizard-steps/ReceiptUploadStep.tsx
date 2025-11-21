@@ -15,6 +15,8 @@ import type { ReimbursementReceipt } from "../types";
 import ReceiptForm from "./ReceiptForm";
 import { useGlobalImagePaste } from "../../../shared/hooks/useGlobalImagePaste";
 import { usePasteNotification } from "../../../shared/components/PasteNotification";
+import { useFileUpload } from "../../../shared/hooks/useAsyncOperation";
+import { useLoadingOperation } from "../../../shared/contexts/LoadingContext";
 
 interface ReceiptUploadStepProps {
   receipts: ReimbursementReceipt[];
@@ -39,6 +41,11 @@ export default function ReceiptUploadStep({
   const [parseResults, setParseResults] = useState<
     Record<string, { success: boolean; message: string }>
   >({});
+
+  // Enhanced file upload hooks
+  const { uploadFile, uploadProgress } = useFileUpload({ timeoutMs: 60000 }); // 60 second timeout
+  const { start: startUploadLoading, stop: stopUploadLoading } = useLoadingOperation('receipt-upload');
+  const { start: startParseLoading, stop: stopParseLoading } = useLoadingOperation('receipt-parse');
 
   // Paste notification
   const { showPasteNotification, PasteNotificationComponent } =

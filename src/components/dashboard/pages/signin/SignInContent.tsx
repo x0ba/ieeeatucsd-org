@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, signInWithPopup, GoogleAuthProvider, browserPopupRedirectResolver } from '../../../../firebase/client';
 import { Skeleton } from '@heroui/react';
+import { useLoadingOperation } from '../../shared/contexts/LoadingContext';
 
 // Blue IEEE Logo SVG Component
 const BlueIEEELogo = ({ className = "w-32 h-auto" }: { className?: string }) => (
@@ -34,6 +35,7 @@ export default function SignInContent() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [storageWarning, setStorageWarning] = useState(false);
+    const { start: startAuthLoading, stop: stopAuthLoading } = useLoadingOperation('google-signin');
 
     // Check sessionStorage accessibility on mount
     useEffect(() => {
@@ -55,7 +57,7 @@ export default function SignInContent() {
 
     const handleGoogleSignIn = async () => {
         setError(null);
-        setLoading(true);
+        startAuthLoading('Signing in with Google...', 15000); // 15 second timeout
 
         try {
             // Configure Google Auth Provider with custom parameters
@@ -104,8 +106,7 @@ export default function SignInContent() {
             }
 
             setError(errorMessage);
-        } finally {
-            setLoading(false);
+            stopAuthLoading(errorMessage);
         }
     };
 
