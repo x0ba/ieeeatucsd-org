@@ -385,7 +385,7 @@ export default function GetStartedContent() {
     // Success screen
     if (currentStep === questions.length) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 overflow-y-auto py-8 md:py-12">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 py-8 md:py-12">
                 <div className="text-center">
                     <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse" >
                         <CheckCircle className="w-12 h-12 text-white" />
@@ -399,8 +399,8 @@ export default function GetStartedContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-start justify-center p-4 py-8 md:py-12 overflow-y-auto">
-            <div className="max-w-2xl w-full">
+        <div className="min-h-screen bg-gray-50 flex items-start justify-center p-4 py-8 md:py-12">
+            <div className="max-w-2xl w-full overflow-y-auto max-h-[calc(100vh-4rem)]">
                 {/* IEEE UCSD Header */}
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center mb-4">
