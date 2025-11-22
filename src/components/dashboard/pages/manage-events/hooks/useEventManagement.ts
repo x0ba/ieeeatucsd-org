@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   collection,
   getDocs,
@@ -49,7 +49,17 @@ export function useEventManagement(userId: string | undefined) {
   const [currentPage, setCurrentPage] = useState(1);
   const [dateRangeFilter, setDateRangeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [attendanceStats, setAttendanceStats] = useState<{ totalAttendees: number; uniqueAttendees: number }>({
+    totalAttendees: 0,
+    uniqueAttendees: 0,
+  });
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
   const eventsPerPage = 10;
+
+  // Cache for attendance data to avoid redundant queries
+  const attendanceCache = useRef<Map<string, { count: number; lastFetched: number }>>(new Map());
+  const eventToEventIdMap = useRef<Map<string, string>>(new Map());
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 
   // Use db from client
 
@@ -181,6 +191,128 @@ export function useEventManagement(userId: string | undefined) {
     return () => unsubscribe();
   }, [db, userId]);
 
+  // Fetch attendance data when eventRequests changes
+  useEffect(() => {
+    const fetchAttendanceStats = async () => {
+      console.log("DEBUG: Starting optimized attendance stats fetch for", eventRequests.length, "event requests");
+      if (eventRequests.length === 0) {
+        console.log("DEBUG: No event requests, setting attendance stats to 0");
+        setAttendanceStats({ totalAttendees: 0, uniqueAttendees: 0 });
+        setAttendanceLoading(false);
+        return;
+      }
+
+      setAttendanceLoading(true);
+      try {
+        let attendanceCount = 0;
+        const uniqueAttendeeIds = new Set<string>();
+        let processedEvents = 0;
+        let eventsWithAttendees = 0;
+        const now = Date.now();
+        
+        // First, batch fetch all events for the requests
+        const eventRequestsBatch = eventRequests.map(async (request) => {
+          // Check if we already have the event ID mapped
+          if (eventToEventIdMap.current.has(request.id)) {
+            return { requestId: request.id, eventId: eventToEventIdMap.current.get(request.id)! };
+          }
+          
+          const eventsQuery = query(
+            collection(db, "events"),
+            where("createdFrom", "==", request.id),
+          );
+          const eventsSnapshot = await getDocs(eventsQuery);
+          
+          if (!eventsSnapshot.empty) {
+            const eventId = eventsSnapshot.docs[0].id;
+            eventToEventIdMap.current.set(request.id, eventId);
+            return { requestId: request.id, eventId };
+          }
+          return { requestId: request.id, eventId: null };
+        });
+        
+        // Execute all event queries in parallel
+        const eventMappings = await Promise.all(eventRequestsBatch);
+        const validEventMappings = eventMappings.filter(mapping => mapping.eventId !== null);
+        
+        if (validEventMappings.length === 0) {
+          console.log("DEBUG: No valid events found for any requests");
+          setAttendanceStats({ totalAttendees: 0, uniqueAttendees: 0 });
+          setAttendanceLoading(false);
+          return;
+        }
+        
+        // Batch fetch attendance data for all valid events
+        const attendancePromises = validEventMappings.map(async ({ requestId, eventId }) => {
+          // Check cache first
+          const cached = attendanceCache.current.get(eventId);
+          if (cached && (now - cached.lastFetched) < CACHE_DURATION) {
+            console.log(`DEBUG: Using cached attendance data for event ${eventId}`);
+            return { eventId, attendeeCount: cached.count, attendees: [] };
+          }
+          
+          try {
+            const attendeesQuery = query(
+              collection(db, "events", eventId, "attendees"),
+            );
+            const attendeesSnapshot = await getDocs(attendeesQuery);
+            const attendeeCount = attendeesSnapshot.docs.length;
+            
+            // Cache the result
+            attendanceCache.current.set(eventId, {
+              count: attendeeCount,
+              lastFetched: now
+            });
+            
+            // Extract attendee data for unique counting
+            const attendees = attendeesSnapshot.docs.map((attendeeDoc) => {
+              const attendeeData = attendeeDoc.data();
+              return attendeeData.userId || attendeeDoc.id;
+            }).filter(Boolean);
+            
+            return { eventId, attendeeCount, attendees };
+          } catch (error) {
+            console.error(`Error fetching attendance for event ${eventId}:`, error);
+            return { eventId, attendeeCount: 0, attendees: [] };
+          }
+        });
+        
+        // Execute all attendance queries in parallel
+        const attendanceResults = await Promise.all(attendancePromises);
+        
+        // Process results
+        attendanceResults.forEach(({ eventId, attendeeCount, attendees }) => {
+          if (attendeeCount > 0) {
+            eventsWithAttendees++;
+          }
+          
+          attendanceCount += attendeeCount;
+          
+          // Add unique attendee IDs
+          attendees.forEach((userId) => {
+            uniqueAttendeeIds.add(userId);
+          });
+          
+          processedEvents++;
+        });
+        
+        console.log(`DEBUG: Optimized attendance stats calculation complete. Processed ${processedEvents} events, ${eventsWithAttendees} with attendees. Total attendance: ${attendanceCount}, Unique attendees: ${uniqueAttendeeIds.size}`);
+        
+        setAttendanceStats({
+          totalAttendees: attendanceCount,
+          uniqueAttendees: uniqueAttendeeIds.size,
+        });
+      } catch (error) {
+        console.error("Error fetching attendance stats:", error);
+        setAttendanceStats({ totalAttendees: 0, uniqueAttendees: 0 });
+      } finally {
+        setAttendanceLoading(false);
+      }
+    };
+
+    fetchAttendanceStats();
+  }, [eventRequests, db]);
+
   // Delete event request
   const handleDeleteRequest = async (requestId: string, eventName: string) => {
     if (
@@ -212,6 +344,12 @@ export function useEventManagement(userId: string | undefined) {
       const eventsRef = collection(db, "events");
       const eventsQuery = query(eventsRef, where("eventName", "==", eventName));
       const eventsSnapshot = await getDocs(eventsQuery);
+
+      // Clear cache for deleted events
+      eventsSnapshot.docs.forEach((eventDoc) => {
+        attendanceCache.current.delete(eventDoc.id);
+        eventToEventIdMap.current.delete(requestId);
+      });
 
       const deletePromises = eventsSnapshot.docs.map((eventDoc) =>
         deleteDoc(doc(db, "events", eventDoc.id)),
@@ -276,6 +414,9 @@ export function useEventManagement(userId: string | undefined) {
           published: shouldPublish,
           updatedAt: new Date(),
         });
+        
+        // Clear cache for the updated event
+        attendanceCache.current.delete(eventDoc.id);
       }
 
       if (previousStatus && previousStatus !== newStatus) {
@@ -440,59 +581,17 @@ export function useEventManagement(userId: string | undefined) {
       (req) => req.status === "submitted" || req.status === "pending",
     ).length;
     
-    // Calculate total attendees by fetching from events/{eventId}/attendees subcollections
-    // We'll use expectedAttendance as a fallback when actual attendee data isn't available
-    let totalAttendees = 0;
-    const uniqueAttendeeIds = new Set<string>();
+    // Use the actual attendance data fetched from the attendees subcollections
+    const { totalAttendees, uniqueAttendees } = attendanceStats;
     
-    eventRequests.forEach((request) => {
-      // Use expectedAttendance as the primary source since it's always available
-      // This represents the planned/expected number of attendees
-      if (request.expectedAttendance && typeof request.expectedAttendance === 'number') {
-        totalAttendees += request.expectedAttendance;
-      } else if (request.expectedAttendance && typeof request.expectedAttendance === 'string') {
-        const parsed = parseInt(request.expectedAttendance, 10);
-        if (!isNaN(parsed)) {
-          totalAttendees += parsed;
-        }
-      }
-      
-      // For unique attendees, we'll use the event organizer as a baseline
-      // and add expected attendance as unique participants
-      if (request.requestedUser) {
-        uniqueAttendeeIds.add(request.requestedUser);
-      }
-      
-      // Add expected number of unique attendees for this event
-      // This is an approximation - in a real implementation you'd fetch actual attendee data
-      const expectedCount = typeof request.expectedAttendance === 'number'
-        ? request.expectedAttendance
-        : parseInt(request.expectedAttendance || '0', 10);
-      
-      if (!isNaN(expectedCount) && expectedCount > 0) {
-        // Create dummy unique IDs for expected attendees
-        // This ensures unique attendees is at least proportional to expected attendance
-        for (let i = 0; i < Math.min(expectedCount, 100); i++) {
-          uniqueAttendeeIds.add(`${request.id}-attendee-${i}`);
-        }
-      }
-    });
-    
-    const uniqueAttendees = uniqueAttendeeIds.size;
-    
-    console.log("DEBUG: Calculated total attendees:", totalAttendees);
-    console.log("DEBUG: Calculated unique attendees:", uniqueAttendees);
-    console.log("DEBUG: Event requests with attendance data:",
-      eventRequests.map(req => ({
-        name: req.name,
-        expectedAttendance: req.expectedAttendance,
-        status: req.status,
-        requestedUser: req.requestedUser
-      }))
-    );
-    
-    return { total, published, drafts, totalAttendees, uniqueAttendees };
-  }, [eventRequests]);
+    return {
+      total,
+      published,
+      drafts,
+      totalAttendees,
+      uniqueAttendees,
+    };
+  }, [eventRequests, attendanceStats]);
 
   return {
     eventRequests,
@@ -500,6 +599,7 @@ export function useEventManagement(userId: string | undefined) {
     sortedEventRequests,
     users,
     loading,
+    attendanceLoading,
     currentUserRole,
     searchTerm,
     sortBy,

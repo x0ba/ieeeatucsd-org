@@ -70,6 +70,7 @@ export default function ManageEventsContent() {
         sortedEventRequests,
         users,
         loading,
+        attendanceLoading,
         currentUserRole,
         searchTerm,
         sortBy,
@@ -242,7 +243,7 @@ export default function ManageEventsContent() {
                     </div>
 
                     {/* Stats Overview */}
-                    <EventManagementStats stats={stats} loading={loading} />
+                    <EventManagementStats stats={stats} loading={loading} attendanceLoading={attendanceLoading} />
 
                     {/* Tabs for View Switcher */}
                     <Card shadow="sm" className="border border-gray-200">
