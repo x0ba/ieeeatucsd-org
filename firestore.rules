@@ -8,96 +8,125 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function userDocPath(uid) {
-      return '/databases/' + database + '/documents/users/' + uid;
-    }
-
     function userExists(uid) {
-      return exists(userDocPath(uid));
+      return exists(/databases/$(database)/documents/users/$(uid));
     }
 
     function userRole(uid) {
       // Only call when userExists(uid) is true
-      return get(userDocPath(uid)).data.role;
+      return get(/databases/$(database)/documents/users/$(uid)).data.role;
     }
 
     function hasAnyRole(roles) {
-      return isSignedIn() && userExists(request.auth.uid) &&
-             userRole(request.auth.uid) in roles;
+      return isSignedIn()
+        && userExists(request.auth.uid)
+        && userRole(request.auth.uid) in roles;
     }
 
     function isOfficer() {
-      return hasAnyRole(['General Officer','Executive Officer','Administrator']);
+      return hasAnyRole(['General Officer', 'Executive Officer', 'Administrator']);
     }
 
     function isExecOrAdmin() {
-      return hasAnyRole(['Executive Officer','Administrator']);
+      return hasAnyRole(['Executive Officer', 'Administrator']);
     }
 
     // Validate that only allowed keys changed in an update.
-    // Uses Map.diff() to avoid brittle key logic.
     function onlyChangedKeys(allowedKeys) {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedKeys);
+      return request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasOnly(allowedKeys);
     }
 
     // Validate that none of the forbidden keys were added/changed.
     function noForbiddenKeys(forbidden) {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(forbidden);
+      return !request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasAny(forbidden);
     }
 
     // ===== Users =====
     match /users/{userId} {
-      // Self can read
-      allow get: if isSignedIn() && request.auth.uid == userId;
+      // Read: self OR officers/sponsors
+      allow get: if isSignedIn()
+        && (
+          request.auth.uid == userId
+          || hasAnyRole(['General Officer','Executive Officer','Administrator','Sponsor'])
+        );
 
-      // Officers, Sponsors, and Admins can read any user
-      allow get: if hasAnyRole(['General Officer','Executive Officer','Administrator','Sponsor']);
-
-      // Listing users: officers & sponsors only (no resource access in list rules)
+      // List: officers & sponsors only
       allow list: if hasAnyRole(['General Officer','Executive Officer','Administrator','Sponsor']);
 
-      // Create own user doc with a safe shape (no role escalation on create)
+      // Create own user doc (no role on create)
       allow create: if isSignedIn()
         && request.auth.uid == userId
-        && !('role' in request.resource.data); // role set server-side only
+        && !('role' in request.resource.data);
 
-      // Base: Exec/Admin can update/delete any user (with extra guard for delete below)
+      // Exec/Admin can update/delete any user
       allow update: if isExecOrAdmin();
-      allow delete: if hasAnyRole(['Administrator']); // only Admin can delete accounts
+      allow delete: if hasAnyRole(['Administrator']);
 
-      // Self-service updates: user can update a limited profile subset
+      // Self-service profile update (limited fields)
       allow update: if isSignedIn()
         && request.auth.uid == userId
         && onlyChangedKeys([
-            'lastEventAttended','points','eventsAttended',
-            'name','major','graduationYear'
-          ])
-        && noForbiddenKeys(['role','ieeeEmail']); // block privilege/immutable fields
+          'lastEventAttended',
+          'points',
+          'eventsAttended',
+          'name',
+          'major',
+          'graduationYear'
+        ])
+        && noForbiddenKeys(['role','ieeeEmail']);
 
-      // Allow setting IEEE email metadata once: cannot set 'ieeeEmail' if already present
+      // Allow setting IEEE email metadata once (no ieeeEmail yet)
       allow update: if isSignedIn()
         && request.auth.uid == userId
-        && request.resource.data.keys().hasAny(['hasIEEEEmail','ieeeEmailCreatedAt'])
-        && ( !exists(/databases/$(database)/documents/users/$(userId))
-             || !get(/databases/$(database)/documents/users/$(userId)).data.keys().hasAny(['ieeeEmail']) );
+        && request.resource.data.keys().hasAny([
+          'hasIEEEEmail',
+          'ieeeEmailCreatedAt'
+        ])
+        && (
+          !exists(/databases/$(database)/documents/users/$(userId))
+          || !get(/databases/$(database)/documents/users/$(userId))
+              .data.keys()
+              .hasAny(['ieeeEmail'])
+        );
 
-      // Officers + Past Officer can update 'ieeeEmailStatus' only
+      // Officers + Past Officer can update ieeeEmailStatus only
       allow update: if isSignedIn()
-        && request.auth.uid == userId
         && onlyChangedKeys(['ieeeEmailStatus'])
-        && hasAnyRole(['General Officer','Executive Officer','Past Officer','Administrator']);
+        && hasAnyRole([
+          'General Officer',
+          'Executive Officer',
+          'Past Officer',
+          'Administrator'
+        ]);
 
       // Admins can manage IEEE email fields explicitly
       allow update: if hasAnyRole(['Administrator'])
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['hasIEEEEmail','ieeeEmail','ieeeEmailCreatedAt','ieeeEmailStatus']);
+        && request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'hasIEEEEmail',
+            'ieeeEmail',
+            'ieeeEmailCreatedAt',
+            'ieeeEmailStatus'
+          ]);
 
-      // Public profile subcollection (authenticated read; self write; officers manage)
+      // Public profile subcollection (per-user)
       match /public_profile/{profileId} {
         allow read: if isSignedIn();
+
+        // User manages their own profile doc
         allow create, update: if isSignedIn()
           && request.auth.uid == userId
           && profileId == 'profile';
+
+        // Officers manage any profile
         allow create, update, delete: if isOfficer();
       }
     }
@@ -107,63 +136,104 @@ service cloud.firestore {
       // Officers manage invites
       allow create, update, delete: if isOfficer();
 
-      // Invitee can read & update their invite (status transition only)
-      allow get: if isSignedIn() && request.auth.token.email == resource.data.email;
+      // Invitee can read their invite
+      allow get: if isSignedIn()
+        && request.auth.token.email == resource.data.email;
+
+      // Invitee can only change status
       allow update: if isSignedIn()
         && request.auth.token.email == resource.data.email
         && request.resource.data.status in ['accepted','declined']
-        && onlyChangedKeys(['status']); // status only
+        && onlyChangedKeys(['status']);
     }
 
     // ===== Events =====
     match /events/{eventId} {
-      // Public events: readable when published
-      // (works for queries: each returned doc must satisfy this predicate)
+      // Public events readable when published; officers see all
       allow read: if resource.data.published == true || isOfficer();
 
-      // Create: officers OR owners of approved event_requests
+      // Create: officers OR owner via approved event_request
       allow create: if isOfficer()
-        || ( isSignedIn()
-             && request.resource.data.createdFrom != null
-             && exists(/databases/$(database)/documents/event_requests/$(request.resource.data.createdFrom))
-             && get(/databases/$(database)/documents/event_requests/$(request.resource.data.createdFrom)).data.requestedUser == request.auth.uid );
+        || (
+          isSignedIn()
+          && request.resource.data.createdFrom != null
+          && exists(/databases/$(database)/documents/event_requests/$(request.resource.data.createdFrom))
+          && get(/databases/$(database)/documents/event_requests/$(request.resource.data.createdFrom))
+              .data.requestedUser == request.auth.uid
+        );
 
       // Update by owner via event_request link
       allow update: if isSignedIn()
         && resource.data.createdFrom != null
         && exists(/databases/$(database)/documents/event_requests/$(resource.data.createdFrom))
-        && get(/databases/$(database)/documents/event_requests/$(resource.data.createdFrom)).data.requestedUser == request.auth.uid;
+        && get(/databases/$(database)/documents/event_requests/$(resource.data.createdFrom))
+            .data.requestedUser == request.auth.uid;
 
-      // Legacy GO path & Exec/Admin manage
-      allow update, delete: if hasAnyRole(['Executive Officer','Administrator'])
-        || ( hasAnyRole(['General Officer'])
-             && resource.data.requestedUser == request.auth.uid
-             && resource.data.status in ['submitted','pending'] );
+      // Exec/Admin manage all events
+      allow update, delete: if hasAnyRole(['Executive Officer','Administrator']);
 
-      // Attendees may add themselves to a *published* event; field-scoped update only
+      // General Officer can manage their own events while early status
+      allow update, delete: if hasAnyRole(['General Officer'])
+        && resource.data.createdFrom != null
+        && exists(/databases/$(database)/documents/event_requests/$(resource.data.createdFrom))
+        && get(/databases/$(database)/documents/event_requests/$(resource.data.createdFrom))
+            .data.requestedUser == request.auth.uid
+        && resource.data.status in ['submitted','pending'];
+
+      // Attendees may add themselves to a published event (attendees field only)
       allow update: if resource.data.published == true
         && onlyChangedKeys(['attendees'])
         && isSignedIn()
         && !(request.auth.uid in resource.data.get('attendees', []))
         && (request.auth.uid in request.resource.data.attendees)
-        && (request.resource.data.attendees.size() == resource.data.get('attendees', []).size() + 1);
+        && (request.resource.data.attendees.size()
+              == resource.data.get('attendees', []).size() + 1);
 
+      // Event attendees subcollection
       match /attendees/{attendeeId} {
-        // Attendee can create/read own attendance record
-        allow create: if request.auth != null
+        // Attendee can create/read own record
+        allow create: if isSignedIn()
           && request.auth.uid == attendeeId
           && request.resource.data.userId == request.auth.uid;
 
-        allow get: if request.auth != null && request.auth.uid == attendeeId;
+        allow get: if isSignedIn()
+          && request.auth.uid == attendeeId;
 
         // Officers can manage any attendee record
         allow read, write: if isOfficer();
+
+        // Any signed-in user can read attendee records for:
+        // - published events
+        // - events they created (via event_request)
+        allow read: if isSignedIn()
+          && exists(/databases/$(database)/documents/events/$(eventId))
+          && (
+            get(/databases/$(database)/documents/events/$(eventId))
+              .data.published == true
+            || (
+              get(/databases/$(database)/documents/events/$(eventId))
+                .data.createdFrom != null
+              && exists(
+                   /databases/$(database)/documents/event_requests/$(
+                     get(/databases/$(database)/documents/events/$(eventId))
+                       .data.createdFrom
+                   )
+                 )
+              && get(
+                   /databases/$(database)/documents/event_requests/$(
+                     get(/databases/$(database)/documents/events/$(eventId))
+                       .data.createdFrom
+                   )
+                 ).data.requestedUser == request.auth.uid
+            )
+            || isOfficer()
+          );
       }
     }
 
     // ===== Event Requests =====
     match /event_requests/{requestId} {
-      // Anyone authenticated can create their own request
+      // Any authenticated user can create their own request
       allow create: if isSignedIn()
         && request.resource.data.requestedUser == request.auth.uid;
 
@@ -174,31 +244,45 @@ service cloud.firestore {
         && request.resource.data.keys()
              .hasAll(['name','startDateTime','requestedUser','status','isDraft']);
 
-      // Officers can read/create/update any request
-      allow read, create, update: if isOfficer();
+      // Officers can read any request
+      allow read: if isOfficer();
 
-      // Draft -> submitted/pending
+      // Exec/Admin can create/update any request
+      allow create, update: if hasAnyRole(['Executive Officer','Administrator']);
+
+      // General Officers can update their own requests
+      allow update: if hasAnyRole(['General Officer'])
+        && resource.data.requestedUser == request.auth.uid;
+
+      // Draft → submitted/pending transition
       allow update: if isOfficer()
         && resource.data.status == 'draft'
         && resource.data.isDraft == true
         && request.resource.data.status in ['submitted','pending']
-        && onlyChangedKeys(['status']); // keep this transition tight
+        && onlyChangedKeys(['status']);
 
-      // Audit log append/update by member+ (only auditLogs/updatedAt)
-      allow update: if hasAnyRole(['Member','General Officer','Executive Officer','Administrator'])
+      // Audit log updates by Member+
+      allow update: if hasAnyRole([
+          'Member',
+          'General Officer',
+          'Executive Officer',
+          'Administrator'
+        ])
         && onlyChangedKeys(['auditLogs','updatedAt']);
 
-      // Owner controls their request (fallback; works for queries too)
+      // Owner controls their request (fallback)
       allow read, update, delete: if isSignedIn()
         && request.auth.uid == resource.data.requestedUser;
 
-      // Graphics field updates by officers only
+      // Graphics fields (officers only)
       allow update: if isOfficer()
         && onlyChangedKeys(['graphicsCompleted','graphicsFiles','updatedAt']);
 
-      // Exec/Admin may change status / requestedUser / auditLogs
+      // Exec/Admin can tweak status/requestedUser/auditLogs
       allow update: if isExecOrAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys()
+        && request.resource.data
+             .diff(resource.data)
+             .affectedKeys()
              .hasOnly(['status','requestedUser','auditLogs','updatedAt']);
 
       // Exec/Admin full control (last fallback)
@@ -220,20 +304,32 @@ service cloud.firestore {
       // Exec/Admin manage all
       allow read, update, delete: if isExecOrAdmin();
 
-      // Create (owner only) with required fields; cannot set paymentConfirmation
+      // Create (owner only) with required fields; no paymentConfirmation
       allow create: if isSignedIn()
         && request.resource.data.submittedBy == request.auth.uid
         && request.resource.data.status == 'submitted'
         && request.resource.data.keys()
-             .hasAll(['title','totalAmount','status','submittedBy','department','businessPurpose','submittedAt'])
-        && ( request.resource.data.keys().hasAny(['expenses']) || request.resource.data.keys().hasAny(['receipts']) )
+             .hasAll([
+               'title',
+               'totalAmount',
+               'status',
+               'submittedBy',
+               'department',
+               'businessPurpose',
+               'submittedAt'
+             ])
+        && (
+          request.resource.data.keys().hasAny(['expenses'])
+          || request.resource.data.keys().hasAny(['receipts'])
+        )
         && !request.resource.data.keys().hasAny(['paymentConfirmation']);
 
-      // Mark paid: Exec/Admin, add paymentConfirmation with structure, set status=paid
+      // Mark paid: Exec/Admin only
       allow update: if isExecOrAdmin()
         && request.resource.data.status == 'paid'
         && request.resource.data.keys().hasAny(['paymentConfirmation'])
-        && request.resource.data.paymentConfirmation.keys().hasAll(['paidBy','paidAt'])
+        && request.resource.data.paymentConfirmation.keys()
+             .hasAll(['paidBy','paidAt'])
         && request.resource.data.paymentConfirmation.paidBy == request.auth.uid
         && (request.resource.data.paymentConfirmation.paidAt is timestamp);
     }
@@ -251,7 +347,8 @@ service cloud.firestore {
     // ===== Public profiles (top-level mirror) =====
     match /public_profiles/{userId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn()
+        && request.auth.uid == userId;
       allow create, update, delete: if isOfficer();
     }
 
@@ -261,16 +358,17 @@ service cloud.firestore {
       allow write: if isExecOrAdmin();
     }
 
-    // ===== Leaderboard settings (exec/admin create; officers read) =====
+    // ===== Leaderboard settings (exec/admin create; officers read/update) =====
     match /leaderboard_settings/{settingsId} {
       allow read: if isOfficer();
       allow update: if isOfficer();
-      allow create: if isExecOrAdmin() && settingsId == 'settings';
+      allow create: if isExecOrAdmin()
+        && settingsId == 'settings';
     }
 
     // ===== Fund Deposits =====
     match /fundDeposits/{depositId} {
-      // Creators can create and read their own
+      // Creators create and read their own
       allow create: if isSignedIn()
         && request.resource.data.depositedBy == request.auth.uid;
 
@@ -278,7 +376,12 @@ service cloud.firestore {
         && resource.data.depositedBy == request.auth.uid;
 
       // Officers read all; Admins update/delete
-      allow read: if hasAnyRole(['General Officer','Executive Officer','Administrator']);
+      allow read: if hasAnyRole([
+        'General Officer',
+        'Executive Officer',
+        'Administrator'
+      ]);
+
       allow update, delete: if hasAnyRole(['Administrator']);
 
       // Creators can delete while pending
@@ -287,7 +390,7 @@ service cloud.firestore {
         && resource.data.status == 'pending';
     }
 
-    // ===== Constitution Builder (exec/admin manage) =====
+    // ===== Constitution Builder =====
     match /constitutions/{constitutionId} {
       allow read: if isSignedIn();
       allow create, update: if isExecOrAdmin();
@@ -300,22 +403,23 @@ service cloud.firestore {
 
       match /auditLog/{auditEntryId} {
         allow read: if isSignedIn();
-        // Officers create their own audit entries; immutable afterwards
+
+        // Exec/Admin create immutable audit entries for themselves
         allow create: if isExecOrAdmin()
           && request.resource.data.userId == request.auth.uid;
+
         allow update, delete: if false;
       }
     }
 
     // ===== Notifications (per-user) =====
     match /notifications/{notificationId} {
-      // Read/update only your own notification; works for queries too
-      allow read, update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      // Read/update only your own notification
+      allow read, update: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
 
-      // Officers can create notifications for any user
+      // Officers can create/delete for any user
       allow create: if isOfficer();
-
-      // Officers can delete any notification
       allow delete: if isOfficer();
     }
 
@@ -335,12 +439,20 @@ service cloud.firestore {
       // Exec/Admin manage
       allow create, read, update, list: if isExecOrAdmin();
 
-      // Public can GET a specific invite (e.g., accept page) but cannot LIST
+      // Public can GET but not LIST (for accept page)
       allow get: if true;
       allow list: if false;
 
-      // Public may flip status only; immutable other fields
-      allow update: if onlyChangedKeys(['status','acceptedAt','declinedAt','onboardingEmailSent','googleGroupAssigned','googleGroup','permissionsGranted']);
+      // Public may flip status/metadata only
+      allow update: if onlyChangedKeys([
+        'status',
+        'acceptedAt',
+        'declinedAt',
+        'onboardingEmailSent',
+        'googleGroupAssigned',
+        'googleGroup',
+        'permissionsGranted'
+      ]);
 
       // Admin can delete
       allow delete: if hasAnyRole(['Administrator']);
@@ -356,8 +468,7 @@ service cloud.firestore {
     match /googleGroupAssignments/{assignmentId} {
       allow read, list: if isExecOrAdmin();
 
-      // IMPORTANT: Do NOT allow unauthenticated create here from clients.
-      // Use Admin SDK instead (rules are bypassed by server credentials).
+      // No client-side create; use Admin SDK
       allow create: if false;
 
       allow update, delete: if hasAnyRole(['Administrator']);
@@ -370,7 +481,7 @@ service cloud.firestore {
       allow delete: if hasAnyRole(['Administrator']);
     }
 
-    // Default deny
+    // ===== Default deny =====
     match /{document=**} {
       allow read, write, delete: if false;
     }
