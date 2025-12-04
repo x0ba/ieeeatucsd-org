@@ -4,7 +4,7 @@ import { Image } from "astro:assets";
 import ng from "../../images/logos/Northrop_Grumman_Logo.png"
 import solidworks from "../../images/logos/SolidWorks-Logo.png"
 import altium from "../../images/logos/Altium-Logo.png"
-import rivian from "../../images/logos/Rivian_logo.png"
+import rivian from "../../images/logos/rivian.png"
 ---
 
 <div class="flex flex-col items-center text-white my-[5%]">
@@ -16,10 +16,10 @@ import rivian from "../../images/logos/Rivian_logo.png"
       Meet Our Sponsors
     </p>
   </div>
-  <div class="flex object-bottom pl-[6vw]">
-      <Image src={ng} alt="Northrop Logo" class="w-[17vw]" />
-      <Image src={altium} alt="Altium Logo" class="w-[17vw]"/>
-      <Image src={solidworks} alt="Solidworks Logo" class="w-[17vw]"/>
-      <Image src={rivian} class="object-scale-down" alt="Rivian Logo" class="w-[23vw]"/>
+  <div class="flex items-center pl-[2vw] gap-[0.5vw]">
+      <Image src={ng} alt="Northrop Logo" class="w-[17vw] object-contain"/>
+      <Image src={altium} alt="Altium Logo" class="w-[17vw] object-contain"/>
+      <Image src={solidworks} alt="Solidworks Logo" class="w-[17vw] object-contain"/>
+      <Image src={rivian} class="object-scale-down" alt="Rivian Logo" class="w-[17vw] h-[10vw] ml-[1.8vw] object-contain"/>
   </div>
 </div>
