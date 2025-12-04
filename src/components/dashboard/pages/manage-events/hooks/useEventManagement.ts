@@ -40,7 +40,7 @@ interface EventRequest {
 export function useEventManagement(userId: string | undefined) {
   const [eventRequests, setEventRequests] = useState<EventRequest[]>([]);
   const [users, setUsers] = useState<
-    Record<string, { name: string; email: string }>
+    Record<string, { name: string; email: string; pid?: string }>
   >({});
   const [loading, setLoading] = useState(false); // Start false to show cached data immediately
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>("Member");
@@ -67,7 +67,7 @@ export function useEventManagement(userId: string | undefined) {
   const fetchUsers = async () => {
     try {
       const publicProfiles = await PublicProfileService.getLeaderboard();
-      const usersMap: Record<string, { name: string; email: string }> = {};
+      const usersMap: Record<string, { name: string; email: string; pid?: string }> = {};
 
       publicProfiles.forEach((profile) => {
         usersMap[profile.id] = {
@@ -85,10 +85,12 @@ export function useEventManagement(userId: string | undefined) {
           // Update existing entries with email data, or create new ones
           if (usersMap[doc.id]) {
             usersMap[doc.id].email = data.email || "";
+            usersMap[doc.id].pid = data.pid;
           } else {
             usersMap[doc.id] = {
               name: data.name || data.email || "Unknown User",
               email: data.email || "",
+              pid: data.pid,
             };
           }
         });

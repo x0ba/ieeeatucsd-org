@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Card, CardBody, Button } from '@heroui/react';
-import { Users } from 'lucide-react';
+import { Users, Download } from 'lucide-react';
 import AttendeeTable from './AttendeeTable';
 import type { AttendeeRecord, UserDirectory } from './types';
 import { getUserName } from './utils';
@@ -9,10 +9,47 @@ interface AttendeesTabProps {
     attendees: AttendeeRecord[];
     loadingAttendees: boolean;
     users: UserDirectory;
+    eventName?: string;
 }
 
-export default function AttendeesTab({ attendees, loadingAttendees, users }: AttendeesTabProps) {
+export default function AttendeesTab({ attendees, loadingAttendees, users, eventName }: AttendeesTabProps) {
     const [searchTerm, setSearchTerm] = useState('');
+
+    const exportToCSV = () => {
+        const headers = ['name', 'PID', 'email', 'check_in_time', 'food'];
+        const rows = attendees.map(attendee => {
+            const userId = attendee.userId || attendee.id || '';
+            const user = users[userId];
+            const checkInTime = attendee.timeCheckedIn 
+                ? (attendee.timeCheckedIn.toDate ? attendee.timeCheckedIn.toDate().toLocaleString() : new Date(attendee.timeCheckedIn).toLocaleString())
+                : '';
+            
+            return [
+                user ? `${user.name || ''}`.trim() : '',
+                user?.pid || '',
+                user?.email || '',
+                checkInTime,
+                attendee.food || ''
+            ];
+        });
+
+        const csvContent = [headers, ...rows].map(row =>
+            row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        const sanitizedName = (eventName || 'event').replace(/[^a-zA-Z0-9]/g, '_');
+        const date = new Date().toISOString().split('T')[0];
+        link.setAttribute('href', url);
+        link.setAttribute('download', `event_attendees_${sanitizedName}_${date}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
 
     const filteredAttendees = useMemo(() => {
         if (!searchTerm) return attendees;
@@ -38,15 +75,27 @@ export default function AttendeesTab({ attendees, loadingAttendees, users }: Att
                         Event Attendees ({filteredAttendees.length})
                     </h3>
                     {attendees.length > 0 && (
-                        <div className="relative">
-                            <input
-                                type="text"
-                                placeholder="Search attendees..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-8 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                            />
-                            <Users className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <div className="flex items-center gap-3">
+                            <Button
+                                size="sm"
+                                color="primary"
+                                variant="solid"
+                                startContent={<Download className="w-4 h-4" />}
+                                onPress={exportToCSV}
+                                className="text-sm font-medium shadow-sm hover:shadow-md transition-shadow"
+                            >
+                                Export CSV
+                            </Button>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search attendees..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-8 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                                />
+                                <Users className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            </div>
                         </div>
                     )}
                 </div>

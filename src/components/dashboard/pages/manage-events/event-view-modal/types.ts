@@ -107,6 +107,7 @@ export interface AttendeeRecord {
 export interface UserDirectoryEntry {
   name: string;
   email: string;
+  pid?: string;
 }
 
 export type UserDirectory = Record<string, UserDirectoryEntry>;

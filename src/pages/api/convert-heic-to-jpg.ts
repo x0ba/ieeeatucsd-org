@@ -94,7 +94,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const jpgFileName = fileName.replace(/\.(heic|heif)$/i, ".jpg");
 
     // Return the converted JPG file
-    return new Response(outputBuffer as Buffer, {
+    return new Response(outputBuffer as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "image/jpeg",

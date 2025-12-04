@@ -463,6 +463,7 @@ export default function EventViewModal({ request, users, onClose, onSuccess }: E
                                     attendees={attendees}
                                     loadingAttendees={loadingAttendees}
                                     users={users}
+                                    eventName={request?.name}
                                 />
                             </Tab>
 
