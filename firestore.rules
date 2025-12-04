@@ -77,7 +77,14 @@ service cloud.firestore {
           'eventsAttended',
           'name',
           'major',
-          'graduationYear'
+          'graduationYear',
+          'pid',
+          'memberId',
+          'zelleInformation',
+          'resume',
+          'signedUp',
+          'joinDate',
+          'navigationLayout'
         ])
         && noForbiddenKeys(['role','ieeeEmail']);
 

@@ -181,7 +181,7 @@ export default function GetStartedContent() {
                 graduationYear: answers.graduationYear,
                 signedUp: true,
                 joinDate: new Date(), // Set join date when completing getting started
-                a: answers.navigationLayout || 'sidebar', // Save navigation preference (default to sidebar)
+                navigationLayout: answers.navigationLayout || 'sidebar', // Save navigation preference (default to sidebar)
             };
 
             // Only add optional fields if they have values
