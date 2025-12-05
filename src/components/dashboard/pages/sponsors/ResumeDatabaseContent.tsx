@@ -167,7 +167,8 @@ export default function ResumeDatabaseContent() {
             .map(u => u.graduationYear)
             .filter((year): year is number => !!year)
             .sort((a, b) => b - a); // Sort descending (most recent first)
-        return years;
+        // Remove duplicates by converting to Set and back to array
+        return Array.from(new Set(years));
     }, [users]);
 
     // Pagination calculations
@@ -368,7 +369,7 @@ export default function ResumeDatabaseContent() {
                                 placeholder="Search by name, email, or major..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full h-12 pl-10 pr-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                             />
                         </div>
 
@@ -622,13 +623,6 @@ export default function ResumeDatabaseContent() {
                                             siblings={2}
                                             boundaries={1}
                                             size="sm"
-                                            classNames={{
-                                                wrapper: "gap-0 overflow-visible h-8 rounded-lg border border-divider",
-                                                item: "w-8 h-8 text-small rounded-none bg-transparent",
-                                                cursor: "bg-primary text-white font-bold",
-                                                prev: "rounded-l-lg",
-                                                next: "rounded-r-lg",
-                                            }}
                                         />
                                     </div>
                                 </div>
