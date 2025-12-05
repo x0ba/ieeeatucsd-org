@@ -1,17 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, where, onSnapshot, doc } from 'firebase/firestore';
+import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { db, auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { AlertCircle, Search, FileText, Users, GraduationCap, Briefcase, Filter, X, CheckSquare, Square, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertCircle, Search, FileText, Users, GraduationCap, Briefcase, Filter, Download } from 'lucide-react';
 import type { User as FirestoreUser, UserRole } from '../../shared/types/firestore';
 import { SponsorPermissionService } from './utils/sponsorPermissions';
-import JSZip from 'jszip';
 import {
     normalizeMajorName,
     getUniqueNormalizedMajors,
     getMajorNormalizationMap
 } from '../../../../utils/majorNormalization';
-import { Spinner } from '@heroui/react';
+import { Spinner, Select, SelectItem, Pagination, Checkbox, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
 import { showToast } from '../../shared/utils/toast';
 
 interface UserWithResume extends Partial<FirestoreUser> {
@@ -34,7 +33,8 @@ export default function ResumeDatabaseContent() {
     const [loading, setLoading] = useState(false); // Start false to show cached data immediately
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedMajor, setSelectedMajor] = useState<string>('all');
+    const [selectedMajors, setSelectedMajors] = useState<Set<string>>(new Set());
+    const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
     const [selectedOfficerStatus, setSelectedOfficerStatus] = useState<string>('all');
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
     const [showResumeModal, setShowResumeModal] = useState(false);
@@ -128,11 +128,18 @@ export default function ResumeDatabaseContent() {
             });
         }
 
-        // Major filter - compare normalized major names
-        if (selectedMajor !== 'all') {
+        // Major filter - compare normalized major names (multi-select)
+        if (selectedMajors.size > 0) {
             filtered = filtered.filter(u => {
                 const normalizedMajor = getNormalizedMajor(u.major);
-                return normalizedMajor === selectedMajor;
+                return selectedMajors.has(normalizedMajor);
+            });
+        }
+
+        // Graduation year filter (multi-select)
+        if (selectedYears.size > 0) {
+            filtered = filtered.filter(u => {
+                return u.graduationYear && selectedYears.has(u.graduationYear.toString());
             });
         }
 
@@ -147,11 +154,20 @@ export default function ResumeDatabaseContent() {
 
         setFilteredUsers(filtered);
         setCurrentPage(1); // Reset to first page when filters change
-    }, [searchTerm, selectedMajor, selectedOfficerStatus, users, majorNormalizationMap]);
+    }, [searchTerm, selectedMajors, selectedYears, selectedOfficerStatus, users, majorNormalizationMap]);
 
     // Get unique normalized majors for filter dropdown
     const uniqueMajors = useMemo(() => {
         return getUniqueNormalizedMajors(users.map(u => u.major), 0.8);
+    }, [users]);
+
+    // Get unique graduation years for filter dropdown
+    const uniqueYears = useMemo(() => {
+        const years = users
+            .map(u => u.graduationYear)
+            .filter((year): year is number => !!year)
+            .sort((a, b) => b - a); // Sort descending (most recent first)
+        return years;
     }, [users]);
 
     // Pagination calculations
@@ -161,33 +177,26 @@ export default function ResumeDatabaseContent() {
     const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
     // Pagination handlers
-    const goToPage = (page: number) => {
-        setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
     };
 
-    const goToNextPage = () => {
-        if (currentPage < totalPages) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
-
-    const goToPreviousPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
+    const handleItemsPerPageChange = (value: string) => {
+        setItemsPerPage(Number(value));
+        setCurrentPage(1);
     };
 
     // Selection handlers
-    const handleSelectAll = () => {
-        if (selectedUsers.size === paginatedUsers.length && paginatedUsers.every(u => selectedUsers.has(u.id))) {
-            // Deselect all on current page
-            const newSelected = new Set(selectedUsers);
-            paginatedUsers.forEach(u => newSelected.delete(u.id));
-            setSelectedUsers(newSelected);
-        } else {
+    const handleSelectAll = (isSelected: boolean) => {
+        if (isSelected) {
             // Select all on current page
             const newSelected = new Set(selectedUsers);
             paginatedUsers.forEach(u => newSelected.add(u.id));
+            setSelectedUsers(newSelected);
+        } else {
+            // Deselect all on current page
+            const newSelected = new Set(selectedUsers);
+            paginatedUsers.forEach(u => newSelected.delete(u.id));
             setSelectedUsers(newSelected);
         }
     };
@@ -212,6 +221,49 @@ export default function ResumeDatabaseContent() {
         setSelectedUserForModal(null);
     };
 
+    const generateCSV = (users: UserWithResume[]): string => {
+        const headers = ['Name', 'Email', 'Major', 'Year Graduating', 'Firebase Resume Link'];
+        
+        const csvData = users.map(user => {
+            const name = user.name || '';
+            const email = user.email || '';
+            const major = getNormalizedMajor(user.major) || '';
+            const year = user.graduationYear?.toString() || '';
+            const resumeLink = user.resume || '';
+            
+            // Escape CSV fields by wrapping in quotes if they contain commas, quotes, or newlines
+            const escapeField = (field: string): string => {
+                if (field.includes(',') || field.includes('"') || field.includes('\n')) {
+                    return `"${field.replace(/"/g, '""')}"`;
+                }
+                return field;
+            };
+            
+            return [
+                escapeField(name),
+                escapeField(email),
+                escapeField(major),
+                escapeField(year),
+                escapeField(resumeLink)
+            ].join(',');
+        });
+        
+        return [headers.join(','), ...csvData].join('\n');
+    };
+
+    const downloadCSV = (csvContent: string, filename: string) => {
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     const handleDownloadSelected = async () => {
         const selectedUsersList = filteredUsers.filter(u => selectedUsers.has(u.id));
 
@@ -230,40 +282,14 @@ export default function ResumeDatabaseContent() {
                 document.body.removeChild(link);
             }
         } else {
-            // Download multiple PDFs as ZIP
+            // Download CSV for 2+ users
             try {
-                const zip = new JSZip();
-
-                // Fetch all PDFs
-                const fetchPromises = selectedUsersList.map(async (user) => {
-                    if (!user.resume) return;
-
-                    try {
-                        const response = await fetch(user.resume);
-                        const blob = await response.blob();
-                        const fileName = `${user.name.replace(/\s+/g, '_')}_Resume.pdf`;
-                        zip.file(fileName, blob);
-                    } catch (err) {
-                        console.error(`Failed to fetch resume for ${user.name}:`, err);
-                    }
-                });
-
-                await Promise.all(fetchPromises);
-
-                // Generate ZIP file
-                const zipBlob = await zip.generateAsync({ type: 'blob' });
-
-                // Download ZIP
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(zipBlob);
-                link.download = `Resumes_${selectedUsersList.length}_users.zip`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
+                const csvContent = generateCSV(selectedUsersList);
+                const filename = `Resume_Database_${selectedUsersList.length}_users.csv`;
+                downloadCSV(csvContent, filename);
             } catch (err) {
-                console.error('Failed to create ZIP:', err);
-                showToast.error('Failed to download resumes. Please try again.');
+                console.error('Failed to generate CSV:', err);
+                showToast.error('Failed to generate CSV. Please try again.');
             }
         }
     };
@@ -333,7 +359,7 @@ export default function ResumeDatabaseContent() {
 
                 {/* Search and Filters */}
                 <div className="bg-white rounded-2xl shadow p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Search */}
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -347,33 +373,58 @@ export default function ResumeDatabaseContent() {
                         </div>
 
                         {/* Major Filter */}
-                        <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                            <select
-                                value={selectedMajor}
-                                onChange={(e) => setSelectedMajor(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-                            >
-                                <option value="all">All Majors</option>
-                                {uniqueMajors.map(major => (
-                                    <option key={major} value={major}>{major}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select
+                            selectionMode="multiple"
+                            placeholder="Select majors..."
+                            selectedKeys={selectedMajors}
+                            onSelectionChange={(keys) => setSelectedMajors(new Set(keys as Set<string>))}
+                            label="Majors"
+                            startContent={<Filter className="w-4 h-4 text-gray-400" />}
+                            classNames={{
+                                trigger: "h-12",
+                            }}
+                        >
+                            {uniqueMajors.map(major => (
+                                <SelectItem key={major}>
+                                    {major}
+                                </SelectItem>
+                            ))}
+                        </Select>
+
+                        {/* Graduation Year Filter */}
+                        <Select
+                            selectionMode="multiple"
+                            placeholder="Select years..."
+                            selectedKeys={selectedYears}
+                            onSelectionChange={(keys) => setSelectedYears(new Set(keys as Set<string>))}
+                            label="Graduation Years"
+                            startContent={<GraduationCap className="w-4 h-4 text-gray-400" />}
+                            classNames={{
+                                trigger: "h-12",
+                            }}
+                        >
+                            {uniqueYears.map(year => (
+                                <SelectItem key={year.toString()}>
+                                    Class of {year}
+                                </SelectItem>
+                            ))}
+                        </Select>
 
                         {/* Officer Status Filter */}
-                        <div className="relative">
-                            <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                            <select
-                                value={selectedOfficerStatus}
-                                onChange={(e) => setSelectedOfficerStatus(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-                            >
-                                <option value="all">All Members</option>
-                                <option value="officers">Officers Only</option>
-                                <option value="members">General Members</option>
-                            </select>
-                        </div>
+                        <Select
+                            placeholder="Select member type..."
+                            selectedKeys={new Set([selectedOfficerStatus])}
+                            onSelectionChange={(keys) => setSelectedOfficerStatus(Array.from(keys)[0] as string)}
+                            label="Member Type"
+                            startContent={<Users className="w-4 h-4 text-gray-400" />}
+                            classNames={{
+                                trigger: "h-12",
+                            }}
+                        >
+                            <SelectItem key="all">All Members</SelectItem>
+                            <SelectItem key="officers">Officers Only</SelectItem>
+                            <SelectItem key="members">General Members</SelectItem>
+                        </Select>
                     </div>
                 </div>
 
@@ -395,7 +446,7 @@ export default function ResumeDatabaseContent() {
                         <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">No Resumes Found</h3>
                         <p className="text-gray-600">
-                            {searchTerm || selectedMajor !== 'all' || selectedOfficerStatus !== 'all'
+                            {searchTerm || selectedMajors.size > 0 || selectedYears.size > 0 || selectedOfficerStatus !== 'all'
                                 ? 'Try adjusting your filters'
                                 : 'No members have opted in to share their resumes yet'}
                         </p>
@@ -410,19 +461,22 @@ export default function ResumeDatabaseContent() {
                                         <strong>{selectedUsers.size}</strong> user{selectedUsers.size !== 1 ? 's' : ''} selected
                                     </p>
                                     <div className="flex items-center space-x-3">
-                                        <button
-                                            onClick={handleDownloadSelected}
-                                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium"
+                                        <Button
+                                            color="primary"
+                                            size="sm"
+                                            onPress={handleDownloadSelected}
+                                            startContent={<Download className="w-4 h-4" />}
                                         >
-                                            <Download className="w-4 h-4 mr-2" />
-                                            Download {selectedUsers.size === 1 ? 'Resume' : 'as ZIP'}
-                                        </button>
-                                        <button
-                                            onClick={() => setSelectedUsers(new Set())}
-                                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                            Download {selectedUsers.size === 1 ? 'Resume' : 'as CSV'}
+                                        </Button>
+                                        <Button
+                                            color="default"
+                                            variant="light"
+                                            size="sm"
+                                            onPress={() => setSelectedUsers(new Set())}
                                         >
                                             Clear Selection
-                                        </button>
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
@@ -434,16 +488,12 @@ export default function ResumeDatabaseContent() {
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="px-6 py-3 text-left">
-                                                <button
-                                                    onClick={handleSelectAll}
-                                                    className="flex items-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700"
-                                                >
-                                                    {paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.has(u.id)) ? (
-                                                        <CheckSquare className="w-5 h-5" />
-                                                    ) : (
-                                                        <Square className="w-5 h-5" />
-                                                    )}
-                                                </button>
+                                                <Checkbox
+                                                    isSelected={paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.has(u.id))}
+                                                    onValueChange={handleSelectAll}
+                                                    size="sm"
+                                                    aria-label="Select all users"
+                                                />
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Name
@@ -476,11 +526,12 @@ export default function ResumeDatabaseContent() {
                                                     }}
                                                 >
                                                     <div className="flex items-center justify-center">
-                                                        {selectedUsers.has(user.id) ? (
-                                                            <CheckSquare className="w-5 h-5 text-blue-600" />
-                                                        ) : (
-                                                            <Square className="w-5 h-5 text-gray-600 hover:text-gray-900" />
-                                                        )}
+                                                        <Checkbox
+                                                            isSelected={selectedUsers.has(user.id)}
+                                                            onValueChange={() => handleSelectUser(user.id)}
+                                                            size="sm"
+                                                            aria-label={`Select ${user.name}`}
+                                                        />
                                                     </div>
                                                 </td>
                                                 <td
@@ -531,9 +582,9 @@ export default function ResumeDatabaseContent() {
                             {/* Pagination Controls */}
                             {totalPages > 1 && (
                                 <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                                    <div className="flex items-center justify-between">
-                                        {/* Results info */}
-                                        <div className="flex items-center space-x-4">
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                        {/* Results info and items per page selector */}
+                                        <div className="flex flex-col sm:flex-row items-center gap-4">
                                             <p className="text-sm text-gray-700">
                                                 Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
                                                 <span className="font-medium">{Math.min(endIndex, filteredUsers.length)}</span> of{' '}
@@ -542,79 +593,43 @@ export default function ResumeDatabaseContent() {
 
                                             {/* Items per page selector */}
                                             <div className="flex items-center space-x-2">
-                                                <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
+                                                <label className="text-sm text-gray-700">
                                                     Per page:
                                                 </label>
-                                                <select
-                                                    id="itemsPerPage"
-                                                    value={itemsPerPage}
-                                                    onChange={(e) => {
-                                                        setItemsPerPage(Number(e.target.value));
-                                                        setCurrentPage(1);
+                                                <Select
+                                                    selectedKeys={new Set([itemsPerPage.toString()])}
+                                                    onSelectionChange={(keys) => handleItemsPerPageChange(Array.from(keys)[0] as string)}
+                                                    size="sm"
+                                                    className="w-20"
+                                                    classNames={{
+                                                        trigger: "h-8",
                                                     }}
-                                                    className="border border-gray-300 rounded-md text-sm py-1 px-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                 >
-                                                    <option value={10}>10</option>
-                                                    <option value={25}>25</option>
-                                                    <option value={50}>50</option>
-                                                    <option value={100}>100</option>
-                                                </select>
+                                                    <SelectItem key="10">10</SelectItem>
+                                                    <SelectItem key="25">25</SelectItem>
+                                                    <SelectItem key="50">50</SelectItem>
+                                                    <SelectItem key="100">100</SelectItem>
+                                                </Select>
                                             </div>
                                         </div>
 
-                                        {/* Page navigation */}
-                                        <div className="flex items-center space-x-2">
-                                            <button
-                                                onClick={goToPreviousPage}
-                                                disabled={currentPage === 1}
-                                                className={`p-2 rounded-xl transition-colors ${currentPage === 1
-                                                    ? 'text-gray-400 cursor-not-allowed'
-                                                    : 'text-gray-700 hover:bg-gray-200'
-                                                    }`}
-                                            >
-                                                <ChevronLeft className="w-5 h-5" />
-                                            </button>
-
-                                            {/* Page numbers */}
-                                            <div className="flex items-center space-x-1">
-                                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                                    let pageNum;
-                                                    if (totalPages <= 5) {
-                                                        pageNum = i + 1;
-                                                    } else if (currentPage <= 3) {
-                                                        pageNum = i + 1;
-                                                    } else if (currentPage >= totalPages - 2) {
-                                                        pageNum = totalPages - 4 + i;
-                                                    } else {
-                                                        pageNum = currentPage - 2 + i;
-                                                    }
-
-                                                    return (
-                                                        <button
-                                                            key={pageNum}
-                                                            onClick={() => goToPage(pageNum)}
-                                                            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
-                                                                ? 'bg-blue-600 text-white'
-                                                                : 'text-gray-700 hover:bg-gray-200'
-                                                                }`}
-                                                        >
-                                                            {pageNum}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-
-                                            <button
-                                                onClick={goToNextPage}
-                                                disabled={currentPage === totalPages}
-                                                className={`p-2 rounded-xl transition-colors ${currentPage === totalPages
-                                                    ? 'text-gray-400 cursor-not-allowed'
-                                                    : 'text-gray-700 hover:bg-gray-200'
-                                                    }`}
-                                            >
-                                                <ChevronRight className="w-5 h-5" />
-                                            </button>
-                                        </div>
+                                        {/* HeroUI Pagination */}
+                                        <Pagination
+                                            total={totalPages}
+                                            page={currentPage}
+                                            onChange={handlePageChange}
+                                            showControls={true}
+                                            siblings={2}
+                                            boundaries={1}
+                                            size="sm"
+                                            classNames={{
+                                                wrapper: "gap-0 overflow-visible h-8 rounded-lg border border-divider",
+                                                item: "w-8 h-8 text-small rounded-none bg-transparent",
+                                                cursor: "bg-primary text-white font-bold",
+                                                prev: "rounded-l-lg",
+                                                next: "rounded-r-lg",
+                                            }}
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -623,79 +638,82 @@ export default function ResumeDatabaseContent() {
                 )}
 
                 {/* Resume Modal */}
-                {showResumeModal && selectedUserForModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-2xl shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
-                            {/* Modal Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">{selectedUserForModal.name}</h2>
-                                    <p className="text-sm text-gray-600 mt-1">
-                                        {selectedUserForModal.email} • {getNormalizedMajor(selectedUserForModal.major) || 'N/A'} • Class of {selectedUserForModal.graduationYear || 'N/A'}
+                <Modal
+                    isOpen={showResumeModal}
+                    onOpenChange={(open) => !open && handleCloseModal()}
+                    size="5xl"
+                    backdrop="blur"
+                    scrollBehavior="inside"
+                >
+                    <ModalContent>
+                        {(onClose) => (
+                            <>
+                                {/* Modal Header */}
+                                <ModalHeader className="flex flex-col gap-1">
+                                    <h2 className="text-2xl font-bold text-gray-900">{selectedUserForModal?.name}</h2>
+                                    <p className="text-sm text-gray-600">
+                                        {selectedUserForModal?.email} • {getNormalizedMajor(selectedUserForModal?.major) || 'N/A'} • Class of {selectedUserForModal?.graduationYear || 'N/A'}
                                     </p>
-                                </div>
-                                <button
-                                    onClick={handleCloseModal}
-                                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-                                >
-                                    <X className="w-6 h-6 text-gray-600" />
-                                </button>
-                            </div>
+                                </ModalHeader>
 
-                            {/* Modal Body - Resume Viewer */}
-                            <div className="flex-1 overflow-auto p-6">
-                                {selectedUserForModal.resume ? (
-                                    <iframe
-                                        src={selectedUserForModal.resume}
-                                        className="w-full h-full min-h-[600px] border border-gray-300 rounded-xl"
-                                        title={`${selectedUserForModal.name}'s Resume`}
-                                    />
-                                ) : (
-                                    <div className="flex items-center justify-center h-64">
-                                        <div className="text-center">
-                                            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                                            <p className="text-gray-600">No resume available</p>
+                                {/* Modal Body - Resume Viewer */}
+                                <ModalBody className="py-6">
+                                    {selectedUserForModal?.resume ? (
+                                        <iframe
+                                            src={selectedUserForModal.resume}
+                                            className="w-full h-[600px] border border-gray-300 rounded-xl"
+                                            title={`${selectedUserForModal.name}'s Resume`}
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-64">
+                                            <div className="text-center">
+                                                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                                                <p className="text-gray-600">No resume available</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </ModalBody>
+
+                                {/* Modal Footer */}
+                                <ModalFooter>
+                                    <div className="flex items-center justify-between w-full">
+                                        <div className="flex items-center space-x-2">
+                                            <span className={`px-3 py-1.5 inline-flex text-sm font-semibold rounded-full ${selectedUserForModal?.role === 'Member' ? 'bg-gray-100 text-gray-800' :
+                                                selectedUserForModal?.role === 'General Officer' ? 'bg-blue-100 text-blue-800' :
+                                                    selectedUserForModal?.role === 'Executive Officer' ? 'bg-purple-100 text-purple-800' :
+                                                        selectedUserForModal?.role === 'Administrator' ? 'bg-red-100 text-red-800' :
+                                                            'bg-green-100 text-green-800'
+                                                }`}>
+                                                {selectedUserForModal?.position || selectedUserForModal?.role}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center space-x-3">
+                                            {selectedUserForModal?.resume && (
+                                                <Button
+                                                    as="a"
+                                                    href={selectedUserForModal.resume}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    color="primary"
+                                                >
+                                                    Open in New Tab
+                                                </Button>
+                                            )}
+                                            <Button
+                                                color="default"
+                                                variant="flat"
+                                                onPress={onClose}
+                                            >
+                                                Close
+                                            </Button>
                                         </div>
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Modal Footer */}
-                            <div className="flex items-center justify-between p-6 border-t border-gray-200">
-                                <div className="flex items-center space-x-2">
-                                    <span className={`px-3 py-1.5 inline-flex text-sm font-semibold rounded-full ${selectedUserForModal.role === 'Member' ? 'bg-gray-100 text-gray-800' :
-                                        selectedUserForModal.role === 'General Officer' ? 'bg-blue-100 text-blue-800' :
-                                            selectedUserForModal.role === 'Executive Officer' ? 'bg-purple-100 text-purple-800' :
-                                                selectedUserForModal.role === 'Administrator' ? 'bg-red-100 text-red-800' :
-                                                    'bg-green-100 text-green-800'
-                                        }`}>
-                                        {selectedUserForModal.position || selectedUserForModal.role}
-                                    </span>
-                                </div>
-                                <div className="flex items-center space-x-3">
-                                    {selectedUserForModal.resume && (
-                                        <a
-                                            href={selectedUserForModal.resume}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-                                        >
-                                            Open in New Tab
-                                        </a>
-                                    )}
-                                    <button
-                                        onClick={handleCloseModal}
-                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                                </ModalFooter>
+                            </>
+                        )}
+                    </ModalContent>
+                </Modal>
             </div>
         </div>
     );
 }
-
