@@ -1,12 +1,28 @@
-import { useState, useEffect } from 'react';
-import { Search, Calendar, MapPin, Clock, Users, UserCheck, X, Award, FileText, Eye, Download } from 'lucide-react';
-import { collection, query, where, doc, setDoc, onSnapshot, runTransaction, getDoc } from 'firebase/firestore';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, Calendar, MapPin, Clock, Users, UserCheck, Award, FileText, Eye, Download, TrendingUp } from 'lucide-react';
+import { collection, query, where, doc, setDoc, onSnapshot, runTransaction, getDoc, getDocs } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../../../firebase/client';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { EventCardSkeleton, MetricCardSkeleton } from '../../../ui/loading';
-import { Spinner } from '@heroui/react';
 import { showToast } from '../../shared/utils/toast';
+import {
+  Card,
+  CardBody,
+  Button,
+  Input,
+  Tabs,
+  Tab,
+  Chip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+  Divider,
+  Pagination
+} from "@heroui/react";
 
 interface Event {
     id: string;
@@ -44,6 +60,12 @@ export default function EventsContent() {
     const [searchTerm, setSearchTerm] = useState('');
     const [checkingIn, setCheckingIn] = useState<string | null>(null);
     const [checkedInEvents, setCheckedInEvents] = useState<Set<string>>(new Set());
+    const {isOpen, onOpen, onClose} = useDisclosure();
+
+    // Pagination states
+    const [upcomingPage, setUpcomingPage] = useState(1);
+    const [pastPage, setPastPage] = useState(1);
+    const rowsPerPage = 9;
 
     // Use auth from client
     const [user] = useAuthState(auth);
@@ -59,28 +81,25 @@ export default function EventsContent() {
         return now >= startDate && now <= endDate;
     };
 
-    // Real-time listener for events
+    // Fetch events (replaced real-time listener with getDocs)
     useEffect(() => {
-        setEventsLoading(true);
-        setError(null);
+        const fetchEvents = async () => {
+            setEventsLoading(true);
+            setError(null);
 
-        const eventsRef = collection(db, 'events');
-        const publishedQuery = query(
-            eventsRef,
-            where('published', '==', true)
-        );
+            try {
+                const eventsRef = collection(db, 'events');
+                const publishedQuery = query(
+                    eventsRef,
+                    where('published', '==', true)
+                );
 
-        const unsubscribeEvents = onSnapshot(
-            publishedQuery,
-            (snapshot) => {
-                console.log('Events: All published events query size:', snapshot.docs.length);
-                
+                const snapshot = await getDocs(publishedQuery);
                 const eventsData = snapshot.docs.map(doc => {
                     const data = doc.data();
                     return {
                         id: doc.id,
                         ...data,
-                        // Ensure all required fields have defaults
                         published: data.published ?? false,
                         pointsToReward: data.pointsToReward ?? 0,
                         attendees: data.attendees ?? [],
@@ -98,26 +117,22 @@ export default function EventsContent() {
                     return dateA.getTime() - dateB.getTime();
                 });
 
-                console.log('Events: Filtered attended events from all events:', eventsData.filter(e => e.attendees?.includes(user?.uid || '')).length);
-
                 setEvents(eventsData);
-                setEventsLoading(false);
-            },
-            (error) => {
+            } catch (error: any) {
                 console.error('Error fetching events:', error);
                 setError('Failed to fetch events: ' + error.message);
+            } finally {
                 setEventsLoading(false);
             }
-        );
+        };
 
-        return () => unsubscribeEvents();
-    }, []); // db is a constant, no need to include in dependency array
+        fetchEvents();
+    }, []);
 
     // Real-time listener for user stats
     useEffect(() => {
         const uid = user?.uid;
         if (!uid) {
-            // Reset stats when user logs out
             setUserStats({
                 lastEventAttended: 'None',
                 totalPointsEarned: 0,
@@ -150,7 +165,7 @@ export default function EventsContent() {
         );
 
         return () => unsubscribeUser();
-    }, [user?.uid]); // Re-subscribe when auth state changes
+    }, [user?.uid]);
 
     // Set up single optimized real-time listener for all user check-ins
     useEffect(() => {
@@ -159,8 +174,6 @@ export default function EventsContent() {
             return;
         }
 
-        // Create a single query to get all events where user is an attendee
-        // Must filter by published=true to satisfy Firestore security rules
         const attendeesQuery = query(
             collection(db, 'events'),
             where('published', '==', true),
@@ -193,7 +206,6 @@ export default function EventsContent() {
             return;
         }
 
-        // Check if event is currently active
         if (!isEventCurrentlyActive(event)) {
             const now = new Date();
             const startDate = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
@@ -214,39 +226,28 @@ export default function EventsContent() {
         try {
             setCheckingIn(event.id);
 
-            // Ask for event code first
             const enteredCode = prompt(`Please enter event code for "${event.eventName}":`);
             if (!enteredCode) {
                 setCheckingIn(null);
-                return; // User cancelled
+                return;
             }
 
-            // Validate event code
             if (enteredCode.toUpperCase() !== event.eventCode?.toUpperCase()) {
                 showToast.error('Incorrect event code. Please try again.');
                 setCheckingIn(null);
                 return;
             }
 
-            // Ask for food preference if event has food
             let foodPreference = '';
             if (event.hasFood) {
                 foodPreference = prompt('This event has food! What would you like? (e.g., Vegetarian, Vegan, No preference, etc.)') || 'No preference';
             }
 
-            // Create check-in record in attendees subcollection (only if one does not exist yet)
             let attendeeRecordCreated = false;
             try {
-                console.log('Step 1: Creating attendee record...');
-                console.log('User UID:', user.uid);
-                console.log('Event ID:', event.id);
                 const attendeeRef = doc(db, 'events', event.id, 'attendees', user.uid);
-                console.log('Attendee ref path:', attendeeRef.path);
-
                 const existingAttendee = await getDoc(attendeeRef);
-                if (existingAttendee.exists()) {
-                    console.log('Step 1: Attendee record already exists, skipping creation');
-                } else {
+                if (!existingAttendee.exists()) {
                     await setDoc(attendeeRef, {
                         userId: user.uid,
                         timeCheckedIn: new Date(),
@@ -255,19 +256,13 @@ export default function EventsContent() {
                         eventCode: enteredCode
                     });
                     attendeeRecordCreated = true;
-                    console.log('Step 1: Success');
                 }
             } catch (error) {
-                console.error('Step 1 FAILED: Creating attendee record', error);
-                console.error('Full error:', error);
                 throw new Error('Failed at step 1 (attendee record): ' + (error as Error).message);
             }
 
-            // Update event's attendees array for real-time tracking
             try {
-                console.log('Step 2: Updating event attendees array...');
                 const eventRef = doc(db, 'events', event.id);
-
                 await runTransaction(db, async (transaction) => {
                     const eventSnap = await transaction.get(eventRef);
                     if (!eventSnap.exists()) {
@@ -278,50 +273,38 @@ export default function EventsContent() {
                         ? (eventSnap.data().attendees as string[])
                         : [];
 
-                    if (existingAttendees.includes(user.uid)) {
-                        console.log('Step 2: User already in attendees array, skipping update');
-                        return;
-                    }
+                    if (existingAttendees.includes(user.uid)) return;
 
                     transaction.update(eventRef, {
                         attendees: [...existingAttendees, user.uid],
                     });
                 });
-                console.log('Step 2: Success');
             } catch (error) {
-                console.error('Step 2 FAILED: Updating event attendees array', error);
                 throw new Error('Failed at step 2 (event attendees array): ' + (error as Error).message);
             }
 
-            // Update user with event attendance and points
-            // Use setDoc with merge to handle cases where user document might not exist
             if (attendeeRecordCreated) {
                 const newPoints = userStats.totalPointsEarned + event.pointsToReward;
                 const newEventsAttended = userStats.totalEventsAttended + 1;
 
                 try {
-                    console.log('Step 3: Updating user stats...');
                     const userRef = doc(db, 'users', user.uid);
-
                     await setDoc(userRef, {
                         lastEventAttended: event.eventName,
                         points: newPoints,
                         eventsAttended: newEventsAttended
                     }, { merge: true });
-                    console.log('Step 3: Success');
                 } catch (error) {
-                    console.error('Step 3 FAILED: Updating user stats', error);
                     throw new Error('Failed at step 3 (user stats): ' + (error as Error).message);
                 }
 
-                // Sync to public profile
                 try {
                     await PublicProfileService.updateUserStats(user.uid, {
                         points: newPoints,
                         eventsAttended: newEventsAttended
                     });
                 } catch (error) {
-                    // Don't fail whole check-in process if public profile sync fails
+                    // Ignore public profile sync error
                 }
 
                 const message = event.hasFood && foodPreference
@@ -367,7 +350,7 @@ export default function EventsContent() {
                     (event.location && event.location.toLowerCase().includes(searchLower)) ||
                     (event.eventDescription && event.eventDescription.toLowerCase().includes(searchLower));
             } catch (error) {
-                return true; // Include item if there's an error to avoid blank pages
+                return true;
             }
         });
     };
@@ -380,587 +363,496 @@ export default function EventsContent() {
     const pastEvents = getFilteredEvents(getPastEvents());
     const loading = eventsLoading || userStatsLoading;
 
-    return (
-        <div className="flex-1 overflow-auto">
-            {/* Events Content */}
-            <main className="p-4 md:p-6">
-                {/* Search and Actions Bar */}
-                <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                    <div className="relative flex-1 max-w-md w-full">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none z-10" />
-                        <input
-                            type="text"
-                            placeholder="Search events..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px] bg-white"
-                        />
-                    </div>
-                    {/* Real-time sync - hidden on mobile, visible on desktop */}
-                    <div className="hidden sm:flex items-center space-x-2 px-4 py-2 text-gray-600 text-sm flex-shrink-0">
-                        <Calendar className="w-4 h-4 flex-shrink-0" />
-                        <span>Auto-syncing</span>
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 gap-4 md:gap-6">
-                    {/* Error Message */}
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                            <p className="text-sm md:text-base text-red-700">{error}</p>
+    const paginatedUpcomingEvents = useMemo(() => {
+        const start = (upcomingPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        return upcomingEvents.slice(start, end);
+    }, [upcomingPage, upcomingEvents]);
+
+    const paginatedPastEvents = useMemo(() => {
+        const start = (pastPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        return pastEvents.slice(start, end);
+    }, [pastPage, pastEvents]);
+
+    // Helper component for event cards
+    const EventCard = ({ event, isPast = false }: { event: Event; isPast?: boolean }) => {
+        const eventDate = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
+        const isActive = isEventCurrentlyActive(event);
+        const checkedIn = isUserCheckedIn(event);
+
+        return (
+            <Card
+                isPressable
+                onPress={() => {
+                    setSelectedEvent(event);
+                    onOpen();
+                }}
+                className={`w-full h-full border-none shadow-sm hover:shadow-md transition-all duration-200 ${isPast ? 'opacity-80 hover:opacity-100' : ''}`}
+            >
+                <CardBody className="p-5 flex flex-col gap-4 justify-between h-full">
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-start gap-3">
+                            <h3 className="font-bold text-xl leading-tight line-clamp-2 text-default-900">{event.eventName}</h3>
+                            <div className="flex-shrink-0">
+                                {event.hasFood && (
+                                    <Chip size="sm" variant="flat" color="warning" className="mb-1 block">Food</Chip>
+                                )}
+                                {isPast ? (
+                                    <Chip variant="flat" size="sm" color={checkedIn ? "success" : "default"}>
+                                        {checkedIn ? "Attended" : "Missed"}
+                                    </Chip>
+                                ) : checkedIn ? (
+                                    <Chip variant="flat" size="sm" color="success" startContent={<UserCheck size={12} />}>
+                                        Checked In
+                                    </Chip>
+                                ) : isActive && (
+                                    <Chip variant="shadow" size="sm" color="primary" className="animate-pulse">
+                                        Live
+                                    </Chip>
+                                )}
+                            </div>
                         </div>
-                    )}
+                        
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-small text-default-500">
+                                <Calendar size={16} className="text-default-400" />
+                                <span>{eventDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                                <span className="text-default-300">•</span>
+                                <Clock size={16} className="text-default-400" />
+                                <span>{eventDate.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'})}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-small text-default-500">
+                                <MapPin size={16} className="text-default-400" />
+                                <span className="truncate">{event.location}</span>
+                            </div>
 
+                            <div className="flex items-center gap-2 text-small text-default-500">
+                                <Award size={16} className="text-warning-500" />
+                                <span className="font-medium text-default-600">{event.pointsToReward} Points</span>
+                            </div>
+                        </div>
+                    </div>
 
-
-                    {/* User Stats */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
-                        {loading ? (
-                            <>
-                                <MetricCardSkeleton />
-                                <MetricCardSkeleton />
-                                <MetricCardSkeleton />
-                            </>
+                    <div className="pt-2 mt-auto" onClick={(e) => e.stopPropagation()}>
+                        {isPast ? (
+                            <Button fullWidth size="sm" variant="flat" isDisabled className="bg-default-100 text-default-400">
+                                Event Ended
+                            </Button>
+                        ) : checkedIn ? (
+                            <Button fullWidth size="sm" color="success" variant="flat" isDisabled startContent={<UserCheck size={16}/>}>
+                                Checked In
+                            </Button>
+                        ) : isActive ? (
+                            <Button
+                                fullWidth
+                                size="sm"
+                                color="primary"
+                                className="shadow-md shadow-primary/20 font-semibold"
+                                isLoading={checkingIn === event.id}
+                                onPress={() => handleCheckIn(event)}
+                            >
+                                Check In Now
+                            </Button>
                         ) : (
-                            <>
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Last Event Attended</p>
-                                            <p className="text-base md:text-lg font-bold text-gray-900 truncate">{userStats.lastEventAttended}</p>
-                                        </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                            <Calendar className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Total Points Earned</p>
-                                            <p className="text-xl md:text-2xl font-bold text-green-600">{userStats.totalPointsEarned}</p>
-                                        </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                            <Award className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6 sm:col-span-2 lg:col-span-1">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Total Events Attended</p>
-                                            <p className="text-xl md:text-2xl font-bold text-purple-600">{userStats.totalEventsAttended}</p>
-                                        </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                            <Users className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
+                            <Button fullWidth size="sm" variant="bordered" isDisabled className="border-default-200">
+                                Check-in Not Open
+                            </Button>
                         )}
                     </div>
+                </CardBody>
+            </Card>
+        );
+    };
 
-                    {/* Quick Check-in Section */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-4 md:p-6 mb-4 md:mb-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <div>
-                                <h2 className="text-base md:text-lg font-semibold text-gray-900 flex items-center">
-                                    <UserCheck className="w-5 h-5 mr-2 text-blue-600" />
-                                    Quick Check-in
-                                </h2>
-                                <p className="text-sm text-gray-600">Check into events happening today</p>
-                            </div>
-                        </div>
-
-                        {/* Today's Events for Check-in */}
-                        {(() => {
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            const tomorrow = new Date(today);
-                            tomorrow.setDate(tomorrow.getDate() + 1);
-
-                            const todaysEvents = events.filter(event => {
-                                const eventDate = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
-                                return eventDate >= today && eventDate < tomorrow;
-                            });
-
-                            if (todaysEvents.length === 0) {
-                                return (
-                                    <div className="text-center py-8">
-                                        <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                                        <p className="text-gray-500">No events happening today</p>
-                                    </div>
-                                );
-                            }
-
-                            return (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {todaysEvents.map(event => {
-                                        const eventDate = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
-                                        return (
-                                            <div key={event.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div className="flex-1 min-w-0">
-                                                        <h3 className="font-medium text-gray-900 truncate">{event.eventName}</h3>
-                                                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                                                            <Clock className="w-4 h-4 mr-1" />
-                                                            <span>{eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
-                                                        </div>
-                                                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                                                            <MapPin className="w-4 h-4 mr-1" />
-                                                            <span className="truncate">{event.location}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center space-x-2 ml-2">
-                                                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                                                            {event.pointsToReward} pts
-                                                        </span>
-                                                        {event.hasFood && (
-                                                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                                                                🍕 Food
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {!isEventCurrentlyActive(event) ? (
-                                                    <button
-                                                        disabled={true}
-                                                        className="w-full bg-gray-100 text-gray-600 py-2 px-4 rounded-lg cursor-not-allowed flex items-center justify-center space-x-2"
-                                                    >
-                                                        <span>Check-in Not Available</span>
-                                                    </button>
-                                                ) : isUserCheckedIn(event) ? (
-                                                    <button
-                                                        disabled={true}
-                                                        className="w-full bg-green-100 text-green-800 py-2 px-4 rounded-lg cursor-not-allowed flex items-center justify-center space-x-2"
-                                                    >
-                                                        <span>✓ Already Checked In</span>
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleCheckIn(event)}
-                                                        disabled={checkingIn === event.id}
-                                                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                                                    >
-                                                        {checkingIn === event.id ? (
-                                                            <>
-                                                                <Spinner size="sm" color="current" />
-                                                                <span>Checking In...</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <span>Check In</span>
-                                                                <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium">
-                                                                    +{event.pointsToReward} pts
-                                                                </span>
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            );
-                        })()}
+    return (
+        <div className="flex-1 h-full overflow-hidden flex flex-col bg-default-50/50 dark:bg-background">
+            <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+                    <div>
+                        <h1 className="text-2xl font-bold text-default-900">Events</h1>
+                        <p className="text-small text-default-500">Discover and check in to IEEE events</p>
                     </div>
+                </div>
 
+                {error && (
+                    <Card className="bg-danger-50 border border-danger-100 shadow-none">
+                        <CardBody className="py-3 px-4 flex flex-row items-center gap-3">
+                            <div className="p-1 bg-danger-100 rounded-full text-danger">
+                                <FileText size={16} />
+                            </div>
+                            <p className="text-danger text-small font-medium">{error}</p>
+                        </CardBody>
+                    </Card>
+                )}
+
+                {/* Stats Section - Compact & Nice Layout */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {loading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                            <EventCardSkeleton />
-                            <EventCardSkeleton />
-                            <EventCardSkeleton />
-                        </div>
+                        <>
+                            <MetricCardSkeleton />
+                            <MetricCardSkeleton />
+                            <MetricCardSkeleton />
+                        </>
                     ) : (
                         <>
-                            {/* Upcoming Events */}
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                                <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Events ({upcomingEvents.length})</h2>
-                                {upcomingEvents.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-8">No upcoming events found</p>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {upcomingEvents.map((event) => (
-                                            <div
-                                                key={event.id}
-                                                className="border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
-                                                onClick={() => setSelectedEvent(event)}
-                                            >
-                                                {/* Mobile Layout */}
-                                                <div className="block md:hidden p-4">
-                                                    <div className="flex items-start space-x-3 mb-3">
-                                                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                                            <Calendar className="w-5 h-5 text-blue-600" />
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <h3 className="font-medium text-gray-900 break-words pr-2">{event.eventName}</h3>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-1 gap-2 text-sm text-gray-500 mb-4">
-                                                        <div className="flex items-center space-x-1">
-                                                            <Clock className="w-4 h-4 flex-shrink-0" />
-                                                            <span className="break-words">{event.startDate?.toDate?.()?.toLocaleDateString() || 'TBD'}</span>
-                                                        </div>
-                                                        <div className="flex items-center space-x-1">
-                                                            <MapPin className="w-4 h-4 flex-shrink-0" />
-                                                            <span className="break-words">{event.location}</span>
-                                                        </div>
-                                                        <div className="flex items-center space-x-1">
-                                                            <Award className="w-4 h-4 flex-shrink-0" />
-                                                            <span>{event.pointsToReward} points</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between">
-                                                        {isEventCurrentlyActive(event) && (
-                                                            <div className="text-left">
-                                                                <p className="text-sm font-medium text-gray-900">
-                                                                    {event.attendees?.length || 0}{event.capacity ? `/${event.capacity}` : ''}
-                                                                </p>
-                                                                <p className="text-xs text-gray-500">Checked In</p>
-                                                            </div>
-                                                        )}
-                                                        <div className="flex-shrink-0">
-                                                            {!isEventCurrentlyActive(event) ? (
-                                                                <span className="px-2 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full break-words">
-                                                                    Check-in Not Available
-                                                                </span>
-                                                            ) : isUserCheckedIn(event) ? (
-                                                                <span className="px-3 py-1.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                                                                    ✓ Checked In
-                                                                </span>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleCheckIn(event);
-                                                                    }}
-                                                                    disabled={checkingIn === event.id}
-                                                                    className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm min-h-[44px]"
-                                                                >
-                                                                    <UserCheck className="w-4 h-4" />
-                                                                    <span className="break-words">{checkingIn === event.id ? 'Checking In...' : 'Check In'}</span>
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Desktop Layout */}
-                                                <div className="hidden md:flex items-center justify-between p-4">
-                                                    <div className="flex items-center space-x-4">
-                                                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                                            <Calendar className="w-6 h-6 text-blue-600" />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="font-medium text-gray-900">{event.eventName}</h3>
-                                                            <div className="flex flex-col space-y-1 md:flex-row md:items-center md:space-y-0 md:space-x-4 text-sm text-gray-500 mt-1">
-                                                                <div className="flex items-center space-x-1">
-                                                                    <Clock className="w-4 h-4 flex-shrink-0" />
-                                                                    <span className="truncate">{event.startDate?.toDate?.()?.toLocaleDateString() || 'TBD'}</span>
-                                                                </div>
-                                                                <div className="flex items-center space-x-1">
-                                                                    <MapPin className="w-4 h-4 flex-shrink-0" />
-                                                                    <span className="truncate">{event.location}</span>
-                                                                </div>
-                                                                <div className="flex items-center space-x-1">
-                                                                    <Award className="w-4 h-4 flex-shrink-0" />
-                                                                    <span>{event.pointsToReward} points</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center space-x-4">
-                                                        {isEventCurrentlyActive(event) && (
-                                                            <div className="text-right">
-                                                                <p className="text-sm font-medium text-gray-900">
-                                                                    {event.attendees?.length || 0}{event.capacity ? `/${event.capacity}` : ''}
-                                                                </p>
-                                                                <p className="text-xs text-gray-500">Checked In</p>
-                                                            </div>
-                                                        )}
-                                                        {!isEventCurrentlyActive(event) ? (
-                                                            <span className="px-3 py-1 bg-gray-100 text-gray-600 text-sm font-medium rounded-full">
-                                                                Check-in Not Available
-                                                            </span>
-                                                        ) : isUserCheckedIn(event) ? (
-                                                            <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                                                                ✓ Checked In
-                                                            </span>
-                                                        ) : (
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleCheckIn(event);
-                                                                }}
-                                                                disabled={checkingIn === event.id}
-                                                                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
-                                                            >
-                                                                <UserCheck className="w-4 h-4" />
-                                                                <span>{checkingIn === event.id ? 'Checking In...' : 'Check In'}</span>
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
+                            <Card className="border-none shadow-sm bg-content1 dark:bg-content2">
+                                <CardBody className="p-4 flex flex-row items-center justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <p className="text-default-500 text-xs font-semibold uppercase tracking-wider">Latest Activity</p>
+                                        <h4 className="text-lg font-bold truncate max-w-[150px] sm:max-w-[120px] lg:max-w-[200px]" title={userStats.lastEventAttended}>
+                                            {userStats.lastEventAttended}
+                                        </h4>
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Past Events */}
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                                <h2 className="text-lg font-semibold text-gray-900 mb-4">Past Events ({pastEvents.length})</h2>
-                                {pastEvents.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-8">No past events found</p>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {pastEvents.map((event) => (
-                                            <div
-                                                key={event.id}
-                                                className="border border-gray-200 rounded-xl opacity-75 cursor-pointer hover:opacity-100 transition-opacity"
-                                                onClick={() => setSelectedEvent(event)}
-                                            >
-                                                {/* Mobile Layout */}
-                                                <div className="block md:hidden p-4">
-                                                    <div className="flex items-start space-x-3 mb-3">
-                                                        <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                                            <Calendar className="w-5 h-5 text-gray-400" />
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <h3 className="font-medium text-gray-900 break-words pr-2">{event.eventName}</h3>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-1 gap-2 text-sm text-gray-500 mb-4">
-                                                        <div className="flex items-center space-x-1">
-                                                            <Clock className="w-4 h-4 flex-shrink-0" />
-                                                            <span className="break-words">{event.startDate?.toDate?.()?.toLocaleDateString() || 'TBD'}</span>
-                                                        </div>
-                                                        <div className="flex items-center space-x-1">
-                                                            <MapPin className="w-4 h-4 flex-shrink-0" />
-                                                            <span className="break-words">{event.location}</span>
-                                                        </div>
-                                                        <div className="flex items-center space-x-1">
-                                                            <Award className="w-4 h-4 flex-shrink-0" />
-                                                            <span>{event.pointsToReward} points</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="text-left">
-                                                            <p className="text-sm font-medium text-gray-900">Past Event</p>
-                                                            <p className="text-xs text-gray-500">Ended</p>
-                                                        </div>
-                                                        <div className="flex-shrink-0">
-                                                            {isUserCheckedIn(event) ? (
-                                                                <span className="px-3 py-1.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                                                                    ✓ Attended
-                                                                </span>
-                                                            ) : (
-                                                                <span className="px-3 py-1.5 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">
-                                                                    Not Attended
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Desktop Layout */}
-                                                <div className="hidden md:flex items-center justify-between p-4">
-                                                    <div className="flex items-center space-x-4">
-                                                        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                                                            <Calendar className="w-6 h-6 text-gray-400" />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="font-medium text-gray-900">{event.eventName}</h3>
-                                                            <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                                                                <div className="flex items-center space-x-1">
-                                                                    <Clock className="w-4 h-4" />
-                                                                    <span>{event.startDate?.toDate?.()?.toLocaleDateString() || 'TBD'}</span>
-                                                                </div>
-                                                                <div className="flex items-center space-x-1">
-                                                                    <MapPin className="w-4 h-4" />
-                                                                    <span>{event.location}</span>
-                                                                </div>
-                                                                <div className="flex items-center space-x-1">
-                                                                    <Award className="w-4 h-4" />
-                                                                    <span>{event.pointsToReward} points</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center space-x-4">
-                                                        <div className="text-right">
-                                                            <p className="text-sm font-medium text-gray-900">
-                                                                Past Event
-                                                            </p>
-                                                            <p className="text-xs text-gray-500">Ended</p>
-                                                        </div>
-                                                        {isUserCheckedIn(event) ? (
-                                                            <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                                                                ✓ Attended
-                                                            </span>
-                                                        ) : (
-                                                            <span className="px-3 py-1 bg-gray-100 text-gray-800 text-sm font-medium rounded-full">
-                                                                Not Attended
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
+                                    <div className="p-2.5 bg-primary-100 dark:bg-primary-900/30 rounded-full text-primary-600 dark:text-primary-400">
+                                        <Calendar size={20} />
                                     </div>
-                                )}
-                            </div>
+                                </CardBody>
+                            </Card>
+
+                            <Card className="border-none shadow-sm bg-content1 dark:bg-content2">
+                                <CardBody className="p-4 flex flex-row items-center justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <p className="text-default-500 text-xs font-semibold uppercase tracking-wider">Total Points</p>
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="text-2xl font-bold text-default-900">{userStats.totalPointsEarned}</h4>
+                                            <span className="text-[10px] font-bold text-success-600 bg-success-50 px-1.5 py-0.5 rounded-full">+12%</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-2.5 bg-warning-100 dark:bg-warning-900/30 rounded-full text-warning-600 dark:text-warning-400">
+                                        <Award size={20} />
+                                    </div>
+                                </CardBody>
+                            </Card>
+
+                            <Card className="border-none shadow-sm bg-content1 dark:bg-content2">
+                                <CardBody className="p-4 flex flex-row items-center justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <p className="text-default-500 text-xs font-semibold uppercase tracking-wider">Events Attended</p>
+                                        <h4 className="text-2xl font-bold text-default-900">{userStats.totalEventsAttended}</h4>
+                                    </div>
+                                    <div className="p-2.5 bg-secondary-100 dark:bg-secondary-900/30 rounded-full text-secondary-600 dark:text-secondary-400">
+                                        <TrendingUp size={20} />
+                                    </div>
+                                </CardBody>
+                            </Card>
                         </>
                     )}
                 </div>
+
+                {/* Quick Check-in (Today's Events) */}
+                {(() => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+
+                    const todaysEvents = events.filter(event => {
+                        const eventDate = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
+                        return eventDate >= today && eventDate < tomorrow;
+                    });
+
+                    if (todaysEvents.length > 0) {
+                        return (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 bg-primary-100 rounded-lg text-primary">
+                                        <UserCheck size={18} />
+                                    </div>
+                                    <h2 className="text-lg font-bold">Happening Today</h2>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {todaysEvents.map(event => (
+                                        <EventCard key={event.id} event={event} />
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    }
+                    return null;
+                })()}
+
+                {/* Search Bar Repositioned & More Visible */}
+                <div className="w-full">
+                    <Input
+                        classNames={{
+                            base: "w-full",
+                            inputWrapper: "h-12 bg-content1 shadow-md border-default-200 hover:border-primary focus-within:border-primary transition-colors",
+                            input: "text-base",
+                        }}
+                        placeholder="Search events by name, location, or description..."
+                        size="lg"
+                        startContent={<Search size={20} className="text-default-400" />}
+                        value={searchTerm}
+                        onValueChange={setSearchTerm}
+                        isClearable
+                        onClear={() => setSearchTerm('')}
+                    />
+                </div>
+
+                {/* Events Lists */}
+                {loading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <EventCardSkeleton />
+                        <EventCardSkeleton />
+                        <EventCardSkeleton />
+                    </div>
+                ) : (
+                    <Tabs 
+                        aria-label="Events" 
+                        color="primary" 
+                        variant="underlined" 
+                        classNames={{ 
+                            base: "w-full",
+                            tabList: "gap-0 w-full relative rounded-none p-0 border-b border-divider flex", 
+                            cursor: "w-full bg-primary", 
+                            tab: "flex-1 h-12 text-base", 
+                            tabContent: "group-data-[selected=true]:text-primary font-medium" 
+                        }}
+                    >
+                        <Tab
+                            key="upcoming"
+                            title={
+                                <div className="flex items-center justify-center gap-2 w-full">
+                                    <span>Upcoming Events</span>
+                                    <Chip size="sm" variant="flat" color="primary">{upcomingEvents.length}</Chip>
+                                </div>
+                            }
+                        >
+                            <div className="flex flex-col gap-6 mt-6">
+                                {paginatedUpcomingEvents.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-16 text-default-400 bg-content1 rounded-large border border-dashed border-divider">
+                                        <Calendar size={48} className="mb-4 opacity-50" />
+                                        <p className="text-lg font-medium">No upcoming events found</p>
+                                        <p className="text-sm">Check back later for new events!</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {paginatedUpcomingEvents.map(event => <EventCard key={event.id} event={event} />)}
+                                        </div>
+                                        {upcomingEvents.length > rowsPerPage && (
+                                            <div className="flex justify-center mt-4">
+                                                <Pagination
+                                                    total={Math.ceil(upcomingEvents.length / rowsPerPage)}
+                                                    page={upcomingPage}
+                                                    onChange={setUpcomingPage}
+                                                    showControls
+                                                    color="primary"
+                                                />
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </Tab>
+                        <Tab
+                            key="past"
+                            title={
+                                <div className="flex items-center justify-center gap-2 w-full">
+                                    <span>Past Events</span>
+                                    <Chip size="sm" variant="flat">{pastEvents.length}</Chip>
+                                </div>
+                            }
+                        >
+                            <div className="flex flex-col gap-6 mt-6">
+                                {paginatedPastEvents.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-16 text-default-400 bg-content1 rounded-large border border-dashed border-divider">
+                                        <Calendar size={48} className="mb-4 opacity-50" />
+                                        <p className="text-lg font-medium">No past events found</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {paginatedPastEvents.map(event => <EventCard key={event.id} event={event} isPast />)}
+                                        </div>
+                                        {pastEvents.length > rowsPerPage && (
+                                            <div className="flex justify-center mt-4">
+                                                <Pagination
+                                                    total={Math.ceil(pastEvents.length / rowsPerPage)}
+                                                    page={pastPage}
+                                                    onChange={setPastPage}
+                                                    showControls
+                                                    color="primary"
+                                                />
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </Tab>
+                    </Tabs>
+                )}
             </main>
 
             {/* Event Details Modal */}
-            {selectedEvent && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-                        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                            <h2 className="text-xl font-bold text-gray-900">{selectedEvent.eventName}</h2>
-                            <button
-                                onClick={() => setSelectedEvent(null)}
-                                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
+            <Modal
+                isOpen={isOpen || !!selectedEvent}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedEvent(null);
+                        onClose();
+                    } else {
+                        onOpen();
+                    }
+                }}
+                size="2xl"
+                scrollBehavior="inside"
+                backdrop="blur"
+            >
+                <ModalContent>
+                    {(onClose) => {
+                        // Calculate status for modal
+                        let modalStatus: 'live' | 'upcoming' | 'ended' = 'ended';
+                        if (selectedEvent) {
+                            if (isEventCurrentlyActive(selectedEvent)) {
+                                modalStatus = 'live';
+                            } else {
+                                const now = new Date();
+                                const startDate = selectedEvent.startDate?.toDate ? selectedEvent.startDate.toDate() : new Date(selectedEvent.startDate);
+                                if (now < startDate) {
+                                    modalStatus = 'upcoming';
+                                }
+                            }
+                        }
 
-                        <div className="p-6 overflow-y-auto" style={{ maxHeight: '60vh' }}>
-                            <div className="space-y-4">
-                                <div>
-                                    <h3 className="text-sm font-medium text-gray-700 mb-2">Description</h3>
-                                    <p className="text-gray-900">{selectedEvent.eventDescription || 'No description available'}</p>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-700 mb-2">Date & Time</h3>
-                                        <p className="text-gray-900">
-                                            {selectedEvent.startDate?.toDate?.()?.toLocaleString() || 'TBD'}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-700 mb-2">Location</h3>
-                                        <p className="text-gray-900">{selectedEvent.location}</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-700 mb-2">Points Reward</h3>
-                                        <p className="text-gray-900">{selectedEvent.pointsToReward} points</p>
-                                    </div>
-                                    {isEventCurrentlyActive(selectedEvent) && (
-                                        <div>
-                                            <h3 className="text-sm font-medium text-gray-700 mb-2">Current Attendance</h3>
-                                            <p className="text-gray-900">
-                                                {selectedEvent.attendees?.length || 0} people checked in
-                                                {selectedEvent.capacity && ` (of ${selectedEvent.capacity} capacity)`}
-                                            </p>
+                        return (
+                            <>
+                                <ModalHeader className="flex flex-col gap-1 border-b border-divider">
+                                    <h2 className="text-2xl font-bold">{selectedEvent?.eventName}</h2>
+                                    {selectedEvent && (
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            <Chip size="sm" variant="flat" color="primary" startContent={<Award size={14} />}>
+                                                {selectedEvent.pointsToReward} Points
+                                            </Chip>
+                                            {selectedEvent.hasFood && (
+                                                <Chip size="sm" variant="flat" color="warning">Food Provided</Chip>
+                                            )}
+                                            {modalStatus === 'live' ? (
+                                                <Chip size="sm" variant="flat" color="success" className="animate-pulse">Live Now</Chip>
+                                            ) : modalStatus === 'upcoming' ? (
+                                                <Chip size="sm" variant="flat" color="primary">Upcoming</Chip>
+                                            ) : (
+                                                <Chip size="sm" variant="flat" color="default">Ended</Chip>
+                                            )}
                                         </div>
                                     )}
-                                </div>
+                                </ModalHeader>
+                                <ModalBody className="py-6">
+                                    {selectedEvent && (
+                                        <div className="space-y-8">
+                                            {/* Description */}
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-default-500 uppercase tracking-wider mb-2">About Event</h3>
+                                                <div className="p-4 bg-default-50 rounded-large">
+                                                    <p className="text-default-700 whitespace-pre-wrap leading-relaxed">
+                                                        {selectedEvent.eventDescription || 'No description available.'}
+                                                    </p>
+                                                </div>
+                                            </div>
 
-                                {/* Public Files Section */}
-                                {selectedEvent.files && selectedEvent.files.length > 0 && (
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                                            <FileText className="w-4 h-4 mr-2" />
-                                            Event Files
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            {selectedEvent.files.map((fileUrl, index) => {
-                                                const fileName = `Event File ${index + 1}`;
-                                                const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileUrl);
-                                                const isPdf = /\.pdf$/i.test(fileUrl);
-
-                                                return (
-                                                    <div key={index} className="border rounded-xl p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-sm font-medium text-gray-700 truncate">{fileName}</span>
-                                                            <div className="flex space-x-2">
-                                                                <a
-                                                                    href={fileUrl}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-blue-600 hover:text-blue-800 p-1 rounded-xl transition-colors"
-                                                                    title="View File"
-                                                                >
-                                                                    <Eye className="w-4 h-4" />
-                                                                </a>
-                                                                <a
-                                                                    href={fileUrl}
-                                                                    download={fileName}
-                                                                    className="text-green-600 hover:text-green-800 p-1 rounded-xl transition-colors"
-                                                                    title="Download File"
-                                                                >
-                                                                    <Download className="w-4 h-4" />
-                                                                </a>
+                                            {/* Details Grid */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <h3 className="text-sm font-semibold text-default-500 uppercase tracking-wider mb-2">When</h3>
+                                                        <div className="flex items-center gap-3 text-default-900 bg-default-50 p-3 rounded-lg">
+                                                            <Clock size={20} className="text-primary" />
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium">{selectedEvent.startDate?.toDate?.()?.toLocaleDateString()}</span>
+                                                                <span className="text-tiny text-default-500">
+                                                                    {selectedEvent.startDate?.toDate?.()?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {selectedEvent.endDate?.toDate?.()?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                                </span>
                                                             </div>
                                                         </div>
-                                                        {isImage && (
-                                                            <img
-                                                                src={fileUrl}
-                                                                alt={fileName}
-                                                                className="w-full h-20 object-cover rounded-lg cursor-pointer"
-                                                                onClick={() => window.open(fileUrl, '_blank')}
-                                                            />
-                                                        )}
-                                                        {isPdf && (
-                                                            <div className="w-full h-20 bg-red-100 rounded-xl flex items-center justify-center cursor-pointer"
-                                                                onClick={() => window.open(fileUrl, '_blank')}>
-                                                                <FileText className="w-6 h-6 text-red-600" />
-                                                                <span className="ml-2 text-red-600 text-sm font-medium">PDF</span>
-                                                            </div>
-                                                        )}
-                                                        {!isImage && !isPdf && (
-                                                            <div className="w-full h-20 bg-gray-200 rounded-xl flex items-center justify-center cursor-pointer"
-                                                                onClick={() => window.open(fileUrl, '_blank')}>
-                                                                <FileText className="w-6 h-6 text-gray-600" />
-                                                                <span className="ml-2 text-gray-600 text-sm font-medium">File</span>
-                                                            </div>
-                                                        )}
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <h3 className="text-sm font-semibold text-default-500 uppercase tracking-wider mb-2">Where</h3>
+                                                        <div className="flex items-center gap-3 text-default-900 bg-default-50 p-3 rounded-lg">
+                                                            <MapPin size={20} className="text-primary" />
+                                                            <span className="font-medium">{selectedEvent.location}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                        <div className="flex items-center justify-between p-6 border-t border-gray-200">
-                            <button
-                                onClick={() => setSelectedEvent(null)}
-                                className="px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
-                            >
-                                Close
-                            </button>
-                            {!isUserCheckedIn(selectedEvent) && isEventCurrentlyActive(selectedEvent) && (
-                                <button
-                                    onClick={() => {
-                                        handleCheckIn(selectedEvent);
-                                        setSelectedEvent(null);
-                                    }}
-                                    disabled={checkingIn === selectedEvent.id}
-                                    className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
-                                >
-                                    <UserCheck className="w-4 h-4" />
-                                    <span>Check In</span>
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+                                            {/* Attendance Stats */}
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-default-500 uppercase tracking-wider mb-2">Attendance</h3>
+                                                <div className="flex items-center gap-3 text-default-900 bg-default-50 p-3 rounded-lg">
+                                                    <Users size={20} className="text-primary" />
+                                                    <span className="font-medium">
+                                                        {selectedEvent.attendees?.length || 0} checked in
+                                                        {selectedEvent.capacity ? ` / ${selectedEvent.capacity} capacity` : ''}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Files Section */}
+                                            {selectedEvent.files && selectedEvent.files.length > 0 && (
+                                                <>
+                                                    <Divider />
+                                                    <div>
+                                                        <h3 className="text-sm font-semibold text-default-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                                            Event Resources
+                                                        </h3>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            {selectedEvent.files.map((fileUrl, index) => {
+                                                                const fileName = `Event File ${index + 1}`;
+                                                                const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileUrl);
+                                                                const isPdf = /\.pdf$/i.test(fileUrl);
+
+                                                                return (
+                                                                    <Card key={index} isPressable onPress={() => window.open(fileUrl, '_blank')} className="border-default-200 border shadow-sm hover:border-primary transition-colors">
+                                                                        <CardBody className="p-3 flex flex-row items-center gap-3">
+                                                                            <div className={`p-2.5 rounded-lg ${isPdf ? 'bg-danger-100 text-danger' : isImage ? 'bg-secondary-100 text-secondary' : 'bg-primary-100 text-primary'}`}>
+                                                                                {isImage ? <Eye size={20} /> : <FileText size={20} />}
+                                                                            </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <p className="text-sm font-medium truncate">{fileName}</p>
+                                                                                <p className="text-tiny text-default-400">{isPdf ? 'PDF Document' : isImage ? 'Image File' : 'Resource'}</p>
+                                                                            </div>
+                                                                            <Button isIconOnly size="sm" variant="light" onPress={() => window.open(fileUrl, '_blank')}>
+                                                                                <Download size={16} />
+                                                                            </Button>
+                                                                        </CardBody>
+                                                                    </Card>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </ModalBody>
+                                <ModalFooter className="border-t border-divider">
+                                    <Button variant="flat" onPress={onClose}>
+                                        Close
+                                    </Button>
+                                    {selectedEvent && !isUserCheckedIn(selectedEvent) && isEventCurrentlyActive(selectedEvent) && (
+                                        <Button 
+                                            color="primary" 
+                                            onPress={() => {
+                                                handleCheckIn(selectedEvent);
+                                                onClose();
+                                            }}
+                                            isLoading={checkingIn === selectedEvent.id}
+                                            startContent={<UserCheck size={18} />}
+                                        >
+                                            Check In Now
+                                        </Button>
+                                    )}
+                                </ModalFooter>
+                            </>
+                        );
+                    }}
+                </ModalContent>
+            </Modal>
         </div>
     );
 }
