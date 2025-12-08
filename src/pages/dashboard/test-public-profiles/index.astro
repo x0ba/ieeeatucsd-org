@@ -11,13 +11,13 @@ import TestPublicProfilesContent from "../../../components/dashboard/pages/test-
   import { createElement } from "react";
   import { createRoot } from "react-dom/client";
   import TestPublicProfilesContent from "../../../components/dashboard/pages/test-public-profiles/TestPublicProfilesContent.tsx";
-  import DashboardLayout from "../../../components/dashboard/shared/DashboardLayout.tsx";
+  import ClientDashboardLayout from "../../../components/dashboard/shared/wrappers/ClientDashboardLayout.tsx";
 
   const container = document.getElementById("test-root");
   if (container) {
     const root = createRoot(container);
     root.render(
-      createElement(DashboardLayout, {
+      createElement(ClientDashboardLayout, {
         currentPath: "/dashboard/test-public-profiles",
         children: createElement(TestPublicProfilesContent),
       }),

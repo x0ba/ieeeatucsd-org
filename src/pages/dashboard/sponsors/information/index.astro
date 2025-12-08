@@ -1,5 +1,5 @@
 ---
-import DashboardLayout from "../../../../components/dashboard/shared/DashboardLayout.tsx";
+import ClientDashboardLayout from "../../../../components/dashboard/shared/wrappers/ClientDashboardLayout.tsx";
 import SponsorInformation from "../../../../components/dashboard/pages/sponsors/SponsorInformation.tsx";
 import { NAVIGATION_PATHS } from "../../../../components/dashboard/shared/types/navigation";
 
@@ -15,9 +15,9 @@ const currentPath = NAVIGATION_PATHS.SPONSOR_INFORMATION;
     <title>{title}</title>
 </head>
 <body>
-    <DashboardLayout currentPath={currentPath} client:load>
+    <ClientDashboardLayout currentPath={currentPath} client:load>
         <SponsorInformation client:load />
-    </DashboardLayout>
+    </ClientDashboardLayout>
 </body>
 </html>
 

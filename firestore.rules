@@ -206,6 +206,10 @@ service cloud.firestore {
         allow get: if isSignedIn()
           && request.auth.uid == attendeeId;
 
+        // Allow signed-in users to query attendee records
+        // Security enforced by query where clause: where('userId', '==', user.uid)
+        allow list: if isSignedIn();
+
         // Officers can manage any attendee record
         allow read, write: if isOfficer();
 

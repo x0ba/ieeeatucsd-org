@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, CreditCard, Users, Award, TrendingUp, Clock, CheckCircle, DollarSign, Plus, Eye, BarChart3 } from 'lucide-react';
-import { Card, CardHeader, CardBody, CardFooter, Button, Chip, Avatar, Divider, Skeleton } from '@heroui/react';
-import { collection, query, where, orderBy, limit, onSnapshot, doc, getDoc, getDocs, collectionGroup } from 'firebase/firestore';
+import React, { useState, useEffect, useRef } from 'react';
+import { Calendar, CreditCard, Users, Award, Clock, CheckCircle, DollarSign, Plus } from 'lucide-react';
+import { Card, CardHeader, CardBody, Button, Chip, Avatar, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
+import { collection, query, where, orderBy, onSnapshot, doc, getDoc, collectionGroup, limit } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
@@ -27,6 +27,25 @@ interface RecentActivity {
     points?: number;
 }
 
+interface Event {
+    id: string;
+    eventName: string;
+    eventDescription: string;
+    location: string;
+    startDate: any;
+    endDate: any;
+    pointsToReward: number;
+    attendees?: string[];
+    published: boolean;
+    capacity?: number;
+    eventCode: string;
+    hasFood?: boolean;
+    files?: string[];
+}
+
+const PREVIOUS_EVENTS_PREVIEW_COUNT = 3;
+const RECENT_ACTIVITY_PREVIEW_COUNT = 5;
+
 export default function OverviewContent() {
     const [user] = useAuthState(auth);
     const [userData, setUserData] = useState<UserType | null>(null);
@@ -40,12 +59,144 @@ export default function OverviewContent() {
         totalMembers: 0
     });
     const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
-    const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+    const [attendedEvents, setAttendedEvents] = useState<any[]>([]);
+    const [events, setEvents] = useState<Event[]>([]);
+    const [eventsLoading, setEventsLoading] = useState(true);
     const [pointsHistory, setPointsHistory] = useState<{ date: Date; points: number; cumulative: number }[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showEventsModal, setShowEventsModal] = useState(false);
+    const [showActivityModal, setShowActivityModal] = useState(false);
+    const hasComputedEventStats = useRef(false);
+
+    // Store reimbursements data for use in events effect
+    const [reimbursements, setReimbursements] = useState<any[]>([]);
+    const [fundDeposits, setFundDeposits] = useState<any[]>([]);
+
+    // Function to update statistics, activity, and points history using the working events data
+    const updateFromWorkingEvents = (currentEvents: Event[], reimbursementsData: any[], fundDeposits: any[]) => {
+        if (!user || currentEvents.length === 0) return;
+
+        // Filter events to find attended ones where user.uid is in the attendees array
+        const attendedEventsData = currentEvents.filter(event => 
+            event.attendees && event.attendees.includes(user.uid)
+        );
+
+        // Filter for "this year" statistics
+        const currentYear = new Date().getFullYear();
+        const thisYearAttendedEvents = attendedEventsData.filter(event => {
+            const eventStart = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
+            return eventStart.getFullYear() === currentYear;
+        });
+
+        // Process Reimbursements
+        const reimbursementActivities: RecentActivity[] = reimbursementsData.map((r: any, index) => ({
+            id: `reimbursement-${r.id || index}`,
+            type: 'reimbursement',
+            title: `Reimbursement ${r.status === 'approved' ? 'Approved' : r.status === 'paid' ? 'Paid' : 'Submitted'}`,
+            description: r.title || 'Reimbursement request',
+            date: r.submittedAt
+        }));
+
+        // Process Events for activity feed
+        const eventActivities: RecentActivity[] = attendedEventsData.map((e: any) => ({
+            id: `event-${e.id}`,
+            type: 'event',
+            title: 'Attended Event',
+            description: e.eventName || 'Event',
+            date: e.startDate,
+            points: e.pointsToReward || 0
+        }));
+
+        // Process fund deposits
+        const fundDepositActivities = fundDeposits.map((deposit) => ({
+            type: "fund_deposit" as const,
+            id: deposit.id,
+            title: `Fund Deposit: $${deposit.amount}`,
+            timestamp: deposit.submittedAt?.toDate() || new Date(),
+            status: deposit.status,
+            data: deposit,
+        }));
+
+        // Combine and Sort by date
+        const allActivities = [
+            ...eventActivities,
+            ...reimbursementActivities,
+            ...fundDepositActivities,
+        ].sort((a, b) => {
+            const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+            const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+            return dateB.getTime() - dateA.getTime();
+        });
+
+        setRecentActivity(allActivities);
+
+        // Calculate Points History
+        const creationTime = user?.metadata.creationTime;
+        const creationDate = creationTime ? new Date(creationTime) : new Date();
+
+        let lastEventDate: Date | null = null;
+        if (attendedEventsData.length > 0) {
+            const sortedEvents = [...attendedEventsData].sort((a, b) => {
+                const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
+                const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
+                return dateB.getTime() - dateA.getTime();
+            });
+            const lastEvent = sortedEvents[0];
+            lastEventDate = lastEvent.startDate?.toDate ? lastEvent.startDate.toDate() : new Date(lastEvent.startDate);
+        }
+
+        // Build chronological history
+        const chronologicalActivities = [...allActivities].reverse();
+        let runningTotal = 0;
+        
+        let history = [{
+            date: creationDate,
+            points: 0,
+            cumulative: 0
+        }];
+
+        chronologicalActivities.forEach(a => {
+            const activityDate = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+            if (activityDate >= creationDate) {
+                runningTotal += (a.points || 0);
+                history.push({
+                    date: activityDate,
+                    points: a.points || 0,
+                    cumulative: runningTotal
+                });
+            }
+        });
+
+        setPointsHistory(history);
+        
+        // Update statistics - use this year's data for display
+        const submitted = reimbursementsData.length;
+        const approved = reimbursementsData.filter((r: any) => r.status === 'approved' || r.status === 'paid').length;
+        const sortedAttended = [...attendedEventsData].sort((a, b) => {
+            const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
+            const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
+            return dateB.getTime() - dateA.getTime();
+        });
+        
+        // Calculate total points from this year's attended events
+        const thisYearTotalPoints = thisYearAttendedEvents.reduce((sum, event) => sum + (event.pointsToReward || 0), 0);
+
+        setAttendedEvents(sortedAttended);
+        
+        setUserStats(prev => ({
+            ...prev,
+            totalPoints: thisYearTotalPoints, // Points from this year only
+            eventsAttended: thisYearAttendedEvents.length, // Events from this year only
+            reimbursementsSubmitted: submitted,
+            reimbursementsApproved: approved
+        }));
+        hasComputedEventStats.current = true;
+        setLoading(false);
+    };
 
     useEffect(() => {
         if (!user) return;
+        hasComputedEventStats.current = false;
 
         // Set up real-time listener for user data
         const unsubscribeUser = onSnapshot(
@@ -54,11 +205,6 @@ export default function OverviewContent() {
                 if (userDoc.exists()) {
                     const data = userDoc.data() as UserType;
                     setUserData(data);
-                    setUserStats(prev => ({
-                        ...prev,
-                        totalPoints: data.points || 0,
-                        eventsAttended: data.eventsAttended || 0
-                    }));
                 }
             },
             (error) => {
@@ -89,154 +235,96 @@ export default function OverviewContent() {
             }));
         });
 
-        // Fetch upcoming events
-        const eventsQuery = query(
-            collection(db, 'events'),
-            where('published', '==', true),
-            orderBy('startDate', 'asc'),
-            limit(3)
-        );
-
-        const unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
-            const now = new Date();
-            const upcoming = snapshot.docs
-                .map(doc => ({ id: doc.id, ...doc.data() }))
-                .filter((event: any) => {
-                    const startDate = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
-                    return startDate > now;
-                });
-            setUpcomingEvents(upcoming);
-        });
-
-        // Combined fetch for activities (Reimbursements + Attended Events)
-        const attendedEventsQuery = query(
-            collectionGroup(db, 'attendees'),
-            where('userId', '==', user.uid)
-        );
-
+        // Fetch reimbursements only - events will be filtered from the working events state
         const reimbursementsQuery = query(
             collection(db, 'reimbursements'),
             where('submittedBy', '==', user.uid)
         );
 
-        let localReimbursements: any[] = [];
-        let localAttendedEvents: any[] = [];
-
-        const updateCombinedActivity = () => {
-            // Process Reimbursements
-            const reimbursementActivities: RecentActivity[] = localReimbursements.map((r: any, index) => ({
-                id: `reimbursement-${r.id || index}`,
-                type: 'reimbursement',
-                title: `Reimbursement ${r.status === 'approved' ? 'Approved' : r.status === 'paid' ? 'Paid' : 'Submitted'}`,
-                description: r.title || 'Reimbursement request',
-                date: r.submittedAt
-            }));
-
-            // Process Events
-            const eventActivities: RecentActivity[] = localAttendedEvents.map((e: any) => ({
-                id: `event-${e.id}`,
-                type: 'event',
-                title: 'Attended Event',
-                description: e.eventName || 'Event',
-                date: e.startDate, 
-                points: e.pointsToReward || 0
-            }));
-
-            // Combine and Sort
-            const allActivities = [...reimbursementActivities, ...eventActivities].sort((a, b) => {
-                const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
-                const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
-                return dateB.getTime() - dateA.getTime();
-            });
-
-            setRecentActivity(allActivities.slice(0, 5));
-
-            // Calculate Points History
-            // 1. Determine Start Date (Account Creation)
-            const creationTime = user?.metadata.creationTime;
-            const creationDate = creationTime ? new Date(creationTime) : new Date();
-
-            // 2. Determine End Date (Last Event Check-in)
-            let lastEventDate: Date | null = null;
-            if (localAttendedEvents.length > 0) {
-                const sortedEvents = [...localAttendedEvents].sort((a, b) => {
-                    const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
-                    const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
-                    return dateB.getTime() - dateA.getTime();
-                });
-                const lastEvent = sortedEvents[0];
-                lastEventDate = lastEvent.startDate?.toDate ? lastEvent.startDate.toDate() : new Date(lastEvent.startDate);
-            }
-
-            // 3. Build History
-            const chronologicalActivities = [...allActivities].reverse();
-            let runningTotal = 0;
-            
-            // Start with initial point at creation time
-            let history = [{
-                date: creationDate,
-                points: 0,
-                cumulative: 0
-            }];
-
-            chronologicalActivities.forEach(a => {
-                const activityDate = a.date?.toDate ? a.date.toDate() : new Date(a.date);
-                // Ensure we don't add points before creation (data integrity check)
-                if (activityDate >= creationDate) {
-                    runningTotal += (a.points || 0);
-                    history.push({
-                        date: activityDate,
-                        points: a.points || 0,
-                        cumulative: runningTotal
-                    });
-                }
-            });
-
-            setPointsHistory(history);
-            
-            // Update stats
-            const submitted = localReimbursements.length;
-            const approved = localReimbursements.filter((r: any) => r.status === 'approved' || r.status === 'paid').length;
-            
-            setUserStats(prev => ({
-                ...prev,
-                eventsAttended: localAttendedEvents.length,
-                reimbursementsSubmitted: submitted,
-                reimbursementsApproved: approved
-            }));
-            
-            setLoading(false);
-        };
-
         const unsubscribeReimbursements = onSnapshot(reimbursementsQuery, (snapshot) => {
-            localReimbursements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            updateCombinedActivity();
+            const reimbursementsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setReimbursements(reimbursementsData);
         });
 
-        const unsubscribeAttendedEvents = onSnapshot(attendedEventsQuery, async (snapshot) => {
-            const eventIds = snapshot.docs.map(doc => doc.ref.parent.parent!.id);
-            const uniqueEventIds = [...new Set(eventIds)];
-            
-            // Fetch actual event data for each event ID
-            const eventPromises = uniqueEventIds.map(id => getDoc(doc(db, 'events', id)));
-            const eventDocs = await Promise.all(eventPromises);
-            
-            localAttendedEvents = eventDocs
-                .filter(doc => doc.exists())
-                .map(doc => ({ id: doc.id, ...doc.data() }))
-                .filter((event: any) => event.published === true);
-            
-            updateCombinedActivity();
+        // Fund Deposits query
+        const fundDepositsQuery = query(
+            collection(db, "fundDeposits"),
+            orderBy("submittedAt", "desc"),
+            limit(50)
+        );
+        const unsubscribeFundDeposits = onSnapshot(fundDepositsQuery, (snapshot) => {
+            const deposits = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setFundDeposits(deposits);
         });
 
         return () => {
             unsubscribeUser();
             unsubscribeRanking();
-            unsubscribeEvents();
             unsubscribeReimbursements();
-            unsubscribeAttendedEvents();
+            unsubscribeFundDeposits();
         };
     }, [user]);
+
+    // Real-time listener for events
+    useEffect(() => {
+        setEventsLoading(true);
+
+        const eventsRef = collection(db, 'events');
+        const publishedQuery = query(
+            eventsRef,
+            where('published', '==', true),
+            orderBy("startDate", "desc")
+        );
+
+        const unsubscribeEvents = onSnapshot(
+            publishedQuery,
+            (snapshot) => {
+                const eventsData = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        // Ensure all required fields have defaults
+                        published: data.published ?? false,
+                        pointsToReward: data.pointsToReward ?? 0,
+                        attendees: data.attendees ?? [],
+                        eventCode: data.eventCode ?? '',
+                        eventName: data.eventName ?? data.name ?? 'Untitled Event',
+                        hasFood: data.hasFood ?? false,
+                        files: data.files ?? []
+                    };
+                }) as Event[];
+
+                // Sort by start date
+                eventsData.sort((a, b) => {
+                    const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
+                    const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
+                    return dateA.getTime() - dateB.getTime();
+                });
+
+                setEvents(eventsData);
+                setEventsLoading(false);
+            },
+            (error) => {
+                console.error('Error fetching events:', error);
+                setEventsLoading(false);
+            }
+        );
+
+        return () => unsubscribeEvents();
+    }, []);
+
+    // Update statistics when both events and reimbursements are loaded
+    useEffect(() => {
+        if (events.length > 0 && user) {
+            updateFromWorkingEvents(events, reimbursements, fundDeposits);
+        }
+    }, [events, reimbursements, fundDeposits, user]);
+
+
 
     const quickActions = [
         {
@@ -339,23 +427,24 @@ export default function OverviewContent() {
                             </div>
                         )}
 
-                        {/* Upcoming Events - Compact List */}
+                        {/* Previously Attended Events - Compact List */}
                         <Card className="w-full border border-gray-200" shadow="none">
                             <CardHeader className="pb-0 pt-4 px-5 flex justify-between items-center">
                                 <div className="flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-gray-500" />
-                                    <h2 className="text-base font-semibold text-gray-900">Upcoming Events</h2>
+                                    <h2 className="text-base font-semibold text-gray-900">Previously Attended Events</h2>
                                 </div>
-                                <Button
-                                    as="a"
-                                    href="/dashboard/events"
-                                    variant="light"
-                                    color="primary"
-                                    size="sm"
-                                    className="h-8 min-w-0 px-2"
-                                >
-                                    View all
-                                </Button>
+                                {attendedEvents.length > 0 && (
+                                    <Button
+                                        variant="light"
+                                        color="primary"
+                                        size="sm"
+                                        className="h-8 min-w-0 px-2"
+                                        onPress={() => setShowEventsModal(true)}
+                                    >
+                                        View all
+                                    </Button>
+                                )}
                             </CardHeader>
                             <CardBody className="p-5 pt-3">
                                 {loading ? (
@@ -364,42 +453,49 @@ export default function OverviewContent() {
                                             <Skeleton key={i} className="w-full h-16 rounded-lg" />
                                         ))}
                                     </div>
-                                ) : upcomingEvents.length === 0 ? (
+                                ) : attendedEvents.length === 0 ? (
                                     <div className="text-center py-6 text-gray-500 text-sm">
-                                        No upcoming events scheduled
+                                        No attended events yet — check in at your next meetup!
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
-                                        {upcomingEvents.slice(0, 3).map((event: any) => (
-                                            <div 
-                                                key={event.id} 
-                                                className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-gray-100"
-                                                onClick={() => window.location.href = '/dashboard/events'}
-                                            >
-                                                <div className="flex-shrink-0 w-12 text-center bg-blue-50 rounded-md p-1">
-                                                    <div className="text-xs text-blue-600 font-bold uppercase">
-                                                        {event.startDate?.toDate ? event.startDate.toDate().toLocaleDateString(undefined, { month: 'short' }) : 'TBD'}
+                                        {attendedEvents.slice(0, PREVIOUS_EVENTS_PREVIEW_COUNT).map((event: any) => {
+                                            const eventStart = event.startDate?.toDate ? event.startDate.toDate() : (event.startDate ? new Date(event.startDate) : null);
+                                            return (
+                                                <div
+                                                    key={event.id}
+                                                    className="flex items-center gap-3 p-2 rounded-lg border border-transparent hover:border-gray-100 hover:bg-gray-50 transition-colors"
+                                                >
+                                                    <div className="flex-shrink-0 w-12 text-center bg-blue-50 rounded-md p-1">
+                                                        <div className="text-xs text-blue-600 font-bold uppercase">
+                                                            {eventStart ? eventStart.toLocaleDateString(undefined, { month: 'short' }) : 'TBD'}
+                                                        </div>
+                                                        <div className="text-lg font-bold text-gray-900 leading-none">
+                                                            {eventStart ? eventStart.getDate() : '--'}
+                                                        </div>
                                                     </div>
-                                                    <div className="text-lg font-bold text-gray-900 leading-none">
-                                                        {event.startDate?.toDate ? event.startDate.toDate().getDate() : '--'}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-gray-900 text-sm truncate">
+                                                            {event.eventName}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                            <Clock className="w-3 h-3" />
+                                                            {eventStart ? eventStart.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : 'TBD'}
+                                                        </div>
                                                     </div>
+                                                    {event.pointsToReward > 0 && (
+                                                        <Chip size="sm" variant="flat" color="success" className="h-6 text-xs">
+                                                            +{event.pointsToReward}
+                                                        </Chip>
+                                                    )}
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-gray-900 text-sm truncate">
-                                                        {event.eventName}
-                                                    </p>
-                                                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                        <Clock className="w-3 h-3" />
-                                                        {event.startDate?.toDate ? event.startDate.toDate().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : 'TBD'}
-                                                    </div>
-                                                </div>
-                                                {event.pointsToReward > 0 && (
-                                                    <Chip size="sm" variant="flat" color="success" className="h-6 text-xs">
-                                                        +{event.pointsToReward}
-                                                    </Chip>
-                                                )}
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
+                                        {attendedEvents.length > PREVIOUS_EVENTS_PREVIEW_COUNT && (
+                                            <p className="text-xs text-gray-500 text-center pt-2">
+                                                Showing {PREVIOUS_EVENTS_PREVIEW_COUNT} of {attendedEvents.length} events
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                             </CardBody>
@@ -414,6 +510,17 @@ export default function OverviewContent() {
                                     <Clock className="w-5 h-5 text-gray-500" />
                                     <h2 className="text-base font-semibold text-gray-900">Recent Activity</h2>
                                 </div>
+                                {recentActivity.length > 0 && (
+                                    <Button
+                                        variant="light"
+                                        color="primary"
+                                        size="sm"
+                                        className="h-8 min-w-0 px-2"
+                                        onPress={() => setShowActivityModal(true)}
+                                    >
+                                        View all
+                                    </Button>
+                                )}
                             </CardHeader>
                             <CardBody className="p-5 pt-3">
                                 {loading ? (
@@ -437,12 +544,15 @@ export default function OverviewContent() {
                                         {/* Vertical Line */}
                                         <div className="absolute left-4 top-2 bottom-2 w-px bg-gray-100" />
                                         
-                                        {recentActivity.map((activity, index) => {
+                                        {recentActivity.slice(0, RECENT_ACTIVITY_PREVIEW_COUNT).map((activity) => {
                                             const config = {
                                                 event: { icon: CheckCircle, color: 'text-blue-500', bg: 'bg-blue-50' },
                                                 reimbursement: { icon: DollarSign, color: 'text-green-500', bg: 'bg-green-50' },
-                                                achievement: { icon: Award, color: 'text-yellow-500', bg: 'bg-yellow-50' }
+                                                achievement: { icon: Award, color: 'text-yellow-500', bg: 'bg-yellow-50' },
+                                                fund_deposit: { icon: DollarSign, color: 'text-green-500', bg: 'bg-green-50' }
                                             }[activity.type];
+                                            
+                                            if (!config) return null;
                                             
                                             const Icon = config.icon;
 
@@ -472,12 +582,140 @@ export default function OverviewContent() {
                                                 </div>
                                             );
                                         })}
+                                        {recentActivity.length > RECENT_ACTIVITY_PREVIEW_COUNT && (
+                                            <p className="text-xs text-gray-500 text-center pt-2">
+                                                Showing {RECENT_ACTIVITY_PREVIEW_COUNT} of {recentActivity.length} records
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                             </CardBody>
                         </Card>
                     </div>
                 </div>
+
+                {/* Previously Attended Events Modal */}
+                <Modal
+                    isOpen={showEventsModal}
+                    onOpenChange={(open) => !open && setShowEventsModal(false)}
+                    size="lg"
+                    scrollBehavior="inside"
+                >
+                    <ModalContent>
+                        {(onClose) => (
+                            <>
+                                <ModalHeader className="flex flex-col gap-1">
+                                    <h2 className="text-xl font-semibold text-gray-900">Previously Attended Events</h2>
+                                    <p className="text-sm text-gray-500">Published events you've checked into</p>
+                                </ModalHeader>
+                                <ModalBody className="pb-6">
+                                    {attendedEvents.length === 0 ? (
+                                        <p className="text-gray-500 text-sm">No attended events were found.</p>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {attendedEvents.map((event: any) => {
+                                                const eventStart = event.startDate?.toDate ? event.startDate.toDate() : (event.startDate ? new Date(event.startDate) : null);
+                                                return (
+                                                    <div key={event.id} className="p-3 border border-gray-100 rounded-lg">
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <div>
+                                                                <p className="font-medium text-gray-900">{event.eventName}</p>
+                                                                <p className="text-sm text-gray-500">
+                                                                    {eventStart
+                                                                        ? `${eventStart.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })} at ${eventStart.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
+                                                                        : 'Date TBD'}
+                                                                </p>
+                                                            </div>
+                                                            {event.pointsToReward > 0 && (
+                                                                <Chip size="sm" variant="flat" color="success">
+                                                                    +{event.pointsToReward} pts
+                                                                </Chip>
+                                                            )}
+                                                        </div>
+                                                        {event.eventDescription && (
+                                                            <p className="text-xs text-gray-500 mt-2 line-clamp-2">
+                                                                {event.eventDescription}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </ModalBody>
+                                <ModalFooter>
+                                    <Button variant="light" onPress={onClose}>
+                                        Close
+                                    </Button>
+                                </ModalFooter>
+                            </>
+                        )}
+                    </ModalContent>
+                </Modal>
+
+                {/* Recent Activity Modal */}
+                <Modal
+                    isOpen={showActivityModal}
+                    onOpenChange={(open) => !open && setShowActivityModal(false)}
+                    size="lg"
+                    scrollBehavior="inside"
+                >
+                    <ModalContent>
+                        {(onClose) => (
+                            <>
+                                <ModalHeader className="flex flex-col gap-1">
+                                    <h2 className="text-xl font-semibold text-gray-900">All Recent Activity</h2>
+                                    <p className="text-sm text-gray-500">Events, reimbursements, and achievements</p>
+                                </ModalHeader>
+                                <ModalBody className="pb-6">
+                                    {recentActivity.length === 0 ? (
+                                        <p className="text-gray-500 text-sm">No activity to show.</p>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {recentActivity.map((activity) => {
+                                                const config = {
+                                                    event: { icon: CheckCircle, color: 'text-blue-500', bg: 'bg-blue-50' },
+                                                    reimbursement: { icon: DollarSign, color: 'text-green-500', bg: 'bg-green-50' },
+                                                    achievement: { icon: Award, color: 'text-yellow-500', bg: 'bg-yellow-50' },
+                                                    fund_deposit: { icon: DollarSign, color: 'text-green-500', bg: 'bg-green-50' }
+                                                }[activity.type];
+                                                const Icon = config.icon;
+                                                return (
+                                                    <div key={activity.id} className="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+                                                        <div className={`flex-shrink-0 w-9 h-9 rounded-full ${config.bg} flex items-center justify-center`}>
+                                                            <Icon className={`w-4 h-4 ${config.color}`} />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex justify-between items-start gap-3">
+                                                                <div>
+                                                                    <p className="text-sm font-semibold text-gray-900">{activity.title}</p>
+                                                                    <p className="text-xs text-gray-500 mt-0.5">{activity.description}</p>
+                                                                </div>
+                                                                <span className="text-xs text-gray-400 whitespace-nowrap">
+                                                                    {activity.date?.toDate ? activity.date.toDate().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                                                                </span>
+                                                            </div>
+                                                            {activity.points && (
+                                                                <span className="inline-flex items-center text-xs font-medium text-green-600 mt-2">
+                                                                    <Plus className="w-3 h-3 mr-1" /> {activity.points} points
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </ModalBody>
+                                <ModalFooter>
+                                    <Button variant="light" onPress={onClose}>
+                                        Close
+                                    </Button>
+                                </ModalFooter>
+                            </>
+                        )}
+                    </ModalContent>
+                </Modal>
             </main>
         </div>
     );

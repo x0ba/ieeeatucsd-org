@@ -1,6 +1,6 @@
 ---
 import DashboardHead from "../../components/dashboard/shared/DashboardHead.astro";
-import DashboardLayout from "../../components/dashboard/shared/DashboardLayout.tsx";
+import ClientDashboardLayout from "../../components/dashboard/shared/wrappers/ClientDashboardLayout.tsx";
 
 const title = "Email Testing - Dashboard";
 const currentPath = "/dashboard/email-testing";
@@ -12,7 +12,7 @@ const currentPath = "/dashboard/email-testing";
     <DashboardHead title={title} />
   </head>
   <body>
-    <DashboardLayout currentPath={currentPath} client:load>
+    <ClientDashboardLayout currentPath={currentPath} client:load>
       <div class="email-testing-container">
         <h1>Email Testing Dashboard</h1>
         <p class="subtitle">
@@ -92,7 +92,7 @@ const currentPath = "/dashboard/email-testing";
           </ul>
         </div>
       </div>
-    </DashboardLayout>
+    </ClientDashboardLayout>
 
     <style>
       .email-testing-container {
