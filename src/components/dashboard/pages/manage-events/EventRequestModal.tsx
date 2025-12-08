@@ -365,14 +365,23 @@ export default function EventRequestModal({
       return;
     }
 
+    const currentUserId = auth.currentUser?.uid;
+    if (!currentUserId) {
+      showToast.error("You must be logged in to submit an event request.");
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const requestedUserId = editingRequest?.requestedUser || currentUserId;
+      let persistedEventRequestId: string | null = editingRequest?.id ?? null;
+
       // For new requests, create a temporary ID for file organization
       // For existing requests, use the existing ID
       const eventId = editingRequest
         ? editingRequest.id
-        : `temp_${Date.now()}_${auth.currentUser?.uid}`;
+        : `temp_${Date.now()}_${currentUserId}`;
 
       // Upload files using event-based structure
       let roomBookingUrls: string[] = [];
@@ -508,9 +517,7 @@ export default function EventRequestModal({
         // When converting a draft to full submission, change status to "submitted" and clear isDraft flag
         status: editingRequest?.isDraft ? "submitted" : (editingRequest ? editingRequest.status : "submitted"),
         isDraft: false, // Always set to false when submitting through full event form
-        requestedUser: editingRequest
-          ? editingRequest.requestedUser
-          : auth.currentUser?.uid || "",
+        requestedUser: requestedUserId,
         createdAt: editingRequest ? editingRequest.createdAt : new Date(),
         updatedAt: new Date(),
       };
@@ -582,7 +589,11 @@ export default function EventRequestModal({
           collection(db, "event_requests"),
           eventRequestData,
         );
-        const newEventRequestId = (eventRequestRef as any).id;
+        persistedEventRequestId = (eventRequestRef as any).id;
+
+        if (!persistedEventRequestId) {
+          throw new Error("Failed to create event request ID");
+        }
 
         // If we used a temporary ID for file uploads, we need to move the files
         if (eventId.startsWith("temp_")) {
@@ -597,7 +608,7 @@ export default function EventRequestModal({
             if (allFileUrls.length > 0) {
               const movedUrls = await moveFilesToActualEventId(
                 eventId,
-                newEventRequestId,
+                persistedEventRequestId,
                 allFileUrls,
               );
 
@@ -641,7 +652,7 @@ export default function EventRequestModal({
             auth.currentUser?.uid || "",
           );
           await EventAuditService.logEventCreation(
-            newEventRequestId,
+            persistedEventRequestId,
             userName,
             userName,
             { eventName: formData.name },
@@ -651,6 +662,11 @@ export default function EventRequestModal({
         }
 
         showToast.success("Event request submitted successfully!");
+      }
+
+      const eventRequestId = persistedEventRequestId ?? (eventRequestRef as any)?.id;
+      if (!eventRequestId) {
+        throw new Error("Unable to determine linked event request ID");
       }
 
       // Handle corresponding event in events collection
@@ -664,9 +680,7 @@ export default function EventRequestModal({
         privateFiles: [],
         pointsToReward: formData.pointsToReward,
         eventCode: formData.eventCode,
-        createdFrom: editingRequest
-          ? editingRequest.id
-          : (eventRequestRef as any).id,
+        createdFrom: eventRequestId,
         status: "draft",
       };
 
@@ -674,7 +688,7 @@ export default function EventRequestModal({
         // Find and update corresponding event
         const eventsQuery = query(
           collection(db, "events"),
-          where("createdFrom", "==", editingRequest.id),
+          where("createdFrom", "==", eventRequestId),
         );
         const eventsSnapshot = await getDocs(eventsQuery);
 
@@ -701,12 +715,16 @@ export default function EventRequestModal({
       if (!editingRequest || wasDraftConversion) {
         try {
           await EmailClient.notifyFirebaseEventRequestSubmission(
-            (eventRequestRef as any).id,
+            eventRequestId,
           );
         } catch (error) {
           console.error("Error sending email notification:", error);
         }
       }
+
+      // Note: Event creation in the events collection is skipped for non-officers
+      // Officers can create/manage events separately through the dashboard
+      // This prevents permission errors for regular users submitting event requests
 
       onSuccess?.();
       onClose();

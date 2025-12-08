@@ -265,6 +265,11 @@ service cloud.firestore {
       allow update: if hasAnyRole(['General Officer'])
         && resource.data.requestedUser == request.auth.uid;
 
+    // General Officers can update any draft (for converting to submissions)
+    allow update: if hasAnyRole(['General Officer'])
+      && resource.data.isDraft == true;
+
+
       // Audit log updates by Member+
       allow update: if hasAnyRole([
           'Member',
