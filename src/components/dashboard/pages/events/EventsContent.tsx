@@ -73,6 +73,8 @@ export default function EventsContent() {
         const unsubscribeEvents = onSnapshot(
             publishedQuery,
             (snapshot) => {
+                console.log('Events: All published events query size:', snapshot.docs.length);
+                
                 const eventsData = snapshot.docs.map(doc => {
                     const data = doc.data();
                     return {
@@ -95,6 +97,8 @@ export default function EventsContent() {
                     const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
                     return dateA.getTime() - dateB.getTime();
                 });
+
+                console.log('Events: Filtered attended events from all events:', eventsData.filter(e => e.attendees?.includes(user?.uid || '')).length);
 
                 setEvents(eventsData);
                 setEventsLoading(false);
@@ -165,14 +169,16 @@ export default function EventsContent() {
 
         const unsubscribe = onSnapshot(
             attendeesQuery,
+            { includeMetadataChanges: true },
             (snapshot) => {
                 const checkedInEventIds = new Set<string>();
                 snapshot.docs.forEach((doc) => {
                     checkedInEventIds.add(doc.id);
                 });
+                
                 setCheckedInEvents(checkedInEventIds);
             },
-            (error) => {
+            (error: any) => {
                 console.error('Error fetching user check-ins:', error);
                 setCheckedInEvents(new Set());
             }

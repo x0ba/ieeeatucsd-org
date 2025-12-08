@@ -492,6 +492,16 @@ service cloud.firestore {
       allow delete: if hasAnyRole(['Administrator']);
     }
 
+    // ===== CollectionGroup queries =====
+    // Allow users to query their own attendee records across all events
+    match /{path=**}/attendees/{attendeeId} {
+      allow read: if isSignedIn()
+        && request.auth.uid == attendeeId;
+      
+      // Officers can read all attendee records
+      allow read: if isOfficer();
+    }
+
     // ===== Default deny =====
     match /{document=**} {
       allow read, write, delete: if false;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, CreditCard, Users, Award, Clock, CheckCircle, DollarSign, Plus } from 'lucide-react';
 import { Card, CardHeader, CardBody, Button, Chip, Avatar, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
-import { collection, query, where, orderBy, onSnapshot, doc, getDoc, collectionGroup, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, limit, collectionGroup, getDoc } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
@@ -20,7 +20,7 @@ interface UserStats {
 
 interface RecentActivity {
     id: string;
-    type: 'event' | 'reimbursement' | 'achievement';
+    type: 'event' | 'reimbursement' | 'achievement' | 'fund_deposit';
     title: string;
     description: string;
     date: any;
@@ -59,7 +59,6 @@ export default function OverviewContent() {
         totalMembers: 0
     });
     const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
-    const [attendedEvents, setAttendedEvents] = useState<any[]>([]);
     const [events, setEvents] = useState<Event[]>([]);
     const [eventsLoading, setEventsLoading] = useState(true);
     const [pointsHistory, setPointsHistory] = useState<{ date: Date; points: number; cumulative: number }[]>([]);
@@ -76,17 +75,22 @@ export default function OverviewContent() {
     const updateFromWorkingEvents = (currentEvents: Event[], reimbursementsData: any[], fundDeposits: any[]) => {
         if (!user || currentEvents.length === 0) return;
 
-        // Filter events to find attended ones where user.uid is in the attendees array
-        const attendedEventsData = currentEvents.filter(event => 
-            event.attendees && event.attendees.includes(user.uid)
-        );
+        console.log('Overview: updateFromWorkingEvents called with', currentEvents.length, 'events');
+
+        // Events are already filtered by query to only include attended events
+        const attendedEventsData = currentEvents;
 
         // Filter for "this year" statistics
         const currentYear = new Date().getFullYear();
         const thisYearAttendedEvents = attendedEventsData.filter(event => {
             const eventStart = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
-            return eventStart.getFullYear() === currentYear;
+            const year = eventStart.getFullYear();
+            console.log('Overview: Event - ID:', event.id, 'Name:', event.eventName, 'Start Date:', eventStart.toISOString(), 'Year:', year);
+            return year === currentYear;
         });
+
+        console.log('Overview: attendedEventsData count (all time):', attendedEventsData.length);
+        console.log('Overview: thisYearAttendedEvents count:', thisYearAttendedEvents.length);
 
         // Process Reimbursements
         const reimbursementActivities: RecentActivity[] = reimbursementsData.map((r: any, index) => ({
@@ -108,13 +112,12 @@ export default function OverviewContent() {
         }));
 
         // Process fund deposits
-        const fundDepositActivities = fundDeposits.map((deposit) => ({
-            type: "fund_deposit" as const,
+        const fundDepositActivities: RecentActivity[] = fundDeposits.map((deposit) => ({
+            type: 'fund_deposit',
             id: deposit.id,
             title: `Fund Deposit: $${deposit.amount}`,
-            timestamp: deposit.submittedAt?.toDate() || new Date(),
-            status: deposit.status,
-            data: deposit,
+            description: `Status: ${deposit.status}`,
+            date: deposit.submittedAt
         }));
 
         // Combine and Sort by date
@@ -181,7 +184,7 @@ export default function OverviewContent() {
         // Calculate total points from this year's attended events
         const thisYearTotalPoints = thisYearAttendedEvents.reduce((sum, event) => sum + (event.pointsToReward || 0), 0);
 
-        setAttendedEvents(sortedAttended);
+        // Events are already sorted and set in the events state above
         
         setUserStats(prev => ({
             ...prev,
@@ -268,60 +271,96 @@ export default function OverviewContent() {
         };
     }, [user]);
 
-    // Real-time listener for events
+    // Set up real-time listener for all user check-ins using collectionGroup query
     useEffect(() => {
+        if (!user?.uid) {
+            setEvents([]);
+            setEventsLoading(false);
+            return;
+        }
+
         setEventsLoading(true);
 
-        const eventsRef = collection(db, 'events');
-        const publishedQuery = query(
-            eventsRef,
-            where('published', '==', true),
-            orderBy("startDate", "desc")
+        // Query the attendees subcollection across all events where userId matches
+        const attendeesQuery = query(
+            collectionGroup(db, 'attendees'),
+            where('userId', '==', user.uid)
         );
 
-        const unsubscribeEvents = onSnapshot(
-            publishedQuery,
-            (snapshot) => {
-                const eventsData = snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        ...data,
-                        // Ensure all required fields have defaults
-                        published: data.published ?? false,
-                        pointsToReward: data.pointsToReward ?? 0,
-                        attendees: data.attendees ?? [],
-                        eventCode: data.eventCode ?? '',
-                        eventName: data.eventName ?? data.name ?? 'Untitled Event',
-                        hasFood: data.hasFood ?? false,
-                        files: data.files ?? []
-                    };
-                }) as Event[];
+        const unsubscribe = onSnapshot(
+            attendeesQuery,
+            { includeMetadataChanges: true },
+            async (snapshot) => {
+                // Get unique event IDs from attendee records
+                const eventIds = new Set<string>();
+                snapshot.docs.forEach(doc => {
+                    // Parent path is events/{eventId}/attendees/{attendeeId}
+                    const eventId = doc.ref.parent.parent?.id;
+                    if (eventId) eventIds.add(eventId);
+                });
 
-                // Sort by start date
+                console.log('Overview: Found attendee records for', eventIds.size, 'events');
+
+                // Fetch event documents for each event ID
+                const eventPromises = Array.from(eventIds).map(async (eventId) => {
+                    const eventRef = doc(db, 'events', eventId);
+                    const eventSnap = await getDoc(eventRef);
+                    if (eventSnap.exists()) {
+                        const data = eventSnap.data();
+                        // Only include published events
+                        if (data.published === true) {
+                            return {
+                                id: eventSnap.id,
+                                ...data,
+                                published: data.published ?? false,
+                                pointsToReward: data.pointsToReward ?? 0,
+                                eventCode: data.eventCode ?? '',
+                                eventName: data.eventName ?? data.name ?? 'Untitled Event',
+                                hasFood: data.hasFood ?? false,
+                                files: data.files ?? []
+                            } as Event;
+                        }
+                    }
+                    return null;
+                });
+
+                const eventsData = (await Promise.all(eventPromises)).filter((e): e is Event => e !== null);
+
+                console.log('Overview: Attended events from subcollection query:', eventsData.length);
+
+                // Sort by start date (newest first for overview)
                 eventsData.sort((a, b) => {
                     const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
                     const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
-                    return dateA.getTime() - dateB.getTime();
+                    return dateB.getTime() - dateA.getTime();
                 });
 
                 setEvents(eventsData);
                 setEventsLoading(false);
             },
-            (error) => {
-                console.error('Error fetching events:', error);
+            (error: any) => {
+                console.error('Error fetching user attended events:', error);
+                setEvents([]);
                 setEventsLoading(false);
             }
         );
 
-        return () => unsubscribeEvents();
-    }, []);
+        return () => unsubscribe();
+    }, [user?.uid]);
 
-    // Update statistics when both events and reimbursements are loaded
+    // Update statistics when all data is loaded - coordinate to prevent duplicate calls
     useEffect(() => {
-        if (events.length > 0 && user) {
-            updateFromWorkingEvents(events, reimbursements, fundDeposits);
+        if (!user || events.length === 0) return;
+        
+        // Prevent duplicate processing by checking if we've already computed stats
+        if (hasComputedEventStats.current) {
+            return;
         }
+        
+        // Only process if we have all the required data (reimbursements and fundDeposits can be empty)
+        console.log('Overview: Processing data with', events.length, 'events,', reimbursements.length, 'reimbursements,', fundDeposits.length, 'fund deposits');
+        updateFromWorkingEvents(events, reimbursements, fundDeposits);
+        hasComputedEventStats.current = true;
     }, [events, reimbursements, fundDeposits, user]);
 
 
@@ -434,7 +473,7 @@ export default function OverviewContent() {
                                     <Calendar className="w-5 h-5 text-gray-500" />
                                     <h2 className="text-base font-semibold text-gray-900">Previously Attended Events</h2>
                                 </div>
-                                {attendedEvents.length > 0 && (
+                                {events.length > 0 && (
                                     <Button
                                         variant="light"
                                         color="primary"
@@ -453,13 +492,13 @@ export default function OverviewContent() {
                                             <Skeleton key={i} className="w-full h-16 rounded-lg" />
                                         ))}
                                     </div>
-                                ) : attendedEvents.length === 0 ? (
+                                ) : events.length === 0 ? (
                                     <div className="text-center py-6 text-gray-500 text-sm">
                                         No attended events yet — check in at your next meetup!
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
-                                        {attendedEvents.slice(0, PREVIOUS_EVENTS_PREVIEW_COUNT).map((event: any) => {
+                                        {events.slice(0, PREVIOUS_EVENTS_PREVIEW_COUNT).map((event: any) => {
                                             const eventStart = event.startDate?.toDate ? event.startDate.toDate() : (event.startDate ? new Date(event.startDate) : null);
                                             return (
                                                 <div
@@ -491,9 +530,9 @@ export default function OverviewContent() {
                                                 </div>
                                             );
                                         })}
-                                        {attendedEvents.length > PREVIOUS_EVENTS_PREVIEW_COUNT && (
+                                        {events.length > PREVIOUS_EVENTS_PREVIEW_COUNT && (
                                             <p className="text-xs text-gray-500 text-center pt-2">
-                                                Showing {PREVIOUS_EVENTS_PREVIEW_COUNT} of {attendedEvents.length} events
+                                                Showing {PREVIOUS_EVENTS_PREVIEW_COUNT} of {events.length} events
                                             </p>
                                         )}
                                     </div>
@@ -609,11 +648,11 @@ export default function OverviewContent() {
                                     <p className="text-sm text-gray-500">Published events you've checked into</p>
                                 </ModalHeader>
                                 <ModalBody className="pb-6">
-                                    {attendedEvents.length === 0 ? (
+                                    {events.length === 0 ? (
                                         <p className="text-gray-500 text-sm">No attended events were found.</p>
                                     ) : (
                                         <div className="space-y-3">
-                                            {attendedEvents.map((event: any) => {
+                                            {events.map((event: any) => {
                                                 const eventStart = event.startDate?.toDate ? event.startDate.toDate() : (event.startDate ? new Date(event.startDate) : null);
                                                 return (
                                                     <div key={event.id} className="p-3 border border-gray-100 rounded-lg">
