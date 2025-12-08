@@ -257,20 +257,13 @@ service cloud.firestore {
 
       // Officers can read any request
       allow read: if isOfficer();
-
+  
       // Exec/Admin can create/update any request
       allow create, update: if hasAnyRole(['Executive Officer','Administrator']);
-
-      // General Officers can update their own requests
+  
+      // General Officers can update their own requests with full field access
       allow update: if hasAnyRole(['General Officer'])
         && resource.data.requestedUser == request.auth.uid;
-
-      // Draft → submitted/pending transition
-      allow update: if isOfficer()
-        && resource.data.status == 'draft'
-        && resource.data.isDraft == true
-        && request.resource.data.status in ['submitted','pending']
-        && onlyChangedKeys(['status']);
 
       // Audit log updates by Member+
       allow update: if hasAnyRole([
