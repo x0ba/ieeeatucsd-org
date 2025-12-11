@@ -435,7 +435,6 @@ export default function LeaderboardContent() {
                                                 <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-bold bg-green-50 text-green-700 border border-green-100">
                                                     {member.points}
                                                 </div>
-                                                <div className="text-[10px] text-gray-400 mt-0.5 mr-1">points</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                                                 <div className="text-sm text-gray-600 font-medium" title={member.major || 'N/A'}>
