@@ -68,24 +68,32 @@ export const PRESET_CATEGORIES = [
 export function getCategoryColor(category: string): {
   color: string;
   bgColor: string;
+  borderColor: string;
 } {
   // Predefined colors for preset categories
-  const presetColors: Record<string, { color: string; bgColor: string }> = {
+  const presetColors: Record<
+    string,
+    { color: string; bgColor: string; borderColor: string }
+  > = {
     General: {
       color: "text-blue-700",
-      bgColor: "bg-blue-100",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
     },
     Projects: {
       color: "text-purple-700",
-      bgColor: "bg-purple-100",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-200",
     },
     Events: {
       color: "text-green-700",
-      bgColor: "bg-green-100",
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
     },
     Workshops: {
       color: "text-orange-700",
-      bgColor: "bg-orange-100",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
     },
   };
 
@@ -96,14 +104,46 @@ export function getCategoryColor(category: string): {
 
   // Generate color based on category name hash for custom categories
   const colors = [
-    { color: "text-pink-700", bgColor: "bg-pink-100" },
-    { color: "text-indigo-700", bgColor: "bg-indigo-100" },
-    { color: "text-teal-700", bgColor: "bg-teal-100" },
-    { color: "text-amber-700", bgColor: "bg-amber-100" },
-    { color: "text-cyan-700", bgColor: "bg-cyan-100" },
-    { color: "text-rose-700", bgColor: "bg-rose-100" },
-    { color: "text-emerald-700", bgColor: "bg-emerald-100" },
-    { color: "text-violet-700", bgColor: "bg-violet-100" },
+    {
+      color: "text-pink-700",
+      bgColor: "bg-pink-50",
+      borderColor: "border-pink-200",
+    },
+    {
+      color: "text-indigo-700",
+      bgColor: "bg-indigo-50",
+      borderColor: "border-indigo-200",
+    },
+    {
+      color: "text-teal-700",
+      bgColor: "bg-teal-50",
+      borderColor: "border-teal-200",
+    },
+    {
+      color: "text-amber-700",
+      bgColor: "bg-amber-50",
+      borderColor: "border-amber-200",
+    },
+    {
+      color: "text-cyan-700",
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-200",
+    },
+    {
+      color: "text-rose-700",
+      bgColor: "bg-rose-50",
+      borderColor: "border-rose-200",
+    },
+    {
+      color: "text-emerald-700",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+    },
+    {
+      color: "text-violet-700",
+      bgColor: "bg-violet-50",
+      borderColor: "border-violet-200",
+    },
   ];
 
   // Simple hash function

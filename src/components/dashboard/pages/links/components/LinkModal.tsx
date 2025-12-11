@@ -186,15 +186,18 @@ export default function LinkModal({
     if (formData.shortUrl.trim()) {
       const slug = formData.shortUrl.trim().toLowerCase();
       if (!/^[a-z0-9-]+$/.test(slug)) {
-        newErrors.shortUrl = "Short URL must contain only lowercase letters, numbers, and hyphens";
+        newErrors.shortUrl =
+          "Short URL must contain only lowercase letters, numbers, and hyphens";
       } else if (slug.length < 2) {
         newErrors.shortUrl = "Short URL must be at least 2 characters";
       } else if (slug.length > 50) {
         newErrors.shortUrl = "Short URL must be less than 50 characters";
       } else {
         // Check for uniqueness (only if not editing or if slug changed)
-        const existingLinkWithSlug = allLinks.find(link =>
-          link.shortUrl === slug && (!editingLink || link.id !== editingLink.id)
+        const existingLinkWithSlug = allLinks.find(
+          (link) =>
+            link.shortUrl === slug &&
+            (!editingLink || link.id !== editingLink.id)
         );
         if (existingLinkWithSlug) {
           newErrors.shortUrl = "This short URL is already taken";
@@ -233,11 +236,7 @@ export default function LinkModal({
         setUploadingIcon(false);
       }
 
-      const finalCategory = isCustomCategory
-        ? customCategoryInput.trim()
-        : formData.category;
-
-      // Build save data, omitting empty optional fields
+      // Build save data
       const saveData: any = {
         url: formData.url.trim(),
         title: formData.title.trim(),
@@ -265,14 +264,12 @@ export default function LinkModal({
           new Date(formData.publishDate)
         );
       } else if (editingLink && editingLink.publishDate) {
-        // If editing and the field was cleared, explicitly set to null
         saveData.publishDate = null;
       }
 
       if (formData.expireDate) {
         saveData.expireDate = Timestamp.fromDate(new Date(formData.expireDate));
       } else if (editingLink && editingLink.expireDate) {
-        // If editing and the field was cleared, explicitly set to null
         saveData.expireDate = null;
       }
 
@@ -304,321 +301,371 @@ export default function LinkModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
         {/* Header - Fixed */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {editingLink ? "Edit Link" : "Add New Link"}
-          </h3>
+        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 flex-shrink-0">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">
+              {editingLink ? "Edit Link" : "Create New Link"}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              fill in the details below to {editingLink ? "update" : "create"} a
+              link
+            </p>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors rounded-xl hover:bg-gray-100 p-1"
+            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-all duration-200"
             disabled={loading || uploadingIcon}
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-4">
-            {/* URL */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                URL <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={formData.url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, url: e.target.value })
-                  }
-                  placeholder="https://example.com"
-                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.url ? "border-red-500" : "border-gray-300"
-                    }`}
-                  disabled={loading || uploadingIcon}
-                />
-                {formData.url && validateUrl(formData.url) && (
-                  <a
-                    href={formData.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-800"
-                  >
+        <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Main Info Section */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
+                Main Information
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5 ">
+                    Link Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    placeholder="e.g. Weekly Meeting Zoom"
+                    className={`w-full px-4 py-2.5 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${errors.title ? "border-red-500 bg-red-50/50" : "border-gray-200"
+                      }`}
+                    disabled={loading || uploadingIcon}
+                  />
+                  {errors.title && (
+                    <p className="text-xs text-red-600 mt-1.5 font-medium flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-red-500" /> {errors.title}
+                    </p>
+                  )}
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={isCustomCategory ? "custom" : formData.category}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "custom") {
+                          setIsCustomCategory(true);
+                          setFormData({ ...formData, category: "" });
+                        } else {
+                          setIsCustomCategory(false);
+                          setCustomCategoryInput("");
+                          setFormData({ ...formData, category: value });
+                        }
+                      }}
+                      className={`w-full px-4 py-2.5 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 appearance-none ${errors.category ? "border-red-500 bg-red-50/50" : "border-gray-200"
+                        }`}
+                      disabled={loading || uploadingIcon}
+                    >
+                      {PRESET_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                      {availableCategories
+                        .filter(
+                          (cat) => !PRESET_CATEGORIES.includes(cat as any)
+                        )
+                        .map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      <option value="custom">+ Create Custom Category</option>
+                    </select>
+                    {/* Select Arrow Icon */}
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {isCustomCategory && (
+                    <div className="mt-2 flex gap-2 animate-in slide-in-from-top-2 duration-200">
+                      <input
+                        type="text"
+                        value={customCategoryInput}
+                        onChange={(e) =>
+                          setCustomCategoryInput(e.target.value)
+                        }
+                        placeholder="New category name..."
+                        className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomCategory(false);
+                          setCustomCategoryInput("");
+                          setFormData({ ...formData, category: "General" });
+                        }}
+                        className="px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                  {errors.category && (
+                    <p className="text-xs text-red-600 mt-1.5 font-medium flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-red-500" /> {errors.category}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* URL */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Destination URL <span className="text-red-500">*</span>
+                </label>
+                <div className="relative group">
+                  <input
+                    type="text"
+                    value={formData.url}
+                    onChange={(e) =>
+                      setFormData({ ...formData, url: e.target.value })
+                    }
+                    placeholder="https://example.com/resource"
+                    className={`w-full px-4 py-2.5 pl-10 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${errors.url ? "border-red-500 bg-red-50/50" : "border-gray-200"
+                      }`}
+                    disabled={loading || uploadingIcon}
+                  />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors">
                     <ExternalLink className="w-4 h-4" />
-                  </a>
+                  </div>
+                  {formData.url && validateUrl(formData.url) && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                    </div>
+                  )}
+                </div>
+                {errors.url && (
+                  <p className="text-xs text-red-600 mt-1.5 font-medium flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-red-500" /> {errors.url}
+                  </p>
                 )}
               </div>
-              {errors.url && (
-                <p className="text-sm text-red-600 mt-1">{errors.url}</p>
-              )}
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Description <span className="text-gray-400 font-normal text-xs ml-1">(Optional)</span>
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="Add a brief description about this link..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all duration-200"
+                  disabled={loading || uploadingIcon}
+                />
+              </div>
             </div>
 
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-                placeholder="Enter link title"
-                className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.title ? "border-red-500" : "border-gray-300"
-                  }`}
-                disabled={loading || uploadingIcon}
-              />
-              {errors.title && (
-                <p className="text-sm text-red-600 mt-1">{errors.title}</p>
-              )}
-            </div>
+            <div className="h-px bg-gray-100 w-full" />
 
-            {/* Short URL */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Short URL (Optional)
-              </label>
-              <div className="relative">
-                <div className="flex">
-                  <span className="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm rounded-l-xl">
+            {/* Advanced Options */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
+                Advanced Settings
+              </h4>
+
+              {/* Short URL */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Custom Short Link
+                </label>
+                <div className="flex group">
+                  <span className="inline-flex items-center px-4 py-2.5 border border-r-0 border-gray-200 bg-gray-50 text-gray-500 text-sm font-medium rounded-l-xl select-none">
                     ieeeatucsd.org/
                   </span>
                   <input
                     type="text"
                     value={formData.shortUrl}
                     onChange={(e) =>
-                      setFormData({ ...formData, shortUrl: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })
+                      setFormData({
+                        ...formData,
+                        shortUrl: e.target.value
+                          .toLowerCase()
+                          .replace(/[^a-z0-9-]/g, ""),
+                      })
                     }
-                    placeholder="meeting, zoom-link, etc."
-                    className={`flex-1 px-3 py-2 border rounded-r-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.shortUrl ? "border-red-500" : "border-gray-300"
+                    placeholder="custom-alias"
+                    className={`flex-1 px-4 py-2.5 border rounded-r-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${errors.shortUrl ? "border-red-500 bg-red-50/50" : "border-gray-200"
                       }`}
                     disabled={loading || uploadingIcon}
                   />
                 </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Create a custom shortened URL. Only lowercase letters, numbers, and hyphens allowed.
-              </p>
-              {errors.shortUrl && (
-                <p className="text-sm text-red-600 mt-1">{errors.shortUrl}</p>
-              )}
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category <span className="text-red-500">*</span>
-              </label>
-              <div className="space-y-2">
-                <select
-                  value={isCustomCategory ? "custom" : formData.category}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "custom") {
-                      setIsCustomCategory(true);
-                      setFormData({ ...formData, category: "" });
-                    } else {
-                      setIsCustomCategory(false);
-                      setCustomCategoryInput("");
-                      setFormData({ ...formData, category: value });
-                    }
-                  }}
-                  className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? "border-red-500" : "border-gray-300"
-                    }`}
-                  disabled={loading || uploadingIcon}
-                >
-                  {/* Preset Categories */}
-                  {PRESET_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-
-                  {/* Custom Categories from existing links */}
-                  {availableCategories
-                    .filter((cat) => !PRESET_CATEGORIES.includes(cat as any))
-                    .map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-
-                  {/* Option to create new custom category */}
-                  <option value="custom">+ Create Custom Category</option>
-                </select>
-
-                {isCustomCategory && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={customCategoryInput}
-                      onChange={(e) => setCustomCategoryInput(e.target.value)}
-                      placeholder="Enter custom category name"
-                      className={`flex-1 px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? "border-red-500" : "border-gray-300"
-                        }`}
-                      disabled={loading || uploadingIcon}
-                      autoFocus
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsCustomCategory(false);
-                        setCustomCategoryInput("");
-                        setFormData({ ...formData, category: "General" });
-                      }}
-                      className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
-                      disabled={loading || uploadingIcon}
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                {errors.shortUrl ? (
+                  <p className="text-xs text-red-600 mt-1.5 font-medium flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-red-500" /> {errors.shortUrl}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-gray-400 mt-1.5 ml-1">
+                    Only lowercase letters, numbers, and hyphens allowed.
+                  </p>
                 )}
               </div>
-              {errors.category && (
-                <p className="text-sm text-red-600 mt-1">{errors.category}</p>
-              )}
-            </div>
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Brief description of the link"
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                disabled={loading || uploadingIcon}
-              />
-            </div>
-
-            {/* Publish and Expire Dates */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Publish Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Publish Date (Optional)
-                </label>
-                <input
-                  type="datetime-local"
-                  value={formData.publishDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, publishDate: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={loading || uploadingIcon}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Link will be visible after this date
-                </p>
-              </div>
-
-              {/* Expire Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Expire Date (Optional)
-                </label>
-                <input
-                  type="datetime-local"
-                  value={formData.expireDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, expireDate: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={loading || uploadingIcon}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Link will be hidden after this date
-                </p>
-              </div>
-            </div>
-
-            {/* Icon/Photo Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Icon/Photo (Optional)
-              </label>
-
-              {iconPreview ? (
-                <div className="flex items-center gap-4">
-                  <img
-                    src={iconPreview}
-                    alt="Icon preview"
-                    className="w-20 h-20 rounded-xl object-cover border border-gray-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemoveIcon}
-                    className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-2"
-                    disabled={loading || uploadingIcon}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-gray-400 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleIconChange}
-                    className="hidden"
-                    id="icon-upload"
-                    disabled={loading || uploadingIcon}
-                  />
-                  <label
-                    htmlFor="icon-upload"
-                    className="cursor-pointer flex flex-col items-center"
-                  >
-                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                    <span className="text-sm text-gray-600">
-                      Click to upload an icon
-                    </span>
-                    <span className="text-xs text-gray-500 mt-1">
-                      PNG, JPG up to 2MB
-                    </span>
+              {/* Dates Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Publish Date
                   </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.publishDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, publishDate: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm text-gray-600"
+                    disabled={loading || uploadingIcon}
+                  />
                 </div>
-              )}
-              {errors.icon && (
-                <p className="text-sm text-red-600 mt-1">{errors.icon}</p>
-              )}
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Expiration Date
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.expireDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, expireDate: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm text-gray-600"
+                    disabled={loading || uploadingIcon}
+                  />
+                </div>
+              </div>
 
-          </div>
+              {/* Icon Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Custom Icon
+                </label>
+
+                <div className="bg-gray-50 rounded-2xl p-4 border border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200">
+                  {iconPreview ? (
+                    <div className="flex items-center gap-5">
+                      <div className="relative group">
+                        <img
+                          src={iconPreview}
+                          alt="Icon preview"
+                          className="w-16 h-16 rounded-xl object-cover shadow-sm bg-white ring-2 ring-white"
+                        />
+                        <div className="absolute inset-0 bg-black/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-sm font-medium text-gray-900">Icon Selected</span>
+                        <button
+                          type="button"
+                          onClick={handleRemoveIcon}
+                          className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors w-fit flex items-center gap-1.5"
+                          disabled={loading || uploadingIcon}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Remove Icon
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleIconChange}
+                        className="hidden"
+                        id="icon-upload"
+                        disabled={loading || uploadingIcon}
+                      />
+                      <label
+                        htmlFor="icon-upload"
+                        className="cursor-pointer flex flex-col items-center py-2"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                          <Upload className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">
+                          Click to upload an image
+                        </span>
+                        <span className="text-xs text-gray-400 mt-1">
+                          PNG, JPG up to 2MB
+                        </span>
+                      </label>
+                    </>
+                  )}
+                </div>
+                {errors.icon && (
+                  <p className="text-xs text-red-600 mt-1.5 font-medium flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-red-500" /> {errors.icon}
+                  </p>
+                )}
+              </div>
+            </div>
+          </form>
         </div>
 
         {/* Footer - Fixed */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+        <div className="flex items-center justify-end gap-3 px-8 py-5 border-t border-gray-100 bg-gray-50/50 rounded-b-3xl">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+            className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
             disabled={loading || uploadingIcon}
           >
             Cancel
           </button>
           <button
-            type="button"
             onClick={handleSubmit}
             disabled={loading || uploadingIcon}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 text-sm font-medium bg-gray-900 text-white rounded-xl hover:bg-black transition-all duration-200 shadow-lg shadow-gray-900/10 hover:shadow-xl hover:shadow-gray-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {uploadingIcon
-              ? "Uploading..."
-              : loading
-                ? "Saving..."
-                : editingLink
-                  ? "Update Link"
-                  : "Add Link"}
+            {uploadingIcon ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Uploading...</span>
+              </>
+            ) : loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                {editingLink ? "Save Changes" : "Create Link"}
+              </>
+            )}
           </button>
         </div>
       </div>
