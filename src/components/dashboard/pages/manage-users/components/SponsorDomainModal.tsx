@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem } from '@heroui/react';
 import type { SponsorTier } from '../../../shared/types/firestore';
 import type { SponsorDomainWithId } from '../hooks/useSponsorDomains';
 import { showToast } from '../../../shared/utils/toast';
@@ -91,101 +91,89 @@ export default function SponsorDomainModal({
         setFormData({ ...formData, domain: processedValue });
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900">
-                        {editingDomain ? 'Edit Sponsor Domain' : 'Add Sponsor Domain'}
-                    </h3>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600"
-                        disabled={loading}
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {/* Domain Input */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Email Domain *
-                        </label>
-                        <input
-                            type="text"
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            size="md"
+            classNames={{
+                base: "rounded-2xl",
+                header: "border-b border-gray-200 py-4 px-6",
+                body: "py-6 px-6",
+                footer: "border-t border-gray-200 py-4 px-6"
+            }}
+        >
+            <ModalContent>
+                <form onSubmit={handleSubmit}>
+                    <ModalHeader className="flex flex-col gap-1">
+                        <h3 className="text-lg font-medium text-gray-900">
+                            {editingDomain ? 'Edit Sponsor Domain' : 'Add Sponsor Domain'}
+                        </h3>
+                    </ModalHeader>
+                    <ModalBody className="space-y-4">
+                        <Input
+                            label="Email Domain"
+                            placeholder="@example.com"
                             value={formData.domain}
                             onChange={(e) => handleDomainChange(e.target.value)}
-                            placeholder="@example.com"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            disabled={loading}
-                            required
+                            isRequired
+                            description="Enter the email domain (e.g., @tsmc.com)"
+                            isDisabled={loading}
+                            classNames={{
+                                inputWrapper: "rounded-xl"
+                            }}
                         />
-                        <p className="mt-1 text-xs text-gray-500">
-                            Enter the email domain (e.g., @tsmc.com, @qualcomm.com)
-                        </p>
-                    </div>
 
-                    {/* Organization Name Input */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Organization Name *
-                        </label>
-                        <input
-                            type="text"
+                        <Input
+                            label="Organization Name"
+                            placeholder="e.g. TSMC"
                             value={formData.organizationName}
                             onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
-                            placeholder="TSMC"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            disabled={loading}
-                            required
+                            isRequired
+                            isDisabled={loading}
+                            classNames={{
+                                inputWrapper: "rounded-xl"
+                            }}
                         />
-                    </div>
 
-                    {/* Sponsor Tier Select */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Sponsor Tier *
-                        </label>
-                        <select
-                            value={formData.sponsorTier}
+                        <Select
+                            label="Sponsor Tier"
+                            selectedKeys={[formData.sponsorTier]}
                             onChange={(e) => setFormData({ ...formData, sponsorTier: e.target.value as SponsorTier })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            disabled={loading}
-                            required
+                            isRequired
+                            isDisabled={loading}
+                            classNames={{
+                                trigger: "rounded-xl"
+                            }}
                         >
                             {SPONSOR_TIERS.map((tier) => (
-                                <option key={tier} value={tier}>
+                                <SelectItem key={tier}>
                                     {tier}
-                                </option>
+                                </SelectItem>
                             ))}
-                        </select>
-                    </div>
-
-                    {/* Footer Buttons */}
-                    <div className="flex justify-end gap-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50"
-                            disabled={loading}
+                        </Select>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button
+                            variant="flat"
+                            onPress={onClose}
+                            isDisabled={loading}
+                            className="rounded-xl font-medium"
                         >
                             Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="submit"
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={loading}
+                            color="primary"
+                            isLoading={loading}
+                            className="rounded-xl font-medium"
                         >
-                            {loading ? 'Saving...' : editingDomain ? 'Update' : 'Add'}
-                        </button>
-                    </div>
+                            {editingDomain ? 'Update' : 'Add'}
+                        </Button>
+                    </ModalFooter>
                 </form>
-            </div>
-        </div>
+            </ModalContent>
+        </Modal>
     );
 }
 

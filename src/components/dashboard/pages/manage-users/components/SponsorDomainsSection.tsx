@@ -3,7 +3,7 @@ import { Plus, Edit, Trash2, Building2, Shield } from 'lucide-react';
 import { useSponsorDomains } from '../hooks/useSponsorDomains';
 import type { SponsorDomainWithId } from '../hooks/useSponsorDomains';
 import SponsorDomainModal from './SponsorDomainModal';
-import { Spinner } from '@heroui/react';
+import { Spinner, Card, CardBody, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tooltip } from '@heroui/react';
 
 interface SponsorDomainsSectionProps {
     isAdmin: boolean;
@@ -50,20 +50,20 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
         }
     };
 
-    const getTierColor = (tier: string) => {
+    const getTierColor = (tier: string): "default" | "primary" | "secondary" | "success" | "warning" | "danger" => {
         switch (tier) {
             case 'Diamond':
-                return 'bg-cyan-100 text-cyan-800';
+                return 'primary';
             case 'Platinum':
-                return 'bg-gray-100 text-gray-800';
+                return 'secondary';
             case 'Gold':
-                return 'bg-yellow-100 text-yellow-800';
+                return 'warning';
             case 'Silver':
-                return 'bg-slate-100 text-slate-800';
+                return 'default';
             case 'Bronze':
-                return 'bg-orange-100 text-orange-800';
+                return 'danger'; // Using danger for bronze (orange-ish) or default
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'default';
         }
     };
 
@@ -72,7 +72,7 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
     }
 
     return (
-        <div className="bg-white rounded-2xl shadow">
+        <Card shadow="sm" className="rounded-2xl">
             <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -86,17 +86,18 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={handleAddClick}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700"
+                    <Button
+                        onPress={handleAddClick}
+                        color="primary"
+                        startContent={<Plus className="w-4 h-4" />}
+                        className="rounded-xl font-medium"
                     >
-                        <Plus className="w-4 h-4" />
                         Add Domain
-                    </button>
+                    </Button>
                 </div>
             </div>
 
-            <div className="p-6">
+            <CardBody className="p-6">
                 {loading ? (
                     <div className="text-center py-8">
                         <Spinner size="lg" color="primary" />
@@ -111,63 +112,71 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
                         </p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Domain
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Organization
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Tier
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {domains.map((domain) => (
-                                    <tr key={domain.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-sm font-mono text-gray-900">{domain.domain}</span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-sm text-gray-900">{domain.organizationName}</span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getTierColor(domain.sponsorTier)}`}>
-                                                {domain.sponsorTier}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={() => handleEditClick(domain)}
-                                                    className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                                                    title="Edit domain"
+                    <Table
+                        aria-label="Sponsor domains table"
+                        shadow="none"
+                        classNames={{
+                            wrapper: "p-0",
+                            th: "bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider py-3",
+                            td: "py-3"
+                        }}
+                    >
+                        <TableHeader>
+                            <TableColumn>DOMAIN</TableColumn>
+                            <TableColumn>ORGANIZATION</TableColumn>
+                            <TableColumn>TIER</TableColumn>
+                            <TableColumn align="end">ACTIONS</TableColumn>
+                        </TableHeader>
+                        <TableBody>
+                            {domains.map((domain) => (
+                                <TableRow key={domain.id} className="hover:bg-gray-50 group">
+                                    <TableCell>
+                                        <span className="text-sm font-mono text-gray-900">{domain.domain}</span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <span className="text-sm text-gray-900">{domain.organizationName}</span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            color={getTierColor(domain.sponsorTier)}
+                                            variant="flat"
+                                            size="sm"
+                                        >
+                                            {domain.sponsorTier}
+                                        </Chip>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Tooltip content="Edit domain">
+                                                <Button
+                                                    isIconOnly
+                                                    size="sm"
+                                                    variant="light"
+                                                    color="primary"
+                                                    onPress={() => handleEditClick(domain)}
                                                 >
                                                     <Edit className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(domain.id)}
-                                                    className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                                                    title="Delete domain"
+                                                </Button>
+                                            </Tooltip>
+                                            <Tooltip content="Delete domain">
+                                                <Button
+                                                    isIconOnly
+                                                    size="sm"
+                                                    variant="light"
+                                                    color="danger"
+                                                    onPress={() => handleDelete(domain.id)}
                                                 >
                                                     <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                                </Button>
+                                            </Tooltip>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
                 )}
-            </div>
+            </CardBody>
 
             {/* Modal */}
             <SponsorDomainModal
@@ -180,7 +189,7 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
                 editingDomain={editingDomain}
                 loading={loading}
             />
-        </div>
+        </Card>
     );
 }
 

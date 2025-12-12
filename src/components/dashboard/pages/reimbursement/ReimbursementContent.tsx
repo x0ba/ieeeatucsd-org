@@ -249,52 +249,18 @@ export default function ReimbursementContent() {
     const stats = getStats();
 
     return (
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 h-full overflow-y-auto bg-gray-50/50">
             {/* Reimbursement Content */}
-            <main className="p-4 md:p-6">
-                <div className="grid grid-cols-1 gap-4 md:gap-6">
-                    {/* Search, Filter, and Action Bar */}
-                    <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center mb-4 md:mb-6">
-                        {/* Search Bar */}
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                            <input
-                                type="text"
-                                placeholder="Search reimbursements..."
-                                aria-label="Search reimbursements"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
-                            />
-                        </div>
+            <main className="max-w-7xl mx-auto p-4 md:p-8">
+                {/* Header Section */}
+                <div className="mb-8">
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Reimbursements</h1>
+                    <p className="text-gray-500 mt-1">Manage and track your reimbursement requests</p>
+                </div>
 
-                        {/* Status Filter */}
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            aria-label="Filter reimbursements by status"
-                            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] text-sm md:text-base w-full lg:w-auto"
-                        >
-                            <option value="all">All Status</option>
-                            <option value="submitted">Submitted</option>
-                            <option value="approved">Approved</option>
-                            <option value="paid">Paid</option>
-                            <option value="declined">Declined</option>
-                        </select>
-
-                        {/* New Reimbursement Button */}
-                        <button
-                            onClick={() => setIsWizardOpen(true)}
-                            className="flex items-center justify-center space-x-2 px-3 md:px-4 py-2 bg-blue-700 text-white rounded-xl hover:bg-blue-800 transition-colors shadow-md hover:shadow-lg min-h-[44px] text-sm md:text-base whitespace-nowrap"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span className="hidden sm:inline">New Reimbursement Request</span>
-                            <span className="sm:hidden">New Request</span>
-                        </button>
-                    </div>
-
+                <div className="grid grid-cols-1 gap-6 md:gap-8">
                     {/* Reimbursement Stats */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                         {loading ? (
                             <>
                                 <MetricCardSkeleton />
@@ -304,47 +270,58 @@ export default function ReimbursementContent() {
                             </>
                         ) : (
                             <>
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Total Submitted</p>
-                                            <p className="text-lg md:text-2xl font-bold text-gray-900">${stats.totalSubmitted.toFixed(2)}</p>
-                                        </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                            <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Approved</p>
-                                            <p className="text-lg md:text-2xl font-bold text-green-600">${stats.approved.toFixed(2)}</p>
-                                        </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                            <CheckCircle className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Pending</p>
-                                            <p className="text-lg md:text-2xl font-bold text-yellow-600">${stats.pending.toFixed(2)}</p>
-                                        </div>
-                                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                            <Clock className="w-6 h-6 text-yellow-600" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center justify-between">
+                                {/* Total Submitted */}
+                                <div className="group relative overflow-hidden bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 border border-gray-100">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110" />
+                                    <div className="relative flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-gray-600">This Month</p>
-                                            <p className="text-2xl font-bold text-gray-900">{stats.thisMonth}</p>
+                                            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Total Submitted</p>
+                                            <p className="text-2xl font-bold text-gray-900 mt-1">${stats.totalSubmitted.toFixed(2)}</p>
                                         </div>
-                                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                            <Receipt className="w-6 h-6 text-purple-600" />
+                                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 transition-colors group-hover:bg-blue-100">
+                                            <DollarSign className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Approved */}
+                                <div className="group relative overflow-hidden bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 border border-gray-100">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-bl-full -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110" />
+                                    <div className="relative flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Approved</p>
+                                            <p className="text-2xl font-bold text-green-600 mt-1">${stats.approved.toFixed(2)}</p>
+                                        </div>
+                                        <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-green-600 transition-colors group-hover:bg-green-100">
+                                            <CheckCircle className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Pending */}
+                                <div className="group relative overflow-hidden bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 border border-gray-100">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110" />
+                                    <div className="relative flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Pending</p>
+                                            <p className="text-2xl font-bold text-amber-600 mt-1">${stats.pending.toFixed(2)}</p>
+                                        </div>
+                                        <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 transition-colors group-hover:bg-amber-100">
+                                            <Clock className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* This Month */}
+                                <div className="group relative overflow-hidden bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 border border-gray-100">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110" />
+                                    <div className="relative flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">This Month</p>
+                                            <p className="text-2xl font-bold text-gray-900 mt-1">{stats.thisMonth}</p>
+                                        </div>
+                                        <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 transition-colors group-hover:bg-purple-100">
+                                            <Receipt className="w-6 h-6" />
                                         </div>
                                     </div>
                                 </div>
@@ -352,114 +329,142 @@ export default function ReimbursementContent() {
                         )}
                     </div>
 
-                    {/* Reimbursement Requests */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Requests</h2>
-                        {loading ? (
-                            <ReimbursementListSkeleton items={4} />
-                        ) : filteredReimbursements.length === 0 ? (
-                            <div className="text-center py-8">
-                                <Receipt className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                                <p className="text-gray-500">No reimbursement requests found</p>
+                    {/* Controls & List Section */}
+                    <div className="bg-white rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+                        {/* Search, Filter, and Action Bar */}
+                        <div className="p-5 border-b border-gray-100 bg-gray-50/30">
+                            <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+                                <div className="flex flex-col md:flex-row gap-3 flex-1">
+                                    {/* Search Bar */}
+                                    <div className="relative flex-1 max-w-lg">
+                                        <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search by title or department..."
+                                            aria-label="Search reimbursements"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium placeholder:font-normal"
+                                        />
+                                    </div>
+
+                                    {/* Status Filter */}
+                                    <div className="relative min-w-[160px]">
+                                        <select
+                                            value={statusFilter}
+                                            onChange={(e) => setStatusFilter(e.target.value)}
+                                            aria-label="Filter reimbursements by status"
+                                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium appearance-none cursor-pointer"
+                                        >
+                                            <option value="all">All Status</option>
+                                            <option value="submitted">Submitted</option>
+                                            <option value="approved">Approved</option>
+                                            <option value="paid">Paid</option>
+                                            <option value="declined">Declined</option>
+                                        </select>
+                                        <div className="absolute right-3.5 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-500">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* New Reimbursement Button */}
                                 <button
                                     onClick={() => setIsWizardOpen(true)}
-                                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                                    className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl transition-all duration-200 shadow-lg shadow-gray-900/10 hover:shadow-gray-900/20 text-sm font-semibold shrink-0"
                                 >
-                                    Submit Your First Request
+                                    <Plus className="w-4 h-4" />
+                                    <span>New Request</span>
                                 </button>
                             </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {filteredReimbursements.map((reimbursement) => (
-                                    <div key={reimbursement.id} className="border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                                        {/* Mobile Layout */}
-                                        <div className="block md:hidden p-4">
-                                            <div className="flex items-start space-x-3 mb-3">
-                                                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                    <Receipt className="w-5 h-5 text-green-600" />
+                        </div>
+
+                        {/* Reimbursement Requests List */}
+                        <div className="p-0">
+                            {loading ? (
+                                <div className="p-6">
+                                    <ReimbursementListSkeleton items={4} />
+                                </div>
+                            ) : filteredReimbursements.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                                        <Receipt className="h-8 w-8 text-gray-400" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-1">No requests found</h3>
+                                    <p className="text-gray-500 max-w-sm mx-auto mb-6">
+                                        {searchTerm || statusFilter !== 'all'
+                                            ? "Try adjusting your search or filters to find what you're looking for."
+                                            : "Create your first reimbursement request to get started."}
+                                    </p>
+                                    <button
+                                        onClick={() => setIsWizardOpen(true)}
+                                        className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-md shadow-blue-600/10"
+                                    >
+                                        Create Request
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="max-h-[600px] overflow-y-auto custom-scrollbar divide-y divide-gray-100">
+                                    {filteredReimbursements.map((reimbursement) => (
+                                        <div
+                                            key={reimbursement.id}
+                                            className="group hover:bg-blue-50/30 transition-colors p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-4 cursor-pointer"
+                                            onClick={() => setViewReimbursement(reimbursement)}
+                                        >
+                                            {/* Icon & Title */}
+                                            <div className="flex items-start md:items-center space-x-4 flex-1">
+                                                <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-white group-hover:shadow-sm transition-all border border-transparent group-hover:border-gray-200">
+                                                    <Receipt className="w-5 h-5 md:w-6 md:h-6 text-gray-500 group-hover:text-blue-600 transition-colors" />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <h3 className="font-medium text-gray-900 break-words pr-2">{reimbursement.title}</h3>
-                                                    <div className="text-lg font-bold text-gray-900 mt-1">${calculateTotalAmount(reimbursement).toFixed(2)}</div>
+                                                    <h3 className="text-sm md:text-base font-semibold text-gray-900 group-hover:text-blue-700 transition-colors truncate">
+                                                        {reimbursement.title}
+                                                    </h3>
+                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                                            {reimbursement.department}
+                                                        </span>
+                                                        <span className="text-xs text-gray-400 hidden sm:inline">•</span>
+                                                        <span className="text-xs text-gray-500 truncate max-w-[200px]">
+                                                            {reimbursement.businessPurpose}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <div className="mb-3">
-                                                <p className="text-sm text-gray-500 break-words leading-relaxed">{reimbursement.businessPurpose}</p>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 gap-2 text-sm text-gray-500 mb-4">
-                                                <div className="break-words">Submitted: {reimbursement.submittedAt?.toDate ? reimbursement.submittedAt.toDate().toLocaleDateString() : new Date(reimbursement.submittedAt).toLocaleDateString()}</div>
-                                                <div className="capitalize break-words">Department: {reimbursement.department}</div>
-                                                <div>
-                                                    {reimbursement.receipts
-                                                        ? `${reimbursement.receipts.length} receipt${reimbursement.receipts.length > 1 ? 's' : ''}`
-                                                        : `${reimbursement.expenses?.length || 0} expense${(reimbursement.expenses?.length || 0) > 1 ? 's' : ''}`
-                                                    }
+                                            {/* Meta & Status */}
+                                            <div className="flex items-center justify-between md:justify-end gap-6 md:w-auto mt-2 md:mt-0 pl-14 md:pl-0">
+                                                <div className="flex flex-col md:items-end">
+                                                    <span className="text-sm font-bold text-gray-900">
+                                                        ${calculateTotalAmount(reimbursement).toFixed(2)}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500">
+                                                        {reimbursement.submittedAt?.toDate ? reimbursement.submittedAt.toDate().toLocaleDateString() : new Date(reimbursement.submittedAt).toLocaleDateString()}
+                                                    </span>
                                                 </div>
-                                            </div>
 
-                                            <div className="flex items-center justify-between">
-                                                <div className={`flex items-center space-x-1 px-3 py-1.5 rounded-full text-xs font-medium ${getStatusColor(reimbursement.status)}`}>
+                                                <div className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(reimbursement.status).replace('bg-', 'bg-opacity-10 border-').replace('text-', 'text-')}`}>
                                                     {getStatusIcon(reimbursement.status)}
-                                                    <span className="break-words">{getStatusDisplayName(reimbursement.status)}</span>
+                                                    <span className="capitalize">{getStatusDisplayName(reimbursement.status)}</span>
                                                 </div>
+
                                                 <button
-                                                    onClick={() => setViewReimbursement(reimbursement)}
-                                                    className="p-3 text-gray-400 hover:text-blue-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-gray-100"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setViewReimbursement(reimbursement);
+                                                    }}
+                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors md:block hidden"
                                                     title="View Details"
                                                 >
                                                     <Eye className="w-5 h-5" />
                                                 </button>
                                             </div>
                                         </div>
-
-                                        {/* Desktop Layout */}
-                                        <div className="hidden md:flex items-center justify-between p-4">
-                                            <div className="flex items-center space-x-4">
-                                                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                                    <Receipt className="w-6 h-6 text-green-600" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-medium text-gray-900">{reimbursement.title}</h3>
-                                                    <p className="text-sm text-gray-500 mt-1">{reimbursement.businessPurpose}</p>
-                                                    <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                                                        <span>Submitted: {reimbursement.submittedAt?.toDate ? reimbursement.submittedAt.toDate().toLocaleDateString() : new Date(reimbursement.submittedAt).toLocaleDateString()}</span>
-                                                        <span>•</span>
-                                                        <span className="capitalize">{reimbursement.department}</span>
-                                                        <span>•</span>
-                                                        <span>
-                                                            {reimbursement.receipts
-                                                                ? `${reimbursement.receipts.length} receipt${reimbursement.receipts.length > 1 ? 's' : ''}`
-                                                                : `${reimbursement.expenses?.length || 0} expense${(reimbursement.expenses?.length || 0) > 1 ? 's' : ''}`
-                                                            }
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center space-x-4">
-                                                <div className="text-right">
-                                                    <p className="text-lg font-bold text-gray-900">${calculateTotalAmount(reimbursement).toFixed(2)}</p>
-                                                    <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(reimbursement.status)}`}>
-                                                        {getStatusIcon(reimbursement.status)}
-                                                        <span>{getStatusDisplayName(reimbursement.status)}</span>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => setViewReimbursement(reimbursement)}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                                                >
-                                                    <Eye className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
-
-
                 </div>
             </main>
 

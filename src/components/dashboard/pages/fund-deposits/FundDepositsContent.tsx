@@ -777,15 +777,20 @@ const FundDepositsContent: React.FC = () => {
             <div className="min-h-screen bg-gray-50">
                 <div className="p-4 md:p-6">
                     {/* Search Bar */}
-                    <div className="mb-6">
-                        <div className="relative max-w-md">
+                    {/* Header & Search */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">Fund Deposits</h1>
+                            <p className="text-gray-500 mt-1">Manage and track your fund deposits</p>
+                        </div>
+                        <div className="relative w-full md:w-96">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <input
                                 type="text"
                                 placeholder="Search deposits..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
+                                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white shadow-sm"
                             />
                         </div>
                     </div>
@@ -801,52 +806,62 @@ const FundDepositsContent: React.FC = () => {
                             </>
                         ) : (
                             <>
-                                <div className="bg-white rounded-2xl shadow p-4 md:p-6">
-                                    <div className="flex items-center">
-                                        <Receipt className="h-6 w-6 md:h-8 md:w-8 text-blue-600 flex-shrink-0" />
-                                        <div className="ml-3 md:ml-4 min-w-0 flex-1">
-                                            <p className="text-sm font-medium text-gray-600">Total Deposits</p>
-                                            <p className="text-lg md:text-2xl font-bold text-gray-900">{stats.total}</p>
+                                <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 transition-all hover:shadow-md">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500 mb-1">Total Deposits</p>
+                                            <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.total}</p>
+                                        </div>
+                                        <div className="p-3 bg-gray-50 rounded-xl">
+                                            <Receipt className="h-6 w-6 text-gray-600" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-2xl shadow p-4 md:p-6">
-                                    <div className="flex items-center">
-                                        <Clock className="h-6 w-6 md:h-8 md:w-8 text-yellow-600 flex-shrink-0" />
-                                        <div className="ml-3 md:ml-4 min-w-0 flex-1">
-                                            <p className="text-sm font-medium text-gray-600">Pending</p>
-                                            <p className="text-lg md:text-2xl font-bold text-gray-900">{stats.pending}</p>
+                                <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 transition-all hover:shadow-md">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500 mb-1">Pending</p>
+                                            <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.pending}</p>
+                                        </div>
+                                        <div className="p-3 bg-yellow-50 rounded-xl">
+                                            <Clock className="h-6 w-6 text-yellow-600" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-2xl shadow p-4 md:p-6">
-                                    <div className="flex items-center">
-                                        <Eye className="h-6 w-6 md:h-8 md:w-8 text-blue-600 flex-shrink-0" />
-                                        <div className="ml-3 md:ml-4 min-w-0 flex-1">
-                                            <p className="text-sm font-medium text-gray-600">Verified</p>
-                                            <p className="text-lg md:text-2xl font-bold text-gray-900">{stats.verified}</p>
+                                <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 transition-all hover:shadow-md">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500 mb-1">Verified</p>
+                                            <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.verified}</p>
+                                        </div>
+                                        <div className="p-3 bg-blue-50 rounded-xl">
+                                            <CheckCircle className="h-6 w-6 text-blue-600" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-2xl shadow p-4 md:p-6">
-                                    <div className="flex items-center">
-                                        <XCircle className="h-6 w-6 md:h-8 md:w-8 text-red-600 flex-shrink-0" />
-                                        <div className="ml-3 md:ml-4 min-w-0 flex-1">
-                                            <p className="text-sm font-medium text-gray-600">Rejected</p>
-                                            <p className="text-lg md:text-2xl font-bold text-gray-900">{stats.rejected}</p>
+                                <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 transition-all hover:shadow-md">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-500 mb-1">Rejected</p>
+                                            <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.rejected}</p>
+                                        </div>
+                                        <div className="p-3 bg-red-50 rounded-xl">
+                                            <XCircle className="h-6 w-6 text-red-600" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-2xl shadow p-6">
-                                    <div className="flex items-center">
-                                        <Banknote className="h-8 w-8 text-green-600" />
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600">Total Verified</p>
-                                            <p className="text-2xl font-bold text-gray-900">${stats.totalAmount.toFixed(2)}</p>
+                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-100 p-6 transition-all hover:shadow-md">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-green-700 mb-1">Total Verified Amount</p>
+                                            <p className="text-2xl md:text-3xl font-bold text-green-800">${stats.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                        </div>
+                                        <div className="p-3 bg-white/60 rounded-xl backdrop-blur-sm">
+                                            <Banknote className="h-6 w-6 text-green-600" />
                                         </div>
                                     </div>
                                 </div>
@@ -854,41 +869,67 @@ const FundDepositsContent: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Filters */}
-                    <div className="bg-white rounded-2xl shadow mb-6">
-                        <div className="p-6 border-b border-gray-200">
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <div className="flex gap-4">
-                                    <select
-                                        className="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        value={statusFilter}
-                                        onChange={(e) => setStatusFilter(e.target.value)}
-                                    >
-                                        <option value="all">All Status</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="verified">Verified</option>
-                                        <option value="rejected">Rejected</option>
-                                    </select>
-
-                                    <button
-                                        onClick={() => setShowNewDepositModal(true)}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 flex items-center gap-2"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        New Deposit
-                                    </button>
-                                </div>
-                            </div>
+                    {/* Filters & Actions */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div className="bg-white rounded-2xl border border-gray-100 p-1.5 inline-flex shadow-sm">
+                            <button
+                                onClick={() => setStatusFilter('all')}
+                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${statusFilter === 'all'
+                                    ? 'bg-gray-900 text-white shadow-md'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
+                            >
+                                All Deposits
+                            </button>
+                            <div className="w-px bg-gray-200 my-2 mx-1"></div>
+                            <button
+                                onClick={() => setStatusFilter('pending')}
+                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${statusFilter === 'pending'
+                                    ? 'bg-yellow-100 text-yellow-800 shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <div className={`w-2 h-2 rounded-full ${statusFilter === 'pending' ? 'bg-yellow-500' : 'bg-yellow-400'}`}></div>
+                                Pending
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter('verified')}
+                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${statusFilter === 'verified'
+                                    ? 'bg-blue-100 text-blue-800 shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <div className={`w-2 h-2 rounded-full ${statusFilter === 'verified' ? 'bg-blue-500' : 'bg-blue-400'}`}></div>
+                                Verified
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter('rejected')}
+                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${statusFilter === 'rejected'
+                                    ? 'bg-red-100 text-red-800 shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <div className={`w-2 h-2 rounded-full ${statusFilter === 'rejected' ? 'bg-red-500' : 'bg-red-400'}`}></div>
+                                Rejected
+                            </button>
                         </div>
+
+                        <button
+                            onClick={() => setShowNewDepositModal(true)}
+                            className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20 transition-all flex items-center gap-2 font-medium"
+                        >
+                            <Plus className="w-5 h-5" />
+                            New Deposit
+                        </button>
                     </div>
 
                     {/* Deposits Table */}
                     <div className="bg-white rounded-2xl shadow overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <SortableHeader field="title">
+                                <thead>
+                                    <tr className="bg-gray-50/50">
+                                        <SortableHeader field="title" className="pl-6">
                                             Deposit Info
                                         </SortableHeader>
                                         <SortableHeader field="amount">
@@ -903,7 +944,7 @@ const FundDepositsContent: React.FC = () => {
                                         <SortableHeader field="depositDate">
                                             Date
                                         </SortableHeader>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                             Actions
                                         </th>
                                     </tr>
@@ -923,44 +964,50 @@ const FundDepositsContent: React.FC = () => {
                                         </tr>
                                     ) : (
                                         sortedDeposits.map((deposit) => (
-                                            <tr key={deposit.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                            <tr key={deposit.id} className="hover:bg-gray-50/80 transition-colors group">
+                                                <td className="px-6 py-4">
                                                     <div>
-                                                        <div className="text-sm font-medium text-gray-900">
+                                                        <div className="text-sm font-semibold text-gray-900">
                                                             {deposit.title}
                                                         </div>
-                                                        <div className="text-sm text-gray-500">
+                                                        <div className="text-sm text-gray-500 mt-0.5">
                                                             {deposit.purpose}
                                                         </div>
-                                                        <div className="text-xs text-gray-400">
-                                                            By: {deposit.depositedByName || deposit.depositedByEmail || 'Unknown'}
+                                                        <div className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                                                            <User className="w-3 h-3" />
+                                                            {deposit.depositedByName || deposit.depositedByEmail || 'Unknown'}
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                     ${deposit.amount.toFixed(2)}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                                                    {deposit.depositMethod.replace('_', ' ')}
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <span className="capitalize px-2 py-1 bg-gray-100 rounded-lg text-xs font-medium text-gray-700 border border-gray-200">
+                                                        {deposit.depositMethod.replace('_', ' ')}
+                                                    </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(deposit.status)}`}>
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${deposit.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                                        deposit.status === 'verified' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                            'bg-red-50 text-red-700 border-red-200'
+                                                        }`}>
                                                         {getStatusIcon(deposit.status)}
-                                                        <span className="ml-1">{getStatusLabel(deposit.status)}</span>
+                                                        <span className="ml-1.5">{getStatusLabel(deposit.status)}</span>
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     {new Date(deposit.depositDate).toLocaleDateString()}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <div className="flex gap-2">
+                                                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         {canViewDeposit(deposit) && (
                                                             <button
                                                                 onClick={() => {
                                                                     setSelectedDeposit(deposit);
                                                                     setShowDetailModal(true);
                                                                 }}
-                                                                className="text-blue-600 hover:text-blue-900"
+                                                                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                                 title="View Details"
                                                             >
                                                                 <Eye className="w-4 h-4" />
@@ -970,7 +1017,7 @@ const FundDepositsContent: React.FC = () => {
                                                         {canDeleteDeposit(deposit) && (
                                                             <button
                                                                 onClick={() => handleDeleteDeposit(deposit.id)}
-                                                                className="text-red-600 hover:text-red-900"
+                                                                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                                 title="Delete"
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
@@ -981,22 +1028,20 @@ const FundDepositsContent: React.FC = () => {
                                                             <>
                                                                 <button
                                                                     onClick={() => handleStatusUpdate(deposit.id, 'verified')}
-                                                                    className="text-blue-600 hover:text-blue-900"
+                                                                    className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                                                                     title="Verify"
                                                                 >
                                                                     <Check className="w-4 h-4" />
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleRejectDeposit(deposit.id)}
-                                                                    className="text-red-600 hover:text-red-900"
+                                                                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                                     title="Reject"
                                                                 >
                                                                     <X className="w-4 h-4" />
                                                                 </button>
                                                             </>
                                                         )}
-
-
                                                     </div>
                                                 </td>
                                             </tr>
@@ -1010,196 +1055,227 @@ const FundDepositsContent: React.FC = () => {
 
                 {/* New Deposit Modal */}
                 {showNewDepositModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                            <div className="p-6 border-b border-gray-200">
-                                <h3 className="text-lg font-medium text-gray-900">New Fund Deposit</h3>
+                    <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
+                        <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+                            <div className="p-6 border-b border-gray-100 flex-shrink-0 bg-gray-50/50 rounded-t-3xl">
+                                <h3 className="text-xl font-bold text-gray-900">New Fund Deposit</h3>
+                                <p className="text-sm text-gray-500 mt-1">Submit a new deposit record for review</p>
                             </div>
 
-                            <div className="p-6 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Deposit Title *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.title ? 'border-red-500' : 'border-gray-300'}`}
-                                        value={newDeposit.title}
-                                        onChange={(e) => setNewDeposit({ ...newDeposit, title: e.target.value })}
-                                        placeholder="e.g., Membership Dues Collection"
-                                    />
-                                    {validationErrors.title && (
-                                        <p className="mt-1 text-sm text-red-600">{validationErrors.title}</p>
-                                    )}
-                                </div>
+                            <div className="p-8 space-y-6 flex-grow overflow-y-auto">
+                                <div className="space-y-6">
+                                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                                        <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                                            <div className="p-1 bg-blue-100 rounded-lg">
+                                                <DollarSign className="w-4 h-4 text-blue-600" />
+                                            </div>
+                                            Transaction Details
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div className="col-span-1 md:col-span-2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Deposit Title <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${validationErrors.title ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}
+                                                    value={newDeposit.title}
+                                                    onChange={(e) => setNewDeposit({ ...newDeposit, title: e.target.value })}
+                                                    placeholder="e.g., Membership Dues Collection"
+                                                />
+                                                {validationErrors.title && (
+                                                    <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" /> {validationErrors.title}
+                                                    </p>
+                                                )}
+                                            </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Amount *
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.amount ? 'border-red-500' : 'border-gray-300'}`}
-                                            value={newDeposit.amount}
-                                            onChange={(e) => setNewDeposit({ ...newDeposit, amount: e.target.value })}
-                                            placeholder="0.00"
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Amount <span className="text-red-500">*</span>
+                                                </label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <span className="text-gray-500 font-medium">$</span>
+                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        className={`w-full pl-8 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${validationErrors.amount ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}
+                                                        value={newDeposit.amount}
+                                                        onChange={(e) => setNewDeposit({ ...newDeposit, amount: e.target.value })}
+                                                        placeholder="0.00"
+                                                    />
+                                                </div>
+                                                {validationErrors.amount && (
+                                                    <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" /> {validationErrors.amount}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Deposit Date <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                    value={newDeposit.depositDate}
+                                                    onChange={(e) => setNewDeposit({ ...newDeposit, depositDate: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                Deposit Method <span className="text-red-500">*</span>
+                                            </label>
+                                            <select
+                                                className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${validationErrors.depositMethod ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}
+                                                value={newDeposit.depositMethod}
+                                                onChange={(e) => setNewDeposit({ ...newDeposit, depositMethod: e.target.value as any })}
+                                            >
+                                                <option value="cash">Cash</option>
+                                                <option value="check">Check</option>
+                                                <option value="bank_transfer">Bank Transfer</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                            {validationErrors.depositMethod && (
+                                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                                    <AlertCircle className="w-3 h-3" /> {validationErrors.depositMethod}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {newDeposit.depositMethod === 'other' && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Specify Method <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${validationErrors.otherDepositMethod ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}
+                                                    value={newDeposit.otherDepositMethod}
+                                                    onChange={(e) => setNewDeposit({ ...newDeposit, otherDepositMethod: e.target.value })}
+                                                    placeholder="Specify method"
+                                                />
+                                                {validationErrors.otherDepositMethod && (
+                                                    <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" /> {validationErrors.otherDepositMethod}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                Purpose <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${validationErrors.purpose ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}
+                                                value={newDeposit.purpose}
+                                                onChange={(e) => setNewDeposit({ ...newDeposit, purpose: e.target.value })}
+                                                placeholder="e.g., Membership Dues, Event Revenue, Sponsorship"
+                                            />
+                                            {validationErrors.purpose && (
+                                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                                    <AlertCircle className="w-3 h-3" /> {validationErrors.purpose}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                Description
+                                            </label>
+                                            <textarea
+                                                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                rows={3}
+                                                value={newDeposit.description}
+                                                onChange={(e) => setNewDeposit({ ...newDeposit, description: e.target.value })}
+                                                placeholder="Additional details about this deposit..."
+                                            />
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                Reference Number
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                value={newDeposit.referenceNumber}
+                                                onChange={(e) => setNewDeposit({ ...newDeposit, referenceNumber: e.target.value })}
+                                                placeholder="Transaction ID, Check #, etc."
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-gray-100 pt-6">
+                                        <MultiFileUpload
+                                            files={receiptFiles}
+                                            onFilesChange={setReceiptFiles}
+                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                            maxFiles={10}
+                                            maxSizeInMB={10}
+                                            label="Receipt Files"
+                                            description="Drag and drop files here, or click to browse"
                                         />
-                                        {validationErrors.amount && (
-                                            <p className="mt-1 text-sm text-red-600">{validationErrors.amount}</p>
+                                    </div>
+
+                                    {/* IEEE Deposit Section */}
+                                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                        <div className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                id="isIeeeDeposit"
+                                                checked={newDeposit.isIeeeDeposit}
+                                                onChange={(e) => setNewDeposit({ ...newDeposit, isIeeeDeposit: e.target.checked })}
+                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-all"
+                                            />
+                                            <label htmlFor="isIeeeDeposit" className="ml-2 block text-sm font-medium text-gray-900">
+                                                This is an IEEE deposit (include Concur receipt)
+                                            </label>
+                                        </div>
+
+                                        {newDeposit.isIeeeDeposit && (
+                                            <div className="mt-4 pl-6 border-l-2 border-gray-300">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    IEEE Source <span className="text-red-500">*</span>
+                                                </label>
+                                                <select
+                                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                                                    value={newDeposit.ieeeDepositSource}
+                                                    onChange={(e) => setNewDeposit({ ...newDeposit, ieeeDepositSource: e.target.value as any })}
+                                                >
+                                                    <option value="upp">IEEE UPP</option>
+                                                    <option value="section">IEEE Section</option>
+                                                    <option value="region">IEEE Region</option>
+                                                    <option value="global">IEEE Global</option>
+                                                    <option value="society">IEEE Society</option>
+                                                    <option value="other">Other IEEE Entity</option>
+                                                </select>
+                                            </div>
                                         )}
                                     </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Deposit Date *
-                                        </label>
-                                        <input
-                                            type="date"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={newDeposit.depositDate}
-                                            onChange={(e) => setNewDeposit({ ...newDeposit, depositDate: e.target.value })}
-                                        />
-                                    </div>
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Deposit Method *
-                                    </label>
-                                    <select
-                                        className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.depositMethod ? 'border-red-500' : 'border-gray-300'}`}
-                                        value={newDeposit.depositMethod}
-                                        onChange={(e) => setNewDeposit({ ...newDeposit, depositMethod: e.target.value as any })}
-                                    >
-                                        <option value="cash">Cash</option>
-                                        <option value="check">Check</option>
-                                        <option value="bank_transfer">Bank Transfer</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                    {validationErrors.depositMethod && (
-                                        <p className="mt-1 text-sm text-red-600">{validationErrors.depositMethod}</p>
-                                    )}
-                                </div>
-
-                                {/* Show "Other" specification field when "Other" is selected */}
-                                {newDeposit.depositMethod === 'other' && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Specify Deposit Method *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.otherDepositMethod ? 'border-red-500' : 'border-gray-300'}`}
-                                            value={newDeposit.otherDepositMethod}
-                                            onChange={(e) => setNewDeposit({ ...newDeposit, otherDepositMethod: e.target.value })}
-                                            placeholder="e.g., Venmo, PayPal, Wire Transfer, etc."
-                                        />
-                                        {validationErrors.otherDepositMethod && (
-                                            <p className="mt-1 text-sm text-red-600">{validationErrors.otherDepositMethod}</p>
-                                        )}
-                                    </div>
-                                )}
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Purpose *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className={`w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${validationErrors.purpose ? 'border-red-500' : 'border-gray-300'}`}
-                                        value={newDeposit.purpose}
-                                        onChange={(e) => setNewDeposit({ ...newDeposit, purpose: e.target.value })}
-                                        placeholder="e.g., Membership Dues, Event Revenue, Sponsorship"
-                                    />
-                                    {validationErrors.purpose && (
-                                        <p className="mt-1 text-sm text-red-600">{validationErrors.purpose}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        rows={3}
-                                        value={newDeposit.description}
-                                        onChange={(e) => setNewDeposit({ ...newDeposit, description: e.target.value })}
-                                        placeholder="Additional details about this deposit..."
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Reference Number
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        value={newDeposit.referenceNumber}
-                                        onChange={(e) => setNewDeposit({ ...newDeposit, referenceNumber: e.target.value })}
-                                        placeholder="Check number, transaction ID, confirmation number for money sent to IEEE, etc."
-                                    />
-                                </div>
-
-                                <MultiFileUpload
-                                    files={receiptFiles}
-                                    onFilesChange={setReceiptFiles}
-                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                    maxFiles={10}
-                                    maxSizeInMB={10}
-                                    label="Receipt Files"
-                                    description="Drag and drop files here, or click to browse"
-                                />
-
-                                {/* IEEE Deposit Section */}
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="isIeeeDeposit"
-                                        checked={newDeposit.isIeeeDeposit}
-                                        onChange={(e) => setNewDeposit({ ...newDeposit, isIeeeDeposit: e.target.checked })}
-                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                    />
-                                    <label htmlFor="isIeeeDeposit" className="ml-2 block text-sm text-gray-900">
-                                        This is an IEEE deposit (include Concur receipt)
-                                    </label>
-                                </div>
-
-                                {newDeposit.isIeeeDeposit && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            IEEE Source *
-                                        </label>
-                                        <select
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={newDeposit.ieeeDepositSource}
-                                            onChange={(e) => setNewDeposit({ ...newDeposit, ieeeDepositSource: e.target.value as any })}
-                                        >
-                                            <option value="upp">IEEE UPP</option>
-                                            <option value="section">IEEE Section</option>
-                                            <option value="region">IEEE Region</option>
-                                            <option value="global">IEEE Global</option>
-                                            <option value="society">IEEE Society</option>
-                                            <option value="other">Other IEEE Entity</option>
-                                        </select>
-                                    </div>
-                                )}
                             </div>
 
-                            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+                            <div className="p-6 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0 bg-gray-50/50 rounded-b-3xl">
                                 <button
                                     onClick={() => setShowNewDepositModal(false)}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50"
+                                    className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all shadow-sm"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSubmitDeposit}
                                     disabled={!newDeposit.title || !newDeposit.amount || !newDeposit.purpose}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-xl hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
                                 >
                                     Submit Deposit
                                 </button>
@@ -1210,278 +1286,404 @@ const FundDepositsContent: React.FC = () => {
 
                 {/* Detail Modal */}
                 {showDetailModal && selectedDeposit && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                            <div className="p-6 border-b border-gray-200">
-                                <div className="flex justify-between items-center">
-                                    <h3 className="text-lg font-medium text-gray-900">Deposit Details</h3>
-                                    <button
-                                        onClick={() => setShowDetailModal(false)}
-                                        className="text-gray-400 hover:text-gray-600"
-                                    >
-                                        <X className="w-6 h-6" />
-                                    </button>
+                    <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
+                        <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+                            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-3xl flex-shrink-0">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900">Deposit Details</h3>
+                                    <p className="text-sm text-gray-500 mt-1">ID: {selectedDeposit.id}</p>
                                 </div>
+                                <button
+                                    onClick={() => setShowDetailModal(false)}
+                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
                             </div>
 
-                            <div className="p-6 space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-4">Deposit Information</h4>
-                                        <dl className="space-y-3">
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Title</dt>
-                                                <dd className="text-sm text-gray-900">{selectedDeposit.title}</dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Amount</dt>
-                                                <dd className="text-sm text-gray-900">${selectedDeposit.amount.toFixed(2)}</dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Purpose</dt>
-                                                <dd className="text-sm text-gray-900">{selectedDeposit.purpose}</dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Method</dt>
-                                                <dd className="text-sm text-gray-900 capitalize">
-                                                    {selectedDeposit.depositMethod === 'other' && selectedDeposit.otherDepositMethod
-                                                        ? selectedDeposit.otherDepositMethod
-                                                        : selectedDeposit.depositMethod.replace('_', ' ')
-                                                    }
-                                                </dd>
-                                            </div>
-                                            {selectedDeposit.referenceNumber && (
+                            <div className="p-8 space-y-8 flex-grow overflow-y-auto">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Left Column: Details */}
+                                    <div className="space-y-6">
+                                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+                                            <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110"></div>
+                                            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 relative z-10">
+                                                <FileText className="w-4 h-4 text-blue-600" />
+                                                Deposit Information
+                                            </h4>
+                                            <dl className="space-y-4 relative z-10">
                                                 <div>
-                                                    <dt className="text-sm font-medium text-gray-500">Reference Number</dt>
-                                                    <dd className="text-sm text-gray-900">{selectedDeposit.referenceNumber}</dd>
+                                                    <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Title</dt>
+                                                    <dd className="text-gray-900 font-medium">{selectedDeposit.title}</dd>
                                                 </div>
+                                                <div>
+                                                    <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Amount</dt>
+                                                    <dd className="text-2xl font-bold text-gray-900">${selectedDeposit.amount.toFixed(2)}</dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Purpose</dt>
+                                                    <dd className="text-gray-700 bg-gray-50 px-3 py-2 rounded-lg inline-block">{selectedDeposit.purpose}</dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Method</dt>
+                                                    <dd className="text-gray-900 capitalize flex items-center gap-2">
+                                                        <CreditCard className="w-4 h-4 text-gray-400" />
+                                                        {selectedDeposit.depositMethod === 'other' && selectedDeposit.otherDepositMethod
+                                                            ? selectedDeposit.otherDepositMethod
+                                                            : selectedDeposit.depositMethod.replace('_', ' ')
+                                                        }
+                                                    </dd>
+                                                </div>
+                                                {selectedDeposit.referenceNumber && (
+                                                    <div>
+                                                        <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Reference Number</dt>
+                                                        <dd className="text-gray-900 font-mono text-sm bg-gray-50 px-2 py-1 rounded border border-gray-200 inline-block">{selectedDeposit.referenceNumber}</dd>
+                                                    </div>
+                                                )}
+                                            </dl>
+                                        </div>
+
+                                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 group hover:shadow-md transition-shadow">
+                                            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                                <Receipt className="w-4 h-4 text-blue-600" />
+                                                Receipt Files
+                                            </h4>
+                                            {selectedDeposit.receiptFiles && selectedDeposit.receiptFiles.length > 0 ? (
+                                                <div className="space-y-3">
+                                                    {selectedDeposit.receiptFiles.map((fileUrl, index) => (
+                                                        <a
+                                                            key={index}
+                                                            href={fileUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center p-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all group/file"
+                                                        >
+                                                            <div className="p-2 bg-blue-100 text-blue-600 rounded-lg mr-3 group-hover/file:bg-blue-200 transition-colors">
+                                                                <FileText className="w-4 h-4" />
+                                                            </div>
+                                                            <span className="text-sm font-medium text-gray-700 group-hover/file:text-blue-700 flex-1">View Receipt {index + 1}</span>
+                                                            <Eye className="w-4 h-4 text-gray-400 group-hover/file:text-blue-500" />
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-sm text-gray-500 italic p-4 bg-gray-50 rounded-xl text-center">No receipt files attached</div>
                                             )}
-                                        </dl>
+                                        </div>
+
+                                        {selectedDeposit.description && (
+                                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
+                                                <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                                    <MessageCircle className="w-4 h-4 text-blue-600" />
+                                                    Description
+                                                </h4>
+                                                <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">{selectedDeposit.description}</p>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-4">Status & Dates</h4>
-                                        <dl className="space-y-3">
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Status</dt>
-                                                <dd>
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedDeposit.status)}`}>
-                                                        {getStatusIcon(selectedDeposit.status)}
-                                                        <span className="ml-1">{getStatusLabel(selectedDeposit.status)}</span>
-                                                    </span>
-                                                </dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Deposit Date</dt>
-                                                <dd className="text-sm text-gray-900">{new Date(selectedDeposit.depositDate).toLocaleDateString()}</dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Submitted</dt>
-                                                <dd className="text-sm text-gray-900">{selectedDeposit.submittedAt?.toDate().toLocaleString()}</dd>
-                                            </div>
-                                            {selectedDeposit.status === 'rejected' && selectedDeposit.rejectionReason && (
+                                    {/* Right Column: Status & Timeline */}
+                                    <div className="space-y-6">
+                                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
+                                            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                                <AlertCircle className="w-4 h-4 text-blue-600" />
+                                                Status & Dates
+                                            </h4>
+                                            <dl className="space-y-5">
                                                 <div>
-                                                    <dt className="text-sm font-medium text-gray-500">Rejection Reason</dt>
-                                                    <dd className="text-sm text-red-700 bg-red-50 p-2 rounded-md mt-1">{selectedDeposit.rejectionReason}</dd>
+                                                    <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Current Status</dt>
+                                                    <dd>
+                                                        <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium border ${selectedDeposit.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                                            selectedDeposit.status === 'verified' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                                'bg-red-50 text-red-700 border-red-200'
+                                                            }`}>
+                                                            {getStatusIcon(selectedDeposit.status)}
+                                                            <span className="ml-2">{getStatusLabel(selectedDeposit.status)}</span>
+                                                        </span>
+                                                    </dd>
                                                 </div>
-                                            )}
-                                        </dl>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="bg-gray-50 p-3 rounded-xl">
+                                                        <dt className="text-xs font-semibold text-gray-500 mb-1">Deposit Date</dt>
+                                                        <dd className="text-sm font-medium text-gray-900">{new Date(selectedDeposit.depositDate).toLocaleDateString()}</dd>
+                                                    </div>
+                                                    <div className="bg-gray-50 p-3 rounded-xl">
+                                                        <dt className="text-xs font-semibold text-gray-500 mb-1">Submitted</dt>
+                                                        <dd className="text-sm font-medium text-gray-900">{selectedDeposit.submittedAt?.toDate().toLocaleDateString()}</dd>
+                                                    </div>
+                                                </div>
+                                                {selectedDeposit.status === 'rejected' && selectedDeposit.rejectionReason && (
+                                                    <div className="bg-red-50 rounded-xl p-4 border border-red-100">
+                                                        <dt className="text-xs font-bold text-red-800 uppercase tracking-wider mb-2 flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" /> Rejection Reason
+                                                        </dt>
+                                                        <dd className="text-sm text-red-700">{selectedDeposit.rejectionReason}</dd>
+                                                    </div>
+                                                )}
+                                            </dl>
+                                        </div>
+
+                                        {selectedDeposit.auditLogs && selectedDeposit.auditLogs.length > 0 && (
+                                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
+                                                <h4 className="font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                                                    <Clock className="w-4 h-4 text-blue-600" />
+                                                    Activity Timeline
+                                                </h4>
+                                                <div className="relative border-l-2 border-gray-100 ml-3 space-y-6">
+                                                    {selectedDeposit.auditLogs.map((log, index) => (
+                                                        <div key={index} className="relative pl-6">
+                                                            <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full border-2 border-white bg-blue-100"></div>
+                                                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+                                                                <div>
+                                                                    <div className="text-sm font-semibold text-gray-900 capitalize">
+                                                                        {log.action.replace('_', ' ')}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-500 mt-0.5">
+                                                                        by {log.createdByName || 'Unknown'}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-xs text-gray-400 mt-1 sm:mt-0 font-mono">
+                                                                    {log.timestamp?.toDate().toLocaleString()}
+                                                                </div>
+                                                            </div>
+                                                            {log.note && (
+                                                                <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                                                    {log.note}
+                                                                </div>
+                                                            )}
+                                                            {log.previousData && log.newData && (
+                                                                <div className="mt-2">
+                                                                    <details className="group">
+                                                                        <summary className="text-xs text-blue-600 cursor-pointer hover:underline list-none flex items-center gap-1">
+                                                                            <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
+                                                                            View changes
+                                                                        </summary>
+                                                                        <div className="mt-2 text-xs bg-gray-900 text-gray-100 p-3 rounded-lg font-mono overflow-x-auto">
+                                                                            <div className="opacity-50 mb-1">// Old</div>
+                                                                            <div className="mb-2 text-red-300">{JSON.stringify(log.previousData, null, 2)}</div>
+                                                                            <div className="opacity-50 mb-1">// New</div>
+                                                                            <div className="text-green-300">{JSON.stringify(log.newData, null, 2)}</div>
+                                                                        </div>
+                                                                    </details>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-
-                                {selectedDeposit.description && (
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-2">Description</h4>
-                                        <p className="text-sm text-gray-700">{selectedDeposit.description}</p>
-                                    </div>
-                                )}
-
-                                {selectedDeposit.receiptFiles && selectedDeposit.receiptFiles.length > 0 && (
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-2">Receipt Files</h4>
-                                        <div className="space-y-2">
-                                            {selectedDeposit.receiptFiles.map((fileUrl, index) => (
-                                                <a
-                                                    key={index}
-                                                    href={fileUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-600 hover:text-blue-800 underline block"
-                                                >
-                                                    Receipt {index + 1}
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {selectedDeposit.auditLogs && selectedDeposit.auditLogs.length > 0 && (
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-2">Activity Log</h4>
-                                        <div className="space-y-2">
-                                            {selectedDeposit.auditLogs.map((log, index) => (
-                                                <div key={index} className="text-sm border-l-2 border-gray-200 pl-3">
-                                                    <div className="font-medium text-gray-900 capitalize">{log.action}</div>
-                                                    <div className="text-gray-500">
-                                                        {log.timestamp?.toDate().toLocaleString()}
-                                                        {log.createdByName && ` - by ${log.createdByName}`}
-                                                    </div>
-                                                    {log.note && <div className="text-gray-700 mt-1">{log.note}</div>}
-                                                    {log.previousData && log.newData && (
-                                                        <div className="text-xs text-gray-500 mt-1">
-                                                            Changed from: {JSON.stringify(log.previousData)} to: {JSON.stringify(log.newData)}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Edit Deposit Modal */}
+                {/* Edit Modal */}
                 {showEditModal && editingDeposit && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                            <div className="p-6 border-b border-gray-200">
-                                <div className="flex justify-between items-center">
-                                    <h3 className="text-lg font-medium text-gray-900">Edit Fund Deposit</h3>
-                                    <button
-                                        onClick={() => setShowEditModal(false)}
-                                        className="text-gray-400 hover:text-gray-600"
-                                    >
-                                        <X className="w-6 h-6" />
-                                    </button>
-                                </div>
+                    <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
+                        <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+                            <div className="p-6 border-b border-gray-100 flex-shrink-0 bg-gray-50/50 rounded-t-3xl">
+                                <h3 className="text-xl font-bold text-gray-900">Edit Deposit</h3>
+                                <p className="text-sm text-gray-500 mt-1">Update deposit details</p>
                             </div>
 
-                            <div className="p-6 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Deposit Title *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        value={editingDeposit.title}
-                                        onChange={(e) => setEditingDeposit({ ...editingDeposit, title: e.target.value })}
-                                        placeholder="e.g., Membership Dues Collection"
-                                    />
-                                </div>
+                            <div className="p-8 space-y-6 flex-grow overflow-y-auto">
+                                <div className="space-y-6">
+                                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                                        <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                                            <div className="p-1 bg-blue-100 rounded-lg">
+                                                <DollarSign className="w-4 h-4 text-blue-600" />
+                                            </div>
+                                            Transaction Details
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div className="col-span-1 md:col-span-2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Deposit Title <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${validationErrors.title ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}
+                                                    value={editingDeposit.title}
+                                                    onChange={(e) => setEditingDeposit({ ...editingDeposit, title: e.target.value })}
+                                                />
+                                                {validationErrors.title && (
+                                                    <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" /> {validationErrors.title}
+                                                    </p>
+                                                )}
+                                            </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Amount *
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={editingDeposit.amount}
-                                            onChange={(e) => setEditingDeposit({ ...editingDeposit, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
-                                            placeholder="0.00"
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Amount <span className="text-red-500">*</span>
+                                                </label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <span className="text-gray-500 font-medium">$</span>
+                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        className={`w-full pl-8 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${validationErrors.amount ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}
+                                                        value={editingDeposit.amount}
+                                                        onChange={(e) => setEditingDeposit({ ...editingDeposit, amount: Number(e.target.value) })}
+                                                    />
+                                                </div>
+                                                {validationErrors.amount && (
+                                                    <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" /> {validationErrors.amount}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Deposit Date <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                    value={editingDeposit.depositDate}
+                                                    onChange={(e) => setEditingDeposit({ ...editingDeposit, depositDate: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                Deposit Method <span className="text-red-500">*</span>
+                                            </label>
+                                            <select
+                                                className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${validationErrors.depositMethod ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}
+                                                value={editingDeposit.depositMethod}
+                                                onChange={(e) => setEditingDeposit({ ...editingDeposit, depositMethod: e.target.value as any })}
+                                            >
+                                                <option value="cash">Cash</option>
+                                                <option value="check">Check</option>
+                                                <option value="bank_transfer">Bank Transfer</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+
+                                        {editingDeposit.depositMethod === 'other' && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Specify Method <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${validationErrors.otherDepositMethod ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}
+                                                    value={editingDeposit.otherDepositMethod || ''}
+                                                    onChange={(e) => setEditingDeposit({ ...editingDeposit, otherDepositMethod: e.target.value })}
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                Purpose <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${validationErrors.purpose ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}
+                                                value={editingDeposit.purpose}
+                                                onChange={(e) => setEditingDeposit({ ...editingDeposit, purpose: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                Description
+                                            </label>
+                                            <textarea
+                                                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                rows={3}
+                                                value={editingDeposit.description || ''}
+                                                onChange={(e) => setEditingDeposit({ ...editingDeposit, description: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                Reference Number
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                value={editingDeposit.referenceNumber || ''}
+                                                onChange={(e) => setEditingDeposit({ ...editingDeposit, referenceNumber: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-gray-100 pt-6">
+                                        <MultiFileUpload
+                                            files={editReceiptFiles}
+                                            onFilesChange={setEditReceiptFiles}
+                                            existingFiles={editingDeposit.receiptFiles || []}
+                                            onRemoveExistingFile={(fileUrl) => removeReceiptFile(editingDeposit, fileUrl)}
+                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                            maxFiles={10}
+                                            maxSizeInMB={10}
+                                            label="Receipt Files"
+                                            description="Drag and drop files here, or click to browse"
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Deposit Date *
-                                        </label>
-                                        <input
-                                            type="date"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            value={editingDeposit.depositDate}
-                                            onChange={(e) => setEditingDeposit({ ...editingDeposit, depositDate: e.target.value })}
-                                        />
+                                    {/* IEEE Deposit Section */}
+                                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                        <div className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                id="editIsIeeeDeposit"
+                                                checked={editingDeposit.isIeeeDeposit || false}
+                                                onChange={(e) => setEditingDeposit({ ...editingDeposit, isIeeeDeposit: e.target.checked })}
+                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-all"
+                                            />
+                                            <label htmlFor="editIsIeeeDeposit" className="ml-2 block text-sm font-medium text-gray-900">
+                                                This is an IEEE deposit (include Concur receipt)
+                                            </label>
+                                        </div>
+
+                                        {editingDeposit.isIeeeDeposit && (
+                                            <div className="mt-4 pl-6 border-l-2 border-gray-300">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    IEEE Source <span className="text-red-500">*</span>
+                                                </label>
+                                                <select
+                                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                                                    value={editingDeposit.ieeeDepositSource || 'upp'}
+                                                    onChange={(e) => setEditingDeposit({ ...editingDeposit, ieeeDepositSource: e.target.value as any })}
+                                                >
+                                                    <option value="upp">IEEE UPP</option>
+                                                    <option value="section">IEEE Section</option>
+                                                    <option value="region">IEEE Region</option>
+                                                    <option value="global">IEEE Global</option>
+                                                    <option value="society">IEEE Society</option>
+                                                    <option value="other">Other IEEE Entity</option>
+                                                </select>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Deposit Method *
-                                    </label>
-                                    <select
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        value={editingDeposit.depositMethod}
-                                        onChange={(e) => setEditingDeposit({ ...editingDeposit, depositMethod: e.target.value as any })}
-                                    >
-                                        <option value="cash">Cash</option>
-                                        <option value="check">Check</option>
-                                        <option value="bank_transfer">Bank Transfer</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Purpose *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        value={editingDeposit.purpose}
-                                        onChange={(e) => setEditingDeposit({ ...editingDeposit, purpose: e.target.value })}
-                                        placeholder="e.g., Membership Dues, Event Revenue, Sponsorship"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        rows={3}
-                                        value={editingDeposit.description}
-                                        onChange={(e) => setEditingDeposit({ ...editingDeposit, description: e.target.value })}
-                                        placeholder="Additional details about this deposit..."
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Reference Number
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        value={editingDeposit.referenceNumber || ''}
-                                        onChange={(e) => setEditingDeposit({ ...editingDeposit, referenceNumber: e.target.value })}
-                                        placeholder="Check number, transaction ID, confirmation number for money sent to IEEE, etc."
-                                    />
-                                </div>
-
-                                <MultiFileUpload
-                                    files={editReceiptFiles}
-                                    onFilesChange={setEditReceiptFiles}
-                                    existingFiles={editingDeposit.receiptFiles || []}
-                                    onRemoveExistingFile={(fileUrl) => removeReceiptFile(editingDeposit, fileUrl)}
-                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                    maxFiles={10}
-                                    maxSizeInMB={10}
-                                    label="Receipt Files"
-                                    description="Drag and drop files here, or click to browse"
-                                />
                             </div>
 
-                            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+                            <div className="p-6 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0 bg-gray-50/50 rounded-b-3xl">
                                 <button
                                     onClick={() => setShowEditModal(false)}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50"
+                                    className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all shadow-sm"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleUpdateDeposit}
-                                    disabled={!editingDeposit.title || !editingDeposit.amount || !editingDeposit.purpose}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-xl hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20 transition-all shadow-md"
                                 >
-                                    <Save className="w-4 h-4" />
-                                    Update Deposit
+                                    Save Changes
                                 </button>
                             </div>
                         </div>
@@ -1490,49 +1692,46 @@ const FundDepositsContent: React.FC = () => {
 
                 {/* Rejection Modal */}
                 {showRejectionModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-900">Reject Deposit</h3>
-                                <button
-                                    onClick={() => setShowRejectionModal(false)}
-                                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
+                    <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
+                        <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
+                            <div className="p-6 border-b border-gray-100 bg-red-50/50">
+                                <h3 className="text-xl font-bold text-red-900 flex items-center gap-2">
+                                    <AlertCircle className="w-5 h-5 text-red-600" />
+                                    Reject Deposit
+                                </h3>
+                                <p className="text-sm text-red-600/80 mt-1">Please provide a reason for rejecting this deposit.</p>
                             </div>
-
-                            <div className="p-6">
-                                <div className="mb-4">
+                            <div className="p-6 space-y-4">
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Rejection Reason <span className="text-red-500">*</span>
                                     </label>
                                     <textarea
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all resize-none"
+                                        rows={4}
                                         value={rejectionReason}
                                         onChange={(e) => setRejectionReason(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        rows={4}
-                                        placeholder="Please provide a clear reason for rejecting this deposit..."
-                                        required
+                                        placeholder="Explain why this deposit is being rejected..."
                                     />
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        This reason will be visible to the user who submitted the deposit.
+                                    </p>
                                 </div>
-
-                                <div className="flex items-center justify-end space-x-3">
-                                    <button
-                                        onClick={() => setShowRejectionModal(false)}
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleConfirmRejection}
-                                        disabled={!rejectionReason.trim()}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                    >
-                                        <X className="w-4 h-4" />
-                                        Reject Deposit
-                                    </button>
-                                </div>
+                            </div>
+                            <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
+                                <button
+                                    onClick={() => setShowRejectionModal(false)}
+                                    className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all shadow-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleRejectDeposit}
+                                    disabled={!rejectionReason.trim()}
+                                    className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 border border-transparent rounded-xl hover:bg-red-700 hover:shadow-lg hover:shadow-red-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
+                                >
+                                    Reject Deposit
+                                </button>
                             </div>
                         </div>
                     </div>

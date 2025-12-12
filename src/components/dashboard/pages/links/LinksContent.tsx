@@ -83,35 +83,47 @@ export default function LinksContent() {
   };
 
   return (
-    <div className="flex-1 overflow-auto">
-      <main className="p-4 md:p-6">
-        {/* Search and Actions Bar */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="relative flex-1 max-w-md w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search links..."
-              aria-label="Search links"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
-            />
+    <div className="flex-1 overflow-auto bg-gray-50/50">
+      <main className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+              Quick Links
+            </h1>
+            <p className="text-gray-500 mt-1">
+              Access important resources and external pages
+            </p>
           </div>
-          {canManageLinks && (
-            <button
-              onClick={handleAddLink}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors min-h-[44px]"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Link</span>
-              <span className="sm:hidden">Add</span>
-            </button>
-          )}
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <div className="relative group min-w-[300px]">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search resources..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl leading-5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 shadow-sm"
+              />
+            </div>
+
+            {canManageLinks && (
+              <button
+                onClick={handleAddLink}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl shadow-lg shadow-gray-900/10 hover:shadow-xl hover:shadow-gray-900/20 transition-all duration-200 font-medium"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Add Link</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
-        <div className="mb-6">
+        <div className="border-b border-gray-200 pb-6">
           <LinkFilters
             categoryFilter={categoryFilter}
             onCategoryChange={setCategoryFilter}
@@ -120,81 +132,78 @@ export default function LinksContent() {
         </div>
 
         {/* Links Grid */}
-        {
-          loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5"
-                >
-                  <div className="flex items-start gap-3">
-                    <Skeleton className="w-12 h-12 rounded-xl" />
-                    <div className="flex-1 space-y-3">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-3 w-full" />
-                      <Skeleton className="h-3 w-2/3" />
-                    </div>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 h-[200px]"
+              >
+                <div className="flex items-start gap-4">
+                  <Skeleton className="w-12 h-12 rounded-xl" />
+                  <div className="flex-1 space-y-3">
+                    <Skeleton className="h-5 w-3/4 rounded-lg" />
+                    <Skeleton className="h-4 w-full rounded-lg" />
+                    <Skeleton className="h-4 w-2/3 rounded-lg" />
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
+          </div>
+        ) : links.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+            <div className="bg-gray-100 p-6 rounded-full mb-6">
+              <LinkIcon className="w-12 h-12 text-gray-400" />
             </div>
-          ) : links.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-              <LinkIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {searchTerm || categoryFilter !== "all"
-                  ? "No links found"
-                  : "No links yet"}
-              </h3>
-              <p className="text-gray-600 mb-6">
-                {searchTerm || categoryFilter !== "all"
-                  ? "Try adjusting your search or filters"
-                  : canManageLinks
-                    ? "Get started by adding your first link"
-                    : "Links will appear here once they are added"}
-              </p>
-              {canManageLinks &&
-                !searchTerm &&
-                categoryFilter === "all" && (
-                  <button
-                    onClick={handleAddLink}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Your First Link
-                  </button>
-                )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {links.map((link) => (
-                <LinkCard
-                  key={link.id}
-                  link={link}
-                  canManage={canManageLinks}
-                  onEdit={handleEditLink}
-                  onDelete={handleDeleteLink}
-                />
-              ))}
-            </div>
-          )
-        }
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {searchTerm || categoryFilter !== "all"
+                ? "No matches found"
+                : "No links yet"}
+            </h3>
+            <p className="text-gray-500 max-w-md mb-8">
+              {searchTerm || categoryFilter !== "all"
+                ? "Try adjusting your search terms or selecting a different category."
+                : canManageLinks
+                  ? "Create your first link to get started with resource sharing."
+                  : "Links will appear here once they are added by an administrator."}
+            </p>
+            {canManageLinks &&
+              !searchTerm &&
+              categoryFilter === "all" && (
+                <button
+                  onClick={handleAddLink}
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 font-medium"
+                >
+                  <Plus className="w-5 h-5" />
+                  Create Your First Link
+                </button>
+              )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {links.map((link) => (
+              <LinkCard
+                key={link.id}
+                link={link}
+                canManage={canManageLinks}
+                onEdit={handleEditLink}
+                onDelete={handleDeleteLink}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Results count */}
-        {
-          !loading && links.length > 0 && (
-            <div className="mt-6 text-center text-sm text-gray-600">
+        {!loading && links.length > 0 && (
+          <div className="text-center py-8">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
               Showing {links.length} {links.length === 1 ? "link" : "links"}
               {(searchTerm || categoryFilter !== "all") && (
-                <span>
-                  {" "}
-                  of {allLinks.length} total
-                </span>
+                <> of {allLinks.length} total</>
               )}
-            </div>
-          )
-        }
+            </span>
+          </div>
+        )}
       </main>
 
       {/* Link Modal */}

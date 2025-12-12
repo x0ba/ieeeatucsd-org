@@ -127,7 +127,7 @@ export default function UserTable({
                 </TableHeader>
                 <TableBody>
                     {users.map((user) => (
-                        <TableRow key={user.id} className="hover:bg-gray-50">
+                        <TableRow key={user.id} className="hover:bg-gray-50 group">
                             <TableCell>
                                 <div className="flex items-center gap-3">
                                     <Avatar
@@ -191,7 +191,7 @@ export default function UserTable({
                                 )}
                             </TableCell>
                             <TableCell>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     {(permissions.canEditUserRole(user) || permissions.canEditUserPosition(user)) && (
                                         <Tooltip content="Edit user">
                                             <Button

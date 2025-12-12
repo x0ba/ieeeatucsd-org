@@ -21,41 +21,39 @@ export default function LinkFilters({
   const categories = Object.keys(linkCounts).sort();
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">
-        Filter by Category
-      </h3>
-      <div className="flex flex-wrap gap-2">
-        {/* All Categories */}
-        <button
-          onClick={() => onCategoryChange("all")}
-          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${categoryFilter === "all"
-            ? "bg-blue-600 text-white"
-            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-        >
-          All ({totalCount})
-        </button>
+    <div className="flex flex-wrap items-center gap-3">
+      {/* All Categories */}
+      <button
+        onClick={() => onCategoryChange("all")}
+        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${categoryFilter === "all"
+            ? "bg-gray-900 border-gray-900 text-white shadow-md transform scale-105"
+            : "bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+          }`}
+      >
+        All <span className="ml-1 opacity-60">({totalCount})</span>
+      </button>
 
-        {/* Individual Categories */}
-        {categories.map((category) => {
-          const count = linkCounts[category] || 0;
-          const info = getCategoryColor(category);
+      <div className="w-px h-8 bg-gray-200 mx-1 hidden sm:block" />
 
-          return (
-            <button
-              key={category}
-              onClick={() => onCategoryChange(category)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${categoryFilter === category
-                ? `${info.bgColor} ${info.color} ring-2 ring-offset-1`
-                : `${info.bgColor} ${info.color} hover:ring-2 hover:ring-offset-1`
-                }`}
-            >
-              {category} ({count})
-            </button>
-          );
-        })}
-      </div>
+      {/* Individual Categories */}
+      {categories.map((category) => {
+        const count = linkCounts[category] || 0;
+        const info = getCategoryColor(category);
+        const isActive = categoryFilter === category;
+
+        return (
+          <button
+            key={category}
+            onClick={() => onCategoryChange(category)}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${isActive
+                ? `${info.bgColor} ${info.borderColor} ${info.color} shadow-sm transform scale-105 ring-1 ring-offset-1 ring-transparent`
+                : "bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+              }`}
+          >
+            {category} <span className="ml-1 opacity-60">({count})</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

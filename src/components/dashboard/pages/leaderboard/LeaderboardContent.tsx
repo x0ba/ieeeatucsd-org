@@ -181,252 +181,310 @@ export default function LeaderboardContent() {
     };
 
     return (
-        <div className="flex-1 overflow-auto">
-            <main className="p-4 md:p-6">
-                <div className="grid grid-cols-1 gap-4 md:gap-6">
+        <div className="flex-1 overflow-auto bg-gray-50/30">
+            <main className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600 mb-1">
+                            Community Leaderboard
+                        </h1>
+                        <p className="text-gray-500 text-sm">
+                            Track participation and celebrate our most active members
+                        </p>
+                    </div>
+
                     {/* Search Bar */}
-                    <div className="mb-4">
-                        <div className="relative max-w-md">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                            <input
-                                type="text"
-                                placeholder="Search members..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
-                            />
+                    <div className="relative w-full md:w-80 group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search members..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all duration-200 shadow-sm"
+                        />
+                    </div>
+                </div>
+
+                {/* Stats Overview */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {loading ? (
+                        <>
+                            <MetricCardSkeleton />
+                            <MetricCardSkeleton />
+                            <MetricCardSkeleton />
+                            <MetricCardSkeleton />
+                        </>
+                    ) : (
+                        <>
+                            <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-5 flex items-center justify-between hover:shadow-md transition-shadow">
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Users</p>
+                                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalUsers}</p>
+                                </div>
+                                <div className="p-3 bg-blue-50 rounded-lg">
+                                    <Users className="w-6 h-6 text-blue-600" />
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-5 flex items-center justify-between hover:shadow-md transition-shadow">
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Points</p>
+                                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalPoints.toLocaleString()}</p>
+                                </div>
+                                <div className="p-3 bg-yellow-50 rounded-lg">
+                                    <Star className="w-6 h-6 text-yellow-600" />
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-5 flex items-center justify-between hover:shadow-md transition-shadow">
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Average Score</p>
+                                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.avgPoints}</p>
+                                </div>
+                                <div className="p-3 bg-green-50 rounded-lg">
+                                    <TrendingUp className="w-6 h-6 text-green-600" />
+                                </div>
+                            </div>
+
+                            <div className={`bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-gray-100 p-5 flex items-center justify-between hover:shadow-md transition-shadow relative overflow-hidden ${currentUserRank !== -1 && currentUserRank <= 10 ? 'ring-2 ring-blue-500/10' : ''}`}>
+                                {currentUserRank !== -1 && currentUserRank <= 10 && (
+                                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-blue-100 to-transparent rounded-bl-3xl opacity-50"></div>
+                                )}
+                                <div className="relative z-10">
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Your Rank</p>
+                                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                                        {currentUserRank === -1 ? '1000+' : currentUserRank > 0 ? `#${currentUserRank}` : '-'}
+                                    </p>
+                                </div>
+                                <div className="relative z-10 p-3 bg-purple-50 rounded-lg">
+                                    <Trophy className="w-6 h-6 text-purple-600" />
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Podium - Top 3 */}
+                {loading ? (
+                    <CardSkeleton variant="content" size="lg" className="h-64" />
+                ) : topThree.length >= 3 && (
+                    <div className="relative pt-8 pb-4">
+                        <div className="flex justify-center items-end space-x-2 md:space-x-8">
+                            {/* Second Place */}
+                            {topThree[1] && (
+                                <div className="flex flex-col items-center z-10 hover:-translate-y-1 transition-transform duration-300">
+                                    <div className="relative mb-3">
+                                        <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-b from-gray-100 to-gray-200 rounded-full flex items-center justify-center p-1 shadow-md border-2 border-gray-300">
+                                            <span className="text-xl font-bold text-gray-600">
+                                                {topThree[1].name.substring(0, 2).toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div className="absolute -bottom-2 -right-1 w-7 h-7 bg-gray-600 rounded-full flex items-center justify-center border-2 border-white text-white text-xs font-bold shadow-sm">
+                                            2
+                                        </div>
+                                    </div>
+                                    <div className="text-center mb-2">
+                                        <p className="font-bold text-gray-800 text-sm md:text-base">{topThree[1].name.split(' ')[0]}</p>
+                                        <div className="px-2 py-0.5 bg-gray-100 rounded-full inline-block mt-1">
+                                            <p className="text-xs text-gray-600 font-bold">{topThree[1].points} pts</p>
+                                        </div>
+                                    </div>
+                                    <div className={`w-20 md:w-32 ${getPodiumHeight(2)} bg-gradient-to-t from-gray-300 to-gray-100 rounded-t-xl shadow-inner flex items-end justify-center pb-3 opacity-90`}>
+                                        <Medal className="w-8 h-8 text-gray-400 opacity-50" />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* First Place */}
+                            {topThree[0] && (
+                                <div className="flex flex-col items-center z-20 -mx-2 hover:-translate-y-1 transition-transform duration-300">
+                                    <div className="relative mb-3">
+                                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 animate-bounce duration-1000">
+                                            <Crown className="w-8 h-8 text-yellow-400 fill-current drop-shadow-sm" />
+                                        </div>
+                                        <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-b from-yellow-50 to-yellow-100 rounded-full flex items-center justify-center p-1 shadow-lg border-4 border-yellow-300">
+                                            <span className="text-2xl font-bold text-yellow-700">
+                                                {topThree[0].name.substring(0, 2).toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div className="absolute -bottom-3 -right-1 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center border-2 border-white text-white text-sm font-bold shadow-sm">
+                                            1
+                                        </div>
+                                    </div>
+                                    <div className="text-center mb-2">
+                                        <p className="font-bold text-gray-900 text-base md:text-lg">{topThree[0].name.split(' ')[0]}</p>
+                                        <div className="px-3 py-0.5 bg-yellow-100 rounded-full inline-block mt-1">
+                                            <p className="text-xs text-yellow-700 font-bold">{topThree[0].points} pts</p>
+                                        </div>
+                                    </div>
+                                    <div className={`w-24 md:w-40 ${getPodiumHeight(1)} bg-gradient-to-t from-yellow-300 to-yellow-100 rounded-t-xl shadow-[0_10px_20px_-5px_rgba(250,204,21,0.3)] flex items-end justify-center pb-4 relative overflow-hidden`}>
+                                        <div className="absolute inset-0 bg-white/30 backdrop-blur-[1px]"></div>
+                                        <div className="relative z-10 flex flex-col items-center">
+                                            <Trophy className="w-10 h-10 text-yellow-500 drop-shadow-sm mb-1" />
+                                            <span className="text-yellow-600/50 text-[10px] uppercase font-bold tracking-widest">Champion</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Third Place */}
+                            {topThree[2] && (
+                                <div className="flex flex-col items-center z-10 hover:-translate-y-1 transition-transform duration-300">
+                                    <div className="relative mb-3">
+                                        <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-b from-orange-50 to-orange-100 rounded-full flex items-center justify-center p-1 shadow-md border-2 border-orange-200">
+                                            <span className="text-xl font-bold text-orange-800">
+                                                {topThree[2].name.substring(0, 2).toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div className="absolute -bottom-2 -right-1 w-7 h-7 bg-orange-500 rounded-full flex items-center justify-center border-2 border-white text-white text-xs font-bold shadow-sm">
+                                            3
+                                        </div>
+                                    </div>
+                                    <div className="text-center mb-2">
+                                        <p className="font-bold text-gray-800 text-sm md:text-base">{topThree[2].name.split(' ')[0]}</p>
+                                        <div className="px-2 py-0.5 bg-orange-50 rounded-full inline-block mt-1">
+                                            <p className="text-xs text-orange-700 font-bold">{topThree[2].points} pts</p>
+                                        </div>
+                                    </div>
+                                    <div className={`w-20 md:w-32 ${getPodiumHeight(3)} bg-gradient-to-t from-orange-300 to-orange-100 rounded-t-xl shadow-inner flex items-end justify-center pb-3 opacity-90`}>
+                                        <Award className="w-8 h-8 text-orange-500 opacity-50" />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
-                    {/* Stats Overview */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                )}
+
+                {/* Full Leaderboard */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
+                            All Members
+                        </h2>
+                        <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm">
+                            {filteredData.length} members found
+                        </span>
+                    </div>
+                    <div className="overflow-x-auto">
                         {loading ? (
-                            <>
-                                <MetricCardSkeleton />
-                                <MetricCardSkeleton />
-                                <MetricCardSkeleton />
-                                <MetricCardSkeleton />
-                            </>
+                            <LeaderboardTableSkeleton rows={10} />
                         ) : (
-                            <>
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Total Members</p>
-                                            <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
-                                        </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                            <Users className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-600">Total Points</p>
-                                            <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.totalPoints.toLocaleString()}</p>
-                                        </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                            <Star className="w-5 h-5 md:w-6 md:h-6 text-yellow-600" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">Average Points</p>
-                                            <p className="text-2xl font-bold text-gray-900">{stats.avgPoints}</p>
-                                        </div>
-                                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                            <TrendingUp className="w-6 h-6 text-green-600" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">Your Rank</p>
-                                            <p
-                                                className="text-2xl font-bold text-gray-900"
-                                                aria-label={`Your current leaderboard ranking is ${currentUserRank === -1 ? 'beyond top 1000' : currentUserRank === 0 ? 'not ranked' : '#' + currentUserRank}`}
-                                            >
-                                                {currentUserRank === -1 ? '1000+' : currentUserRank ? '#' + currentUserRank : 'N/A'}
-                                            </p>
-                                        </div>
-                                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                            <Trophy className="w-6 h-6 text-purple-600" aria-label="Trophy icon representing your ranking" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-gray-50/50 border-b border-gray-100 text-left">
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider w-24">Rank</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Member</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Points</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider hidden md:table-cell">Major</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Grad Year</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider hidden sm:table-cell text-center">Events</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Role</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {paginatedData.map((member) => (
+                                        <tr
+                                            key={member.id}
+                                            className={`group transition-colors duration-150 ${member.id === user?.uid
+                                                ? 'bg-blue-50/60 hover:bg-blue-50'
+                                                : 'hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className={`
+                                                    w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm
+                                                    ${member.rank <= 3
+                                                        ? 'bg-yellow-100 text-yellow-700'
+                                                        : 'bg-gray-100 text-gray-500'
+                                                    }
+                                                `}>
+                                                    {member.rank}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ring-1 ring-white
+                                                        ${member.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+                                                            member.rank === 2 ? 'bg-gray-100 text-gray-700' :
+                                                                member.rank === 3 ? 'bg-orange-100 text-orange-700' :
+                                                                    'bg-blue-50 text-blue-600'
+                                                        }
+                                                    `}>
+                                                        {member.name.substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div className="ml-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                                                {member.name}
+                                                            </div>
+                                                            {member.id === user?.uid && (
+                                                                <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wide">
+                                                                    You
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 md:hidden">{truncateMajor(member.major || member.position)}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-bold bg-green-50 text-green-700 border border-green-100">
+                                                    {member.points}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                                                <div className="text-sm text-gray-600 font-medium" title={member.major || 'N/A'}>
+                                                    {truncateMajor(member.major || 'N/A')}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
+                                                    {member.graduationYear || 'N/A'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell text-center">
+                                                <div className="text-sm font-bold text-gray-900">{member.eventsAttended || 0}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex px-2.5 py-1 text-xs font-bold rounded-full border ${member.position && member.position.toLowerCase().includes('officer')
+                                                    ? 'bg-purple-50 text-purple-700 border-purple-100'
+                                                    : 'bg-gray-50 text-gray-600 border-gray-100'
+                                                    }`}>
+                                                    {member.position || 'Member'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {paginatedData.length === 0 && (
+                                        <tr>
+                                            <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <Search className="w-12 h-12 text-gray-200 mb-3" />
+                                                    <p className="text-lg font-medium text-gray-900">No members found</p>
+                                                    <p className="text-sm text-gray-500">Try adjusting your search terms</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         )}
                     </div>
 
-                    {/* Podium - Top 3 */}
-                    {loading ? (
-                        <CardSkeleton variant="content" size="lg" className="h-64" />
-                    ) : topThree.length >= 3 && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-6 text-center">🏆 Top Performers 🏆</h2>
-                            <div className="flex justify-center items-end space-x-4 mb-6">
-                                {/* Second Place */}
-                                {topThree[1] && (
-                                    <div className="flex flex-col items-center">
-                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-2">
-                                            <Medal className="w-8 h-8 text-gray-400" />
-                                        </div>
-                                        <p className="font-medium text-gray-900 text-sm text-center">{topThree[1].name.split(' ')[0]}</p>
-                                        <p className="text-xs text-gray-500 mb-2">{topThree[1].points} pts</p>
-                                        <div className={`w-20 ${getPodiumHeight(2)} ${getPodiumColor(2)} rounded-t-lg flex items-end justify-center pb-2`}>
-                                            <span className="text-white font-bold text-lg">2</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* First Place */}
-                                {topThree[0] && (
-                                    <div className="flex flex-col items-center">
-                                        <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mb-2 relative">
-                                            <Crown className="w-10 h-10 text-yellow-500" />
-                                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
-                                                <span className="text-xs font-bold text-white">👑</span>
-                                            </div>
-                                        </div>
-                                        <p className="font-bold text-gray-900 text-base text-center">{topThree[0].name.split(' ')[0]}</p>
-                                        <p className="text-sm text-yellow-600 font-medium mb-2">{topThree[0].points} pts</p>
-                                        <div className={`w-24 ${getPodiumHeight(1)} ${getPodiumColor(1)} rounded-t-lg flex items-end justify-center pb-2`}>
-                                            <span className="text-white font-bold text-xl">1</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Third Place */}
-                                {topThree[2] && (
-                                    <div className="flex flex-col items-center">
-                                        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-2">
-                                            <Award className="w-8 h-8 text-amber-600" />
-                                        </div>
-                                        <p className="font-medium text-gray-900 text-sm text-center">{topThree[2].name.split(' ')[0]}</p>
-                                        <p className="text-xs text-gray-500 mb-2">{topThree[2].points} pts</p>
-                                        <div className={`w-20 ${getPodiumHeight(3)} ${getPodiumColor(3)} rounded-t-lg flex items-end justify-center pb-2`}>
-                                            <span className="text-white font-bold text-lg">3</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Full Leaderboard */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
-                        <div className="px-6 py-4 border-b border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-900">Full Leaderboard</h2>
-                        </div>
-                        <div className="overflow-x-auto">
-                            {loading ? (
-                                <LeaderboardTableSkeleton rows={10} />
-                            ) : (
-                                <table className="w-full">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Rank
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Member
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Points
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Major
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Graduation Year
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Events
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Position
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {paginatedData.map((member) => (
-                                            <tr
-                                                key={member.id}
-                                                className={`hover:bg-gray-50 ${member.id === user?.uid ? 'bg-blue-50' : ''}`}
-                                            >
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center">
-                                                        {getRankIcon(member.rank)}
-                                                        {member.rank <= 3 && (
-                                                            <span className="ml-2 text-xs font-medium text-gray-500">
-                                                                {member.rank === 1 ? 'Champion' : member.rank === 2 ? 'Runner-up' : 'Third Place'}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center">
-                                                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                                            <span className="text-blue-600 font-medium text-sm">
-                                                                {member.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                                                            </span>
-                                                        </div>
-                                                        <div className="ml-4">
-                                                            <div className="text-sm font-medium text-gray-900">
-                                                                {member.name}
-                                                                {member.id === user?.uid && (
-                                                                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                                                        You
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div className="text-sm text-gray-500" title={member.major || member.position}>{truncateMajor(member.major || member.position)}</div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-bold text-gray-900">{member.points}</div>
-                                                    <div className="text-xs text-gray-500">points</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900" title={member.major || 'N/A'}>{truncateMajor(member.major || 'N/A')}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{member.graduationYear || 'N/A'}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{member.eventsAttended || 0}</div>
-                                                    <div className="text-xs text-gray-500">events</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
-                                                        {member.position || 'Member'}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            )}
-                        </div>
-
-                        {/* Pagination Controls */}
-                        {totalPages > 1 && (
-                            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-4">
-                                        <p className="text-sm text-gray-700">
-                                            Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-                                            <span className="font-medium">{Math.min(endIndex, totalItems)}</span> of{' '}
-                                            <span className="font-medium">{totalItems}</span> results
-                                        </p>
-                                    </div>
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="bg-white px-6 py-4 border-t border-gray-100">
+                            <div className="flex items-center justify-between flex-wrap gap-4">
+                                <p className="text-sm text-gray-500 order-2 sm:order-1">
+                                    Showing <span className="font-bold text-gray-900">{startIndex + 1}</span> to{' '}
+                                    <span className="font-bold text-gray-900">{Math.min(endIndex, totalItems)}</span> of{' '}
+                                    <span className="font-bold text-gray-900">{totalItems}</span> members
+                                </p>
+                                <div className="order-1 sm:order-2 w-full sm:w-auto flex justify-center">
                                     <Pagination
                                         total={totalPages}
                                         page={currentPage}
@@ -434,11 +492,17 @@ export default function LeaderboardContent() {
                                         showControls
                                         showShadow
                                         color="primary"
+                                        className="gap-2"
+                                        radius="full"
+                                        classNames={{
+                                            wrapper: "shadow-none",
+                                            cursor: "shadow-md font-bold",
+                                        }}
                                     />
                                 </div>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </main>
         </div>

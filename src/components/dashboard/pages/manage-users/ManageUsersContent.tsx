@@ -287,8 +287,8 @@ export default function ManageUsersContent() {
   }
 
   return (
-    <div className="">
-      <div className="space-y-6 p-6 mx-">
+    <div className="w-full">
+      <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
         {/* Stats Cards */}
         <UserStatsCards stats={stats} />
 

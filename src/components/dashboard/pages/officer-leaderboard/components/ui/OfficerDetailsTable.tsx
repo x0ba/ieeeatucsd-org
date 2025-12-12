@@ -13,8 +13,8 @@ import {
   CardHeader,
 } from "@heroui/react";
 import { Trophy, Medal, Award, Crown, Users } from "lucide-react";
-import type { OfficerTeam } from "../../../shared/types/firestore";
-import type { TeamMember } from "../types/OfficerLeaderboardTypes";
+import type { OfficerTeam } from "../../../../shared/types/firestore";
+import type { TeamMember } from "../../types/OfficerLeaderboardTypes";
 
 interface OfficerDetailsTableProps {
   team: OfficerTeam;
@@ -82,11 +82,11 @@ export default function OfficerDetailsTable({
     maxAttendanceRate > 0 ? (teamAttendanceRate / maxAttendanceRate) * 100 : 0;
 
   const columns = [
-    { key: "rank", label: "Rank", minWidth: 80 },
-    { key: "name", label: "Officer", minWidth: 200 },
-    { key: "position", label: "Position", minWidth: 150 },
-    { key: "events", label: "Events Attended", minWidth: 120 },
-    { key: "contribution", label: "Contribution", minWidth: 120 },
+    { key: "rank", label: "RANK", minWidth: 60 },
+    { key: "name", label: "OFFICER", minWidth: 200 },
+    { key: "position", label: "POSITION", minWidth: 150 },
+    { key: "events", label: "EVENTS", minWidth: 100 },
+    { key: "contribution", label: "CONTRIBUTION", minWidth: 140 },
   ];
 
   const renderCell = (member: TeamMember, columnKey: string) => {
@@ -97,32 +97,47 @@ export default function OfficerDetailsTable({
         return (
           <div className="flex items-center justify-center">
             {memberRank <= 3 ? (
-              getRankIcon(memberRank)
+              <div className="transform scale-110 drop-shadow-sm">
+                {getRankIcon(memberRank)}
+              </div>
             ) : (
-              <span className="text-sm font-semibold text-gray-600">
-                #{memberRank}
+              <span className="text-sm font-semibold text-slate-500 font-mono">
+                {String(memberRank).padStart(2, '0')}
               </span>
             )}
           </div>
         );
 
       case "name":
+        const initials = member.name
+          .split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2);
+
+        const bgColors = [
+          "bg-blue-100 text-blue-700",
+          "bg-indigo-100 text-indigo-700",
+          "bg-violet-100 text-violet-700",
+          "bg-sky-100 text-sky-700",
+          "bg-cyan-100 text-cyan-700",
+        ];
+        // Deterministic color based on name length
+        const colorClass = bgColors[member.name.length % bgColors.length];
+
         return (
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0A2463' }}>
-              <span className="text-xs font-bold text-white">
-                {member.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .toUpperCase()}
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${colorClass}`}>
+              <span className="text-xs font-bold">
+                {initials}
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-gray-900">
+              <span className="text-sm font-semibold text-slate-900">
                 {member.name}
               </span>
-              <span className="text-xs text-gray-500">{member.role}</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wide">{member.role}</span>
             </div>
           </div>
         );
@@ -130,7 +145,7 @@ export default function OfficerDetailsTable({
       case "position":
         return (
           <div>
-            <span className="text-sm text-gray-700 font-medium">
+            <span className="text-sm text-slate-600 font-medium">
               {member.position}
             </span>
           </div>
@@ -139,7 +154,7 @@ export default function OfficerDetailsTable({
       case "events":
         return (
           <div className="text-center">
-            <span className="text-lg font-bold text-gray-900">
+            <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-slate-100 text-xs font-bold text-slate-700">
               {member.eventsAttended}
             </span>
           </div>
@@ -150,28 +165,26 @@ export default function OfficerDetailsTable({
           members.length > 0
             ? (member.eventsAttended / members.length) * 100
             : 0;
+
+        let progressColor: "success" | "warning" | "danger" | "primary" = "primary";
+        if (contribution >= 80) progressColor = "success";
+        else if (contribution >= 50) progressColor = "warning";
+        else progressColor = "danger";
+
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 w-full max-w-[140px]">
             <Progress
               value={contribution}
-              color={
-                contribution >= 80
-                  ? "success"
-                  : contribution >= 50
-                    ? "warning"
-                    : "danger"
-              }
+              color={progressColor}
               size="sm"
-              className="flex-1 max-w-[60px]"
+              radius="full"
+              className="flex-1"
+              classNames={{
+                track: "drop-shadow-sm border border-slate-100",
+                indicator: "bg-gradient-to-r"
+              }}
             />
-            <span
-              className={`text-xs min-w-[35px] font-medium ${contribution >= 80
-                ? "text-green-600"
-                : contribution >= 50
-                  ? "text-yellow-600"
-                  : "text-red-600"
-                }`}
-            >
+            <span className="text-xs font-mono font-medium text-slate-500 w-[30px] text-right">
               {contribution.toFixed(0)}%
             </span>
           </div>
@@ -183,77 +196,68 @@ export default function OfficerDetailsTable({
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex items-center justify-between pb-2 pt-3 px-4">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full" style={{ backgroundColor: '#E8EDF5' }}>
-            {getRankIcon(rank)}
+    <Card className="w-full border border-slate-200/60 shadow-md overflow-hidden bg-white/80 backdrop-blur-md">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-slate-50/50 border-b border-slate-100">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 text-2xl">
+              {getTeamIcon(team)}
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm text-[10px] border border-slate-100">
+              {getRankIcon(rank)}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{getTeamIcon(team)}</span>
-            <div className="flex flex-col">
-              <h3 className="text-lg font-bold" style={{ color: '#0A2463' }}>{team} Team</h3>
-              <p className="text-xs text-gray-500">{members.length} officers</p>
+
+          <div className="flex flex-col">
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              {team} Team
+              <span className="px-2 py-0.5 rounded-full bg-slate-200/50 text-slate-600 text-[10px] uppercase font-bold tracking-wider">
+                Rank #{rank}
+              </span>
+            </h3>
+            <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+              <span>{members.length} Officers</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Chip
-            color={getTeamColor(team) as any}
-            variant="solid"
-            size="md"
-            className="font-bold"
-          >
-            {teamAttendanceRate.toFixed(2)}%
-          </Chip>
-          <div className="text-right min-w-[70px]">
-            <div className="text-xs text-gray-500">Relative</div>
-            <div className="text-sm font-semibold text-gray-900">
-              {progressPercentage.toFixed(1)}%
-            </div>
+        <div className="flex flex-col items-end gap-1 min-w-[120px]">
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-bold text-slate-900">{teamAttendanceRate.toFixed(1)}</span>
+            <span className="text-sm font-semibold text-slate-500">%</span>
           </div>
+          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${team === "Projects" ? "bg-blue-500" :
+                team === "Internal" ? "bg-green-500" :
+                  team === "Events" ? "bg-purple-500" : "bg-gray-500"
+                }`}
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
+          </div>
+          <div className="text-[10px] text-slate-400 font-medium uppercase tracking-wide mt-0.5">Performance Score</div>
         </div>
       </CardHeader>
 
-      <CardBody className="pt-0 px-4 pb-3">
-        {/* Team Progress Bar */}
-        <div className="mb-3">
-          <Progress
-            value={progressPercentage}
-            color={getTeamColor(team) as any}
-            size="sm"
-            className="w-full"
-            showValueLabel={false}
-          />
-        </div>
-
+      <CardBody className="p-0">
         {/* Officers Table */}
         {members.length > 0 ? (
           <Table
             aria-label={`${team} team officers`}
             removeWrapper
             classNames={{
-              th: "text-xs font-semibold uppercase tracking-wider py-2",
-              td: "py-2 text-sm",
-              wrapper: "p-0",
+              base: "min-w-full",
+              th: "bg-white text-xs font-bold text-slate-400 uppercase tracking-wider py-4 border-b border-slate-100",
+              td: "py-3 border-b border-slate-50 last:border-0",
+              tr: "group hover:bg-slate-50/80 transition-colors",
             }}
-            style={{
-              '--table-header-bg': '#0A2463',
-              '--table-header-color': '#ffffff',
-            } as React.CSSProperties}
           >
             <TableHeader columns={columns}>
               {(column) => (
                 <TableColumn
                   key={column.key}
-                  style={{
-                    minWidth: column.minWidth,
-                    backgroundColor: '#0A2463',
-                    color: '#ffffff'
-                  }}
-                  className={`text-center ${column.key === "name" ? "text-left" : ""
-                    }`}
+                  align={column.key === "name" ? "start" : "center"}
+                  width={column.minWidth}
                 >
                   {column.label}
                 </TableColumn>
@@ -261,15 +265,9 @@ export default function OfficerDetailsTable({
             </TableHeader>
             <TableBody items={sortedMembers}>
               {(item) => (
-                <TableRow
-                  key={item.userId}
-                  className="hover:bg-gray-50 transition-colors"
-                >
+                <TableRow key={item.userId}>
                   {(columnKey) => (
-                    <TableCell
-                      className={`${columnKey === "name" ? "text-left" : "text-center"
-                        }`}
-                    >
+                    <TableCell>
                       {renderCell(item, columnKey as string)}
                     </TableCell>
                   )}
@@ -278,44 +276,16 @@ export default function OfficerDetailsTable({
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-6">
-            <Users className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500 text-sm mb-1">
-              No officers assigned to this team yet
-            </p>
-            <p className="text-xs text-gray-400 max-w-sm mx-auto">
-              Assign officers to teams in the Manage Users tab to see detailed
-              performance metrics here.
-            </p>
-          </div>
-        )}
-
-        {/* Team Summary */}
-        {members.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-lg p-2" style={{ backgroundColor: '#E8EDF5' }}>
-                <div className="text-xl font-bold" style={{ color: '#0A2463' }}>
-                  {members.length}
-                </div>
-                <div className="text-xs text-gray-600">Total Officers</div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-2">
-                <div className="text-xl font-bold text-green-900">
-                  {members.reduce((sum, m) => sum + m.eventsAttended, 0)}
-                </div>
-                <div className="text-xs text-green-600">Total Attendances</div>
-              </div>
-              <div className="bg-purple-50 rounded-lg p-2">
-                <div className="text-xl font-bold text-purple-900">
-                  {(
-                    members.reduce((sum, m) => sum + m.eventsAttended, 0) /
-                    members.length
-                  ).toFixed(1)}
-                </div>
-                <div className="text-xs text-purple-600">Avg Per Officer</div>
-              </div>
+          <div className="text-center py-10 px-4">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Users className="w-8 h-8 text-slate-300" />
             </div>
+            <p className="text-slate-600 font-medium mb-1">
+              No officers assigned yet
+            </p>
+            <p className="text-xs text-slate-400 max-w-xs mx-auto">
+              Assign officers to this team in the Manage Users tab to see detailed metrics.
+            </p>
           </div>
         )}
       </CardBody>

@@ -37,8 +37,10 @@ export default function ManageSponsorsContent() {
     }
 
     return (
-        <div className="space-y-6 p-6">
-            <SponsorDomainsSection isAdmin={true} />
+        <div className="w-full">
+            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+                <SponsorDomainsSection isAdmin={true} />
+            </div>
         </div>
     );
 }
