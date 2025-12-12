@@ -31,7 +31,7 @@ export function StatusFilter({ selectedStatus, onStatusChange }: StatusFilterPro
           variant="bordered"
           size="sm"
           startContent={<Filter className="w-4 h-4" />}
-          className="min-h-[44px]"
+          className="h-9"
         >
           {getSelectedLabel()}
         </Button>

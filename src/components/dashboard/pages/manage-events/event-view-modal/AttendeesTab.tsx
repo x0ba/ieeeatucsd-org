@@ -20,10 +20,10 @@ export default function AttendeesTab({ attendees, loadingAttendees, users, event
         const rows = attendees.map(attendee => {
             const userId = attendee.userId || attendee.id || '';
             const user = users[userId];
-            const checkInTime = attendee.timeCheckedIn 
+            const checkInTime = attendee.timeCheckedIn
                 ? (attendee.timeCheckedIn.toDate ? attendee.timeCheckedIn.toDate().toLocaleString() : new Date(attendee.timeCheckedIn).toLocaleString())
                 : '';
-            
+
             return [
                 user ? `${user.name || ''}`.trim() : '',
                 user?.pid || '',

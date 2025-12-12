@@ -249,46 +249,31 @@ export default function ManageEventsContent() {
 
                                     {/* Event Requests Table */}
                                     <Card key={currentUserRole} shadow="sm" className="border border-gray-200">
-                                        <CardHeader className="flex flex-col gap-4 px-6 py-5 border-b border-gray-100 bg-gray-50/50">
-                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="p-2 bg-primary/10 rounded-lg">
-                                                        <List className="w-5 h-5 text-primary" />
-                                                    </div>
-                                                    <div>
-                                                        <h2 className="text-lg font-bold text-gray-900">
-                                                            Event Requests
-                                                        </h2>
-                                                        <p className="text-sm text-gray-500">
-                                                            {sortedEventRequests.length} total events
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                {canCreateEvent(currentUserRole) && (
-                                                    <Button
-                                                        color="primary"
-                                                        startContent={<Plus className="w-4 h-4" />}
-                                                        onPress={() => setShowEventRequestModal(true)}
-                                                        className="font-medium shadow-md shadow-primary/20"
-                                                    >
-                                                        Request Event
-                                                    </Button>
-                                                )}
+                                        <CardHeader className="flex flex-col sm:flex-row gap-3 px-4 py-3 border-b border-gray-100 bg-gray-50/50 items-center justify-between">
+                                            {/* Title Section */}
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <h2 className="text-sm font-bold text-gray-900">
+                                                    Event Requests
+                                                </h2>
+                                                <span className="px-2 py-0.5 rounded-full bg-gray-100 text-xs font-medium text-gray-600">
+                                                    {sortedEventRequests.length}
+                                                </span>
                                             </div>
 
-                                            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                                                <div className="relative flex-1">
-                                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                            {/* Controls Section */}
+                                            <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto">
+                                                <div className="relative flex-1 w-full sm:w-[240px]">
+                                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
                                                     <input
                                                         id="event-search"
                                                         type="text"
                                                         placeholder="Search events..."
                                                         value={searchTerm}
                                                         onChange={(e) => handleSearch(e.target.value)}
-                                                        className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm h-10"
+                                                        className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-xs h-9"
                                                     />
                                                 </div>
-                                                <div className="flex gap-2 shrink-0 overflow-x-auto pb-1 sm:pb-0">
+                                                <div className="flex gap-2 shrink-0 overflow-x-auto pb-1 sm:pb-0 items-center w-full sm:w-auto">
                                                     <DateRangeFilter
                                                         selectedRange={dateRangeFilter}
                                                         onRangeChange={setDateRangeFilter}
@@ -302,11 +287,23 @@ export default function ManageEventsContent() {
                                                             isIconOnly
                                                             variant="flat"
                                                             color="danger"
+                                                            size="sm"
                                                             onPress={handleClearFilters}
-                                                            className="h-10 w-10 min-w-10"
+                                                            className="h-9 w-9 min-w-9"
                                                             title="Clear filters"
                                                         >
                                                             ✕
+                                                        </Button>
+                                                    )}
+                                                    {canCreateEvent(currentUserRole) && (
+                                                        <Button
+                                                            color="primary"
+                                                            size="sm"
+                                                            startContent={<Plus className="w-3.5 h-3.5" />}
+                                                            onPress={() => setShowEventRequestModal(true)}
+                                                            className="font-medium shadow-md shadow-primary/20 h-9"
+                                                        >
+                                                            Request Event
                                                         </Button>
                                                     )}
                                                 </div>

@@ -27,7 +27,7 @@ export function DateRangeFilter({ selectedRange, onRangeChange }: DateRangeFilte
           variant="bordered"
           size="sm"
           startContent={<CalendarDays className="w-4 h-4" />}
-          className="min-h-[44px]"
+          className="h-9"
         >
           {getSelectedLabel()}
         </Button>

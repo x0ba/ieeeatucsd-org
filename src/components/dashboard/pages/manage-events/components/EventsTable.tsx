@@ -52,10 +52,10 @@ export function EventsTable({
 }: EventsTableProps) {
     const SortableHeader = ({ field, children }: { field: string; children: React.ReactNode }) => (
         <th
-            className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100/80 hover:text-gray-700 transition-colors select-none group"
+            className="px-2 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100/80 hover:text-gray-700 transition-colors select-none group"
             onClick={() => onSort(field)}
         >
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
                 <span>{children}</span>
                 {(sortBy === `${field}-asc` || sortBy === `${field}-desc`) ? (
                     <div className="p-0.5 bg-gray-200 rounded text-gray-700">
@@ -111,20 +111,20 @@ export function EventsTable({
                     <tr className="border-b border-gray-100 bg-gray-50/50">
                         <SortableHeader field="name">Event Details</SortableHeader>
                         <SortableHeader field="date">Date</SortableHeader>
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                        <th className="px-2 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider hidden lg:table-cell">
                             Location
                         </th>
                         <SortableHeader field="status">Status</SortableHeader>
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                        <th className="px-2 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                             Published
                         </th>
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                        <th className="px-2 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider hidden xl:table-cell">
                             Requirements
                         </th>
-                        <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                        <th className="px-2 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider hidden md:table-cell">
                             Submitted By
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 py-2 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">
                             Actions
                         </th>
                     </tr>
@@ -136,10 +136,10 @@ export function EventsTable({
                         return (
                             <tr key={request.id} className="group hover:bg-gray-50/80 transition-colors duration-200">
                                 {/* Event Details Column */}
-                                <td className="px-4 py-3">
-                                    <div className="max-w-[200px]">
+                                <td className="px-2 py-2">
+                                    <div className="max-w-[180px]">
                                         <Tooltip content={request.name} delay={500} closeDelay={0}>
-                                            <div className="text-sm font-semibold text-gray-900 truncate">
+                                            <div className="text-xs font-semibold text-gray-900 truncate">
                                                 {truncateText(request.name, 30)}
                                             </div>
                                         </Tooltip>
@@ -149,7 +149,7 @@ export function EventsTable({
                                             </div>
                                         </Tooltip>
                                         {/* Show location on mobile */}
-                                        <div className="lg:hidden flex items-center gap-1 mt-1 text-xs text-gray-400">
+                                        <div className="lg:hidden flex items-center gap-1 mt-0.5 text-xs text-gray-400">
                                             <MapPin className="w-3 h-3" />
                                             <span className="truncate">{truncateText(request.location, 20)}</span>
                                         </div>
@@ -157,32 +157,32 @@ export function EventsTable({
                                 </td>
 
                                 {/* Date Column */}
-                                <td className="px-4 py-3 whitespace-nowrap">
-                                    <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                                <td className="px-2 py-2 whitespace-nowrap">
+                                    <div className="flex items-center gap-1 text-xs text-gray-700">
+                                        <Calendar className="w-3 h-3 text-gray-400" />
                                         <span>{formatDate(request.startDateTime)}</span>
                                     </div>
                                 </td>
 
                                 {/* Location Column (hidden on mobile) */}
-                                <td className="px-4 py-3 hidden lg:table-cell">
+                                <td className="px-2 py-2 hidden lg:table-cell">
                                     <Tooltip content={request.location} delay={500} closeDelay={0}>
-                                        <div className="flex items-center gap-1.5 max-w-[140px]">
-                                            <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                                            <span className="text-sm text-gray-700 truncate">{truncateText(request.location, 25)}</span>
+                                        <div className="flex items-center gap-1 max-w-[120px]">
+                                            <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                                            <span className="text-xs text-gray-700 truncate">{truncateText(request.location, 25)}</span>
                                         </div>
                                     </Tooltip>
                                 </td>
 
                                 {/* Status Column */}
-                                <td className="px-4 py-3">
+                                <td className="px-2 py-2">
                                     <Chip
                                         color={getChipColor(request.status)}
                                         variant="flat"
                                         size="sm"
                                         startContent={<StatusIcon className="w-3 h-3 flex-shrink-0" />}
                                         classNames={{
-                                            base: "h-6 px-1.5 gap-1",
+                                            base: "h-5 px-1 gap-1",
                                             content: "text-xs font-medium capitalize"
                                         }}
                                     >
@@ -191,13 +191,13 @@ export function EventsTable({
                                 </td>
 
                                 {/* Published Status Column */}
-                                <td className="px-4 py-3 hidden sm:table-cell">
+                                <td className="px-2 py-2 hidden sm:table-cell">
                                     <Chip
                                         color={request.published ? "success" : (request.isDraft ? "default" : "default")}
                                         variant={request.isDraft ? "bordered" : "flat"}
                                         size="sm"
                                         classNames={{
-                                            base: "h-6 px-1.5",
+                                            base: "h-5 px-1",
                                             content: "text-xs font-medium"
                                         }}
                                     >
@@ -206,7 +206,7 @@ export function EventsTable({
                                 </td>
 
                                 {/* Requirements Column (hidden on smaller screens) */}
-                                <td className="px-4 py-3 hidden xl:table-cell">
+                                <td className="px-2 py-2 hidden xl:table-cell">
                                     <div className="flex flex-col gap-1.5">
                                         {request.needsGraphics && (
                                             <div
@@ -250,9 +250,9 @@ export function EventsTable({
                                 </td>
 
                                 {/* Submitted By Column (hidden on mobile) */}
-                                <td className="px-4 py-3 hidden md:table-cell">
+                                <td className="px-2 py-2 hidden md:table-cell">
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-gray-900">
+                                        <span className="text-xs font-medium text-gray-900">
                                             {getUserName(request.requestedUser)}
                                         </span>
                                         <span className="text-xs text-gray-500">
@@ -262,7 +262,7 @@ export function EventsTable({
                                 </td>
 
                                 {/* Actions Column */}
-                                <td className="px-4 py-3 whitespace-nowrap text-right">
+                                <td className="px-2 py-2 whitespace-nowrap text-right">
                                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                         <Tooltip content="View Details" delay={300} closeDelay={0}>
                                             <Button

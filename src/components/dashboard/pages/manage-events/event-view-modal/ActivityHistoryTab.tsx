@@ -43,7 +43,7 @@ export default function ActivityHistoryTab({ auditLogs }: ActivityHistoryTabProp
                                             </span>
                                         </div>
 
-                                       <ActivityLogDetails log={log} />
+                                        <ActivityLogDetails log={log} />
                                     </div>
                                     <div className="text-xs text-gray-500 ml-4 flex-shrink-0">
                                         {formatDateTime(log.timestamp)}

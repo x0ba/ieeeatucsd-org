@@ -56,24 +56,37 @@ export function useEventManagement(userId: string | undefined) {
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const eventsPerPage = 10;
 
-  // Cache for attendance data to avoid redundant queries
-  const attendanceCache = useRef<Map<string, { count: number; lastFetched: number }>>(new Map());
-  const eventToEventIdMap = useRef<Map<string, string>>(new Map());
-  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
-
   // Use db from client
 
-  // Fetch users
-  const fetchUsers = async () => {
+  // Fetch users and calculate attendance stats
+  const fetchUsersAndStats = async () => {
     try {
+      setAttendanceLoading(true);
       const publicProfiles = await PublicProfileService.getLeaderboard();
+
+      // Calculate attendance stats from public profiles
+      let totalCheckIns = 0;
+      let uniquePeople = 0;
+
       const usersMap: Record<string, { name: string; email: string; pid?: string }> = {};
 
       publicProfiles.forEach((profile) => {
+        // Map user details
         usersMap[profile.id] = {
           name: profile.name || "Unknown User",
           email: "",
         };
+
+        // Aggregate stats
+        if (profile.eventsAttended > 0) {
+          totalCheckIns += profile.eventsAttended;
+          uniquePeople++;
+        }
+      });
+
+      setAttendanceStats({
+        totalAttendees: totalCheckIns,
+        uniqueAttendees: uniquePeople
       });
 
       try {
@@ -103,7 +116,9 @@ export function useEventManagement(userId: string | undefined) {
 
       setUsers(usersMap);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching users and stats:", error);
+    } finally {
+      setAttendanceLoading(false);
     }
   };
 
@@ -122,7 +137,7 @@ export function useEventManagement(userId: string | undefined) {
   useEffect(() => {
     if (!userId) return;
 
-    fetchUsers();
+    fetchUsersAndStats();
 
     const fetchUserRole = async () => {
       try {
@@ -192,128 +207,6 @@ export function useEventManagement(userId: string | undefined) {
 
     return () => unsubscribe();
   }, [db, userId]);
-
-  // Fetch attendance data when eventRequests changes
-  useEffect(() => {
-    const fetchAttendanceStats = async () => {
-      console.log("DEBUG: Starting optimized attendance stats fetch for", eventRequests.length, "event requests");
-      if (eventRequests.length === 0) {
-        console.log("DEBUG: No event requests, setting attendance stats to 0");
-        setAttendanceStats({ totalAttendees: 0, uniqueAttendees: 0 });
-        setAttendanceLoading(false);
-        return;
-      }
-
-      setAttendanceLoading(true);
-      try {
-        let attendanceCount = 0;
-        const uniqueAttendeeIds = new Set<string>();
-        let processedEvents = 0;
-        let eventsWithAttendees = 0;
-        const now = Date.now();
-        
-        // First, batch fetch all events for the requests
-        const eventRequestsBatch = eventRequests.map(async (request) => {
-          // Check if we already have the event ID mapped
-          if (eventToEventIdMap.current.has(request.id)) {
-            return { requestId: request.id, eventId: eventToEventIdMap.current.get(request.id)! };
-          }
-          
-          const eventsQuery = query(
-            collection(db, "events"),
-            where("createdFrom", "==", request.id),
-          );
-          const eventsSnapshot = await getDocs(eventsQuery);
-          
-          if (!eventsSnapshot.empty) {
-            const eventId = eventsSnapshot.docs[0].id;
-            eventToEventIdMap.current.set(request.id, eventId);
-            return { requestId: request.id, eventId };
-          }
-          return { requestId: request.id, eventId: null };
-        });
-        
-        // Execute all event queries in parallel
-        const eventMappings = await Promise.all(eventRequestsBatch);
-        const validEventMappings = eventMappings.filter(mapping => mapping.eventId !== null);
-        
-        if (validEventMappings.length === 0) {
-          console.log("DEBUG: No valid events found for any requests");
-          setAttendanceStats({ totalAttendees: 0, uniqueAttendees: 0 });
-          setAttendanceLoading(false);
-          return;
-        }
-        
-        // Batch fetch attendance data for all valid events
-        const attendancePromises = validEventMappings.map(async ({ requestId, eventId }) => {
-          // Check cache first
-          const cached = attendanceCache.current.get(eventId);
-          if (cached && (now - cached.lastFetched) < CACHE_DURATION) {
-            console.log(`DEBUG: Using cached attendance data for event ${eventId}`);
-            return { eventId, attendeeCount: cached.count, attendees: [] };
-          }
-          
-          try {
-            const attendeesQuery = query(
-              collection(db, "events", eventId, "attendees"),
-            );
-            const attendeesSnapshot = await getDocs(attendeesQuery);
-            const attendeeCount = attendeesSnapshot.docs.length;
-            
-            // Cache the result
-            attendanceCache.current.set(eventId, {
-              count: attendeeCount,
-              lastFetched: now
-            });
-            
-            // Extract attendee data for unique counting
-            const attendees = attendeesSnapshot.docs.map((attendeeDoc) => {
-              const attendeeData = attendeeDoc.data();
-              return attendeeData.userId || attendeeDoc.id;
-            }).filter(Boolean);
-            
-            return { eventId, attendeeCount, attendees };
-          } catch (error) {
-            console.error(`Error fetching attendance for event ${eventId}:`, error);
-            return { eventId, attendeeCount: 0, attendees: [] };
-          }
-        });
-        
-        // Execute all attendance queries in parallel
-        const attendanceResults = await Promise.all(attendancePromises);
-        
-        // Process results
-        attendanceResults.forEach(({ eventId, attendeeCount, attendees }) => {
-          if (attendeeCount > 0) {
-            eventsWithAttendees++;
-          }
-          
-          attendanceCount += attendeeCount;
-          
-          // Add unique attendee IDs
-          attendees.forEach((userId) => {
-            uniqueAttendeeIds.add(userId);
-          });
-          
-          processedEvents++;
-        });
-        
-        console.log(`DEBUG: Optimized attendance stats calculation complete. Processed ${processedEvents} events, ${eventsWithAttendees} with attendees. Total attendance: ${attendanceCount}, Unique attendees: ${uniqueAttendeeIds.size}`);
-        
-        setAttendanceStats({
-          totalAttendees: attendanceCount,
-          uniqueAttendees: uniqueAttendeeIds.size,
-        });
-      } catch (error) {
-        console.error("Error fetching attendance stats:", error);
-        setAttendanceStats({ totalAttendees: 0, uniqueAttendees: 0 });
-      } finally {
-        setAttendanceLoading(false);
-      }
-    };
-
-    fetchAttendanceStats();
-  }, [eventRequests, db]);
 
   // Delete event request
   const handleDeleteRequest = async (requestId: string, eventName: string) => {
@@ -416,7 +309,7 @@ export function useEventManagement(userId: string | undefined) {
           published: shouldPublish,
           updatedAt: new Date(),
         });
-        
+
         // Clear cache for the updated event
         attendanceCache.current.delete(eventDoc.id);
       }
@@ -448,7 +341,7 @@ export function useEventManagement(userId: string | undefined) {
   const getDateRange = (filter: string) => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     switch (filter) {
       case "last7days":
         return {
@@ -494,10 +387,10 @@ export function useEventManagement(userId: string | undefined) {
           const dateRange = getDateRange(dateRangeFilter);
           if (dateRange) {
             const eventDate = request.startDateTime?.toDate?.() ||
-                            (request.startDateTime?.toMillis ? new Date(request.startDateTime.toMillis()) : null) ||
-                            request.createdAt?.toDate?.() ||
-                            new Date(0);
-            
+              (request.startDateTime?.toMillis ? new Date(request.startDateTime.toMillis()) : null) ||
+              request.createdAt?.toDate?.() ||
+              new Date(0);
+
             matchesDateRange = eventDate >= dateRange.start && eventDate <= dateRange.end;
           }
         }
@@ -582,10 +475,10 @@ export function useEventManagement(userId: string | undefined) {
     const drafts = eventRequests.filter(
       (req) => req.status === "submitted" || req.status === "pending",
     ).length;
-    
+
     // Use the actual attendance data fetched from the attendees subcollections
     const { totalAttendees, uniqueAttendees } = attendanceStats;
-    
+
     return {
       total,
       published,

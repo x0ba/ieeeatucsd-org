@@ -230,9 +230,9 @@ export default function FilesGraphicsTab({
                             <div>
                                 <h4 className="font-medium text-gray-900 mb-2">Main Invoice</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        <EnhancedFileViewer
-                                            url={request.invoice}
-                                            filename={getFilenameFromUrl(request.invoice, 'Main Invoice File')}
+                                    <EnhancedFileViewer
+                                        url={request.invoice}
+                                        filename={getFilenameFromUrl(request.invoice, 'Main Invoice File')}
                                         eventRequestId={request.id}
                                         onPreview={onPreviewFile}
                                     />
