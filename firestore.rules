@@ -399,6 +399,47 @@ service cloud.firestore {
         && resource.data.status == 'pending';
     }
 
+    // ===== Fund Requests =====
+    match /fundRequests/{requestId} {
+      // Officers can create fund requests for themselves
+      allow create: if isOfficer()
+        && request.resource.data.submittedBy == request.auth.uid;
+
+      // Owner can read their own requests
+      allow get: if isSignedIn()
+        && resource.data.submittedBy == request.auth.uid;
+
+      // Executive Officers and Administrators can read all requests
+      allow read: if isExecOrAdmin();
+
+      // Officers can list their own requests (query must filter by submittedBy)
+      allow list: if isOfficer();
+
+      // Owner can update their needs_info requests (to resubmit with additional info)
+      allow update: if isSignedIn()
+        && resource.data.submittedBy == request.auth.uid
+        && resource.data.status == 'needs_info'
+        && noForbiddenKeys(['reviewedBy', 'reviewedAt', 'reviewNotes', 'selectedFundingSource']);
+
+      // Executive Officers and Administrators can update status, add review notes, and set funding source
+      allow update: if isExecOrAdmin()
+        && onlyChangedKeys([
+          'status',
+          'reviewNotes',
+          'reviewedBy',
+          'reviewedAt',
+          'infoRequestNotes',
+          'selectedFundingSource',
+          'completedAt',
+          'completedBy',
+          'auditLogs',
+          'updatedAt'
+        ]);
+
+      // Executive Officers and Administrators can delete any request
+      allow delete: if isExecOrAdmin();
+    }
+
     // ===== Constitution Builder =====
     match /constitutions/{constitutionId} {
       allow read: if isSignedIn();

@@ -19,6 +19,7 @@ import {
   ChevronDown,
   ChevronRight,
   Award,
+  ClipboardList,
 } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -106,6 +107,11 @@ const navigationCategories: NavigationCategory[] = [
         href: NAVIGATION_PATHS.FUND_DEPOSITS,
       },
       {
+        icon: ClipboardList,
+        label: "Fund Requests",
+        href: NAVIGATION_PATHS.FUND_REQUESTS,
+      },
+      {
         icon: MessageSquare,
         label: "Slack Access",
         href: NAVIGATION_PATHS.SLACK_ACCESS,
@@ -125,6 +131,11 @@ const navigationCategories: NavigationCategory[] = [
         icon: DollarSign,
         label: "Manage Reimbursements",
         href: NAVIGATION_PATHS.MANAGE_REIMBURSEMENTS,
+      },
+      {
+        icon: ClipboardList,
+        label: "Manage Fund Requests",
+        href: NAVIGATION_PATHS.MANAGE_FUND_REQUESTS,
       },
       {
         icon: Users,
