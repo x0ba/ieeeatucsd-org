@@ -14,8 +14,9 @@ import {
     Card,
     CardBody,
     Spinner,
+    Chip,
 } from '@heroui/react';
-import { DollarSign, Calendar, Save, Plus, Trash2 } from 'lucide-react';
+import { DollarSign, Calendar, Save, Plus, Trash2, Briefcase } from 'lucide-react';
 import { doc, setDoc, collection, addDoc, getDocs, deleteDoc, Timestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../../../firebase/client';
 import type { FundRequestDepartment, BudgetConfig, BudgetAdjustment } from '../../../shared/types/fund-requests';
@@ -199,150 +200,180 @@ export default function BudgetManagementModal({
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
             <ModalContent>
-                <ModalHeader>Budget Management</ModalHeader>
+                <ModalHeader className="bg-default-50/50 p-6 border-b border-default-100 block">
+                    <h2 className="text-xl font-bold">Budget Management</h2>
+                    <p className="text-sm text-default-500 font-normal">Configure department budgets and add manual adjustments.</p>
+                </ModalHeader>
 
-                <ModalBody>
+                <ModalBody className="p-6">
                     {/* Department Tabs */}
                     <Tabs
                         selectedKey={selectedDepartment}
                         onSelectionChange={(key) => setSelectedDepartment(key as FundRequestDepartment)}
-                        size="sm"
+                        color="primary"
+                        variant="underlined"
+                        classNames={{
+                            tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+                            cursor: "w-full bg-primary",
+                            tab: "max-w-fit px-0 h-12",
+                            tabContent: "group-data-[selected=true]:text-primary font-medium"
+                        }}
                     >
                         <Tab key="events" title="Events" />
                         <Tab key="projects" title="Projects" />
                         <Tab key="internal" title="Internal" />
                     </Tabs>
 
-                    <div className="space-y-6 mt-4">
+                    <div className="space-y-8 mt-4">
                         {/* Budget Configuration */}
-                        <div className="space-y-4">
-                            <h3 className="font-semibold text-foreground">Budget Configuration</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <Input
-                                    label="Total Budget"
-                                    placeholder="5000.00"
-                                    value={budgetAmount}
-                                    onValueChange={(value) => {
-                                        const sanitized = value.replace(/[^0-9.]/g, '');
-                                        setBudgetAmount(sanitized);
-                                    }}
-                                    startContent={<DollarSign className="w-4 h-4 text-default-400" />}
-                                    type="text"
-                                    inputMode="decimal"
-                                />
-                                <Input
-                                    label="Budget Start Date"
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    startContent={<Calendar className="w-4 h-4 text-default-400" />}
-                                />
-                            </div>
-                            <Button
-                                color="primary"
-                                onPress={handleSaveBudget}
-                                isLoading={isSaving}
-                                startContent={<Save className="w-4 h-4" />}
-                            >
-                                Save Budget Configuration
-                            </Button>
-                        </div>
-
-                        <Divider />
+                        <Card className="border border-default-200 shadow-sm">
+                            <CardBody className="p-4 gap-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="p-2 rounded bg-primary-100 text-primary-600">
+                                        <Briefcase className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="font-semibold text-lg">Configuration</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Input
+                                        label="Total Budget"
+                                        placeholder="5000.00"
+                                        value={budgetAmount}
+                                        onValueChange={(value) => {
+                                            const sanitized = value.replace(/[^0-9.]/g, '');
+                                            setBudgetAmount(sanitized);
+                                        }}
+                                        startContent={<DollarSign className="w-4 h-4 text-default-400" />}
+                                        type="text"
+                                        inputMode="decimal"
+                                        variant="bordered"
+                                    />
+                                    <Input
+                                        label="Budget Start Date"
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        startContent={<Calendar className="w-4 h-4 text-default-400" />}
+                                        variant="bordered"
+                                    />
+                                </div>
+                                <div className="flex justify-end">
+                                    <Button
+                                        color="primary"
+                                        onPress={handleSaveBudget}
+                                        isLoading={isSaving}
+                                        startContent={<Save className="w-4 h-4" />}
+                                    >
+                                        Save Configuration
+                                    </Button>
+                                </div>
+                            </CardBody>
+                        </Card>
 
                         {/* Manual Adjustments */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <h3 className="font-semibold text-foreground">Manual Adjustments</h3>
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 rounded bg-warning-100 text-warning-600">
+                                        <DollarSign className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-lg">Manual Adjustments</h3>
+                                        <p className="text-sm text-default-500">
+                                            External expenses counting against budget
+                                        </p>
+                                    </div>
+                                </div>
                                 {totalAdjustments > 0 && (
-                                    <span className="text-sm text-warning-600">
+                                    <Chip color="warning" variant="flat" size="lg">
                                         Total: {formatCurrency(totalAdjustments)}
-                                    </span>
+                                    </Chip>
                                 )}
                             </div>
-                            <p className="text-sm text-default-500">
-                                Add external expenses that should count against the budget but don't have fund requests.
-                            </p>
 
                             {/* Add new adjustment */}
-                            <div className="flex gap-2 items-end">
+                            <div className="flex gap-3 items-start bg-default-50 p-4 rounded-lg border border-default-100">
                                 <Input
                                     label="Amount"
-                                    placeholder="100.00"
+                                    placeholder="0.00"
                                     value={newAdjustmentAmount}
                                     onValueChange={(value) => {
                                         const sanitized = value.replace(/[^0-9.]/g, '');
                                         setNewAdjustmentAmount(sanitized);
                                     }}
                                     startContent={<DollarSign className="w-4 h-4 text-default-400" />}
-                                    className="w-32"
+                                    className="w-40"
+                                    variant="bordered"
                                     size="sm"
                                 />
                                 <Input
                                     label="Description"
-                                    placeholder="External expense description"
+                                    placeholder="e.g. Catering for Fall GBM"
                                     value={newAdjustmentDescription}
                                     onValueChange={setNewAdjustmentDescription}
                                     className="flex-1"
+                                    variant="bordered"
                                     size="sm"
                                 />
                                 <Button
                                     isIconOnly
-                                    size="sm"
                                     color="primary"
                                     onPress={handleAddAdjustment}
                                     isLoading={isAddingAdjustment}
-                                    aria-label="Add adjustment"
+                                    className="mt-1"
                                 >
-                                    <Plus className="w-4 h-4" />
+                                    <Plus className="w-5 h-5" />
                                 </Button>
                             </div>
 
                             {/* Existing adjustments */}
                             {isLoadingAdjustments ? (
-                                <div className="flex justify-center py-4">
-                                    <Spinner size="sm" />
+                                <div className="flex justify-center py-8">
+                                    <Spinner color="primary" />
                                 </div>
                             ) : adjustments.length > 0 ? (
-                                <div className="space-y-2">
+                                <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                                     {adjustments.map((adjustment) => (
-                                        <Card key={adjustment.id} className="border border-default-200">
-                                            <CardBody className="p-3 flex flex-row items-center justify-between">
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-medium">{adjustment.description}</p>
-                                                    <p className="text-xs text-default-400">
-                                                        Added by {adjustment.createdByName || 'Unknown'}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-warning-600">
-                                                        {formatCurrency(adjustment.amount)}
+                                        <div key={adjustment.id} className="flex items-center justify-between p-3 bg-white border border-default-200 rounded-lg hover:border-default-300 transition-colors">
+                                            <div className="flex-1">
+                                                <p className="font-medium text-sm">{adjustment.description}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-xs text-default-400 bg-default-100 px-2 py-0.5 rounded">
+                                                        {formatDateForInput(adjustment.createdAt?.toDate?.() || new Date())}
                                                     </span>
-                                                    <Button
-                                                        isIconOnly
-                                                        size="sm"
-                                                        variant="light"
-                                                        color="danger"
-                                                        onPress={() => handleDeleteAdjustment(adjustment.id)}
-                                                        aria-label="Delete adjustment"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
+                                                    <span className="text-xs text-default-400">
+                                                        by {adjustment.createdByName || 'Unknown'}
+                                                    </span>
                                                 </div>
-                                            </CardBody>
-                                        </Card>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className="font-bold text-warning-600">
+                                                    {formatCurrency(adjustment.amount)}
+                                                </span>
+                                                <Button
+                                                    isIconOnly
+                                                    size="sm"
+                                                    variant="light"
+                                                    color="danger"
+                                                    onPress={() => handleDeleteAdjustment(adjustment.id)}
+                                                    className="opacity-50 hover:opacity-100"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-default-400 text-center py-4">
-                                    No manual adjustments added yet.
-                                </p>
+                                <div className="text-center py-8 border-2 border-dashed border-default-200 rounded-lg">
+                                    <p className="text-default-400 text-sm">No manual adjustments recorded.</p>
+                                </div>
                             )}
                         </div>
                     </div>
                 </ModalBody>
 
-                <ModalFooter>
+                <ModalFooter className="border-t border-default-100 bg-default-50/50">
                     <Button variant="light" onPress={onClose}>
                         Close
                     </Button>

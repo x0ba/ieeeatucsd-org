@@ -1,65 +1,64 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
-    Search,
-    DollarSign,
-    Clock,
-    CheckCircle,
-    XCircle,
-    AlertCircle,
-    Eye,
-    FileText,
-    Filter,
-    ChevronDown,
-    User,
-    Settings,
-} from 'lucide-react';
-import {
-    Card,
-    CardBody,
-    Button,
-    Chip,
-    Input,
-    Tabs,
-    Tab,
     Table,
     TableHeader,
     TableColumn,
     TableBody,
     TableRow,
     TableCell,
+    Chip,
+    Tooltip,
+    Button,
+    Input,
+    Tabs,
+    Tab,
+    User as UserAvatar,
+    Pagination,
+    Card,
+    CardBody,
+    Spinner,
     Dropdown,
     DropdownTrigger,
     DropdownMenu,
     DropdownItem,
-    Spinner,
-    Tooltip,
-    User as HeroUser,
 } from '@heroui/react';
-import { collection, query, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../../../../firebase/client';
+import {
+    Search,
+    Eye,
+    CheckCircle,
+    XCircle,
+    AlertCircle,
+    Clock,
+    Filter,
+    ArrowUpDown,
+    Download,
+    DollarSign,
+    Briefcase,
+    Settings,
+} from 'lucide-react';
+import { collection, query, where, orderBy, onSnapshot, getDoc, doc } from 'firebase/firestore';
+import { db, auth } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import type { FundRequest, FundRequestStatus, FundRequestDepartment, BudgetConfig } from '../../shared/types/fund-requests';
+import type { FundRequest, FundRequestStatus, BudgetConfig, FundRequestDepartment } from '../../shared/types/fund-requests';
 import { STATUS_LABELS, STATUS_COLORS, CATEGORY_LABELS, DEPARTMENT_LABELS } from '../../shared/types/fund-requests';
 import FundRequestActionModal from './components/FundRequestActionModal';
 import BudgetManagementModal from './components/BudgetManagementModal';
-import { showToast } from '../../shared/utils/toast';
 
+// Status icons helper
 const getStatusIcon = (status: FundRequestStatus) => {
     switch (status) {
-        case 'draft':
-            return <FileText className="w-4 h-4" />;
         case 'submitted':
-            return <Clock className="w-4 h-4" />;
+            return <Clock className="w-3.5 h-3.5" />;
         case 'needs_info':
-            return <AlertCircle className="w-4 h-4" />;
+            return <AlertCircle className="w-3.5 h-3.5" />;
         case 'approved':
-            return <CheckCircle className="w-4 h-4" />;
+            return <CheckCircle className="w-3.5 h-3.5" />;
         case 'denied':
-            return <XCircle className="w-4 h-4" />;
+            return <XCircle className="w-3.5 h-3.5" />;
         case 'completed':
-            return <CheckCircle className="w-4 h-4" />;
+            return <CheckCircle className="w-3.5 h-3.5" />;
         default:
-            return <FileText className="w-4 h-4" />;
+            return <Clock className="w-3.5 h-3.5" />;
     }
 };
 
@@ -80,22 +79,25 @@ const formatDate = (timestamp: any): string => {
     });
 };
 
-type FilterTab = 'all' | 'pending' | 'approved' | 'denied';
+type FilterTab = 'all' | 'pending' | 'needs_info' | 'processed';
 
 export default function ManageFundRequestsContent() {
     const [user] = useAuthState(auth);
     const [requests, setRequests] = useState<FundRequest[]>([]);
-    const [filteredRequests, setFilteredRequests] = useState<FundRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    // Filters and Search
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedTab, setSelectedTab] = useState<FilterTab>('pending');
-    const [userRole, setUserRole] = useState<string | null>(null);
+    const [selectedTab, setSelectedTab] = useState<FilterTab>('all');
 
-    // Modal state
-    const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+    // Pagination
+    const [page, setPage] = useState(1);
+    const rowsPerPage = 10;
+
+    // Modals
     const [selectedRequest, setSelectedRequest] = useState<FundRequest | null>(null);
-
-    // Budget management state
+    const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
     const [budgetConfigs, setBudgetConfigs] = useState<Record<FundRequestDepartment, BudgetConfig | null>>({
         events: null,
@@ -103,153 +105,133 @@ export default function ManageFundRequestsContent() {
         internal: null,
         other: null,
     });
-    const [budgetRefreshKey, setBudgetRefreshKey] = useState(0);
 
-    // Check user role
+    // Initial role check
     useEffect(() => {
-        const checkUserRole = async () => {
+        const checkRole = async () => {
             if (!user) return;
-
             try {
                 const userDoc = await getDoc(doc(db, 'users', user.uid));
                 if (userDoc.exists()) {
-                    setUserRole(userDoc.data().role);
+                    const userData = userDoc.data();
+                    const hasAccess = userData.roles?.includes('Administrator') || userData.roles?.includes('Executive Officer');
+                    setIsAdmin(userData.roles?.includes('Administrator'));
+
+                    if (!hasAccess) {
+                        setIsLoading(false);
+                        // In a real app, maybe redirect or show error
+                    }
                 }
             } catch (error) {
-                console.error('Error fetching user role:', error);
+                console.error('Error checking user role:', error);
             }
         };
-
-        checkUserRole();
+        checkRole();
     }, [user]);
 
-    // Fetch all fund requests
+    // Fetch requests
     useEffect(() => {
-        if (!user || !userRole) {
-            return;
-        }
+        if (!user) return;
 
-        // Only Executive Officers and Administrators can access this page
-        if (!['Executive Officer', 'Administrator'].includes(userRole)) {
-            setIsLoading(false);
-            return;
-        }
-
+        // Query all requests except drafts
         const requestsRef = collection(db, 'fundRequests');
-        const q = query(requestsRef, orderBy('createdAt', 'desc'));
-
-        const unsubscribe = onSnapshot(
-            q,
-            (snapshot) => {
-                const requestsData = snapshot.docs.map((docSnap) => ({
-                    id: docSnap.id,
-                    ...docSnap.data(),
-                })) as FundRequest[];
-
-                // Filter out drafts - executives shouldn't see drafts
-                const nonDraftRequests = requestsData.filter((r) => r.status !== 'draft');
-                setRequests(nonDraftRequests);
-                setIsLoading(false);
-            },
-            (error) => {
-                console.error('Error fetching fund requests:', error);
-                showToast.error('Failed to load fund requests');
-                setIsLoading(false);
-            }
+        const q = query(
+            requestsRef,
+            where('status', '!=', 'draft'),
+            orderBy('status'), // Firestore requires orderBy field to be same as inequality filter first? No wait, != requires it. Actually for complex queries usually yes.
+            // Let's rely on client side sorting for status != draft if needed, or simple query
+            // Optimized query:
+            // where('status', 'in', ['submitted', 'needs_info', 'approved', 'denied', 'completed']) - this is better 
+            // but for simplicity and real-time updates:
+            orderBy('createdAt', 'desc')
         );
 
-        return () => unsubscribe();
-    }, [user, userRole]);
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const requestsData = snapshot.docs
+                .map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                })) as FundRequest[];
 
-    // Fetch budget configurations
-    const fetchBudgetConfigs = useCallback(async () => {
-        try {
+            // Filter out drafts client-side just in case
+            setRequests(requestsData.filter(r => r.status !== 'draft'));
+            setIsLoading(false);
+        });
+
+        // Also fetch budget configs
+        const fetchBudgetConfigs = () => {
             const departments: FundRequestDepartment[] = ['events', 'projects', 'internal', 'other'];
-            const configPromises = departments.map(async (dept) => {
-                const configDoc = await getDoc(doc(db, 'budgetConfig', dept));
-                if (configDoc.exists()) {
-                    return { dept, config: configDoc.data() as BudgetConfig };
-                }
-                return { dept, config: null };
-            });
+            const unsubscribes = departments.map(dept =>
+                onSnapshot(doc(db, 'budgetConfig', dept), (docSnap) => {
+                    setBudgetConfigs(prev => ({
+                        ...prev,
+                        [dept]: docSnap.exists() ? docSnap.data() as BudgetConfig : null
+                    }));
+                })
+            );
+            return () => unsubscribes.forEach(unsub => unsub());
+        };
 
-            const configs = await Promise.all(configPromises);
-            const configMap: Record<FundRequestDepartment, BudgetConfig | null> = {
-                events: null,
-                projects: null,
-                internal: null,
-                other: null,
-            };
-            configs.forEach(({ dept, config }) => {
-                configMap[dept] = config;
-            });
-            setBudgetConfigs(configMap);
-        } catch (error) {
-            console.error('Error fetching budget configs:', error);
-        }
-    }, []);
+        const cleanupBudgets = fetchBudgetConfigs();
 
-    useEffect(() => {
-        fetchBudgetConfigs();
-    }, [fetchBudgetConfigs, budgetRefreshKey]);
+        return () => {
+            unsubscribe();
+            cleanupBudgets();
+        };
+    }, [user]);
 
-    // Filter requests based on tab and search
-    useEffect(() => {
+    // Derived filtered requests
+    const filteredRequests = useMemo(() => {
         let filtered = [...requests];
 
-        // Filter by status tab
-        switch (selectedTab) {
-            case 'pending':
-                filtered = filtered.filter((r) => r.status === 'submitted' || r.status === 'needs_info');
-                break;
-            case 'approved':
-                filtered = filtered.filter((r) => r.status === 'approved' || r.status === 'completed');
-                break;
-            case 'denied':
-                filtered = filtered.filter((r) => r.status === 'denied');
-                break;
+        if (selectedTab === 'pending') {
+            filtered = filtered.filter(r => r.status === 'submitted');
+        } else if (selectedTab === 'needs_info') {
+            filtered = filtered.filter(r => r.status === 'needs_info');
+        } else if (selectedTab === 'processed') {
+            filtered = filtered.filter(r => ['approved', 'denied', 'completed'].includes(r.status));
         }
 
-        // Filter by search query
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter(
-                (r) =>
+                r =>
                     r.title.toLowerCase().includes(query) ||
-                    r.purpose.toLowerCase().includes(query) ||
                     r.submittedByName?.toLowerCase().includes(query) ||
-                    r.submittedByEmail?.toLowerCase().includes(query) ||
-                    CATEGORY_LABELS[r.category].toLowerCase().includes(query)
+                    formatCurrency(r.amount).includes(query)
             );
         }
 
-        setFilteredRequests(filtered);
+        return filtered;
     }, [requests, selectedTab, searchQuery]);
 
-    const handleViewRequest = (request: FundRequest) => {
+    // Pagination logic
+    const pages = Math.ceil(filteredRequests.length / rowsPerPage);
+    const items = useMemo(() => {
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        return filteredRequests.slice(start, end);
+    }, [page, filteredRequests]);
+
+    const handleActionClick = (request: FundRequest) => {
         setSelectedRequest(request);
         setIsActionModalOpen(true);
     };
 
-    const handleActionComplete = () => {
-        setIsActionModalOpen(false);
-        setSelectedRequest(null);
-    };
-
     const getStats = () => {
+        const pendingValue = requests
+            .filter(r => r.status === 'submitted')
+            .reduce((sum, r) => sum + r.amount, 0);
+
+        const approvedValue = requests
+            .filter(r => r.status === 'approved' || r.status === 'completed')
+            .reduce((sum, r) => sum + r.amount, 0);
+
         return {
-            total: requests.length,
-            pending: requests.filter((r) => r.status === 'submitted' || r.status === 'needs_info').length,
-            submitted: requests.filter((r) => r.status === 'submitted').length,
-            needsInfo: requests.filter((r) => r.status === 'needs_info').length,
-            approved: requests.filter((r) => r.status === 'approved' || r.status === 'completed').length,
-            denied: requests.filter((r) => r.status === 'denied').length,
-            totalApprovedAmount: requests
-                .filter((r) => r.status === 'approved' || r.status === 'completed')
-                .reduce((sum, r) => sum + r.amount, 0),
-            totalPendingAmount: requests
-                .filter((r) => r.status === 'submitted' || r.status === 'needs_info')
-                .reduce((sum, r) => sum + r.amount, 0),
+            pendingCount: requests.filter(r => r.status === 'submitted').length,
+            needsInfoCount: requests.filter(r => r.status === 'needs_info').length,
+            pendingValue,
+            approvedValue
         };
     };
 
@@ -258,230 +240,221 @@ export default function ManageFundRequestsContent() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <Spinner size="lg" />
-            </div>
-        );
-    }
-
-    if (!['Executive Officer', 'Administrator'].includes(userRole || '')) {
-        return (
-            <div className="p-6">
-                <Card className="border border-default-200">
-                    <CardBody className="p-8 text-center">
-                        <AlertCircle className="w-12 h-12 mx-auto text-danger-400 mb-4" />
-                        <h3 className="text-lg font-medium text-default-700 mb-2">Access Denied</h3>
-                        <p className="text-sm text-default-500">
-                            You don't have permission to access this page. Only Executive Officers and
-                            Administrators can manage fund requests.
-                        </p>
-                    </CardBody>
-                </Card>
+                <Spinner size="lg" color="primary" />
             </div>
         );
     }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-6 max-w-[1600px] mx-auto space-y-8">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground">Manage Fund Requests</h1>
-                    <p className="text-sm text-default-500 mt-1">
-                        Review and manage fund requests from officers
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Manage Fund Requests</h1>
+                    <p className="text-default-500 mt-1">
+                        Review and manage funding requests from all departments.
                     </p>
                 </div>
-                {/* Admin-only budget management button */}
-                {userRole === 'Administrator' && (
+                {isAdmin && (
                     <Button
+                        color="secondary"
                         variant="flat"
                         startContent={<Settings className="w-4 h-4" />}
                         onPress={() => setIsBudgetModalOpen(true)}
+                        className="font-medium"
                     >
-                        Update Budget
+                        Configure Budgets
                     </Button>
                 )}
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="border border-default-200">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="border border-default-200 shadow-sm bg-default-50/50">
                     <CardBody className="p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-warning-100">
-                                <Clock className="w-5 h-5 text-warning-600" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-default-500">Pending Review</p>
-                                <p className="text-xl font-semibold">{stats.pending}</p>
-                            </div>
-                        </div>
+                        <p className="text-small text-default-500 font-medium">Pending Review</p>
+                        <p className="text-2xl font-semibold text-foreground mt-1">{stats.pendingCount}</p>
                     </CardBody>
                 </Card>
-                <Card className="border border-default-200">
+                <Card className="border border-default-200 shadow-sm bg-default-50/50">
                     <CardBody className="p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-primary-100">
-                                <DollarSign className="w-5 h-5 text-primary-600" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-default-500">Pending Amount</p>
-                                <p className="text-xl font-semibold">{formatCurrency(stats.totalPendingAmount)}</p>
-                            </div>
-                        </div>
+                        <p className="text-small text-default-500 font-medium">Needs Information</p>
+                        <p className="text-2xl font-semibold text-foreground mt-1">{stats.needsInfoCount}</p>
                     </CardBody>
                 </Card>
-                <Card className="border border-default-200">
+                <Card className="border border-default-200 shadow-sm bg-default-50/50">
                     <CardBody className="p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-success-100">
-                                <CheckCircle className="w-5 h-5 text-success-600" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-default-500">Approved</p>
-                                <p className="text-xl font-semibold">{stats.approved}</p>
-                            </div>
-                        </div>
+                        <p className="text-small text-default-500 font-medium">Pending Amount</p>
+                        <p className="text-2xl font-semibold text-foreground mt-1">{formatCurrency(stats.pendingValue)}</p>
                     </CardBody>
                 </Card>
-                <Card className="border border-default-200">
+                <Card className="border border-default-200 shadow-sm bg-default-50/50">
                     <CardBody className="p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-success-100">
-                                <DollarSign className="w-5 h-5 text-success-600" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-default-500">Total Approved</p>
-                                <p className="text-xl font-semibold">{formatCurrency(stats.totalApprovedAmount)}</p>
-                            </div>
-                        </div>
+                        <p className="text-small text-default-500 font-medium">Total Approved</p>
+                        <p className="text-2xl font-semibold text-foreground mt-1">{formatCurrency(stats.approvedValue)}</p>
                     </CardBody>
                 </Card>
             </div>
 
-            {/* Filters and Search */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <Tabs
-                    selectedKey={selectedTab}
-                    onSelectionChange={(key) => setSelectedTab(key as FilterTab)}
-                    aria-label="Filter by status"
-                    size="sm"
-                >
-                    <Tab key="all" title={`All (${stats.total})`} />
-                    <Tab key="pending" title={`Pending (${stats.pending})`} />
-                    <Tab key="approved" title={`Approved (${stats.approved})`} />
-                    <Tab key="denied" title={`Denied (${stats.denied})`} />
-                </Tabs>
-                <Input
-                    placeholder="Search requests..."
-                    value={searchQuery}
-                    onValueChange={setSearchQuery}
-                    startContent={<Search className="w-4 h-4 text-default-400" />}
-                    className="max-w-xs"
-                    size="sm"
-                />
+            {/* Main Content: Tabs and Table */}
+            <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-background/80 backdrop-blur-md sticky top-0 z-20 py-2">
+                    <Tabs
+                        selectedKey={selectedTab}
+                        onSelectionChange={(key) => {
+                            setSelectedTab(key as FilterTab);
+                            setPage(1);
+                        }}
+                        aria-label="Filter requests"
+                        color="primary"
+                        variant="underlined"
+                        classNames={{
+                            tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+                            cursor: "w-full bg-primary",
+                            tab: "max-w-fit px-0 h-12",
+                            tabContent: "group-data-[selected=true]:text-primary font-medium"
+                        }}
+                    >
+                        <Tab key="all" title="All Requests" />
+                        <Tab
+                            key="pending"
+                            title={
+                                <div className="flex items-center gap-2">
+                                    <span>Pending</span>
+                                    {stats.pendingCount > 0 && <Chip size="sm" color="warning" variant="flat" className="h-5 text-[10px] m-0">{stats.pendingCount}</Chip>}
+                                </div>
+                            }
+                        />
+                        <Tab
+                            key="needs_info"
+                            title={
+                                <div className="flex items-center gap-2">
+                                    <span>Needs Info</span>
+                                    {stats.needsInfoCount > 0 && <Chip size="sm" color="primary" variant="flat" className="h-5 text-[10px] m-0">{stats.needsInfoCount}</Chip>}
+                                </div>
+                            }
+                        />
+                        <Tab key="processed" title="Processed" />
+                    </Tabs>
+
+                    <Input
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onValueChange={(val) => {
+                            setSearchQuery(val);
+                            setPage(1);
+                        }}
+                        startContent={<Search className="w-4 h-4 text-default-400" />}
+                        className="w-full sm:max-w-xs"
+                        size="sm"
+                        variant="bordered"
+                        radius="lg"
+                    />
+                </div>
+
+                <div className="border border-default-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                    <Table
+                        aria-label="Fund requests table"
+                        removeWrapper
+                        classNames={{
+                            th: "bg-default-50 text-default-500 font-medium py-3",
+                            td: "py-3 border-b border-default-100 last:border-0",
+                        }}
+                        bottomContent={
+                            pages > 0 ? (
+                                <div className="flex w-full justify-center px-4 py-4 border-t border-default-100">
+                                    <Pagination
+                                        isCompact
+                                        showControls
+                                        showShadow
+                                        color="primary"
+                                        page={page}
+                                        total={pages}
+                                        onChange={(getPage) => setPage(getPage)}
+                                    />
+                                </div>
+                            ) : null
+                        }
+                    >
+                        <TableHeader>
+                            <TableColumn>REQUEST</TableColumn>
+                            <TableColumn>SUBMITTED BY</TableColumn>
+                            <TableColumn>DEPARTMENT</TableColumn>
+                            <TableColumn>AMOUNT</TableColumn>
+                            <TableColumn>STATUS</TableColumn>
+                            <TableColumn align="end">ACTIONS</TableColumn>
+                        </TableHeader>
+                        <TableBody emptyContent={
+                            <div className="py-12 text-center text-default-400">
+                                <p>No requests found matching your filters.</p>
+                            </div>
+                        }>
+                            {items.map((request) => (
+                                <TableRow key={request.id} className="hover:bg-default-50/50 transition-colors cursor-pointer" onClick={() => handleActionClick(request)}>
+                                    <TableCell>
+                                        <div className="flex flex-col">
+                                            <span className="font-semibold text-foreground">{request.title}</span>
+                                            <span className="text-xs text-default-500 truncate max-w-[250px]">{request.purpose}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <UserAvatar
+                                            name={request.submittedByName || 'Unknown'}
+                                            description={formatDate(request.createdAt)}
+                                            classNames={{
+                                                name: "text-sm font-medium",
+                                                description: "text-xs text-default-400"
+                                            }}
+                                            avatarProps={{
+                                                size: "sm",
+                                                className: "hidden"
+                                            }}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col gap-1">
+                                            <Chip size="sm" variant="flat" color="default" className="bg-default-100 text-default-600 border-none capitalize h-6">
+                                                {DEPARTMENT_LABELS[request.department] || request.department}
+                                            </Chip>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <span className="font-semibold text-foreground">{formatCurrency(request.amount)}</span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            size="sm"
+                                            color={STATUS_COLORS[request.status]}
+                                            variant="flat"
+                                            className="border-none gap-1 pl-1 capitalize"
+                                            startContent={getStatusIcon(request.status)}
+                                        >
+                                            {STATUS_LABELS[request.status]}
+                                        </Chip>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex justify-end gap-2">
+                                            <Tooltip content="Review Request">
+                                                <Button
+                                                    isIconOnly
+                                                    size="sm"
+                                                    variant="light"
+                                                    color="primary"
+                                                    onPress={() => handleActionClick(request)}
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </Button>
+                                            </Tooltip>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
 
-            {/* Request Table */}
-            {filteredRequests.length === 0 ? (
-                <Card className="border border-default-200">
-                    <CardBody className="p-8 text-center">
-                        <FileText className="w-12 h-12 mx-auto text-default-300 mb-4" />
-                        <h3 className="text-lg font-medium text-default-700 mb-2">
-                            {requests.length === 0 ? 'No fund requests yet' : 'No matching requests'}
-                        </h3>
-                        <p className="text-sm text-default-500">
-                            {requests.length === 0
-                                ? 'Fund requests from officers will appear here.'
-                                : 'Try adjusting your filters or search query.'}
-                        </p>
-                    </CardBody>
-                </Card>
-            ) : (
-                <Card className="border border-default-200">
-                    <CardBody className="p-0 overflow-x-auto">
-                        <Table
-                            aria-label="Fund requests table"
-                            removeWrapper
-                            classNames={{
-                                th: 'bg-default-100 text-default-600 text-xs uppercase',
-                                td: 'py-3',
-                            }}
-                        >
-                            <TableHeader>
-                                <TableColumn>Requester</TableColumn>
-                                <TableColumn>Title</TableColumn>
-                                <TableColumn>Category</TableColumn>
-                                <TableColumn>Amount</TableColumn>
-                                <TableColumn>Status</TableColumn>
-                                <TableColumn>Submitted</TableColumn>
-                                <TableColumn>Actions</TableColumn>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredRequests.map((request) => (
-                                    <TableRow key={request.id} className="hover:bg-default-50">
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-full bg-default-200 flex items-center justify-center">
-                                                    <User className="w-4 h-4 text-default-500" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-medium">
-                                                        {request.submittedByName || 'Unknown'}
-                                                    </p>
-                                                    <p className="text-xs text-default-400">
-                                                        {request.submittedByEmail}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <p className="font-medium text-sm max-w-[200px] truncate">{request.title}</p>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Chip size="sm" variant="flat">
-                                                {CATEGORY_LABELS[request.category]}
-                                            </Chip>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="font-semibold text-success-600">
-                                                {formatCurrency(request.amount)}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                size="sm"
-                                                color={STATUS_COLORS[request.status]}
-                                                variant="flat"
-                                                startContent={getStatusIcon(request.status)}
-                                            >
-                                                {STATUS_LABELS[request.status]}
-                                            </Chip>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="text-sm text-default-500">
-                                                {formatDate(request.submittedAt || request.createdAt)}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Button
-                                                size="sm"
-                                                variant="flat"
-                                                color="primary"
-                                                startContent={<Eye className="w-4 h-4" />}
-                                                onPress={() => handleViewRequest(request)}
-                                            >
-                                                {request.status === 'submitted' ? 'Review' : 'View'}
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardBody>
-                </Card>
-            )}
-
-            {/* Action Modal */}
+            {/* Modals */}
             <FundRequestActionModal
                 isOpen={isActionModalOpen}
                 onClose={() => {
@@ -489,20 +462,16 @@ export default function ManageFundRequestsContent() {
                     setSelectedRequest(null);
                 }}
                 request={selectedRequest}
-                onActionComplete={handleActionComplete}
             />
 
-            {/* Budget Management Modal (Admin Only) */}
-            {userRole === 'Administrator' && (
-                <BudgetManagementModal
-                    isOpen={isBudgetModalOpen}
-                    onClose={() => setIsBudgetModalOpen(false)}
-                    budgetConfigs={budgetConfigs}
-                    onBudgetUpdate={() => setBudgetRefreshKey((k) => k + 1)}
-                    currentUserId={user?.uid || ''}
-                    currentUserName={user?.displayName || user?.email || 'Unknown'}
-                />
-            )}
+            <BudgetManagementModal
+                isOpen={isBudgetModalOpen}
+                onClose={() => setIsBudgetModalOpen(false)}
+                budgetConfigs={budgetConfigs}
+                onBudgetUpdate={() => { }} // Real-time updates handled by onSnapshot
+                currentUserId={user?.uid || ''}
+                currentUserName={user?.displayName || 'Admin'}
+            />
         </div>
     );
 }

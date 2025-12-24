@@ -189,3 +189,5 @@ export const FUNDING_SOURCE_LABELS: Record<FundingSource, string> = {
     ieee: "IEEE Funds",
 };
 
+export const FUNDING_SOURCES: FundingSource[] = ["department", "ieee"];
+

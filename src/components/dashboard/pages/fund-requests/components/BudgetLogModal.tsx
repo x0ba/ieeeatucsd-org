@@ -16,8 +16,10 @@ import {
     Spinner,
     Tabs,
     Tab,
+    Card,
+    CardBody,
 } from '@heroui/react';
-import { DollarSign, Calendar, User, ExternalLink } from 'lucide-react';
+import { DollarSign, Calendar, User, ExternalLink, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 import { collection, query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../../../../../firebase/client';
 import type { FundRequest, FundRequestDepartment } from '../../../shared/types/fund-requests';
@@ -124,112 +126,147 @@ export default function BudgetLogModal({
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
             <ModalContent>
-                <ModalHeader className="flex flex-col gap-1">
-                    <span>{DEPARTMENT_LABELS[department]} Budget Log</span>
+                <ModalHeader className="bg-default-50/50 p-6 border-b border-default-100 flex flex-col gap-1">
+                    <h2 className="text-xl font-bold">{DEPARTMENT_LABELS[department]} Budget Log</h2>
                     {budgetStartDate && (
-                        <p className="text-sm text-default-500 font-normal">
-                            From {budgetStartDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
+                        <div className="flex items-center gap-1 text-sm text-default-500 font-normal">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>Since {budgetStartDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        </div>
                     )}
                 </ModalHeader>
 
-                <ModalBody>
+                <ModalBody className="p-6">
                     {isLoading ? (
-                        <div className="flex items-center justify-center min-h-[200px]">
-                            <Spinner size="lg" />
+                        <div className="flex items-center justify-center min-h-[300px]">
+                            <Spinner size="lg" color="primary" />
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             {/* Summary Stats */}
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="p-3 bg-success-50 rounded-lg border border-success-200">
-                                    <p className="text-xs text-success-600 uppercase tracking-wide">Approved</p>
-                                    <p className="text-lg font-semibold text-success-700">{formatCurrency(stats.approved)}</p>
-                                </div>
-                                <div className="p-3 bg-warning-50 rounded-lg border border-warning-200">
-                                    <p className="text-xs text-warning-600 uppercase tracking-wide">Pending</p>
-                                    <p className="text-lg font-semibold text-warning-700">{formatCurrency(stats.pending)}</p>
-                                </div>
-                                <div className="p-3 bg-default-50 rounded-lg border border-default-200">
-                                    <p className="text-xs text-default-600 uppercase tracking-wide">Total</p>
-                                    <p className="text-lg font-semibold">{formatCurrency(stats.total)}</p>
-                                </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <Card className="border-none shadow-sm bg-success-50/50">
+                                    <CardBody className="p-4">
+                                        <div className="flex items-center gap-2 mb-2 text-success-600">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <span className="text-xs font-bold uppercase tracking-wide">Approved</span>
+                                        </div>
+                                        <p className="text-2xl font-bold text-success-700">{formatCurrency(stats.approved)}</p>
+                                    </CardBody>
+                                </Card>
+                                <Card className="border-none shadow-sm bg-warning-50/50">
+                                    <CardBody className="p-4">
+                                        <div className="flex items-center gap-2 mb-2 text-warning-600">
+                                            <Clock className="w-4 h-4" />
+                                            <span className="text-xs font-bold uppercase tracking-wide">Pending</span>
+                                        </div>
+                                        <p className="text-2xl font-bold text-warning-700">{formatCurrency(stats.pending)}</p>
+                                    </CardBody>
+                                </Card>
+                                <Card className="border-none shadow-sm bg-default-50">
+                                    <CardBody className="p-4">
+                                        <div className="flex items-center gap-2 mb-2 text-default-600">
+                                            <TrendingUp className="w-4 h-4" />
+                                            <span className="text-xs font-bold uppercase tracking-wide">Total</span>
+                                        </div>
+                                        <p className="text-2xl font-bold text-foreground">{formatCurrency(stats.total)}</p>
+                                    </CardBody>
+                                </Card>
                             </div>
 
-                            {/* Tabs */}
-                            <Tabs
-                                selectedKey={selectedTab}
-                                onSelectionChange={(key) => setSelectedTab(key as typeof selectedTab)}
-                                size="sm"
-                            >
-                                <Tab key="all" title={`All (${requests.length})`} />
-                                <Tab key="approved" title={`Approved (${requests.filter(r => r.status === 'approved' || r.status === 'completed').length})`} />
-                                <Tab key="pending" title={`Pending (${requests.filter(r => r.status === 'submitted' || r.status === 'needs_info').length})`} />
-                            </Tabs>
-
-                            {/* Requests Table */}
-                            {filteredRequests.length === 0 ? (
-                                <div className="text-center py-8 text-default-500">
-                                    No requests found for this period.
-                                </div>
-                            ) : (
-                                <Table
-                                    aria-label="Budget log table"
-                                    removeWrapper
+                            <div className="space-y-4">
+                                <Tabs
+                                    selectedKey={selectedTab}
+                                    onSelectionChange={(key) => setSelectedTab(key as typeof selectedTab)}
+                                    color="primary"
+                                    variant="underlined"
                                     classNames={{
-                                        th: 'bg-default-100 text-default-600 text-xs uppercase',
-                                        td: 'py-2',
+                                        tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+                                        cursor: "w-full bg-primary",
+                                        tab: "max-w-fit px-0 h-12",
+                                        tabContent: "group-data-[selected=true]:text-primary font-medium"
                                     }}
                                 >
-                                    <TableHeader>
-                                        <TableColumn>Request</TableColumn>
-                                        <TableColumn>Requester</TableColumn>
-                                        <TableColumn>Amount</TableColumn>
-                                        <TableColumn>Status</TableColumn>
-                                        <TableColumn>Date</TableColumn>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {filteredRequests.map((request) => (
-                                            <TableRow key={request.id}>
-                                                <TableCell>
-                                                    <p className="font-medium text-sm truncate max-w-[200px]">
-                                                        {request.title}
-                                                    </p>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <p className="text-sm text-default-500">
-                                                        {request.submittedByName || 'Unknown'}
-                                                    </p>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <span className="font-semibold text-success-600">
-                                                        {formatCurrency(request.amount)}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        size="sm"
-                                                        color={STATUS_COLORS[request.status]}
-                                                        variant="flat"
-                                                    >
-                                                        {STATUS_LABELS[request.status]}
-                                                    </Chip>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <span className="text-sm text-default-500">
-                                                        {formatDate(request.submittedAt || request.createdAt)}
-                                                    </span>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            )}
+                                    <Tab key="all" title={`All (${requests.length})`} />
+                                    <Tab key="approved" title={`Approved (${requests.filter(r => r.status === 'approved' || r.status === 'completed').length})`} />
+                                    <Tab key="pending" title={`Pending (${requests.filter(r => r.status === 'submitted' || r.status === 'needs_info').length})`} />
+                                </Tabs>
+
+                                {/* Requests Table */}
+                                <div className="border border-default-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                                    {filteredRequests.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-12 text-default-400">
+                                            <div className="p-4 bg-default-50 rounded-full mb-3">
+                                                <DollarSign className="w-6 h-6" />
+                                            </div>
+                                            <p>No requests found for this period.</p>
+                                        </div>
+                                    ) : (
+                                        <Table
+                                            aria-label="Budget log table"
+                                            removeWrapper
+                                            classNames={{
+                                                th: 'bg-default-50 text-default-500 font-medium py-3',
+                                                td: 'py-3 border-b border-default-100 last:border-0',
+                                            }}
+                                        >
+                                            <TableHeader>
+                                                <TableColumn>REQUEST</TableColumn>
+                                                <TableColumn>REQUESTER</TableColumn>
+                                                <TableColumn>AMOUNT</TableColumn>
+                                                <TableColumn>STATUS</TableColumn>
+                                                <TableColumn>DATE</TableColumn>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {filteredRequests.map((request) => (
+                                                    <TableRow key={request.id} className="hover:bg-default-50/50 transition-colors">
+                                                        <TableCell>
+                                                            <p className="font-semibold text-sm truncate max-w-[200px] text-foreground">
+                                                                {request.title}
+                                                            </p>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-6 h-6 rounded-full bg-default-100 flex items-center justify-center text-default-500">
+                                                                    <User className="w-3 h-3" />
+                                                                </div>
+                                                                <p className="text-sm text-default-600">
+                                                                    {request.submittedByName || 'Unknown'}
+                                                                </p>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <span className="font-bold text-success-600">
+                                                                {formatCurrency(request.amount)}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Chip
+                                                                size="sm"
+                                                                color={STATUS_COLORS[request.status]}
+                                                                variant="flat"
+                                                                className="border-none capitalize"
+                                                            >
+                                                                {STATUS_LABELS[request.status]}
+                                                            </Chip>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <span className="text-sm text-default-500">
+                                                                {formatDate(request.submittedAt || request.createdAt)}
+                                                            </span>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </ModalBody>
 
-                <ModalFooter>
+                <ModalFooter className="border-t border-default-100 bg-default-50/50">
                     <Button variant="light" onPress={onClose}>
                         Close
                     </Button>

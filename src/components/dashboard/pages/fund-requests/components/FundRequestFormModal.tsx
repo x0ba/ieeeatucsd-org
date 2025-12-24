@@ -27,6 +27,9 @@ import {
     Upload,
     Check,
     AlertCircle,
+    Calendar,
+    Briefcase,
+    Tag,
 } from 'lucide-react';
 import {
     collection,
@@ -59,10 +62,10 @@ interface FundRequestFormModalProps {
 }
 
 const STEPS = [
-    { id: 1, title: 'Basic Info', description: 'Title, purpose, and department' },
-    { id: 2, title: 'Budget', description: 'Amount and item links' },
-    { id: 3, title: 'Attachments', description: 'Upload supporting files (optional)' },
-    { id: 4, title: 'Review', description: 'Review and submit' },
+    { id: 1, title: 'Basic Info', description: 'Details' },
+    { id: 2, title: 'Budget', description: 'Costs' },
+    { id: 3, title: 'Attachments', description: 'Files' },
+    { id: 4, title: 'Review', description: 'Submit' },
 ];
 
 const isValidUrl = (string: string): boolean => {
@@ -158,14 +161,58 @@ export default function FundRequestFormModal({
         setCurrentStep((prev) => Math.max(prev - 1, 1));
     };
 
-    // Handle inline link editing - updates existing link
+    // Initialize with one empty row if needed
+    useEffect(() => {
+        if (!isOpen) return;
+
+        // If we are opening unrelated to a specific request (new request)
+        // or if the request has no links, ensure one empty row
+        setVendorLinks(prev => {
+            if (prev.length === 0) {
+                return [{
+                    id: crypto.randomUUID(),
+                    url: '',
+                    itemName: '',
+                }];
+            }
+            // Ensure last row is empty
+            const lastLink = prev[prev.length - 1];
+            if (lastLink.url?.trim() || lastLink.itemName?.trim()) {
+                return [...prev, {
+                    id: crypto.randomUUID(),
+                    url: '',
+                    itemName: '',
+                }];
+            }
+            return prev;
+        });
+    }, [isOpen]);
+
+    // Handle inline link editing - updates existing link and auto-adds new row
     const handleLinkChange = (id: string, field: 'itemName' | 'url', value: string) => {
         setVendorLinks((prev) => {
-            const updated = prev.map((link) =>
-                link.id === id ? { ...link, [field]: value } : link
-            );
+            const index = prev.findIndex((l) => l.id === id);
+            if (index === -1) return prev;
+
+            const updated = [...prev];
+            updated[index] = { ...updated[index], [field]: value };
+
+            // Check if we need to add a new empty row
+            // If we are editing the last row, and it now has content, add a new one
+            if (index === prev.length - 1) {
+                const currentLink = updated[index];
+                if (currentLink.itemName?.trim() || currentLink.url?.trim()) {
+                    updated.push({
+                        id: crypto.randomUUID(),
+                        url: '',
+                        itemName: '',
+                    });
+                }
+            }
+
             return updated;
         });
+
         // Clear link error when user types
         if (errors.link) {
             setErrors((prev) => {
@@ -173,18 +220,19 @@ export default function FundRequestFormModal({
                 return rest;
             });
         }
+        if (errors[`link_${id}`]) {
+            setErrors((prev) => {
+                const { [`link_${id}`]: removed, ...rest } = prev;
+                return rest;
+            });
+        }
     };
 
-    // Handle link blur - validate URL and auto-remove empty rows
+    // Handle link blur - only validate URL
     const handleLinkBlur = (id: string) => {
         setVendorLinks((prev) => {
             const link = prev.find((l) => l.id === id);
             if (!link) return prev;
-
-            // Remove row if both fields are empty
-            if (!link.url?.trim() && !link.itemName?.trim()) {
-                return prev.filter((l) => l.id !== id);
-            }
 
             // Validate URL if present
             if (link.url?.trim() && !isValidUrl(link.url)) {
@@ -195,28 +243,18 @@ export default function FundRequestFormModal({
         });
     };
 
-    // Add new empty row for link entry
-    const handleAddEmptyLink = () => {
-        const newLink: VendorLink = {
-            id: crypto.randomUUID(),
-            url: '',
-            itemName: '',
-        };
-        setVendorLinks((prev) => [...prev, newLink]);
-    };
-
-    // Ensure there's always an empty row for new entry
-    const ensureEmptyRow = () => {
-        const hasEmptyRow = vendorLinks.some(
-            (link) => !link.url?.trim() && !link.itemName?.trim()
-        );
-        if (!hasEmptyRow) {
-            handleAddEmptyLink();
-        }
-    };
-
     const handleRemoveLink = (id: string) => {
-        setVendorLinks((prev) => prev.filter((link) => link.id !== id));
+        setVendorLinks((prev) => {
+            // Don't allow removing the last empty row if it's the only one
+            if (prev.length <= 1) {
+                return [{
+                    id: crypto.randomUUID(),
+                    url: '',
+                    itemName: '',
+                }];
+            }
+            return prev.filter((link) => link.id !== id);
+        });
         setErrors((prev) => {
             const { [`link_${id}`]: removed, ...rest } = prev;
             return rest;
@@ -394,7 +432,7 @@ export default function FundRequestFormModal({
         switch (currentStep) {
             case 1:
                 return (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                         <Input
                             label="Title"
                             placeholder="Enter a descriptive title for your request"
@@ -404,53 +442,65 @@ export default function FundRequestFormModal({
                             isInvalid={!!errors.title}
                             errorMessage={errors.title}
                             maxLength={100}
+                            labelPlacement="outside"
+                            variant="bordered"
                         />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Select
+                                label="Department"
+                                placeholder="Select Department"
+                                selectedKeys={[department]}
+                                onSelectionChange={(keys) => {
+                                    const selected = Array.from(keys)[0] as FundRequestDepartment;
+                                    if (selected) setDepartment(selected);
+                                }}
+                                isRequired
+                                labelPlacement="outside"
+                                variant="bordered"
+                                startContent={<Briefcase className="w-4 h-4 text-default-400" />}
+                            >
+                                {Object.entries(DEPARTMENT_LABELS).map(([key, label]) => (
+                                    <SelectItem key={key}>{label}</SelectItem>
+                                ))}
+                            </Select>
+                            <Select
+                                label="Category"
+                                placeholder="Select Category"
+                                selectedKeys={[category]}
+                                onSelectionChange={(keys) => {
+                                    const selected = Array.from(keys)[0] as FundRequestCategory;
+                                    if (selected) setCategory(selected);
+                                }}
+                                labelPlacement="outside"
+                                variant="bordered"
+                                startContent={<Tag className="w-4 h-4 text-default-400" />}
+                            >
+                                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                                    <SelectItem key={key}>{label}</SelectItem>
+                                ))}
+                            </Select>
+                        </div>
                         <Textarea
                             label="Purpose / Justification"
-                            placeholder="Explain why you need this funding and how it will be used"
+                            placeholder="Explain why you need this funding and how it will be used..."
                             value={purpose}
                             onValueChange={setPurpose}
                             isRequired
                             isInvalid={!!errors.purpose}
                             errorMessage={errors.purpose}
-                            minRows={4}
+                            minRows={6}
                             maxRows={8}
+                            labelPlacement="outside"
+                            variant="bordered"
                         />
-                        <Select
-                            label="Department"
-                            description="Select the team/department this request is for"
-                            selectedKeys={[department]}
-                            onSelectionChange={(keys) => {
-                                const selected = Array.from(keys)[0] as FundRequestDepartment;
-                                if (selected) setDepartment(selected);
-                            }}
-                            isRequired
-                        >
-                            {Object.entries(DEPARTMENT_LABELS).map(([key, label]) => (
-                                <SelectItem key={key}>{label}</SelectItem>
-                            ))}
-                        </Select>
-                        <Select
-                            label="Category"
-                            description="Type of expense"
-                            selectedKeys={[category]}
-                            onSelectionChange={(keys) => {
-                                const selected = Array.from(keys)[0] as FundRequestCategory;
-                                if (selected) setCategory(selected);
-                            }}
-                        >
-                            {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                                <SelectItem key={key}>{label}</SelectItem>
-                            ))}
-                        </Select>
                     </div>
                 );
 
             case 2:
                 return (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                         <Input
-                            label="Budget Amount"
+                            label="Total Budget Amount"
                             placeholder="0.00"
                             value={amount}
                             onValueChange={(value) => {
@@ -470,69 +520,74 @@ export default function FundRequestFormModal({
                             errorMessage={errors.amount}
                             type="text"
                             inputMode="decimal"
+                            labelPlacement="outside"
+                            variant="bordered"
+                            description="Enter the total amount requested in USD."
                         />
 
                         <Divider />
 
                         <div>
-                            <label className="block text-sm font-medium mb-2">
-                                Purchase Links
-                                <span className="text-default-400 font-normal"> (optional)</span>
-                            </label>
-                            <p className="text-xs text-default-400 mb-3">
-                                Add links to items you want to purchase. Type in either field to add entries.
-                            </p>
-                            <div className="space-y-2">
+                            <div className="flex justify-between items-center mb-4">
+                                <div>
+                                    <label className="block text-sm font-medium">
+                                        Purchase Links / Line Items
+                                    </label>
+                                    <p className="text-xs text-default-400">
+                                        Enter items below. A new line will automatically appear.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                {/* Header */}
+                                {vendorLinks.length > 0 && (
+                                    <div className="flex gap-2 px-1 text-xs text-default-500 font-medium uppercase tracking-wide">
+                                        <span className="flex-1">Item Name</span>
+                                        <span className="flex-[2]">URL</span>
+                                        <span className="w-8"></span>
+                                    </div>
+                                )}
+
                                 {/* Existing links as editable rows */}
                                 {vendorLinks.map((link, index) => (
-                                    <div key={link.id} className="flex gap-2 items-start">
+                                    <div key={link.id} className="group flex gap-2 items-start">
                                         <Input
                                             placeholder="Item name"
                                             value={link.itemName || link.label || ''}
                                             onValueChange={(value) => handleLinkChange(link.id, 'itemName', value)}
                                             onBlur={() => handleLinkBlur(link.id)}
-                                            onFocus={ensureEmptyRow}
                                             className="flex-1"
                                             size="sm"
+                                            variant="bordered"
                                         />
                                         <Input
-                                            placeholder="URL (e.g., https://example.com/item)"
+                                            placeholder="https://..."
                                             value={link.url || ''}
                                             onValueChange={(value) => handleLinkChange(link.id, 'url', value)}
                                             onBlur={() => handleLinkBlur(link.id)}
-                                            onFocus={ensureEmptyRow}
-                                            startContent={<LinkIcon className="w-4 h-4 text-default-400" />}
+                                            startContent={<LinkIcon className="w-3.5 h-3.5 text-default-400" />}
                                             isInvalid={!!errors[`link_${link.id}`]}
                                             errorMessage={errors[`link_${link.id}`]}
                                             className="flex-[2]"
                                             size="sm"
+                                            variant="bordered"
                                         />
-                                        {(link.url?.trim() || link.itemName?.trim()) && (
+                                        <div className="flex items-center h-full pt-1">
                                             <Button
                                                 isIconOnly
                                                 size="sm"
                                                 variant="light"
                                                 color="danger"
                                                 onPress={() => handleRemoveLink(link.id)}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
                                                 aria-label="Remove link"
                                             >
                                                 <X className="w-4 h-4" />
                                             </Button>
-                                        )}
+                                        </div>
                                     </div>
                                 ))}
-
-                                {/* Add new link button if no empty rows exist */}
-                                {vendorLinks.length === 0 && (
-                                    <Button
-                                        size="sm"
-                                        variant="flat"
-                                        startContent={<Plus className="w-4 h-4" />}
-                                        onPress={handleAddEmptyLink}
-                                    >
-                                        Add Link
-                                    </Button>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -549,64 +604,87 @@ export default function FundRequestFormModal({
                             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                             maxFiles={10}
                             maxSizeInMB={10}
-                            label="Supporting Documents (Optional)"
-                            description="You may optionally upload receipts, quotes, screenshots, or any supporting documentation. This step is not required."
+                            label="Supporting Documents"
+                            description="Upload receipts, invoices, screenshots, or quotes. Supported formats: .pdf, .jpg, .png, .doc"
                         />
                     </div>
                 );
 
             case 4:
                 return (
-                    <div className="space-y-4">
-                        <div className="bg-default-50 rounded-lg p-4 space-y-3">
-                            <h4 className="font-semibold text-foreground">Request Summary</h4>
+                    <div className="space-y-6">
+                        <Card className="border border-default-200 shadow-sm bg-default-50/50">
+                            <CardBody className="p-5 space-y-4">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <h4 className="text-lg font-bold text-foreground">{title}</h4>
+                                        <p className="text-sm text-default-500 mt-0.5">{DEPARTMENT_LABELS[department]}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-2xl font-bold text-success-600">
+                                            ${formatCurrency(amount)}
+                                        </p>
+                                        <Chip size="sm" variant="flat" color="primary" className="mt-1">
+                                            {CATEGORY_LABELS[category]}
+                                        </Chip>
+                                    </div>
+                                </div>
 
-                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                <Divider />
+
                                 <div>
-                                    <span className="text-default-500">Title:</span>
-                                    <p className="font-medium">{title}</p>
-                                </div>
-                                <div>
-                                    <span className="text-default-500">Department:</span>
-                                    <p className="font-medium">{DEPARTMENT_LABELS[department]}</p>
-                                </div>
-                                <div>
-                                    <span className="text-default-500">Category:</span>
-                                    <p className="font-medium">{CATEGORY_LABELS[category]}</p>
-                                </div>
-                                <div>
-                                    <span className="text-default-500">Amount:</span>
-                                    <p className="font-medium text-success-600">
-                                        ${formatCurrency(amount)}
+                                    <span className="text-xs font-semibold text-default-500 uppercase tracking-wide block mb-1">
+                                        Purpose
+                                    </span>
+                                    <p className="text-sm text-default-700 whitespace-pre-wrap leading-relaxed">
+                                        {purpose}
                                     </p>
                                 </div>
-                                <div>
-                                    <span className="text-default-500">Links:</span>
-                                    <p className="font-medium">{vendorLinks.filter(l => l.url?.trim()).length} link(s)</p>
-                                </div>
-                                <div>
-                                    <span className="text-default-500">Attachments:</span>
-                                    <p className="font-medium">
-                                        {attachmentFiles.length + existingAttachments.length} file(s)
-                                    </p>
-                                </div>
-                            </div>
 
-                            <div>
-                                <span className="text-default-500 text-sm">Purpose:</span>
-                                <p className="text-sm mt-1">{purpose}</p>
-                            </div>
-                        </div>
+                                <div className="grid grid-cols-2 gap-4 pt-2">
+                                    <div className="p-3 bg-white rounded-lg border border-default-200">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <LinkIcon className="w-4 h-4 text-primary-500" />
+                                            <span className="text-xs font-medium text-default-500 uppercase">Items / Links</span>
+                                        </div>
+                                        <p className="text-lg font-semibold pl-6">
+                                            {vendorLinks.filter(l => l.url?.trim() || l.itemName?.trim()).length}
+                                        </p>
+                                    </div>
+                                    <div className="p-3 bg-white rounded-lg border border-default-200">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <FileText className="w-4 h-4 text-primary-500" />
+                                            <span className="text-xs font-medium text-default-500 uppercase">Attachments</span>
+                                        </div>
+                                        <p className="text-lg font-semibold pl-6">
+                                            {attachmentFiles.length + existingAttachments.length}
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardBody>
+                        </Card>
 
                         {request?.status === 'needs_info' && (
-                            <Textarea
-                                label="Response to Information Request"
-                                placeholder="Provide the additional information that was requested..."
-                                value={infoResponseNotes}
-                                onValueChange={setInfoResponseNotes}
-                                minRows={3}
-                                description={request.infoRequestNotes ? `Request: ${request.infoRequestNotes}` : undefined}
-                            />
+                            <div className="bg-warning-50/50 rounded-xl p-4 border border-warning-200 space-y-3">
+                                <div className="flex items-center gap-2 text-warning-700">
+                                    <AlertCircle className="w-5 h-5" />
+                                    <span className="font-semibold">Information Requested</span>
+                                </div>
+                                <p className="text-sm text-warning-800 bg-white/50 p-3 rounded-lg border border-warning-100 italic">
+                                    "{request.infoRequestNotes}"
+                                </p>
+                                <Textarea
+                                    label="Your Response"
+                                    placeholder="Provide the additional information that was requested..."
+                                    value={infoResponseNotes}
+                                    onValueChange={setInfoResponseNotes}
+                                    minRows={3}
+                                    variant="bordered"
+                                    classNames={{
+                                        inputWrapper: "bg-white"
+                                    }}
+                                />
+                            </div>
                         )}
                     </div>
                 );
@@ -624,76 +702,101 @@ export default function FundRequestFormModal({
             scrollBehavior="inside"
             isDismissable={!isSubmitting}
             hideCloseButton={isSubmitting}
+            classNames={{
+                body: "p-6",
+            }}
         >
             <ModalContent>
-                <ModalHeader className="flex flex-col gap-1">
-                    <span>{isEditMode ? 'Edit Fund Request' : 'New Fund Request'}</span>
-                    <div className="flex items-center gap-2 mt-2">
-                        {STEPS.map((step, index) => (
-                            <div key={step.id} className="flex items-center">
-                                <div
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === step.id
-                                        ? 'bg-primary text-white'
-                                        : currentStep > step.id
-                                            ? 'bg-success text-white'
-                                            : 'bg-default-200 text-default-500'
-                                        }`}
-                                >
-                                    {currentStep > step.id ? <Check className="w-4 h-4" /> : step.id}
-                                </div>
-                                {index < STEPS.length - 1 && (
-                                    <div
-                                        className={`w-8 h-0.5 mx-1 ${currentStep > step.id ? 'bg-success' : 'bg-default-200'
-                                            }`}
-                                    />
-                                )}
+                <ModalHeader className="pb-0">
+                    <div className="flex flex-col gap-1 w-full">
+                        <span className="text-xl font-bold">{isEditMode ? 'Edit Fund Request' : 'New Fund Request'}</span>
+
+                        {/* Stepper */}
+                        <div className="mt-6 mb-2 relative">
+                            {/* Connector Line */}
+                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-default-100 -translate-y-1/2 z-0" />
+                            <div
+                                className="absolute top-1/2 left-0 h-0.5 bg-primary transition-all duration-300 -translate-y-1/2 z-0"
+                                style={{
+                                    width: `${((currentStep - 1) / (STEPS.length - 1)) * 100}%`
+                                }}
+                            />
+
+                            {/* Steps */}
+                            <div className="flex justify-between relative z-10">
+                                {STEPS.map((step) => {
+                                    const isCompleted = currentStep > step.id;
+                                    const isCurrent = currentStep === step.id;
+
+                                    return (
+                                        <div key={step.id} className="flex flex-col items-center gap-2 bg-background px-2">
+                                            <div
+                                                className={`
+                                                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 border-2
+                                                    ${isCompleted || isCurrent ? 'border-primary bg-primary text-white' : 'border-default-200 bg-background text-default-400'}
+                                                `}
+                                            >
+                                                {isCompleted ? <Check className="w-4 h-4" /> : step.id}
+                                            </div>
+                                            <div className="hidden sm:flex flex-col items-center">
+                                                <span className={`text-xs font-semibold ${isCurrent ? 'text-primary' : 'text-default-500'}`}>
+                                                    {step.title}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        ))}
+                        </div>
                     </div>
-                    <p className="text-sm text-default-500 mt-1">
-                        Step {currentStep}: {STEPS[currentStep - 1].title} - {STEPS[currentStep - 1].description}
-                    </p>
                 </ModalHeader>
 
-                <ModalBody>{renderStepContent()}</ModalBody>
+                <ModalBody className="py-6">
+                    {renderStepContent()}
+                </ModalBody>
 
-                <ModalFooter>
-                    <div className="flex justify-between w-full">
-                        <div className="flex gap-2">
-                            {currentStep > 1 && (
-                                <Button
-                                    variant="light"
-                                    onPress={handlePrevStep}
-                                    startContent={<ChevronLeft className="w-4 h-4" />}
-                                    isDisabled={isSubmitting}
-                                >
-                                    Back
-                                </Button>
-                            )}
-                        </div>
-                        <div className="flex gap-2">
-                            <Button variant="light" onPress={onClose} isDisabled={isSubmitting}>
-                                Cancel
+                <ModalFooter className="flex justify-between items-center pt-2 pb-6 px-6 border-t border-default-100">
+                    <Button
+                        variant="light"
+                        onPress={onClose}
+                        isDisabled={isSubmitting}
+                        className="text-default-500 hover:text-default-700"
+                    >
+                        Cancel
+                    </Button>
+
+                    <div className="flex gap-3">
+                        {currentStep > 1 && (
+                            <Button
+                                variant="bordered"
+                                onPress={handlePrevStep}
+                                startContent={<ChevronLeft className="w-4 h-4" />}
+                                isDisabled={isSubmitting}
+                            >
+                                Back
                             </Button>
-                            {currentStep < STEPS.length ? (
-                                <Button
-                                    color="primary"
-                                    onPress={handleNextStep}
-                                    endContent={<ChevronRight className="w-4 h-4" />}
-                                >
-                                    Next
-                                </Button>
-                            ) : (
-                                <Button
-                                    color="primary"
-                                    onPress={() => handleSubmit()}
-                                    isLoading={isSubmitting}
-                                    startContent={!isSubmitting && <Check className="w-4 h-4" />}
-                                >
-                                    {request?.status === 'needs_info' ? 'Resubmit' : 'Submit Request'}
-                                </Button>
-                            )}
-                        </div>
+                        )}
+
+                        {currentStep < STEPS.length ? (
+                            <Button
+                                color="primary"
+                                onPress={handleNextStep}
+                                endContent={<ChevronRight className="w-4 h-4" />}
+                                className="font-semibold shadow-md shadow-primary/20"
+                            >
+                                Next Step
+                            </Button>
+                        ) : (
+                            <Button
+                                color="primary"
+                                onPress={() => handleSubmit()}
+                                isLoading={isSubmitting}
+                                startContent={!isSubmitting && <Check className="w-4 h-4" />}
+                                className="font-semibold shadow-md shadow-primary/20"
+                            >
+                                {request?.status === 'needs_info' ? 'Resubmit Request' : 'Submit Request'}
+                            </Button>
+                        )}
                     </div>
                 </ModalFooter>
             </ModalContent>

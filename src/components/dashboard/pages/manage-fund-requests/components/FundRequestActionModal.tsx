@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Modal,
     ModalContent,
@@ -6,35 +6,35 @@ import {
     ModalBody,
     ModalFooter,
     Button,
-    Chip,
-    Card,
-    CardBody,
-    Divider,
-    Link,
     Textarea,
-    Select,
-    SelectItem,
     RadioGroup,
     Radio,
+    Input,
+    Select,
+    SelectItem,
+    Chip,
+    Divider,
+    Card,
+    CardBody,
+    ScrollShadow,
 } from '@heroui/react';
 import {
-    DollarSign,
-    User,
-    FileText,
-    ExternalLink,
-    Clock,
     CheckCircle,
     XCircle,
     AlertCircle,
+    DollarSign,
+    FileText,
+    ExternalLink,
     Download,
-    Eye,
-    MessageSquare,
-    ThumbsUp,
-    ThumbsDown,
-    HelpCircle,
+    History,
+    Megaphone,
+    Briefcase,
+    Tag,
+    Calendar,
+    Send
 } from 'lucide-react';
-import { doc, updateDoc, Timestamp } from 'firebase/firestore';
-import { auth, db } from '../../../../../firebase/client';
+import { doc, updateDoc, Timestamp, getDoc } from 'firebase/firestore';
+import { db, auth } from '../../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import type { FundRequest, FundRequestStatus, FundingSource } from '../../../shared/types/fund-requests';
 import {
@@ -43,6 +43,7 @@ import {
     CATEGORY_LABELS,
     DEPARTMENT_LABELS,
     FUNDING_SOURCE_LABELS,
+    FUNDING_SOURCES
 } from '../../../shared/types/fund-requests';
 import { showToast } from '../../../shared/utils/toast';
 
@@ -50,34 +51,7 @@ interface FundRequestActionModalProps {
     isOpen: boolean;
     onClose: () => void;
     request: FundRequest | null;
-    onActionComplete: () => void;
 }
-
-const getStatusIcon = (status: FundRequestStatus) => {
-    switch (status) {
-        case 'draft':
-            return <FileText className="w-4 h-4" />;
-        case 'submitted':
-            return <Clock className="w-4 h-4" />;
-        case 'needs_info':
-            return <AlertCircle className="w-4 h-4" />;
-        case 'approved':
-            return <CheckCircle className="w-4 h-4" />;
-        case 'denied':
-            return <XCircle className="w-4 h-4" />;
-        case 'completed':
-            return <CheckCircle className="w-4 h-4" />;
-        default:
-            return <FileText className="w-4 h-4" />;
-    }
-};
-
-const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    }).format(amount);
-};
 
 const formatDate = (timestamp: any): string => {
     if (!timestamp) return 'N/A';
@@ -91,34 +65,43 @@ const formatDate = (timestamp: any): string => {
     });
 };
 
-type ActionType = 'approve' | 'deny' | 'request_info' | null;
+const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+    }).format(amount);
+};
 
 export default function FundRequestActionModal({
     isOpen,
     onClose,
     request,
-    onActionComplete,
 }: FundRequestActionModalProps) {
     const [user] = useAuthState(auth);
-    const [selectedAction, setSelectedAction] = useState<ActionType>(null);
+    const [action, setAction] = useState<'approve' | 'deny' | 'needs_info'>('approve');
     const [notes, setNotes] = useState('');
-    const [selectedFundingSource, setSelectedFundingSource] = useState<FundingSource>('department');
+    const [fundingSource, setFundingSource] = useState<FundingSource>('department');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    if (!request) return null;
+    // Reset form when modal opens or request changes
+    useEffect(() => {
+        if (isOpen) {
+            setAction('approve');
+            setNotes('');
+            setFundingSource('department');
+        }
+    }, [isOpen, request]);
 
-    const canTakeAction = request.status === 'submitted';
+    const handleSubmit = async () => {
+        if (!request || !user) return;
 
-    const handleAction = async () => {
-        if (!user || !selectedAction) return;
+        if (action === 'approve' && !fundingSource) {
+            showToast.error('Please select a funding source');
+            return;
+        }
 
-        // Validate notes for request_info and deny
-        if ((selectedAction === 'request_info' || selectedAction === 'deny') && !notes.trim()) {
-            showToast.error(
-                selectedAction === 'request_info'
-                    ? 'Please provide a question or statement for the requester'
-                    : 'Please provide a reason for denying this request'
-            );
+        if ((action === 'deny' || action === 'needs_info') && !notes.trim()) {
+            showToast.error('Please provide a reason/note');
             return;
         }
 
@@ -126,56 +109,47 @@ export default function FundRequestActionModal({
 
         try {
             let newStatus: FundRequestStatus;
-            let updateData: any = {
-                reviewedBy: user.uid,
-                reviewedByName: user.displayName || user.email || 'Unknown',
-                reviewedAt: Timestamp.now(),
-                updatedAt: Timestamp.now(),
-            };
+            switch (action) {
+                case 'approve':
+                    newStatus = 'approved';
+                    break;
+                case 'deny':
+                    newStatus = 'denied';
+                    break;
+                case 'needs_info':
+                    newStatus = 'needs_info';
+                    break;
+                default:
+                    return;
+            }
 
             const auditLog = {
                 id: crypto.randomUUID(),
+                action,
                 performedBy: user.uid,
-                performedByName: user.displayName || user.email || 'Unknown',
+                performedByName: user.displayName || user.email || 'Admin',
                 timestamp: Timestamp.now(),
                 previousStatus: request.status,
-                notes: notes.trim() || undefined,
+                newStatus,
+                notes: notes.trim(),
+                fundingSource: action === 'approve' ? fundingSource : undefined,
             };
 
-            switch (selectedAction) {
-                case 'approve':
-                    newStatus = 'approved';
-                    updateData.status = newStatus;
-                    updateData.selectedFundingSource = selectedFundingSource;
-                    updateData.reviewNotes = notes.trim() || null;
-                    updateData.auditLogs = [
-                        ...(request.auditLogs || []),
-                        { ...auditLog, action: 'approved', newStatus },
-                    ];
-                    break;
+            const updateData: any = {
+                status: newStatus,
+                auditLogs: [...(request.auditLogs || []), auditLog],
+                updatedAt: Timestamp.now(),
+            };
 
-                case 'deny':
-                    newStatus = 'denied';
-                    updateData.status = newStatus;
-                    updateData.reviewNotes = notes.trim();
-                    updateData.auditLogs = [
-                        ...(request.auditLogs || []),
-                        { ...auditLog, action: 'denied', newStatus },
-                    ];
-                    break;
-
-                case 'request_info':
-                    newStatus = 'needs_info';
-                    updateData.status = newStatus;
-                    updateData.infoRequestNotes = notes.trim();
-                    updateData.auditLogs = [
-                        ...(request.auditLogs || []),
-                        { ...auditLog, action: 'info_requested', newStatus },
-                    ];
-                    break;
-
-                default:
-                    return;
+            if (action === 'approve') {
+                updateData.selectedFundingSource = fundingSource;
+                if (notes.trim()) updateData.reviewNotes = notes.trim();
+                // Clear any previous rejection/info notes
+                updateData.infoRequestNotes = '';
+            } else if (action === 'needs_info') {
+                updateData.infoRequestNotes = notes.trim();
+            } else if (action === 'deny') {
+                updateData.reviewNotes = notes.trim();
             }
 
             await updateDoc(doc(db, 'fundRequests', request.id), updateData);
@@ -188,374 +162,262 @@ export default function FundRequestActionModal({
                     body: JSON.stringify({
                         type: 'fund_request_status_change',
                         requestId: request.id,
-                        newStatus: newStatus,
-                        reviewNotes: selectedAction === 'deny' ? notes.trim() : (selectedAction === 'approve' ? notes.trim() : undefined),
-                        infoRequestNotes: selectedAction === 'request_info' ? notes.trim() : undefined,
-                        selectedFundingSource: selectedAction === 'approve' ? selectedFundingSource : undefined,
-                        reviewerName: user.displayName || user.email || 'Unknown',
+                        status: newStatus,
                     }),
                 });
             } catch (emailError) {
-                console.error('Failed to send status change email:', emailError);
-                // Don't fail the whole operation for email errors
+                console.error('Failed to send email:', emailError);
             }
 
-            const actionLabels = {
-                approve: 'approved',
-                deny: 'denied',
-                request_info: 'returned for more information',
-            };
-
-            showToast.success(`Request has been ${actionLabels[selectedAction]}`);
-
-            // Reset state
-            setSelectedAction(null);
-            setNotes('');
-            setSelectedFundingSource('department');
-
-            onActionComplete();
+            showToast.success(`Request ${action === 'needs_info' ? 'returned for info' : action + 'd'} successfully`);
+            onClose();
         } catch (error) {
-            console.error('Error updating fund request:', error);
-            showToast.error('Failed to update request');
+            console.error('Error processing request:', error);
+            showToast.error('Failed to process request');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleClose = () => {
-        setSelectedAction(null);
-        setNotes('');
-        setSelectedFundingSource('department');
-        onClose();
-    };
+    if (!request) return null;
 
     return (
         <Modal
             isOpen={isOpen}
-            onClose={handleClose}
+            onClose={onClose}
             size="3xl"
             scrollBehavior="inside"
             isDismissable={!isSubmitting}
             hideCloseButton={isSubmitting}
+            classNames={{
+                body: "p-0",
+                header: "border-b border-default-100",
+                footer: "border-t border-default-100",
+            }}
         >
             <ModalContent>
-                <ModalHeader className="flex justify-between items-start">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-semibold">{request.title}</h2>
-                            <Chip
-                                size="sm"
-                                color={STATUS_COLORS[request.status]}
-                                variant="flat"
-                                startContent={getStatusIcon(request.status)}
-                            >
-                                {STATUS_LABELS[request.status]}
-                            </Chip>
-                        </div>
-                        <div className="flex items-center gap-2 mt-2 text-sm text-default-500">
-                            <User className="w-4 h-4" />
-                            <span>{request.submittedByName || 'Unknown'}</span>
+                <ModalHeader className="bg-default-50/50 p-6">
+                    <div className="flex flex-col gap-1">
+                        <h2 className="text-xl font-bold">Review Fund Request</h2>
+                        <div className="flex items-center gap-2 text-sm text-default-500">
+                            <span>ID: {request.id.slice(0, 8)}...</span>
                             <span>•</span>
-                            <span>{request.submittedByEmail}</span>
+                            <span>Submitted on {formatDate(request.createdAt)}</span>
                         </div>
                     </div>
                 </ModalHeader>
 
-                <ModalBody className="space-y-4">
-                    {/* Request Details */}
-                    <Card className="border border-default-200">
-                        <CardBody className="p-4 space-y-4">
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                <div>
-                                    <span className="text-xs text-default-500 uppercase tracking-wide">Amount</span>
-                                    <p className="text-lg font-semibold text-success-600">
-                                        {formatCurrency(request.amount)}
-                                    </p>
-                                </div>
-                                <div>
-                                    <span className="text-xs text-default-500 uppercase tracking-wide">Category</span>
-                                    <p className="font-medium">{CATEGORY_LABELS[request.category]}</p>
-                                </div>
-                                {request.department && (
-                                    <div>
-                                        <span className="text-xs text-default-500 uppercase tracking-wide">Department</span>
-                                        <p className="font-medium">{DEPARTMENT_LABELS[request.department]}</p>
-                                    </div>
-                                )}
-                                <div>
-                                    <span className="text-xs text-default-500 uppercase tracking-wide">Submitted</span>
-                                    <p className="text-sm">{formatDate(request.submittedAt || request.createdAt)}</p>
-                                </div>
-                                {request.fundingSourcePreference && (
-                                    <div>
-                                        <span className="text-xs text-default-500 uppercase tracking-wide">
-                                            Preferred Source
-                                        </span>
-                                        <p className="text-sm">{FUNDING_SOURCE_LABELS[request.fundingSourcePreference]}</p>
-                                    </div>
-                                )}
-                            </div>
+                <ModalBody className="flex flex-row p-0 min-h-[500px]">
+                    {/* Left Column: Request Details (Scrollable) */}
+                    <ScrollShadow className="flex-1 p-6 border-r border-default-100 space-y-6 max-h-[70vh]">
 
-                            <Divider />
-
+                        {/* User & Financials */}
+                        <div className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
                             <div>
-                                <span className="text-xs text-default-500 uppercase tracking-wide">
-                                    Purpose / Justification
-                                </span>
-                                <p className="text-sm mt-1 whitespace-pre-wrap">{request.purpose}</p>
+                                <p className="text-xs font-semibold text-default-500 uppercase">Requested by</p>
+                                <p className="font-medium text-foreground">{request.submittedByName || 'Unknown'}</p>
+                                <p className="text-xs text-default-400">{request.submittedByEmail}</p>
                             </div>
+                            <div className="text-right">
+                                <p className="text-xs font-semibold text-default-500 uppercase">Amount</p>
+                                <p className="text-xl font-bold text-success-600">{formatCurrency(request.amount)}</p>
+                            </div>
+                        </div>
 
-                            {request.infoResponseNotes && (
-                                <>
-                                    <Divider />
-                                    <div>
-                                        <span className="text-xs text-default-500 uppercase tracking-wide">
-                                            Additional Information Provided
-                                        </span>
-                                        <p className="text-sm mt-1 whitespace-pre-wrap">{request.infoResponseNotes}</p>
-                                    </div>
-                                </>
+                        {/* Title & Purpose */}
+                        <div>
+                            <h3 className="text-lg font-bold mb-1">{request.title}</h3>
+                            <div className="flex gap-2 mb-3">
+                                <Chip size="sm" variant="flat" color="default">{DEPARTMENT_LABELS[request.department]}</Chip>
+                                <Chip size="sm" variant="flat" color="primary">{CATEGORY_LABELS[request.category]}</Chip>
+                            </div>
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-bold text-default-500 uppercase flex items-center gap-1">
+                                    <FileText className="w-3 h-3" /> Justification
+                                </h4>
+                                <p className="text-sm text-default-700 whitespace-pre-wrap leading-relaxed p-3 bg-white rounded border border-default-100">
+                                    {request.purpose}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Info Response (Context) */}
+                        {request.infoResponseNotes && (
+                            <div className="bg-warning-50/50 p-4 rounded-lg border border-warning-100">
+                                <h4 className="text-xs font-bold text-warning-700 uppercase flex items-center gap-1 mb-2">
+                                    <Megaphone className="w-3 h-3" /> Additional Context
+                                </h4>
+                                <p className="text-sm text-default-700 whitespace-pre-wrap">
+                                    {request.infoResponseNotes}
+                                </p>
+                            </div>
+                        )}
+
+                        <Divider />
+
+                        {/* Attachments & Links */}
+                        <div className="space-y-4">
+                            {request.vendorLinks && request.vendorLinks.length > 0 && (
+                                <div>
+                                    <h4 className="text-xs font-bold text-default-500 uppercase mb-2">Purchase Links</h4>
+                                    <ul className="space-y-1">
+                                        {request.vendorLinks.map((link) => (
+                                            <li key={link.id} className="text-sm">
+                                                <a href={link.url} target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                                                    <ExternalLink className="w-3 h-3" />
+                                                    {link.itemName || link.url}
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             )}
-                        </CardBody>
-                    </Card>
 
-                    {/* Vendor Links */}
-                    {request.vendorLinks && request.vendorLinks.length > 0 && (
-                        <Card className="border border-default-200">
-                            <CardBody className="p-4">
-                                <h4 className="text-sm font-semibold mb-3">Vendor Links</h4>
-                                <div className="space-y-2">
-                                    {request.vendorLinks.map((link) => (
-                                        <div key={link.id} className="flex items-center gap-2">
-                                            <ExternalLink className="w-4 h-4 text-default-400" />
-                                            <Link href={link.url} isExternal showAnchorIcon className="text-sm">
-                                                {link.label || link.url}
-                                            </Link>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardBody>
-                        </Card>
-                    )}
-
-                    {/* Attachments */}
-                    {request.attachments && request.attachments.length > 0 && (
-                        <Card className="border border-default-200">
-                            <CardBody className="p-4">
-                                <h4 className="text-sm font-semibold mb-3">Attachments</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    {request.attachments.map((attachment) => (
-                                        <Card key={attachment.id} className="border border-default-100">
-                                            <CardBody className="p-3 flex flex-row items-center justify-between">
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <FileText className="w-5 h-5 text-default-400 flex-shrink-0" />
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-medium truncate">{attachment.name}</p>
-                                                        <p className="text-xs text-default-400">
-                                                            {(attachment.size / 1024).toFixed(1)} KB
-                                                        </p>
-                                                    </div>
+                            {request.attachments && request.attachments.length > 0 && (
+                                <div>
+                                    <h4 className="text-xs font-bold text-default-500 uppercase mb-2">Attachments</h4>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {request.attachments.map((file) => (
+                                            <a key={file.id} href={file.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 border border-default-200 rounded hover:bg-default-50 transition-colors">
+                                                <div className="bg-primary-50 p-1.5 rounded text-primary">
+                                                    <Download className="w-4 h-4" />
                                                 </div>
-                                                <div className="flex items-center gap-1 flex-shrink-0">
-                                                    <Button
-                                                        isIconOnly
-                                                        size="sm"
-                                                        variant="light"
-                                                        as="a"
-                                                        href={attachment.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        aria-label="View attachment"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                    </Button>
-                                                    <Button
-                                                        isIconOnly
-                                                        size="sm"
-                                                        variant="light"
-                                                        as="a"
-                                                        href={attachment.url}
-                                                        download={attachment.name}
-                                                        aria-label="Download attachment"
-                                                    >
-                                                        <Download className="w-4 h-4" />
-                                                    </Button>
-                                                </div>
-                                            </CardBody>
-                                        </Card>
-                                    ))}
-                                </div>
-                            </CardBody>
-                        </Card>
-                    )}
-
-                    {/* Action Panel - Only show for submitted requests */}
-                    {canTakeAction && (
-                        <Card className="border-2 border-primary-200 bg-primary-50/30">
-                            <CardBody className="p-4 space-y-4">
-                                <h4 className="font-semibold text-foreground">Take Action</h4>
-
-                                <RadioGroup
-                                    value={selectedAction || ''}
-                                    onValueChange={(value) => setSelectedAction(value as ActionType)}
-                                    orientation="horizontal"
-                                >
-                                    <Radio
-                                        value="approve"
-                                        description="Approve this request"
-                                        classNames={{
-                                            base: 'border border-default-200 rounded-lg p-3 m-0 max-w-none data-[selected=true]:border-success-500 data-[selected=true]:bg-success-50',
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <ThumbsUp className="w-4 h-4 text-success-600" />
-                                            <span>Approve</span>
-                                        </div>
-                                    </Radio>
-                                    <Radio
-                                        value="deny"
-                                        description="Deny this request"
-                                        classNames={{
-                                            base: 'border border-default-200 rounded-lg p-3 m-0 max-w-none data-[selected=true]:border-danger-500 data-[selected=true]:bg-danger-50',
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <ThumbsDown className="w-4 h-4 text-danger-600" />
-                                            <span>Deny</span>
-                                        </div>
-                                    </Radio>
-                                    <Radio
-                                        value="request_info"
-                                        description="Request more info"
-                                        classNames={{
-                                            base: 'border border-default-200 rounded-lg p-3 m-0 max-w-none data-[selected=true]:border-warning-500 data-[selected=true]:bg-warning-50',
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <HelpCircle className="w-4 h-4 text-warning-600" />
-                                            <span>Request Info</span>
-                                        </div>
-                                    </Radio>
-                                </RadioGroup>
-
-                                {selectedAction === 'approve' && (
-                                    <div className="space-y-3">
-                                        <Select
-                                            label="Funding Source"
-                                            selectedKeys={[selectedFundingSource]}
-                                            onSelectionChange={(keys) => {
-                                                const selected = Array.from(keys)[0] as FundingSource;
-                                                if (selected) setSelectedFundingSource(selected);
-                                            }}
-                                            isRequired
-                                        >
-                                            {Object.entries(FUNDING_SOURCE_LABELS).map(([key, label]) => (
-                                                <SelectItem key={key}>{label}</SelectItem>
-                                            ))}
-                                        </Select>
-                                        <Textarea
-                                            label="Notes (optional)"
-                                            placeholder="Add any notes about this approval..."
-                                            value={notes}
-                                            onValueChange={setNotes}
-                                            minRows={2}
-                                        />
+                                                <div className="text-sm truncate flex-1">{file.name}</div>
+                                            </a>
+                                        ))}
                                     </div>
-                                )}
-
-                                {selectedAction === 'deny' && (
-                                    <Textarea
-                                        label="Reason for Denial"
-                                        placeholder="Please explain why this request is being denied..."
-                                        value={notes}
-                                        onValueChange={setNotes}
-                                        isRequired
-                                        minRows={3}
-                                        isInvalid={selectedAction === 'deny' && !notes.trim()}
-                                        errorMessage="A reason is required when denying a request"
-                                    />
-                                )}
-
-                                {selectedAction === 'request_info' && (
-                                    <Textarea
-                                        label="Information Request"
-                                        placeholder="What additional information do you need from the requester?"
-                                        value={notes}
-                                        onValueChange={setNotes}
-                                        isRequired
-                                        minRows={3}
-                                        isInvalid={selectedAction === 'request_info' && !notes.trim()}
-                                        errorMessage="Please specify what information you need"
-                                    />
-                                )}
-                            </CardBody>
-                        </Card>
-                    )}
-
-                    {/* Audit Trail */}
-                    {request.auditLogs && request.auditLogs.length > 0 && (
-                        <Card className="border border-default-200">
-                            <CardBody className="p-4">
-                                <h4 className="text-sm font-semibold mb-3">Activity History</h4>
-                                <div className="space-y-3">
-                                    {request.auditLogs.map((log) => (
-                                        <div key={log.id} className="flex items-start gap-3">
-                                            <div className="w-2 h-2 rounded-full bg-default-300 mt-2 flex-shrink-0" />
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm">
-                                                    <span className="font-medium capitalize">
-                                                        {log.action.replace('_', ' ')}
-                                                    </span>
-                                                    {log.performedByName && (
-                                                        <span className="text-default-500"> by {log.performedByName}</span>
-                                                    )}
-                                                </p>
-                                                <p className="text-xs text-default-400">{formatDate(log.timestamp)}</p>
-                                                {log.notes && (
-                                                    <p className="text-sm text-default-600 mt-1">{log.notes}</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
                                 </div>
-                            </CardBody>
-                        </Card>
-                    )}
+                            )}
+                        </div>
+                    </ScrollShadow>
+
+                    {/* Right Column: Decisions (Fixed) */}
+                    <div className="w-[350px] p-6 bg-default-50/30 flex flex-col gap-6">
+                        <div>
+                            <h3 className="font-semibold text-lg mb-4">Decision</h3>
+                            <RadioGroup
+                                value={action}
+                                onValueChange={(val) => setAction(val as any)}
+                                color={
+                                    action === 'approve' ? 'success' :
+                                        action === 'deny' ? 'danger' : 'warning'
+                                }
+                            >
+                                <Radio
+                                    value="approve"
+                                    description="Authorize funding"
+                                    classNames={{ label: "font-semibold" }}
+                                >
+                                    Approve Request
+                                </Radio>
+                                <Radio
+                                    value="needs_info"
+                                    description="Ask user for details"
+                                    classNames={{ label: "font-semibold" }}
+                                >
+                                    Request More Info
+                                </Radio>
+                                <Radio
+                                    value="deny"
+                                    description="Reject this request"
+                                    classNames={{ label: "font-semibold" }}
+                                >
+                                    Deny Request
+                                </Radio>
+                            </RadioGroup>
+                        </div>
+
+                        {action === 'approve' && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <Select
+                                    label="Funding Source"
+                                    placeholder="Select source"
+                                    selectedKeys={[fundingSource]}
+                                    onSelectionChange={(keys) => setFundingSource(Array.from(keys)[0] as FundingSource)}
+                                    variant="bordered"
+                                    classNames={{
+                                        trigger: "bg-white",
+                                    }}
+                                >
+                                    {FUNDING_SOURCES.map((source) => (
+                                        <SelectItem key={source}>
+                                            {FUNDING_SOURCE_LABELS[source]}
+                                        </SelectItem>
+                                    ))}
+                                </Select>
+                                <Textarea
+                                    label="Approval Notes (Optional)"
+                                    placeholder="Any internal notes or instructions..."
+                                    value={notes}
+                                    onValueChange={setNotes}
+                                    variant="bordered"
+                                    classNames={{
+                                        inputWrapper: "bg-white",
+                                    }}
+                                />
+                            </div>
+                        )}
+
+                        {action === 'needs_info' && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <Textarea
+                                    label="Information Requested"
+                                    placeholder="What information is missing? Be specific."
+                                    value={notes}
+                                    onValueChange={setNotes}
+                                    minRows={4}
+                                    isRequired
+                                    variant="bordered"
+                                    color="warning"
+                                    classNames={{
+                                        inputWrapper: "bg-white",
+                                    }}
+                                />
+                            </div>
+                        )}
+
+                        {action === 'deny' && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <Textarea
+                                    label="Rejection Reason"
+                                    placeholder="Why is this request being denied?"
+                                    value={notes}
+                                    onValueChange={setNotes}
+                                    minRows={4}
+                                    isRequired
+                                    variant="bordered"
+                                    color="danger"
+                                    classNames={{
+                                        inputWrapper: "bg-white",
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
                 </ModalBody>
 
-                <ModalFooter>
-                    <Button variant="light" onPress={handleClose} isDisabled={isSubmitting}>
-                        Close
-                    </Button>
-                    {canTakeAction && selectedAction && (
+                <ModalFooter className="justify-between items-center p-4 bg-default-50/50">
+                    <div className="text-xs text-default-400 italic">
+                        An email notification will be sent to the user.
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="light" onPress={onClose} isDisabled={isSubmitting}>
+                            Cancel
+                        </Button>
                         <Button
                             color={
-                                selectedAction === 'approve'
-                                    ? 'success'
-                                    : selectedAction === 'deny'
-                                        ? 'danger'
-                                        : 'warning'
+                                action === 'approve' ? 'success' :
+                                    action === 'deny' ? 'danger' : 'warning'
                             }
-                            onPress={handleAction}
+                            onPress={handleSubmit}
                             isLoading={isSubmitting}
-                            startContent={
-                                !isSubmitting &&
-                                (selectedAction === 'approve' ? (
-                                    <CheckCircle className="w-4 h-4" />
-                                ) : selectedAction === 'deny' ? (
-                                    <XCircle className="w-4 h-4" />
-                                ) : (
-                                    <MessageSquare className="w-4 h-4" />
-                                ))
-                            }
+                            startContent={!isSubmitting && <Send className="w-4 h-4" />}
+                            className="font-medium shadow-sm"
                         >
-                            {selectedAction === 'approve'
-                                ? 'Approve Request'
-                                : selectedAction === 'deny'
-                                    ? 'Deny Request'
-                                    : 'Request Information'}
+                            {action === 'approve' ? 'Approve' :
+                                action === 'deny' ? 'Deny' : 'Send Request'}
                         </Button>
-                    )}
+                    </div>
                 </ModalFooter>
             </ModalContent>
         </Modal>
