@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Search,
     DollarSign,
@@ -11,6 +11,7 @@ import {
     Filter,
     ChevronDown,
     User,
+    Settings,
 } from 'lucide-react';
 import {
     Card,
@@ -37,9 +38,10 @@ import {
 import { collection, query, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import type { FundRequest, FundRequestStatus } from '../../shared/types/fund-requests';
-import { STATUS_LABELS, STATUS_COLORS, CATEGORY_LABELS } from '../../shared/types/fund-requests';
+import type { FundRequest, FundRequestStatus, FundRequestDepartment, BudgetConfig } from '../../shared/types/fund-requests';
+import { STATUS_LABELS, STATUS_COLORS, CATEGORY_LABELS, DEPARTMENT_LABELS } from '../../shared/types/fund-requests';
 import FundRequestActionModal from './components/FundRequestActionModal';
+import BudgetManagementModal from './components/BudgetManagementModal';
 import { showToast } from '../../shared/utils/toast';
 
 const getStatusIcon = (status: FundRequestStatus) => {
@@ -92,6 +94,16 @@ export default function ManageFundRequestsContent() {
     // Modal state
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<FundRequest | null>(null);
+
+    // Budget management state
+    const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+    const [budgetConfigs, setBudgetConfigs] = useState<Record<FundRequestDepartment, BudgetConfig | null>>({
+        events: null,
+        projects: null,
+        internal: null,
+        other: null,
+    });
+    const [budgetRefreshKey, setBudgetRefreshKey] = useState(0);
 
     // Check user role
     useEffect(() => {
@@ -148,6 +160,38 @@ export default function ManageFundRequestsContent() {
 
         return () => unsubscribe();
     }, [user, userRole]);
+
+    // Fetch budget configurations
+    const fetchBudgetConfigs = useCallback(async () => {
+        try {
+            const departments: FundRequestDepartment[] = ['events', 'projects', 'internal', 'other'];
+            const configPromises = departments.map(async (dept) => {
+                const configDoc = await getDoc(doc(db, 'budgetConfig', dept));
+                if (configDoc.exists()) {
+                    return { dept, config: configDoc.data() as BudgetConfig };
+                }
+                return { dept, config: null };
+            });
+
+            const configs = await Promise.all(configPromises);
+            const configMap: Record<FundRequestDepartment, BudgetConfig | null> = {
+                events: null,
+                projects: null,
+                internal: null,
+                other: null,
+            };
+            configs.forEach(({ dept, config }) => {
+                configMap[dept] = config;
+            });
+            setBudgetConfigs(configMap);
+        } catch (error) {
+            console.error('Error fetching budget configs:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchBudgetConfigs();
+    }, [fetchBudgetConfigs, budgetRefreshKey]);
 
     // Filter requests based on tab and search
     useEffect(() => {
@@ -239,11 +283,23 @@ export default function ManageFundRequestsContent() {
     return (
         <div className="p-6 space-y-6">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-foreground">Manage Fund Requests</h1>
-                <p className="text-sm text-default-500 mt-1">
-                    Review and manage fund requests from officers
-                </p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-foreground">Manage Fund Requests</h1>
+                    <p className="text-sm text-default-500 mt-1">
+                        Review and manage fund requests from officers
+                    </p>
+                </div>
+                {/* Admin-only budget management button */}
+                {userRole === 'Administrator' && (
+                    <Button
+                        variant="flat"
+                        startContent={<Settings className="w-4 h-4" />}
+                        onPress={() => setIsBudgetModalOpen(true)}
+                    >
+                        Update Budget
+                    </Button>
+                )}
             </div>
 
             {/* Stats Cards */}
@@ -435,6 +491,18 @@ export default function ManageFundRequestsContent() {
                 request={selectedRequest}
                 onActionComplete={handleActionComplete}
             />
+
+            {/* Budget Management Modal (Admin Only) */}
+            {userRole === 'Administrator' && (
+                <BudgetManagementModal
+                    isOpen={isBudgetModalOpen}
+                    onClose={() => setIsBudgetModalOpen(false)}
+                    budgetConfigs={budgetConfigs}
+                    onBudgetUpdate={() => setBudgetRefreshKey((k) => k + 1)}
+                    currentUserId={user?.uid || ''}
+                    currentUserName={user?.displayName || user?.email || 'Unknown'}
+                />
+            )}
         </div>
     );
 }

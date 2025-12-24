@@ -42,10 +42,11 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import type {
     FundRequest,
     FundRequestCategory,
+    FundRequestDepartment,
     VendorLink,
     FundRequestAttachment,
 } from '../../../shared/types/fund-requests';
-import { CATEGORY_LABELS } from '../../../shared/types/fund-requests';
+import { CATEGORY_LABELS, DEPARTMENT_LABELS } from '../../../shared/types/fund-requests';
 import MultiFileUpload from '../../fund-deposits/components/MultiFileUpload';
 import { showToast } from '../../../shared/utils/toast';
 
@@ -58,9 +59,9 @@ interface FundRequestFormModalProps {
 }
 
 const STEPS = [
-    { id: 1, title: 'Basic Info', description: 'Title, purpose, and category' },
-    { id: 2, title: 'Budget', description: 'Amount and vendor links' },
-    { id: 3, title: 'Attachments', description: 'Upload supporting files' },
+    { id: 1, title: 'Basic Info', description: 'Title, purpose, and department' },
+    { id: 2, title: 'Budget', description: 'Amount and item links' },
+    { id: 3, title: 'Attachments', description: 'Upload supporting files (optional)' },
     { id: 4, title: 'Review', description: 'Review and submit' },
 ];
 
@@ -88,10 +89,9 @@ export default function FundRequestFormModal({
     const [title, setTitle] = useState('');
     const [purpose, setPurpose] = useState('');
     const [category, setCategory] = useState<FundRequestCategory>('event');
+    const [department, setDepartment] = useState<FundRequestDepartment>('events');
     const [amount, setAmount] = useState('');
     const [vendorLinks, setVendorLinks] = useState<VendorLink[]>([]);
-    const [newLinkUrl, setNewLinkUrl] = useState('');
-    const [newLinkLabel, setNewLinkLabel] = useState('');
     const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
     const [existingAttachments, setExistingAttachments] = useState<string[]>([]);
     const [infoResponseNotes, setInfoResponseNotes] = useState('');
@@ -105,6 +105,7 @@ export default function FundRequestFormModal({
             setTitle(request.title);
             setPurpose(request.purpose);
             setCategory(request.category);
+            setDepartment(request.department || 'events');
             setAmount(request.amount.toString());
             setVendorLinks(request.vendorLinks || []);
             setExistingAttachments(request.attachments?.map((a) => a.url) || []);
@@ -119,10 +120,9 @@ export default function FundRequestFormModal({
         setTitle('');
         setPurpose('');
         setCategory('event');
+        setDepartment('events');
         setAmount('');
         setVendorLinks([]);
-        setNewLinkUrl('');
-        setNewLinkLabel('');
         setAttachmentFiles([]);
         setExistingAttachments([]);
         setInfoResponseNotes('');
@@ -158,31 +158,69 @@ export default function FundRequestFormModal({
         setCurrentStep((prev) => Math.max(prev - 1, 1));
     };
 
-    const handleAddLink = () => {
-        if (!newLinkUrl.trim()) return;
-
-        if (!isValidUrl(newLinkUrl)) {
-            setErrors((prev) => ({ ...prev, link: 'Please enter a valid URL' }));
-            return;
+    // Handle inline link editing - updates existing link
+    const handleLinkChange = (id: string, field: 'itemName' | 'url', value: string) => {
+        setVendorLinks((prev) => {
+            const updated = prev.map((link) =>
+                link.id === id ? { ...link, [field]: value } : link
+            );
+            return updated;
+        });
+        // Clear link error when user types
+        if (errors.link) {
+            setErrors((prev) => {
+                const { link, ...rest } = prev;
+                return rest;
+            });
         }
+    };
 
+    // Handle link blur - validate URL and auto-remove empty rows
+    const handleLinkBlur = (id: string) => {
+        setVendorLinks((prev) => {
+            const link = prev.find((l) => l.id === id);
+            if (!link) return prev;
+
+            // Remove row if both fields are empty
+            if (!link.url?.trim() && !link.itemName?.trim()) {
+                return prev.filter((l) => l.id !== id);
+            }
+
+            // Validate URL if present
+            if (link.url?.trim() && !isValidUrl(link.url)) {
+                setErrors((e) => ({ ...e, [`link_${id}`]: 'Please enter a valid URL' }));
+            }
+
+            return prev;
+        });
+    };
+
+    // Add new empty row for link entry
+    const handleAddEmptyLink = () => {
         const newLink: VendorLink = {
             id: crypto.randomUUID(),
-            url: newLinkUrl.trim(),
-            label: newLinkLabel.trim() || undefined,
+            url: '',
+            itemName: '',
         };
-
         setVendorLinks((prev) => [...prev, newLink]);
-        setNewLinkUrl('');
-        setNewLinkLabel('');
-        setErrors((prev) => {
-            const { link, ...rest } = prev;
-            return rest;
-        });
+    };
+
+    // Ensure there's always an empty row for new entry
+    const ensureEmptyRow = () => {
+        const hasEmptyRow = vendorLinks.some(
+            (link) => !link.url?.trim() && !link.itemName?.trim()
+        );
+        if (!hasEmptyRow) {
+            handleAddEmptyLink();
+        }
     };
 
     const handleRemoveLink = (id: string) => {
         setVendorLinks((prev) => prev.filter((link) => link.id !== id));
+        setErrors((prev) => {
+            const { [`link_${id}`]: removed, ...rest } = prev;
+            return rest;
+        });
     };
 
     const handleRemoveExistingAttachment = (url: string) => {
@@ -243,13 +281,19 @@ export default function FundRequestFormModal({
 
             const status = 'submitted';
 
+            // Filter out empty vendor links before saving
+            const cleanedVendorLinks = vendorLinks.filter(
+                (link) => link.url?.trim() || link.itemName?.trim()
+            );
+
             // Build requestData without undefined values
             const requestData: Record<string, any> = {
                 title: title.trim(),
                 purpose: purpose.trim(),
                 category,
+                department,
                 amount: parseFloat(amount) || 0,
-                vendorLinks,
+                vendorLinks: cleanedVendorLinks,
                 attachments: allAttachments,
                 status,
                 updatedAt: Timestamp.now(),
@@ -373,7 +417,22 @@ export default function FundRequestFormModal({
                             maxRows={8}
                         />
                         <Select
+                            label="Department"
+                            description="Select the team/department this request is for"
+                            selectedKeys={[department]}
+                            onSelectionChange={(keys) => {
+                                const selected = Array.from(keys)[0] as FundRequestDepartment;
+                                if (selected) setDepartment(selected);
+                            }}
+                            isRequired
+                        >
+                            {Object.entries(DEPARTMENT_LABELS).map(([key, label]) => (
+                                <SelectItem key={key}>{label}</SelectItem>
+                            ))}
+                        </Select>
+                        <Select
                             label="Category"
+                            description="Type of expense"
                             selectedKeys={[category]}
                             onSelectionChange={(keys) => {
                                 const selected = Array.from(keys)[0] as FundRequestCategory;
@@ -417,73 +476,62 @@ export default function FundRequestFormModal({
 
                         <div>
                             <label className="block text-sm font-medium mb-2">
-                                Links to Items/Vendors
+                                Purchase Links
                                 <span className="text-default-400 font-normal"> (optional)</span>
                             </label>
+                            <p className="text-xs text-default-400 mb-3">
+                                Add links to items you want to purchase. Type in either field to add entries.
+                            </p>
                             <div className="space-y-2">
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="URL (e.g., https://example.com/item)"
-                                        value={newLinkUrl}
-                                        onValueChange={setNewLinkUrl}
-                                        startContent={<LinkIcon className="w-4 h-4 text-default-400" />}
-                                        isInvalid={!!errors.link}
-                                        errorMessage={errors.link}
-                                        className="flex-1"
-                                        size="sm"
-                                    />
-                                    <Input
-                                        placeholder="Label (optional)"
-                                        value={newLinkLabel}
-                                        onValueChange={setNewLinkLabel}
-                                        className="w-40"
-                                        size="sm"
-                                    />
-                                    <Button
-                                        isIconOnly
-                                        size="sm"
-                                        color="primary"
-                                        variant="flat"
-                                        onPress={handleAddLink}
-                                        isDisabled={!newLinkUrl.trim()}
-                                        aria-label="Add link"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                    </Button>
-                                </div>
-
-                                {vendorLinks.length > 0 && (
-                                    <div className="space-y-1 mt-2">
-                                        {vendorLinks.map((link) => (
-                                            <Card key={link.id} className="border border-default-200">
-                                                <CardBody className="p-2 flex flex-row items-center justify-between">
-                                                    <div className="flex-1 min-w-0">
-                                                        <a
-                                                            href={link.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-sm text-primary hover:underline truncate block"
-                                                        >
-                                                            {link.label || link.url}
-                                                        </a>
-                                                        {link.label && (
-                                                            <p className="text-xs text-default-400 truncate">{link.url}</p>
-                                                        )}
-                                                    </div>
-                                                    <Button
-                                                        isIconOnly
-                                                        size="sm"
-                                                        variant="light"
-                                                        color="danger"
-                                                        onPress={() => handleRemoveLink(link.id)}
-                                                        aria-label="Remove link"
-                                                    >
-                                                        <X className="w-3 h-3" />
-                                                    </Button>
-                                                </CardBody>
-                                            </Card>
-                                        ))}
+                                {/* Existing links as editable rows */}
+                                {vendorLinks.map((link, index) => (
+                                    <div key={link.id} className="flex gap-2 items-start">
+                                        <Input
+                                            placeholder="Item name"
+                                            value={link.itemName || link.label || ''}
+                                            onValueChange={(value) => handleLinkChange(link.id, 'itemName', value)}
+                                            onBlur={() => handleLinkBlur(link.id)}
+                                            onFocus={ensureEmptyRow}
+                                            className="flex-1"
+                                            size="sm"
+                                        />
+                                        <Input
+                                            placeholder="URL (e.g., https://example.com/item)"
+                                            value={link.url || ''}
+                                            onValueChange={(value) => handleLinkChange(link.id, 'url', value)}
+                                            onBlur={() => handleLinkBlur(link.id)}
+                                            onFocus={ensureEmptyRow}
+                                            startContent={<LinkIcon className="w-4 h-4 text-default-400" />}
+                                            isInvalid={!!errors[`link_${link.id}`]}
+                                            errorMessage={errors[`link_${link.id}`]}
+                                            className="flex-[2]"
+                                            size="sm"
+                                        />
+                                        {(link.url?.trim() || link.itemName?.trim()) && (
+                                            <Button
+                                                isIconOnly
+                                                size="sm"
+                                                variant="light"
+                                                color="danger"
+                                                onPress={() => handleRemoveLink(link.id)}
+                                                aria-label="Remove link"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </Button>
+                                        )}
                                     </div>
+                                ))}
+
+                                {/* Add new link button if no empty rows exist */}
+                                {vendorLinks.length === 0 && (
+                                    <Button
+                                        size="sm"
+                                        variant="flat"
+                                        startContent={<Plus className="w-4 h-4" />}
+                                        onPress={handleAddEmptyLink}
+                                    >
+                                        Add Link
+                                    </Button>
                                 )}
                             </div>
                         </div>
@@ -501,8 +549,8 @@ export default function FundRequestFormModal({
                             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                             maxFiles={10}
                             maxSizeInMB={10}
-                            label="Supporting Documents"
-                            description="Upload receipts, quotes, screenshots, or any supporting documentation."
+                            label="Supporting Documents (Optional)"
+                            description="You may optionally upload receipts, quotes, screenshots, or any supporting documentation. This step is not required."
                         />
                     </div>
                 );
@@ -519,6 +567,10 @@ export default function FundRequestFormModal({
                                     <p className="font-medium">{title}</p>
                                 </div>
                                 <div>
+                                    <span className="text-default-500">Department:</span>
+                                    <p className="font-medium">{DEPARTMENT_LABELS[department]}</p>
+                                </div>
+                                <div>
                                     <span className="text-default-500">Category:</span>
                                     <p className="font-medium">{CATEGORY_LABELS[category]}</p>
                                 </div>
@@ -530,7 +582,7 @@ export default function FundRequestFormModal({
                                 </div>
                                 <div>
                                     <span className="text-default-500">Links:</span>
-                                    <p className="font-medium">{vendorLinks.length} link(s)</p>
+                                    <p className="font-medium">{vendorLinks.filter(l => l.url?.trim()).length} link(s)</p>
                                 </div>
                                 <div>
                                     <span className="text-default-500">Attachments:</span>

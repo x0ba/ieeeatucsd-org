@@ -30,6 +30,7 @@ import {
     STATUS_LABELS,
     STATUS_COLORS,
     CATEGORY_LABELS,
+    DEPARTMENT_LABELS,
     FUNDING_SOURCE_LABELS,
 } from '../../../shared/types/fund-requests';
 
@@ -110,7 +111,7 @@ export default function FundRequestDetailModal({
                             </Chip>
                         </div>
                         <p className="text-sm text-default-500 mt-1">
-                            {CATEGORY_LABELS[request.category]} Request
+                            {request.department ? DEPARTMENT_LABELS[request.department] : CATEGORY_LABELS[request.category]} Request
                         </p>
                     </div>
                 </ModalHeader>
@@ -182,6 +183,12 @@ export default function FundRequestDetailModal({
                                     <span className="text-xs text-default-500 uppercase tracking-wide">Category</span>
                                     <p className="font-medium">{CATEGORY_LABELS[request.category]}</p>
                                 </div>
+                                {request.department && (
+                                    <div>
+                                        <span className="text-xs text-default-500 uppercase tracking-wide">Department</span>
+                                        <p className="font-medium">{DEPARTMENT_LABELS[request.department]}</p>
+                                    </div>
+                                )}
                                 <div>
                                     <span className="text-xs text-default-500 uppercase tracking-wide">Created</span>
                                     <p className="text-sm">{formatDate(request.createdAt)}</p>

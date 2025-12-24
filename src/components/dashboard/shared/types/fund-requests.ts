@@ -9,7 +9,7 @@ export type FundRequestStatus =
     | "denied"
     | "completed";
 
-// Categories for fund requests
+// Categories for fund requests (kept for backward compatibility)
 export type FundRequestCategory =
     | "event"
     | "travel"
@@ -17,14 +17,22 @@ export type FundRequestCategory =
     | "software"
     | "other";
 
+// Department for fund requests (new field)
+export type FundRequestDepartment =
+    | "events"
+    | "projects"
+    | "internal"
+    | "other";
+
 // Funding sources
 export type FundingSource = "department" | "ieee";
 
-// Vendor link with URL
+// Vendor link with URL and item name
 export interface VendorLink {
     id: string;
     url: string;
-    label?: string;
+    itemName?: string;
+    label?: string; // Kept for backward compatibility
 }
 
 // Attachment file reference
@@ -57,6 +65,27 @@ export interface FundRequestAuditLog {
     newStatus?: FundRequestStatus;
 }
 
+// Budget configuration for a department
+export interface BudgetConfig {
+    department: FundRequestDepartment;
+    totalBudget: number;
+    startDate: Timestamp;
+    updatedAt: Timestamp;
+    updatedBy: string;
+    updatedByName?: string;
+}
+
+// Manual budget adjustment
+export interface BudgetAdjustment {
+    id: string;
+    department: FundRequestDepartment;
+    amount: number;
+    description: string;
+    createdAt: Timestamp;
+    createdBy: string;
+    createdByName?: string;
+}
+
 // Main fund request interface
 export interface FundRequest {
     id: string;
@@ -65,6 +94,7 @@ export interface FundRequest {
     title: string;
     purpose: string;
     category: FundRequestCategory;
+    department?: FundRequestDepartment; // New field
 
     // Budget
     amount: number;
@@ -111,6 +141,7 @@ export interface FundRequestFormData {
     title: string;
     purpose: string;
     category: FundRequestCategory;
+    department?: FundRequestDepartment;
     amount: number;
     vendorLinks: VendorLink[];
     attachmentFiles: File[];
@@ -146,7 +177,15 @@ export const CATEGORY_LABELS: Record<FundRequestCategory, string> = {
     other: "Other",
 };
 
+export const DEPARTMENT_LABELS: Record<FundRequestDepartment, string> = {
+    events: "Events",
+    projects: "Projects",
+    internal: "Internal",
+    other: "Other",
+};
+
 export const FUNDING_SOURCE_LABELS: Record<FundingSource, string> = {
     department: "Department Funds",
     ieee: "IEEE Funds",
 };
+

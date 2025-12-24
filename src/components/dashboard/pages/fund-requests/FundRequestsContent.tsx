@@ -11,7 +11,9 @@ import {
     FileText,
     Edit,
     Trash2,
-    RefreshCw
+    RefreshCw,
+    TrendingUp,
+    Users,
 } from 'lucide-react';
 import {
     Card,
@@ -32,14 +34,16 @@ import {
     DropdownTrigger,
     DropdownMenu,
     DropdownItem,
+    Progress,
 } from '@heroui/react';
-import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, Timestamp, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import type { FundRequest, FundRequestStatus } from '../../shared/types/fund-requests';
-import { STATUS_LABELS, STATUS_COLORS, CATEGORY_LABELS } from '../../shared/types/fund-requests';
+import type { FundRequest, FundRequestStatus, FundRequestDepartment, BudgetConfig } from '../../shared/types/fund-requests';
+import { STATUS_LABELS, STATUS_COLORS, CATEGORY_LABELS, DEPARTMENT_LABELS } from '../../shared/types/fund-requests';
 import FundRequestFormModal from './components/FundRequestFormModal';
 import FundRequestDetailModal from './components/FundRequestDetailModal';
+import BudgetLogModal from './components/BudgetLogModal';
 import { showToast } from '../../shared/utils/toast';
 
 const getStatusIcon = (status: FundRequestStatus) => {
@@ -99,6 +103,17 @@ export default function FundRequestsContent() {
     const [requestToDelete, setRequestToDelete] = useState<FundRequest | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Budget tracking
+    const [budgetConfigs, setBudgetConfigs] = useState<Record<FundRequestDepartment, BudgetConfig | null>>({
+        events: null,
+        projects: null,
+        internal: null,
+        other: null,
+    });
+    const [allRequests, setAllRequests] = useState<FundRequest[]>([]);
+    const [isBudgetLogOpen, setIsBudgetLogOpen] = useState(false);
+    const [selectedBudgetDepartment, setSelectedBudgetDepartment] = useState<FundRequestDepartment>('events');
+
     // Fetch user's fund requests
     useEffect(() => {
         if (!user) {
@@ -132,6 +147,53 @@ export default function FundRequestsContent() {
 
         return () => unsubscribe();
     }, [user]);
+
+    // Fetch budget configurations and all requests for budget tracking
+    useEffect(() => {
+        const fetchBudgetData = async () => {
+            try {
+                // Fetch budget configurations
+                const departments: FundRequestDepartment[] = ['events', 'projects', 'internal', 'other'];
+                const configPromises = departments.map(async (dept) => {
+                    const configDoc = await getDoc(doc(db, 'budgetConfig', dept));
+                    if (configDoc.exists()) {
+                        return { dept, config: configDoc.data() as BudgetConfig };
+                    }
+                    return { dept, config: null };
+                });
+
+                const configs = await Promise.all(configPromises);
+                const configMap: Record<FundRequestDepartment, BudgetConfig | null> = {
+                    events: null,
+                    projects: null,
+                    internal: null,
+                    other: null,
+                };
+                configs.forEach(({ dept, config }) => {
+                    configMap[dept] = config;
+                });
+                setBudgetConfigs(configMap);
+            } catch (error) {
+                console.error('Error fetching budget configs:', error);
+            }
+        };
+
+        fetchBudgetData();
+
+        // Subscribe to all fund requests for budget calculations
+        const requestsRef = collection(db, 'fundRequests');
+        const q = query(requestsRef, orderBy('createdAt', 'desc'));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const requestsData = snapshot.docs.map((docSnap) => ({
+                id: docSnap.id,
+                ...docSnap.data(),
+            })) as FundRequest[];
+            setAllRequests(requestsData.filter(r => r.status !== 'draft'));
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     // Filter requests based on tab and search
     useEffect(() => {
@@ -222,6 +284,47 @@ export default function FundRequestsContent() {
         };
     };
 
+    // Calculate budget stats for a department
+    const getBudgetStats = (department: FundRequestDepartment) => {
+        const config = budgetConfigs[department];
+        const totalBudget = config?.totalBudget || 0;
+        const startDate = config?.startDate?.toDate ? config.startDate.toDate() : null;
+
+        // Filter requests by department and start date
+        let deptRequests = allRequests.filter((r) => r.department === department);
+        if (startDate) {
+            deptRequests = deptRequests.filter((r) => {
+                const requestDate = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.createdAt as any);
+                return requestDate >= startDate;
+            });
+        }
+
+        const usedBudget = deptRequests
+            .filter((r) => r.status === 'approved' || r.status === 'completed')
+            .reduce((sum, r) => sum + r.amount, 0);
+
+        const pendingBudget = deptRequests
+            .filter((r) => r.status === 'submitted' || r.status === 'needs_info')
+            .reduce((sum, r) => sum + r.amount, 0);
+
+        const remainingBudget = totalBudget - usedBudget - pendingBudget;
+        const percentUsed = totalBudget > 0 ? ((usedBudget + pendingBudget) / totalBudget) * 100 : 0;
+
+        return {
+            totalBudget,
+            usedBudget,
+            pendingBudget,
+            remainingBudget,
+            percentUsed,
+            startDate,
+        };
+    };
+
+    const handleBudgetCardClick = (department: FundRequestDepartment) => {
+        setSelectedBudgetDepartment(department);
+        setIsBudgetLogOpen(true);
+    };
+
     const stats = getStats();
 
     if (isLoading) {
@@ -305,6 +408,75 @@ export default function FundRequestsContent() {
                         </div>
                     </CardBody>
                 </Card>
+            </div>
+
+            {/* Budget Tracking Section */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    <h2 className="text-lg font-semibold">Team Budgets</h2>
+                    <span className="text-sm text-default-400">(Click for details)</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {(['events', 'projects', 'internal'] as FundRequestDepartment[]).map((dept) => {
+                        const budgetStats = getBudgetStats(dept);
+                        const hasConfig = budgetConfigs[dept] !== null;
+
+                        return (
+                            <Card
+                                key={dept}
+                                isPressable={hasConfig}
+                                className={`border border-default-200 ${hasConfig ? 'hover:border-primary-400 cursor-pointer' : 'opacity-60'}`}
+                                onPress={() => hasConfig && handleBudgetCardClick(dept)}
+                            >
+                                <CardBody className="p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Users className="w-4 h-4 text-default-400" />
+                                            <span className="font-medium">{DEPARTMENT_LABELS[dept]}</span>
+                                        </div>
+                                        {!hasConfig && (
+                                            <Chip size="sm" variant="flat">Not Configured</Chip>
+                                        )}
+                                    </div>
+
+                                    {hasConfig ? (
+                                        <>
+                                            <div className="flex items-end justify-between">
+                                                <div>
+                                                    <p className="text-2xl font-bold text-success-600">
+                                                        {formatCurrency(budgetStats.remainingBudget)}
+                                                    </p>
+                                                    <p className="text-xs text-default-400">
+                                                        of {formatCurrency(budgetStats.totalBudget)} remaining
+                                                    </p>
+                                                </div>
+                                                {budgetStats.pendingBudget > 0 && (
+                                                    <div className="text-right">
+                                                        <p className="text-sm text-warning-600">
+                                                            {formatCurrency(budgetStats.pendingBudget)}
+                                                        </p>
+                                                        <p className="text-xs text-default-400">pending</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <Progress
+                                                value={Math.min(budgetStats.percentUsed, 100)}
+                                                size="sm"
+                                                color={budgetStats.percentUsed > 90 ? 'danger' : budgetStats.percentUsed > 70 ? 'warning' : 'success'}
+                                                className="max-w-full"
+                                            />
+                                        </>
+                                    ) : (
+                                        <p className="text-sm text-default-400">
+                                            Budget not configured by admin
+                                        </p>
+                                    )}
+                                </CardBody>
+                            </Card>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Filters and Search */}
@@ -492,6 +664,14 @@ export default function FundRequestsContent() {
                     </ModalFooter>
                 </ModalContent>
             </Modal>
+
+            {/* Budget Log Modal */}
+            <BudgetLogModal
+                isOpen={isBudgetLogOpen}
+                onClose={() => setIsBudgetLogOpen(false)}
+                department={selectedBudgetDepartment}
+                budgetStartDate={budgetConfigs[selectedBudgetDepartment]?.startDate?.toDate?.() || undefined}
+            />
         </div>
     );
 }

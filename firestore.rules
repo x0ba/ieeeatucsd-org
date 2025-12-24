@@ -440,6 +440,24 @@ service cloud.firestore {
       allow delete: if isExecOrAdmin();
     }
 
+    // ===== Budget Configuration (Admin manages; Officers read) =====
+    match /budgetConfig/{department} {
+      // Officers can read budget configurations
+      allow read: if isOfficer();
+
+      // Only Administrators can create/update/delete budget configs
+      allow create, update, delete: if hasAnyRole(['Administrator']);
+
+      // Budget adjustments subcollection
+      match /adjustments/{adjustmentId} {
+        // Officers can read adjustments
+        allow read: if isOfficer();
+
+        // Only Administrators can manage adjustments
+        allow create, delete: if hasAnyRole(['Administrator']);
+      }
+    }
+
     // ===== Constitution Builder =====
     match /constitutions/{constitutionId} {
       allow read: if isSignedIn();
