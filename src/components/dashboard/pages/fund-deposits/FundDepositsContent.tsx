@@ -812,9 +812,6 @@ const FundDepositsContent: React.FC = () => {
                                             <p className="text-sm font-medium text-gray-500 mb-1">Total Deposits</p>
                                             <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.total}</p>
                                         </div>
-                                        <div className="p-3 bg-gray-50 rounded-xl">
-                                            <Receipt className="h-6 w-6 text-gray-600" />
-                                        </div>
                                     </div>
                                 </div>
 
@@ -823,9 +820,6 @@ const FundDepositsContent: React.FC = () => {
                                         <div>
                                             <p className="text-sm font-medium text-gray-500 mb-1">Pending</p>
                                             <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.pending}</p>
-                                        </div>
-                                        <div className="p-3 bg-yellow-50 rounded-xl">
-                                            <Clock className="h-6 w-6 text-yellow-600" />
                                         </div>
                                     </div>
                                 </div>
@@ -836,9 +830,6 @@ const FundDepositsContent: React.FC = () => {
                                             <p className="text-sm font-medium text-gray-500 mb-1">Verified</p>
                                             <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.verified}</p>
                                         </div>
-                                        <div className="p-3 bg-blue-50 rounded-xl">
-                                            <CheckCircle className="h-6 w-6 text-blue-600" />
-                                        </div>
                                     </div>
                                 </div>
 
@@ -848,9 +839,6 @@ const FundDepositsContent: React.FC = () => {
                                             <p className="text-sm font-medium text-gray-500 mb-1">Rejected</p>
                                             <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.rejected}</p>
                                         </div>
-                                        <div className="p-3 bg-red-50 rounded-xl">
-                                            <XCircle className="h-6 w-6 text-red-600" />
-                                        </div>
                                     </div>
                                 </div>
 
@@ -859,9 +847,6 @@ const FundDepositsContent: React.FC = () => {
                                         <div>
                                             <p className="text-sm font-medium text-green-700 mb-1">Total Verified Amount</p>
                                             <p className="text-2xl md:text-3xl font-bold text-green-800">${stats.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                        </div>
-                                        <div className="p-3 bg-white/60 rounded-xl backdrop-blur-sm">
-                                            <Banknote className="h-6 w-6 text-green-600" />
                                         </div>
                                     </div>
                                 </div>
@@ -1726,7 +1711,7 @@ const FundDepositsContent: React.FC = () => {
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={handleRejectDeposit}
+                                    onClick={handleConfirmRejection}
                                     disabled={!rejectionReason.trim()}
                                     className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 border border-transparent rounded-xl hover:bg-red-700 hover:shadow-lg hover:shadow-red-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
                                 >
