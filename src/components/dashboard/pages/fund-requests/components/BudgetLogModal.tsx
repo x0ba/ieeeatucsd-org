@@ -19,10 +19,10 @@ import {
     Card,
     CardBody,
 } from '@heroui/react';
-import { DollarSign, Calendar, User, ExternalLink, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { DollarSign, Calendar, User, ExternalLink, TrendingUp, Clock, CheckCircle, Wrench } from 'lucide-react';
 import { collection, query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../../../../../firebase/client';
-import type { FundRequest, FundRequestDepartment } from '../../../shared/types/fund-requests';
+import type { FundRequest, FundRequestDepartment, BudgetAdjustment } from '../../../shared/types/fund-requests';
 import { STATUS_LABELS, STATUS_COLORS, DEPARTMENT_LABELS } from '../../../shared/types/fund-requests';
 
 interface BudgetLogModalProps {
@@ -56,15 +56,17 @@ export default function BudgetLogModal({
     budgetStartDate,
 }: BudgetLogModalProps) {
     const [requests, setRequests] = useState<FundRequest[]>([]);
+    const [adjustments, setAdjustments] = useState<BudgetAdjustment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedTab, setSelectedTab] = useState<'all' | 'approved' | 'pending'>('all');
+    const [selectedTab, setSelectedTab] = useState<'all' | 'approved' | 'pending' | 'adjustments'>('all');
 
     useEffect(() => {
         if (!isOpen) return;
 
-        const fetchRequests = async () => {
+        const fetchData = async () => {
             setIsLoading(true);
             try {
+                // Fetch fund requests
                 const requestsRef = collection(db, 'fundRequests');
                 let q = query(
                     requestsRef,
@@ -90,6 +92,16 @@ export default function BudgetLogModal({
                 requestsData = requestsData.filter((r) => r.status !== 'draft');
 
                 setRequests(requestsData);
+
+                // Fetch manual adjustments
+                const adjustmentsRef = collection(db, 'budgetConfig', department, 'adjustments');
+                const adjustmentsQ = query(adjustmentsRef, orderBy('createdAt', 'desc'));
+                const adjustmentsSnapshot = await getDocs(adjustmentsQ);
+                const adjustmentsData = adjustmentsSnapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                })) as BudgetAdjustment[];
+                setAdjustments(adjustmentsData);
             } catch (error) {
                 console.error('Error fetching budget log:', error);
             } finally {
@@ -97,7 +109,7 @@ export default function BudgetLogModal({
             }
         };
 
-        fetchRequests();
+        fetchData();
     }, [isOpen, department, budgetStartDate]);
 
     const getFilteredRequests = () => {
@@ -106,6 +118,8 @@ export default function BudgetLogModal({
                 return requests.filter((r) => r.status === 'approved' || r.status === 'completed');
             case 'pending':
                 return requests.filter((r) => r.status === 'submitted' || r.status === 'needs_info');
+            case 'adjustments':
+                return []; // Handled separately
             default:
                 return requests;
         }
@@ -113,14 +127,17 @@ export default function BudgetLogModal({
 
     const filteredRequests = getFilteredRequests();
 
+    const adjustmentsTotal = adjustments.reduce((sum, a) => sum + a.amount, 0);
+
     const stats = {
         approved: requests
             .filter((r) => r.status === 'approved' || r.status === 'completed')
-            .reduce((sum, r) => sum + r.amount, 0),
+            .reduce((sum, r) => sum + r.amount, 0) + adjustmentsTotal,
         pending: requests
             .filter((r) => r.status === 'submitted' || r.status === 'needs_info')
             .reduce((sum, r) => sum + r.amount, 0),
-        total: requests.reduce((sum, r) => sum + r.amount, 0),
+        total: requests.reduce((sum, r) => sum + r.amount, 0) + adjustmentsTotal,
+        adjustmentsTotal,
     };
 
     return (
@@ -187,78 +204,154 @@ export default function BudgetLogModal({
                                         tabContent: "group-data-[selected=true]:text-primary font-medium"
                                     }}
                                 >
-                                    <Tab key="all" title={`All (${requests.length})`} />
+                                    <Tab key="all" title={`All (${requests.length + adjustments.length})`} />
                                     <Tab key="approved" title={`Approved (${requests.filter(r => r.status === 'approved' || r.status === 'completed').length})`} />
                                     <Tab key="pending" title={`Pending (${requests.filter(r => r.status === 'submitted' || r.status === 'needs_info').length})`} />
+                                    <Tab key="adjustments" title={`Adjustments (${adjustments.length})`} />
                                 </Tabs>
 
-                                {/* Requests Table */}
-                                <div className="border border-default-200 rounded-xl overflow-hidden shadow-sm bg-white">
-                                    {filteredRequests.length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center py-12 text-default-400">
-                                            <div className="p-4 bg-default-50 rounded-full mb-3">
-                                                <DollarSign className="w-6 h-6" />
-                                            </div>
-                                            <p>No requests found for this period.</p>
+                                {/* Requests Table or Adjustments Table */}
+                                <div className="space-y-4">
+                                    {/* Show requests table for all, approved, pending tabs */}
+                                    {selectedTab !== 'adjustments' && (
+                                        <div className="border border-default-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                                            {filteredRequests.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center py-12 text-default-400">
+                                                    <div className="p-4 bg-default-50 rounded-full mb-3">
+                                                        <DollarSign className="w-6 h-6" />
+                                                    </div>
+                                                    <p>No requests found for this period.</p>
+                                                </div>
+                                            ) : (
+                                                <Table
+                                                    aria-label="Budget log table"
+                                                    removeWrapper
+                                                    classNames={{
+                                                        th: 'bg-default-50 text-default-500 font-medium py-3',
+                                                        td: 'py-3 border-b border-default-100 last:border-0',
+                                                    }}
+                                                >
+                                                    <TableHeader>
+                                                        <TableColumn>REQUEST</TableColumn>
+                                                        <TableColumn>REQUESTER</TableColumn>
+                                                        <TableColumn>AMOUNT</TableColumn>
+                                                        <TableColumn>STATUS</TableColumn>
+                                                        <TableColumn>DATE</TableColumn>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {filteredRequests.map((request) => (
+                                                            <TableRow key={request.id} className="hover:bg-default-50/50 transition-colors">
+                                                                <TableCell>
+                                                                    <p className="font-semibold text-sm truncate max-w-[200px] text-foreground">
+                                                                        {request.title}
+                                                                    </p>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-6 h-6 rounded-full bg-default-100 flex items-center justify-center text-default-500">
+                                                                            <User className="w-3 h-3" />
+                                                                        </div>
+                                                                        <p className="text-sm text-default-600">
+                                                                            {request.submittedByName || 'Unknown'}
+                                                                        </p>
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <span className="font-bold text-success-600">
+                                                                        {formatCurrency(request.amount)}
+                                                                    </span>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Chip
+                                                                        size="sm"
+                                                                        color={STATUS_COLORS[request.status]}
+                                                                        variant="flat"
+                                                                        className="border-none capitalize"
+                                                                    >
+                                                                        {STATUS_LABELS[request.status]}
+                                                                    </Chip>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <span className="text-sm text-default-500">
+                                                                        {formatDate(request.submittedAt || request.createdAt)}
+                                                                    </span>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                            )}
                                         </div>
-                                    ) : (
-                                        <Table
-                                            aria-label="Budget log table"
-                                            removeWrapper
-                                            classNames={{
-                                                th: 'bg-default-50 text-default-500 font-medium py-3',
-                                                td: 'py-3 border-b border-default-100 last:border-0',
-                                            }}
-                                        >
-                                            <TableHeader>
-                                                <TableColumn>REQUEST</TableColumn>
-                                                <TableColumn>REQUESTER</TableColumn>
-                                                <TableColumn>AMOUNT</TableColumn>
-                                                <TableColumn>STATUS</TableColumn>
-                                                <TableColumn>DATE</TableColumn>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {filteredRequests.map((request) => (
-                                                    <TableRow key={request.id} className="hover:bg-default-50/50 transition-colors">
-                                                        <TableCell>
-                                                            <p className="font-semibold text-sm truncate max-w-[200px] text-foreground">
-                                                                {request.title}
-                                                            </p>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-6 h-6 rounded-full bg-default-100 flex items-center justify-center text-default-500">
-                                                                    <User className="w-3 h-3" />
-                                                                </div>
-                                                                <p className="text-sm text-default-600">
-                                                                    {request.submittedByName || 'Unknown'}
+                                    )}
+
+                                    {/* Show adjustments section for 'all' and 'adjustments' tabs */}
+                                    {(selectedTab === 'all' || selectedTab === 'adjustments') && adjustments.length > 0 && (
+                                        <div className="border border-default-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                                            {selectedTab === 'all' && (
+                                                <div className="bg-default-50 px-4 py-2 border-b border-default-200 flex items-center gap-2">
+                                                    <Wrench className="w-4 h-4 text-warning-600" />
+                                                    <span className="text-sm font-semibold text-default-700">Manual Adjustments</span>
+                                                </div>
+                                            )}
+                                            <Table
+                                                aria-label="Adjustments table"
+                                                removeWrapper
+                                                classNames={{
+                                                    th: 'bg-default-50 text-default-500 font-medium py-3',
+                                                    td: 'py-3 border-b border-default-100 last:border-0',
+                                                }}
+                                            >
+                                                <TableHeader>
+                                                    <TableColumn>DESCRIPTION</TableColumn>
+                                                    <TableColumn>ADDED BY</TableColumn>
+                                                    <TableColumn>AMOUNT</TableColumn>
+                                                    <TableColumn>DATE</TableColumn>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {adjustments.map((adjustment) => (
+                                                        <TableRow key={adjustment.id} className="hover:bg-default-50/50 transition-colors">
+                                                            <TableCell>
+                                                                <p className="font-semibold text-sm text-foreground">
+                                                                    {adjustment.description}
                                                                 </p>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <span className="font-bold text-success-600">
-                                                                {formatCurrency(request.amount)}
-                                                            </span>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Chip
-                                                                size="sm"
-                                                                color={STATUS_COLORS[request.status]}
-                                                                variant="flat"
-                                                                className="border-none capitalize"
-                                                            >
-                                                                {STATUS_LABELS[request.status]}
-                                                            </Chip>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <span className="text-sm text-default-500">
-                                                                {formatDate(request.submittedAt || request.createdAt)}
-                                                            </span>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-6 h-6 rounded-full bg-default-100 flex items-center justify-center text-default-500">
+                                                                        <User className="w-3 h-3" />
+                                                                    </div>
+                                                                    <p className="text-sm text-default-600">
+                                                                        {adjustment.createdByName || 'Unknown'}
+                                                                    </p>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <span className="font-bold text-warning-600">
+                                                                    {formatCurrency(adjustment.amount)}
+                                                                </span>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <span className="text-sm text-default-500">
+                                                                    {formatDate(adjustment.createdAt)}
+                                                                </span>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    )}
+
+                                    {/* Empty state for adjustments tab when no adjustments */}
+                                    {selectedTab === 'adjustments' && adjustments.length === 0 && (
+                                        <div className="border border-default-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                                            <div className="flex flex-col items-center justify-center py-12 text-default-400">
+                                                <div className="p-4 bg-default-50 rounded-full mb-3">
+                                                    <Wrench className="w-6 h-6" />
+                                                </div>
+                                                <p>No manual adjustments for this period.</p>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             </div>
