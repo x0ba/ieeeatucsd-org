@@ -359,8 +359,17 @@ export default function LeaderboardContent() {
                             {topThree[0] && (
                                 <div className="flex flex-col items-center group z-10">
                                     <div className="relative mb-4 transition-transform duration-300 group-hover:-translate-y-1">
-                                        <div className="absolute -top-7 left-1/2 -translate-x-1/2">
-                                            <Crown className="w-8 h-8 text-yellow-500 fill-yellow-400/80 drop-shadow-sm transform -rotate-6" />
+                                        <style>{`
+                                            @keyframes gentle-float {
+                                                0%, 100% { transform: translateX(-50%) translateY(0px) rotate(0deg); }
+                                                50% { transform: translateX(-50%) translateY(-6px) rotate(0deg); }
+                                            }
+                                            .animate-gentle-float {
+                                                animation: gentle-float 2.5s ease-in-out infinite;
+                                            }
+                                        `}</style>
+                                        <div className="absolute -top-8 left-1/2 z-0 animate-gentle-float">
+                                            <Crown className="w-10 h-10 text-yellow-500 fill-yellow-400/80 drop-shadow-sm" />
                                         </div>
                                         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white shadow-xl overflow-hidden relative z-10 bg-gradient-to-br from-yellow-50 to-yellow-100 flex items-center justify-center ring-4 ring-yellow-400/20">
                                             <span className="text-2xl font-black text-yellow-700">
