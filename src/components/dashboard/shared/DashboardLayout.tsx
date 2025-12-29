@@ -1,12 +1,17 @@
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { TopNavbar } from './TopNavbar.tsx';
 import { SidebarNavigation } from './SidebarNavigation.tsx';
-import { auth } from '../../../firebase/client';
+import { auth, db } from '../../../firebase/client';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
 import { ModalProvider } from './contexts/ModalContext.tsx';
 import { SyncStatusProvider } from './contexts/SyncStatusContext.tsx';
 import { useNavigationPreference } from './hooks/useNavigationPreference';
 import { Spinner, ToastProvider } from '@heroui/react';
 import PWAInstallPrompt from '../../core/PWAInstallPrompt.tsx';
+import PolicyUpdateModal from './PolicyUpdateModal.tsx';
+import { needsPolicyUpdate } from '../../../config/legalVersions';
+import type { User } from './types/firestore';
 
 interface DashboardLayoutProps {
     children?: ReactNode;
@@ -15,6 +20,9 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, currentPath }: DashboardLayoutProps) {
     const { navigationLayout, loading: prefLoading } = useNavigationPreference();
+    const [user] = useAuthState(auth);
+    const [userData, setUserData] = useState<User | null>(null);
+    const [showPolicyModal, setShowPolicyModal] = useState(false);
 
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged(user => {
@@ -25,6 +33,32 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
 
         return () => unsubscribeAuth();
     }, []);
+
+    // Fetch user data and check policy versions
+    useEffect(() => {
+        if (!user?.uid) return;
+
+        const unsubscribe = onSnapshot(
+            doc(db, 'users', user.uid),
+            (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data() as User;
+                    setUserData(data);
+
+                    // Check if user needs to accept updated policies (only for users who have completed onboarding)
+                    if (data.signedUp) {
+                        const { needsAny } = needsPolicyUpdate(data.tosVersion, data.privacyPolicyVersion);
+                        setShowPolicyModal(needsAny);
+                    }
+                }
+            },
+            (error) => {
+                console.error('Error fetching user data for policy check:', error);
+            }
+        );
+
+        return () => unsubscribe();
+    }, [user?.uid]);
 
     // Show loading state while preference is being loaded to prevent layout flash
     if (prefLoading) {
@@ -63,6 +97,15 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
                             </div>
                         </div>
                     )}
+
+                    {/* Policy Update Modal - shown when user needs to accept updated policies */}
+                    <PolicyUpdateModal
+                        isOpen={showPolicyModal}
+                        onClose={() => setShowPolicyModal(false)}
+                        user={user}
+                        userData={userData}
+                        onAccepted={() => setShowPolicyModal(false)}
+                    />
                 </ModalProvider>
             </SyncStatusProvider>
 

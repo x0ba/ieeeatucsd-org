@@ -2,18 +2,15 @@
 import Layout from "../layouts/Layout.astro";
 import Title from "../components/core/Title.astro";
 import Subtitle from "../components/core/Subtitle.astro";
+import { LEGAL_VERSIONS, formatEffectiveDate } from "../config/legalVersions";
 
 const pageData = {
   title: "Privacy Policy",
   description:
-    "Learn how IEEE at UCSD collects, uses, and protects your personal information.",
+    "Learn how IEEE UC San Diego Student Branch collects, uses, and protects your personal information.",
 };
 
-const lastUpdated = new Date().toLocaleDateString("en-US", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-});
+const lastUpdated = formatEffectiveDate(LEGAL_VERSIONS.PRIVACY_POLICY_EFFECTIVE_DATE);
 ---
 
 <Layout title={pageData.title} description={pageData.description}>
@@ -782,6 +779,35 @@ const lastUpdated = new Date().toLocaleDateString("en-US", {
                 </div>
 
                 <div
+                  class="bg-red-900/20 rounded-lg p-4 border border-red-500/30"
+                >
+                  <div class="flex items-center gap-2 mb-2">
+                    <svg
+                      class="w-4 h-4 text-red-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      ></path>
+                    </svg>
+                    <strong class="text-red-300">Important: AI Data Processing</strong>
+                  </div>
+                  <p class="text-white/70 text-sm">
+                    Reimbursement receipts, event invoice data, and any other data uploaded
+                    to AI services is processed by third-party AI providers and is outside of
+                    our direct control once transmitted. We use AI solely to parse and extract
+                    data for improved efficiency and automation. Please note that AI-generated
+                    results may sometimes be inaccurate, and we recommend reviewing all
+                    AI-parsed data for correctness before submission.
+                  </p>
+                </div>
+
+                <div
                   class="bg-base-200/50 rounded-lg p-4 border border-white/5"
                 >
                   <div class="flex items-center gap-2 mb-2">
@@ -1176,13 +1202,22 @@ const lastUpdated = new Date().toLocaleDateString("en-US", {
 
             <div class="mt-6">
               <h3 class="text-lg font-semibold text-white mb-3">
-                Resume Database Opt-Out
+                Resume Management
               </h3>
-              <p class="text-white/80">
-                You may opt out of having your resume shared with sponsors at
-                any time by updating your account preferences or contacting the
-                webmaster. Existing shares will be revoked.
+              <p class="text-white/80 mb-3">
+                You may delete your resume from our platform at any time by going to your
+                account Settings page and removing it from your profile. This will prevent
+                your resume from being shared with sponsors in the future.
               </p>
+              <div class="p-4 bg-red-900/20 rounded-lg border border-red-500/30">
+                <p class="text-red-300 font-medium mb-2">Important Notice</p>
+                <p class="text-white/80 text-sm">
+                  Please note that once your resume has been shared with or downloaded by sponsors,
+                  we cannot retrieve or delete those copies. Sponsors may retain resumes in their
+                  own recruiting systems independently of our platform. We recommend only uploading
+                  your resume if you are comfortable with it being distributed to our sponsor partners.
+                </p>
+              </div>
             </div>
 
             <div
@@ -1194,7 +1229,7 @@ const lastUpdated = new Date().toLocaleDateString("en-US", {
                   href="mailto:webmaster@ieeeatucsd.org"
                   class="underline hover:no-underline text-ieee-yellow"
                 >
-                  webmaster@ieee.ucsd.edu
+                  webmaster@ieeeatucsd.org
                 </a>
               </p>
             </div>

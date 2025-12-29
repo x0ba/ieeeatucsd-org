@@ -47,20 +47,25 @@ export interface User {
   lastUpdated?: Timestamp; // when the user data was last updated
   lastUpdatedBy?: string; // uid of the user who last updated this user's data
   signInMethod?:
-    | "email"
-    | "google"
-    | "microsoft"
-    | "github"
-    | "facebook"
-    | "twitter"
-    | "apple"
-    | "other"; // how the user signed in
+  | "email"
+  | "google"
+  | "microsoft"
+  | "github"
+  | "facebook"
+  | "twitter"
+  | "apple"
+  | "other"; // how the user signed in
   hasIEEEEmail?: boolean; // whether the user has created an IEEE email
   ieeeEmail?: string; // the user's IEEE email address
   ieeeEmailCreatedAt?: Timestamp; // when the IEEE email was created
   sponsorTier?: SponsorTier; // sponsor tier level (for Sponsor role)
   sponsorOrganization?: string; // sponsor organization name (for Sponsor role)
   autoAssignedSponsor?: boolean; // whether the user was auto-assigned as sponsor via domain matching
+  // TOS and Privacy Policy acceptance tracking
+  tosAcceptedAt?: Timestamp; // When user accepted Terms of Service
+  tosVersion?: string; // Version of TOS accepted (e.g., "1.0")
+  privacyPolicyAcceptedAt?: Timestamp; // When user accepted Privacy Policy
+  privacyPolicyVersion?: string; // Version of Privacy Policy accepted
 }
 
 export interface PublicProfile {
@@ -81,12 +86,12 @@ export interface Event {
   endDate: Timestamp;
   published: boolean;
   eventType:
-    | "social"
-    | "technical"
-    | "outreach"
-    | "professional"
-    | "projects"
-    | "other";
+  | "social"
+  | "technical"
+  | "outreach"
+  | "professional"
+  | "projects"
+  | "other";
   hasFood: boolean;
 }
 
@@ -151,13 +156,13 @@ export interface EventRequest {
   needsGraphics: boolean;
   needsAsFunding: boolean;
   status:
-    | "draft"
-    | "submitted"
-    | "pending"
-    | "completed"
-    | "approved"
-    | "declined"
-    | "needs_review";
+  | "draft"
+  | "submitted"
+  | "pending"
+  | "completed"
+  | "approved"
+  | "declined"
+  | "needs_review";
   declinedReason?: string;
   reviewFeedback?: string;
   requestedUser: string;
@@ -169,14 +174,14 @@ export interface EventAuditLog {
   id: string;
   eventRequestId: string;
   action:
-    | "created"
-    | "updated"
-    | "status_changed"
-    | "file_uploaded"
-    | "file_deleted"
-    | "graphics_updated"
-    | "published"
-    | "unpublished";
+  | "created"
+  | "updated"
+  | "status_changed"
+  | "file_uploaded"
+  | "file_deleted"
+  | "graphics_updated"
+  | "published"
+  | "unpublished";
   performedBy: string;
   performedByName?: string;
   timestamp: Timestamp;

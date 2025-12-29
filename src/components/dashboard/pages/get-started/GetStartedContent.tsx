@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { auth, db } from '../../../../firebase/client';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { app } from '../../../../firebase/client';
-import { User, GraduationCap, CreditCard, Upload, CheckCircle, ArrowRight, ArrowLeft, LayoutDashboard, Sidebar, PanelTop } from 'lucide-react';
+import { User, GraduationCap, CreditCard, Upload, CheckCircle, ArrowRight, ArrowLeft, LayoutDashboard, Sidebar, PanelTop, FileText, Shield, ExternalLink } from 'lucide-react';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { normalizeMajorName } from '../../../../utils/majorNormalization';
 import type { NavigationLayout } from '../../shared/types/firestore';
-import { Spinner } from '@heroui/react';
+import { Spinner, Checkbox } from '@heroui/react';
 import { safeLocalStorageSet } from '../../shared/utils/storage';
+import { LEGAL_VERSIONS } from '../../../../config/legalVersions';
 
 interface Question {
     id: string;
@@ -16,7 +17,7 @@ interface Question {
     description: string;
     icon: React.ComponentType<{ className?: string }>;
     required: boolean;
-    type: 'text' | 'number' | 'file' | 'navigation-layout';
+    type: 'text' | 'number' | 'file' | 'navigation-layout' | 'legal-acceptance';
     placeholder?: string;
     min?: number;
     max?: number;
@@ -24,6 +25,14 @@ interface Question {
 }
 
 const questions: Question[] = [
+    {
+        id: 'legalAcceptance',
+        title: 'Terms of Service & Privacy Policy',
+        description: 'Please review and accept our policies to continue',
+        icon: FileText,
+        required: true,
+        type: 'legal-acceptance'
+    },
     {
         id: 'pid',
         title: 'Student PID',
@@ -103,7 +112,14 @@ export default function GetStartedContent() {
     const isLastStep = currentStep === questions.length - 1;
 
     const handleNext = () => {
-        if (currentQuestion.required && !answers[currentQuestion.id]) {
+        // Special validation for legal-acceptance: must accept both TOS and Privacy Policy
+        if (currentQuestion.type === 'legal-acceptance') {
+            const legalValue = answers[currentQuestion.id];
+            if (!legalValue?.tos || !legalValue?.privacy) {
+                setError('You must accept both the Terms of Service and Privacy Policy to continue');
+                return;
+            }
+        } else if (currentQuestion.required && !answers[currentQuestion.id]) {
             setError('This field is required');
             return;
         }
@@ -175,6 +191,7 @@ export default function GetStartedContent() {
             const normalizedMajor = normalizeMajorName(answers.major);
 
             // Prepare update data (avoid undefined values)
+            const now = Timestamp.now();
             const updateData: any = {
                 pid: answers.pid,
                 major: normalizedMajor,
@@ -182,6 +199,11 @@ export default function GetStartedContent() {
                 signedUp: true,
                 joinDate: new Date(), // Set join date when completing getting started
                 navigationLayout: answers.navigationLayout || 'sidebar', // Save navigation preference (default to sidebar)
+                // TOS and Privacy Policy acceptance
+                tosAcceptedAt: now,
+                tosVersion: LEGAL_VERSIONS.TOS_VERSION,
+                privacyPolicyAcceptedAt: now,
+                privacyPolicyVersion: LEGAL_VERSIONS.PRIVACY_POLICY_VERSION,
             };
 
             // Only add optional fields if they have values
@@ -375,6 +397,86 @@ export default function GetStartedContent() {
                                 <div className="flex-1 bg-gray-100 rounded min-h-0"></div>
                             </div>
                         </button>
+                    </div>
+                );
+            case 'legal-acceptance':
+                const tosAccepted = value?.tos || false;
+                const privacyAccepted = value?.privacy || false;
+                return (
+                    <div className="space-y-4">
+                        {/* Terms of Service */}
+                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="flex items-start gap-3">
+                                <div className="mt-0.5">
+                                    <Checkbox
+                                        isSelected={tosAccepted}
+                                        onValueChange={(checked) => handleInputChange({ ...value, tos: checked })}
+                                        size="lg"
+                                        color="primary"
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <FileText className="w-4 h-4 text-blue-600" />
+                                        <span className="font-medium text-gray-900">Terms of Service</span>
+                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                            v{LEGAL_VERSIONS.TOS_VERSION}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-2">
+                                        I have read and agree to the Terms of Service.
+                                    </p>
+                                    <a
+                                        href={LEGAL_VERSIONS.TOS_URL}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                                    >
+                                        Read Terms of Service
+                                        <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Privacy Policy */}
+                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="flex items-start gap-3">
+                                <div className="mt-0.5">
+                                    <Checkbox
+                                        isSelected={privacyAccepted}
+                                        onValueChange={(checked) => handleInputChange({ ...value, privacy: checked })}
+                                        size="lg"
+                                        color="primary"
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Shield className="w-4 h-4 text-green-600" />
+                                        <span className="font-medium text-gray-900">Privacy Policy</span>
+                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                            v{LEGAL_VERSIONS.PRIVACY_POLICY_VERSION}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-2">
+                                        I have read and agree to the Privacy Policy.
+                                    </p>
+                                    <a
+                                        href={LEGAL_VERSIONS.PRIVACY_POLICY_URL}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                                    >
+                                        Read Privacy Policy
+                                        <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-gray-500 text-center">
+                            You must accept both policies to continue.
+                        </p>
                     </div>
                 );
             default:

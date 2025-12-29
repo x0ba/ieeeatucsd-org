@@ -73,7 +73,7 @@ export default function OverviewContent() {
 
     // Function to update statistics, activity, and points history using the working events data
     const updateFromWorkingEvents = (currentEvents: Event[], reimbursementsData: any[], fundDeposits: any[]) => {
-        if (!user || currentEvents.length === 0) return;
+        if (!user) return;
 
         console.log('Overview: updateFromWorkingEvents called with', currentEvents.length, 'events');
 
@@ -363,18 +363,19 @@ export default function OverviewContent() {
 
     // Update statistics when all data is loaded - coordinate to prevent duplicate calls
     useEffect(() => {
-        if (!user || events.length === 0) return;
+        // Wait for user and events query to complete (eventsLoading becomes false)
+        if (!user || eventsLoading) return;
 
         // Prevent duplicate processing by checking if we've already computed stats
         if (hasComputedEventStats.current) {
             return;
         }
 
-        // Only process if we have all the required data (reimbursements and fundDeposits can be empty)
+        // Process data even if events is empty (new users may have no events but still have reimbursements/deposits)
         console.log('Overview: Processing data with', events.length, 'events,', reimbursements.length, 'reimbursements,', fundDeposits.length, 'fund deposits');
         updateFromWorkingEvents(events, reimbursements, fundDeposits);
         hasComputedEventStats.current = true;
-    }, [events, reimbursements, fundDeposits, user]);
+    }, [events, eventsLoading, reimbursements, fundDeposits, user]);
 
 
 

@@ -855,6 +855,56 @@ export default function SettingsContent() {
                             </p>
                         </div>
                     )}
+
+                    {/* Legal Information */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                        <div className="flex items-center space-x-3 mb-4 md:mb-6">
+                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <FileText className="w-5 h-5 text-gray-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-base md:text-lg font-semibold text-gray-900">Legal</h2>
+                                <p className="text-xs md:text-sm text-gray-500">Review our policies and terms</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <a
+                                href="/terms-of-service"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group"
+                            >
+                                <div className="flex items-center space-x-3">
+                                    <FileText className="w-5 h-5 text-gray-400 group-hover:text-blue-500" />
+                                    <div>
+                                        <p className="font-medium text-gray-900 group-hover:text-blue-700">Terms of Service</p>
+                                        <p className="text-xs text-gray-500">Our terms and conditions</p>
+                                    </div>
+                                </div>
+                                <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
+                            <a
+                                href="/privacy-policy"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group"
+                            >
+                                <div className="flex items-center space-x-3">
+                                    <Shield className="w-5 h-5 text-gray-400 group-hover:text-blue-500" />
+                                    <div>
+                                        <p className="font-medium text-gray-900 group-hover:text-blue-700">Privacy Policy</p>
+                                        <p className="text-xs text-gray-500">How we handle your data</p>
+                                    </div>
+                                </div>
+                                <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
