@@ -82,10 +82,10 @@ export const POST: APIRoute = async ({ request }) => {
                 fit: "inside",
                 withoutEnlargement: true,
               })
-              [outputFormat]({
-                quality: outputFormat === "jpeg" ? 85 : undefined,
-                compressionLevel: outputFormat === "png" ? 8 : undefined,
-              })
+            [outputFormat]({
+              quality: outputFormat === "jpeg" ? 85 : undefined,
+              compressionLevel: outputFormat === "png" ? 8 : undefined,
+            })
               .toBuffer();
 
             buffer = resizedBuffer;
@@ -188,35 +188,35 @@ Strict Rules:
       { type: "text", text: userPrompt },
       ...(isPdf
         ? [
-            {
-              type: "file",
-              file: {
-                filename: "receipt.pdf",
-                // OpenRouter accepts either a direct URL or a base64 data URL here
-                file_data: finalUrl,
-              },
+          {
+            type: "file",
+            file: {
+              filename: "receipt.pdf",
+              // OpenRouter accepts either a direct URL or a base64 data URL here
+              file_data: finalUrl,
             },
-          ]
+          },
+        ]
         : [
-            {
-              type: "image_url",
-              image_url: { url: finalUrl },
-            },
-          ]),
+          {
+            type: "image_url",
+            image_url: { url: finalUrl },
+          },
+        ]),
     ];
 
     // Optional: Explicitly configure PDF engine for better OCR of scanned receipts
     // Remove or change engine if you prefer defaults
     const plugins = isPdf
       ? [
-          {
-            id: "file-parser",
-            pdf: {
-              // 'mistral-ocr' is robust for scanned/image-based PDFs. 'pdf-text' is free for text-based PDFs.
-              engine: "mistral-ocr",
-            },
+        {
+          id: "file-parser",
+          pdf: {
+            // 'mistral-ocr' is robust for scanned/image-based PDFs. 'pdf-text' is free for text-based PDFs.
+            engine: "mistral-ocr",
           },
-        ]
+        },
+      ]
       : undefined;
 
     const response = await fetch(
@@ -230,7 +230,7 @@ Strict Rules:
           "X-Title": "IEEE UCSD Reimbursement System",
         },
         body: JSON.stringify({
-          model: "openai/gpt-4o-mini",
+          model: "x-ai/grok-4.1-fast",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: contentParts },

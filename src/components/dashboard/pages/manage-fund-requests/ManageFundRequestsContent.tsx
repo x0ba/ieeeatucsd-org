@@ -114,8 +114,12 @@ export default function ManageFundRequestsContent() {
                 const userDoc = await getDoc(doc(db, 'users', user.uid));
                 if (userDoc.exists()) {
                     const userData = userDoc.data();
-                    const hasAccess = userData.roles?.includes('Administrator') || userData.roles?.includes('Executive Officer');
-                    setIsAdmin(userData.roles?.includes('Administrator'));
+                    // Both Administrator and Executive Officer roles grant access and budget management
+                    const hasAccess = userData.role === 'Administrator' || userData.role === 'Executive Officer';
+
+                    // We use isAdmin to control the Configure Budgets button visibility, 
+                    // so we update this to true if they have either key role.
+                    setIsAdmin(hasAccess);
 
                     if (!hasAccess) {
                         setIsLoading(false);
@@ -414,7 +418,7 @@ export default function ManageFundRequestsContent() {
                                     <TableCell>
                                         <div className="flex flex-col gap-1">
                                             <Chip size="sm" variant="flat" color="default" className="bg-default-100 text-default-600 border-none capitalize h-6">
-                                                {DEPARTMENT_LABELS[request.department] || request.department}
+                                                {DEPARTMENT_LABELS[request.department as FundRequestDepartment] || request.department}
                                             </Chip>
                                         </div>
                                     </TableCell>
