@@ -417,3 +417,34 @@
 .text-danger {
   color: #ef4444 !important;
 }
+
+/* HeroUI Modal fix - ensure consistent rounded corners across all modal layers */
+/* This fixes the issue where a sharp-edged lighter layer appears behind rounded modals */
+[data-slot="base"][class*="modal"],
+section[data-slot="base"] {
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+
+/* Target the modal wrapper to ensure proper overflow handling */
+[role="dialog"][aria-modal="true"] > section,
+[role="dialog"][aria-modal="true"] > div[data-slot="base"] {
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+
+/* Ensure modal content also respects the border radius */
+[data-slot="body"],
+[data-slot="header"],
+[data-slot="footer"] {
+  /* Inherit proper clipping from parent */
+  overflow: visible;
+}
+
+/* Fix for HeroUI Modal base wrapper - the outer container */
+.group[data-slot="base"],
+div[data-slot="base"].bg-content1,
+section.bg-content1 {
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
