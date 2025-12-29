@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, DollarSign, Receipt, Clock, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
-import { collection, query, where, orderBy, onSnapshot, addDoc, Timestamp, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
@@ -111,19 +111,16 @@ export default function ReimbursementContent() {
         return 0;
     };
 
-    const [userProfile, setUserProfile] = useState<any>(null);
-
     useEffect(() => {
         if (!user) return;
 
-        // Fetch reimbursements
         const q = query(
             collection(db, 'reimbursements'),
             where('submittedBy', '==', user.uid),
             orderBy('submittedAt', 'desc')
         );
 
-        const unsubscribeReimbursements = onSnapshot(
+        const unsubscribe = onSnapshot(
             q,
             (snapshot) => {
                 const reimbursementData = snapshot.docs.map(doc => ({
@@ -137,33 +134,12 @@ export default function ReimbursementContent() {
             (error) => {
                 console.error('Error fetching reimbursements:', error);
                 setLoading(false);
+                // Keep existing data on error
             }
         );
 
-        // Fetch user profile for Zelle check
-        const userRef = doc(db, 'users', user.uid);
-        const unsubscribeUser = onSnapshot(userRef, (userSnap) => {
-            if (userSnap.exists()) {
-                setUserProfile(userSnap.data());
-            }
-        });
-
-        return () => {
-            unsubscribeReimbursements();
-            unsubscribeUser();
-        };
+        return () => unsubscribe();
     }, [user]);
-
-    const handleNewRequest = () => {
-        if (!userProfile?.zelleInformation) {
-            showToast.error(
-                'Zelle Information Missing',
-                'Please add your Zelle information in Settings > Profile before submitting a reimbursement request.'
-            );
-            return;
-        }
-        setIsWizardOpen(true);
-    };
 
     const handleSubmitReimbursement = async (data: any) => {
         if (!user) return;
@@ -271,31 +247,6 @@ export default function ReimbursementContent() {
     };
 
     const stats = getStats();
-
-    // Block access if Zelle information is not configured
-    if (userProfile !== null && !userProfile?.zelleInformation) {
-        return (
-            <div className="flex-1 h-full overflow-y-auto bg-gray-50/50">
-                <main className="max-w-7xl mx-auto p-4 md:p-8">
-                    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-                        <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-6">
-                            <AlertCircle className="w-10 h-10 text-amber-600" />
-                        </div>
-                        <h1 className="text-2xl font-bold text-gray-900 mb-3">Zelle Information Required</h1>
-                        <p className="text-gray-600 max-w-md mb-6">
-                            Before you can submit reimbursement requests, you need to add your Zelle information to your profile. This is required so we can process your payments.
-                        </p>
-                        <a
-                            href="/dashboard/settings"
-                            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold shadow-lg shadow-blue-600/20"
-                        >
-                            Go to Settings
-                        </a>
-                    </div>
-                </main>
-            </div>
-        );
-    }
 
     return (
         <div className="flex-1 h-full overflow-y-auto bg-gray-50/50">
@@ -419,7 +370,7 @@ export default function ReimbursementContent() {
 
                                 {/* New Reimbursement Button */}
                                 <button
-                                    onClick={handleNewRequest}
+                                    onClick={() => setIsWizardOpen(true)}
                                     className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl transition-all duration-200 shadow-lg shadow-gray-900/10 hover:shadow-gray-900/20 text-sm font-semibold shrink-0"
                                 >
                                     <Plus className="w-4 h-4" />
@@ -446,7 +397,7 @@ export default function ReimbursementContent() {
                                             : "Create your first reimbursement request to get started."}
                                     </p>
                                     <button
-                                        onClick={handleNewRequest}
+                                        onClick={() => setIsWizardOpen(true)}
                                         className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-md shadow-blue-600/10"
                                     >
                                         Create Request
