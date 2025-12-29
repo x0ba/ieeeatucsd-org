@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
   collection,
+  collectionGroup,
   getDocs,
   query,
   orderBy,
@@ -12,7 +13,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "../../../../../firebase/client";
-import { PublicProfileService } from "../../../shared/services/publicProfile";
+
 import { EmailClient } from "../../../../../scripts/email/EmailClient";
 import type { UserRole } from "../../../shared/types/firestore";
 import type { EventStats } from "../types";
@@ -58,36 +59,35 @@ export function useEventManagement(userId: string | undefined) {
 
   // Use db from client
 
-  // Fetch users and calculate attendance stats
+  // Fetch users and calculate attendance stats using collectionGroup query
   const fetchUsersAndStats = async () => {
     try {
       setAttendanceLoading(true);
-      const publicProfiles = await PublicProfileService.getLeaderboard();
 
-      // Calculate attendance stats from public profiles
+      // Calculate accurate attendance stats using collectionGroup to query ALL attendees across all events
       let totalCheckIns = 0;
-      let uniquePeople = 0;
+      const uniqueUserIds = new Set<string>();
 
-      const usersMap: Record<string, { name: string; email: string; pid?: string }> = {};
+      // Use collectionGroup to query all 'attendees' subcollections across all events
+      const allAttendeesQuery = query(collectionGroup(db, "attendees"));
+      const attendeesSnapshot = await getDocs(allAttendeesQuery);
 
-      publicProfiles.forEach((profile) => {
-        // Map user details
-        usersMap[profile.id] = {
-          name: profile.name || "Unknown User",
-          email: "",
-        };
-
-        // Aggregate stats
-        if (profile.eventsAttended > 0) {
-          totalCheckIns += profile.eventsAttended;
-          uniquePeople++;
+      // Count all check-ins and track unique user IDs
+      attendeesSnapshot.docs.forEach((doc) => {
+        totalCheckIns++;
+        const data = doc.data();
+        if (data.userId) {
+          uniqueUserIds.add(data.userId);
         }
       });
 
       setAttendanceStats({
         totalAttendees: totalCheckIns,
-        uniqueAttendees: uniquePeople
+        uniqueAttendees: uniqueUserIds.size
       });
+
+      // Fetch users for name/email mapping
+      const usersMap: Record<string, { name: string; email: string; pid?: string }> = {};
 
       try {
         const usersRef = collection(db, "users");
@@ -95,21 +95,15 @@ export function useEventManagement(userId: string | undefined) {
 
         usersSnapshot.docs.forEach((doc) => {
           const data = doc.data();
-          // Update existing entries with email data, or create new ones
-          if (usersMap[doc.id]) {
-            usersMap[doc.id].email = data.email || "";
-            usersMap[doc.id].pid = data.pid;
-          } else {
-            usersMap[doc.id] = {
-              name: data.name || data.email || "Unknown User",
-              email: data.email || "",
-              pid: data.pid,
-            };
-          }
+          usersMap[doc.id] = {
+            name: data.name || data.email || "Unknown User",
+            email: data.email || "",
+            pid: data.pid,
+          };
         });
       } catch (fallbackError) {
         console.warn(
-          "Could not fetch additional user data from users collection:",
+          "Could not fetch user data from users collection:",
           fallbackError,
         );
       }
@@ -240,12 +234,6 @@ export function useEventManagement(userId: string | undefined) {
       const eventsQuery = query(eventsRef, where("eventName", "==", eventName));
       const eventsSnapshot = await getDocs(eventsQuery);
 
-      // Clear cache for deleted events
-      eventsSnapshot.docs.forEach((eventDoc) => {
-        attendanceCache.current.delete(eventDoc.id);
-        eventToEventIdMap.current.delete(requestId);
-      });
-
       const deletePromises = eventsSnapshot.docs.map((eventDoc) =>
         deleteDoc(doc(db, "events", eventDoc.id)),
       );
@@ -309,9 +297,6 @@ export function useEventManagement(userId: string | undefined) {
           published: shouldPublish,
           updatedAt: new Date(),
         });
-
-        // Clear cache for the updated event
-        attendanceCache.current.delete(eventDoc.id);
       }
 
       if (previousStatus && previousStatus !== newStatus) {
