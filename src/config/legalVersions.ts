@@ -7,12 +7,12 @@
 
 export const LEGAL_VERSIONS = {
     // Terms of Service
-    TOS_VERSION: "1.0",
+    TOS_VERSION: "1.2",
     TOS_EFFECTIVE_DATE: "2024-12-29",
     TOS_URL: "/terms-of-service",
 
     // Privacy Policy
-    PRIVACY_POLICY_VERSION: "1.0",
+    PRIVACY_POLICY_VERSION: "1.2",
     PRIVACY_POLICY_EFFECTIVE_DATE: "2024-12-29",
     PRIVACY_POLICY_URL: "/privacy-policy",
 };
