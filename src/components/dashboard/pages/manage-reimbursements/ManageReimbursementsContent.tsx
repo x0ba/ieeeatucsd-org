@@ -98,7 +98,7 @@ export default function ManageReimbursementsContent() {
     const [selectedReimbursement, setSelectedReimbursement] = useState<Reimbursement | null>(null);
     const [auditReimbursement, setAuditReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(['submitted', 'approved']));
 
     // Calculate receipt total if it's 0 or missing
     const calculateReceiptTotal = (receipt: any) => {
@@ -347,9 +347,13 @@ export default function ManageReimbursementsContent() {
     };
 
     const filteredReimbursements = reimbursements.filter(reimbursement => {
-        const matchesSearch = reimbursement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            reimbursement.department.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || reimbursement.status === statusFilter;
+        const searchLower = searchTerm.toLowerCase();
+        const userName = userNames[reimbursement.submittedBy]?.toLowerCase() || '';
+        const matchesSearch = reimbursement.title.toLowerCase().includes(searchLower) ||
+            reimbursement.department.toLowerCase().includes(searchLower) ||
+            reimbursement.businessPurpose?.toLowerCase().includes(searchLower) ||
+            userName.includes(searchLower);
+        const matchesStatus = statusFilter.size === 0 || statusFilter.has(reimbursement.status);
         return matchesSearch && matchesStatus;
     }).sort((a, b) => {
         let aValue, bValue;
@@ -533,19 +537,18 @@ export default function ManageReimbursementsContent() {
                             </div>
                             <Select
                                 placeholder="Filter Status"
-                                selectedKeys={[statusFilter]}
+                                selectionMode="multiple"
+                                selectedKeys={statusFilter}
                                 onSelectionChange={(keys) => {
-                                    const selected = Array.from(keys)[0] as string;
-                                    setStatusFilter(selected || 'all');
+                                    setStatusFilter(new Set(keys as Set<string>));
                                 }}
-                                className="w-full sm:w-40"
+                                className="w-full sm:w-48"
                                 size="sm"
                                 variant="bordered"
                                 classNames={{
                                     trigger: "h-[38px] border-gray-200"
                                 }}
                             >
-                                <SelectItem key="all">All Status</SelectItem>
                                 <SelectItem key="submitted">Submitted</SelectItem>
                                 <SelectItem key="approved">Approved</SelectItem>
                                 <SelectItem key="paid">Paid</SelectItem>
