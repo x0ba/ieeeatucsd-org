@@ -36,7 +36,7 @@ import {
     DropdownItem,
     Progress,
 } from '@heroui/react';
-import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, Timestamp, getDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, Timestamp, getDoc, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import type { FundRequest, FundRequestStatus, FundRequestDepartment, BudgetConfig } from '../../shared/types/fund-requests';
@@ -113,6 +113,13 @@ export default function FundRequestsContent() {
     const [allRequests, setAllRequests] = useState<FundRequest[]>([]);
     const [isBudgetLogOpen, setIsBudgetLogOpen] = useState(false);
     const [selectedBudgetDepartment, setSelectedBudgetDepartment] = useState<FundRequestDepartment>('events');
+    // Manual adjustments totals per department
+    const [adjustmentsTotals, setAdjustmentsTotals] = useState<Record<FundRequestDepartment, number>>({
+        events: 0,
+        projects: 0,
+        internal: 0,
+        other: 0,
+    });
 
     // Fetch user's fund requests
     useEffect(() => {
@@ -173,6 +180,27 @@ export default function FundRequestsContent() {
                     configMap[dept] = config;
                 });
                 setBudgetConfigs(configMap);
+
+                // Fetch manual adjustments for each department
+                const adjustmentsMap: Record<FundRequestDepartment, number> = {
+                    events: 0,
+                    projects: 0,
+                    internal: 0,
+                    other: 0,
+                };
+                await Promise.all(
+                    departments.map(async (dept) => {
+                        const adjustmentsRef = collection(db, 'budgetConfig', dept, 'adjustments');
+                        const adjustmentsSnapshot = await getDocs(adjustmentsRef);
+                        let total = 0;
+                        adjustmentsSnapshot.forEach((doc) => {
+                            const data = doc.data();
+                            total += data.amount || 0;
+                        });
+                        adjustmentsMap[dept] = total;
+                    })
+                );
+                setAdjustmentsTotals(adjustmentsMap);
             } catch (error) {
                 console.error('Error fetching budget configs:', error);
             }
@@ -299,9 +327,14 @@ export default function FundRequestsContent() {
             });
         }
 
-        const usedBudget = deptRequests
+        // Include manual adjustments in used budget
+        const adjustmentsTotal = adjustmentsTotals[department] || 0;
+
+        const requestsUsed = deptRequests
             .filter((r) => r.status === 'approved' || r.status === 'completed')
             .reduce((sum, r) => sum + r.amount, 0);
+
+        const usedBudget = requestsUsed + adjustmentsTotal;
 
         const pendingBudget = deptRequests
             .filter((r) => r.status === 'submitted' || r.status === 'needs_info')
@@ -317,6 +350,7 @@ export default function FundRequestsContent() {
             remainingBudget,
             percentUsed,
             startDate,
+            adjustmentsTotal,
         };
     };
 
