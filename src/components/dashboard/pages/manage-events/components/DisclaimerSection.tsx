@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Clock, FileText, DollarSign } from 'lucide-react';
+import { AlertTriangle, Bot, Clock, FileText, DollarSign } from 'lucide-react';
 
 export default function DisclaimerSection() {
     return (
@@ -13,6 +13,23 @@ export default function DisclaimerSection() {
                         </h3>
                         <p className="text-yellow-700 mb-4">
                             Please read these requirements carefully before submitting your event request.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-start space-x-3">
+                    <Bot className="w-6 h-6 text-blue-600 mt-1" />
+                    <div>
+                        <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                            AI-Powered Receipt Parsing
+                        </h3>
+                        <p className="text-blue-700 mb-2">
+                            When uploading receipts for your events, they will be automatically parsed by our AI system.
+                        </p>
+                        <p className="text-blue-700 font-medium">
+                            It is your responsibility to verify the extracted data and fix any discrepancies. Once submitted, the request cannot be changed.
                         </p>
                     </div>
                 </div>

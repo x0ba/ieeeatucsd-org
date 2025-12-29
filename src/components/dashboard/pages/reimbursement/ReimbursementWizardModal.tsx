@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { Button } from '@heroui/react';
+import AIWarningStep from '../../shared/AIWarningStep';
 import BasicInfoStep from './wizard-steps/BasicInfoStep';
 import ReceiptUploadStep from './wizard-steps/ReceiptUploadStep';
 import ReviewStep from './wizard-steps/ReviewStep';
@@ -14,9 +15,10 @@ interface ReimbursementWizardModalProps {
 }
 
 const STEPS = [
-    { id: 1, name: 'Basic Information', description: 'Core reimbursement details' },
-    { id: 2, name: 'Receipt Upload', description: 'Upload and parse receipts' },
-    { id: 3, name: 'Review', description: 'Confirm and submit' }
+    { id: 1, name: 'Notice', description: 'Important Information' },
+    { id: 2, name: 'Basic Information', description: 'Core reimbursement details' },
+    { id: 3, name: 'Receipt Upload', description: 'Upload and parse receipts' },
+    { id: 4, name: 'Review', description: 'Confirm and submit' }
 ];
 
 export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: ReimbursementWizardModalProps) {
@@ -48,11 +50,14 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
         const newErrors: Record<string, string> = {};
 
         if (currentStep === 1) {
+            // AI Warning step - no validation needed
+            return true;
+        } else if (currentStep === 2) {
             if (!formData.title.trim()) newErrors.title = 'Title is required';
             if (!formData.department) newErrors.department = 'Department is required';
             if (!formData.paymentMethod) newErrors.paymentMethod = 'Payment method is required';
             if (!formData.businessPurpose.trim()) newErrors.businessPurpose = 'Business purpose is required';
-        } else if (currentStep === 2) {
+        } else if (currentStep === 3) {
             if (receipts.length === 0) {
                 newErrors.receipts = 'At least one receipt is required';
             } else {
@@ -192,13 +197,16 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
                 <div className="flex-1 overflow-y-auto p-8 bg-gray-50/30">
                     <div className="max-w-5xl mx-auto">
                         {currentStep === 1 && (
+                            <AIWarningStep onNext={handleNext} />
+                        )}
+                        {currentStep === 2 && (
                             <BasicInfoStep
                                 formData={formData}
                                 setFormData={setFormData}
                                 errors={errors}
                             />
                         )}
-                        {currentStep === 2 && (
+                        {currentStep === 3 && (
                             <ReceiptUploadStep
                                 receipts={receipts}
                                 setReceipts={setReceipts}
@@ -206,13 +214,13 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
                                 setErrors={setErrors}
                             />
                         )}
-                        {currentStep === 3 && (
+                        {currentStep === 4 && (
                             <ReviewStep
                                 formData={formData}
                                 receipts={receipts}
                                 setFormData={setFormData}
                                 setReceipts={setReceipts}
-                                onBack={() => setCurrentStep(2)}
+                                onBack={() => setCurrentStep(3)}
                             />
                         )}
                     </div>
