@@ -7,21 +7,21 @@ import { PublicProfileService } from '../../shared/services/publicProfile';
 import { EventCardSkeleton, MetricCardSkeleton } from '../../../ui/loading';
 import { showToast } from '../../shared/utils/toast';
 import {
-  Card,
-  CardBody,
-  Button,
-  Input,
-  Tabs,
-  Tab,
-  Chip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-  Divider,
-  Pagination
+    Card,
+    CardBody,
+    Button,
+    Input,
+    Tabs,
+    Tab,
+    Chip,
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    useDisclosure,
+    Divider,
+    Pagination
 } from "@heroui/react";
 
 interface Event {
@@ -60,7 +60,7 @@ export default function EventsContent() {
     const [searchTerm, setSearchTerm] = useState('');
     const [checkingIn, setCheckingIn] = useState<string | null>(null);
     const [checkedInEvents, setCheckedInEvents] = useState<Set<string>>(new Set());
-    const {isOpen, onOpen, onClose} = useDisclosure();
+    const { isOpen, onOpen, onClose } = useDisclosure();
 
     // Pagination states
     const [upcomingPage, setUpcomingPage] = useState(1);
@@ -188,7 +188,7 @@ export default function EventsContent() {
                 snapshot.docs.forEach((doc) => {
                     checkedInEventIds.add(doc.id);
                 });
-                
+
                 setCheckedInEvents(checkedInEventIds);
             },
             (error: any) => {
@@ -396,7 +396,7 @@ export default function EventsContent() {
                             <h3 className="font-bold text-xl leading-tight line-clamp-2 text-default-900">{event.eventName}</h3>
                             <div className="flex-shrink-0">
                                 {event.hasFood && (
-                                    <Chip size="sm" variant="flat" color="warning" className="mb-1 block">Food</Chip>
+                                    <Chip size="sm" variant="flat" color="warning" className="mb-1 flex items-center justify-center">Food</Chip>
                                 )}
                                 {isPast ? (
                                     <Chip variant="flat" size="sm" color={checkedIn ? "success" : "default"}>
@@ -413,16 +413,16 @@ export default function EventsContent() {
                                 )}
                             </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-small text-default-500">
                                 <Calendar size={16} className="text-default-400" />
                                 <span>{eventDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                                 <span className="text-default-300">•</span>
                                 <Clock size={16} className="text-default-400" />
-                                <span>{eventDate.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'})}</span>
+                                <span>{eventDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
                             </div>
-                            
+
                             <div className="flex items-center gap-2 text-small text-default-500">
                                 <MapPin size={16} className="text-default-400" />
                                 <span className="truncate">{event.location}</span>
@@ -441,7 +441,7 @@ export default function EventsContent() {
                                 Event Ended
                             </Button>
                         ) : checkedIn ? (
-                            <Button fullWidth size="sm" color="success" variant="flat" isDisabled startContent={<UserCheck size={16}/>}>
+                            <Button fullWidth size="sm" color="success" variant="flat" isDisabled startContent={<UserCheck size={16} />}>
                                 Checked In
                             </Button>
                         ) : isActive ? (
@@ -498,43 +498,35 @@ export default function EventsContent() {
                         </>
                     ) : (
                         <>
-                            <Card className="border-none shadow-sm bg-content1 dark:bg-content2">
-                                <CardBody className="p-4 flex flex-row items-center justify-between gap-4">
-                                    <div className="space-y-1">
-                                        <p className="text-default-500 text-xs font-semibold uppercase tracking-wider">Latest Activity</p>
-                                        <h4 className="text-lg font-bold truncate max-w-[150px] sm:max-w-[120px] lg:max-w-[200px]" title={userStats.lastEventAttended}>
+                            <Card className="border-none shadow-sm bg-gradient-to-br from-blue-50/50 to-white hover:shadow-md transition-all duration-300">
+                                <CardBody className="p-5">
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Latest Event</p>
+                                        <h4 className="text-xl font-bold text-gray-900 truncate" title={userStats.lastEventAttended}>
                                             {userStats.lastEventAttended}
                                         </h4>
                                     </div>
-                                    <div className="p-2.5 bg-primary-100 dark:bg-primary-900/30 rounded-full text-primary-600 dark:text-primary-400">
-                                        <Calendar size={20} />
+                                </CardBody>
+                            </Card>
+
+                            <Card className="border-none shadow-sm bg-gradient-to-br from-yellow-50/50 to-white hover:shadow-md transition-all duration-300">
+                                <CardBody className="p-5">
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Total Points</p>
+                                        <h4 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-amber-600">
+                                            {userStats.totalPointsEarned}
+                                        </h4>
                                     </div>
                                 </CardBody>
                             </Card>
 
-                            <Card className="border-none shadow-sm bg-content1 dark:bg-content2">
-                                <CardBody className="p-4 flex flex-row items-center justify-between gap-4">
-                                    <div className="space-y-1">
-                                        <p className="text-default-500 text-xs font-semibold uppercase tracking-wider">Total Points</p>
-                                        <div className="flex items-center gap-2">
-                                            <h4 className="text-2xl font-bold text-default-900">{userStats.totalPointsEarned}</h4>
-                                            <span className="text-[10px] font-bold text-success-600 bg-success-50 px-1.5 py-0.5 rounded-full">+12%</span>
-                                        </div>
-                                    </div>
-                                    <div className="p-2.5 bg-warning-100 dark:bg-warning-900/30 rounded-full text-warning-600 dark:text-warning-400">
-                                        <Award size={20} />
-                                    </div>
-                                </CardBody>
-                            </Card>
-
-                            <Card className="border-none shadow-sm bg-content1 dark:bg-content2">
-                                <CardBody className="p-4 flex flex-row items-center justify-between gap-4">
-                                    <div className="space-y-1">
-                                        <p className="text-default-500 text-xs font-semibold uppercase tracking-wider">Events Attended</p>
-                                        <h4 className="text-2xl font-bold text-default-900">{userStats.totalEventsAttended}</h4>
-                                    </div>
-                                    <div className="p-2.5 bg-secondary-100 dark:bg-secondary-900/30 rounded-full text-secondary-600 dark:text-secondary-400">
-                                        <TrendingUp size={20} />
+                            <Card className="border-none shadow-sm bg-gradient-to-br from-purple-50/50 to-white hover:shadow-md transition-all duration-300">
+                                <CardBody className="p-5">
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Events Attended</p>
+                                        <h4 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+                                            {userStats.totalEventsAttended}
+                                        </h4>
                                     </div>
                                 </CardBody>
                             </Card>
@@ -600,16 +592,16 @@ export default function EventsContent() {
                         <EventCardSkeleton />
                     </div>
                 ) : (
-                    <Tabs 
-                        aria-label="Events" 
-                        color="primary" 
-                        variant="underlined" 
-                        classNames={{ 
+                    <Tabs
+                        aria-label="Events"
+                        color="primary"
+                        variant="underlined"
+                        classNames={{
                             base: "w-full",
-                            tabList: "gap-0 w-full relative rounded-none p-0 border-b border-divider flex", 
-                            cursor: "w-full bg-primary", 
-                            tab: "flex-1 h-12 text-base", 
-                            tabContent: "group-data-[selected=true]:text-primary font-medium" 
+                            tabList: "gap-0 w-full relative rounded-none p-0 border-b border-divider flex",
+                            cursor: "w-full bg-primary",
+                            tab: "flex-1 h-12 text-base",
+                            tabContent: "group-data-[selected=true]:text-primary font-medium"
                         }}
                     >
                         <Tab
@@ -763,7 +755,7 @@ export default function EventsContent() {
                                                             <div className="flex flex-col">
                                                                 <span className="font-medium">{selectedEvent.startDate?.toDate?.()?.toLocaleDateString()}</span>
                                                                 <span className="text-tiny text-default-500">
-                                                                    {selectedEvent.startDate?.toDate?.()?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {selectedEvent.endDate?.toDate?.()?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                                    {selectedEvent.startDate?.toDate?.()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {selectedEvent.endDate?.toDate?.()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -835,8 +827,8 @@ export default function EventsContent() {
                                         Close
                                     </Button>
                                     {selectedEvent && !isUserCheckedIn(selectedEvent) && isEventCurrentlyActive(selectedEvent) && (
-                                        <Button 
-                                            color="primary" 
+                                        <Button
+                                            color="primary"
                                             onPress={() => {
                                                 handleCheckIn(selectedEvent);
                                                 onClose();
