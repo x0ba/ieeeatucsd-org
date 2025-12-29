@@ -246,9 +246,14 @@ export default function FundRequestDetailModal({
                                         {request.vendorLinks.map((link) => (
                                             <Card key={link.id} isPressable as={Link} href={link.url} target="_blank" className="border border-default-200 shadow-sm hover:border-primary-400 bg-white w-full">
                                                 <CardBody className="p-3 flex flex-row items-center justify-between gap-3">
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="text-sm font-medium truncate text-foreground">{link.itemName || link.label || 'Link'}</p>
-                                                        {link.url && <p className="text-xs text-default-400 truncate">{link.url}</p>}
+                                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                        <span className="text-xs font-medium bg-default-100 text-default-600 px-1.5 py-0.5 rounded flex-shrink-0">
+                                                            x{link.quantity || 1}
+                                                        </span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-sm font-medium truncate text-foreground">{link.itemName || link.label || 'Link'}</p>
+                                                            {link.url && <p className="text-xs text-default-400 truncate">{link.url}</p>}
+                                                        </div>
                                                     </div>
                                                     <ExternalLink className="w-3.5 h-3.5 text-default-400 flex-shrink-0" />
                                                 </CardBody>

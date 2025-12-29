@@ -32,6 +32,7 @@ export interface VendorLink {
     id: string;
     url: string;
     itemName?: string;
+    quantity?: number;
     label?: string; // Kept for backward compatibility
 }
 

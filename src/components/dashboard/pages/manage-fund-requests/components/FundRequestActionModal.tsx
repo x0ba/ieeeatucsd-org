@@ -123,7 +123,7 @@ export default function FundRequestActionModal({
                     return;
             }
 
-            const auditLog = {
+            const auditLog: Record<string, any> = {
                 id: crypto.randomUUID(),
                 action,
                 performedBy: user.uid,
@@ -132,8 +132,12 @@ export default function FundRequestActionModal({
                 previousStatus: request.status,
                 newStatus,
                 notes: notes.trim(),
-                fundingSource: action === 'approve' ? fundingSource : undefined,
             };
+
+            // Only include fundingSource if action is approve (Firestore doesn't accept undefined values)
+            if (action === 'approve') {
+                auditLog.fundingSource = fundingSource;
+            }
 
             const updateData: any = {
                 status: newStatus,
@@ -190,9 +194,10 @@ export default function FundRequestActionModal({
             isDismissable={!isSubmitting}
             hideCloseButton={isSubmitting}
             classNames={{
-                body: "p-0",
-                header: "border-b border-default-100",
-                footer: "border-t border-default-100",
+                base: "max-w-[95vw] md:max-w-4xl",
+                body: "p-0 overflow-hidden",
+                header: "border-b border-default-100 flex-shrink-0",
+                footer: "border-t border-default-100 flex-shrink-0",
             }}
         >
             <ModalContent>
@@ -207,9 +212,9 @@ export default function FundRequestActionModal({
                     </div>
                 </ModalHeader>
 
-                <ModalBody className="flex flex-row p-0 min-h-[500px]">
+                <ModalBody className="flex flex-col md:flex-row p-0 min-h-0 max-h-[70vh] overflow-hidden">
                     {/* Left Column: Request Details (Scrollable) */}
-                    <ScrollShadow className="flex-1 p-6 border-r border-default-100 space-y-6 max-h-[70vh]">
+                    <ScrollShadow className="flex-1 p-4 md:p-6 md:border-r border-default-100 space-y-6 overflow-y-auto min-w-0">
 
                         {/* User & Financials */}
                         <div className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
@@ -262,7 +267,10 @@ export default function FundRequestActionModal({
                                     <h4 className="text-xs font-bold text-default-500 uppercase mb-2">Purchase Links</h4>
                                     <ul className="space-y-1">
                                         {request.vendorLinks.map((link) => (
-                                            <li key={link.id} className="text-sm">
+                                            <li key={link.id} className="text-sm flex items-center gap-2">
+                                                <span className="text-default-500 text-xs bg-default-100 px-1.5 py-0.5 rounded">
+                                                    x{link.quantity || 1}
+                                                </span>
                                                 <a href={link.url} target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center gap-1">
                                                     <ExternalLink className="w-3 h-3" />
                                                     {link.itemName || link.url}
@@ -291,8 +299,8 @@ export default function FundRequestActionModal({
                         </div>
                     </ScrollShadow>
 
-                    {/* Right Column: Decisions (Fixed) */}
-                    <div className="w-[350px] p-6 bg-default-50/30 flex flex-col gap-6">
+                    {/* Right Column: Decisions */}
+                    <ScrollShadow className="w-full md:w-[320px] lg:w-[350px] flex-shrink-0 p-4 md:p-6 bg-default-50/30 flex flex-col gap-6 border-t md:border-t-0 border-default-100 overflow-y-auto">
                         <div>
                             <h3 className="font-semibold text-lg mb-4">Decision</h3>
                             <RadioGroup
@@ -393,11 +401,11 @@ export default function FundRequestActionModal({
                                 />
                             </div>
                         )}
-                    </div>
+                    </ScrollShadow>
                 </ModalBody>
 
-                <ModalFooter className="justify-between items-center p-4 bg-default-50/50">
-                    <div className="text-xs text-default-400 italic">
+                <ModalFooter className="flex flex-col sm:flex-row justify-between items-center gap-3 p-4 bg-default-50/50">
+                    <div className="text-xs text-default-400 italic text-center sm:text-left">
                         An email notification will be sent to the user.
                     </div>
                     <div className="flex gap-2">

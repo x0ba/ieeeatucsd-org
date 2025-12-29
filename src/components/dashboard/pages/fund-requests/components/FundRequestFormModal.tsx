@@ -173,6 +173,7 @@ export default function FundRequestFormModal({
                     id: crypto.randomUUID(),
                     url: '',
                     itemName: '',
+                    quantity: 1,
                 }];
             }
             // Ensure last row is empty
@@ -182,6 +183,7 @@ export default function FundRequestFormModal({
                     id: crypto.randomUUID(),
                     url: '',
                     itemName: '',
+                    quantity: 1,
                 }];
             }
             return prev;
@@ -189,7 +191,7 @@ export default function FundRequestFormModal({
     }, [isOpen]);
 
     // Handle inline link editing - updates existing link and auto-adds new row
-    const handleLinkChange = (id: string, field: 'itemName' | 'url', value: string) => {
+    const handleLinkChange = (id: string, field: 'itemName' | 'url' | 'quantity', value: string | number) => {
         setVendorLinks((prev) => {
             const index = prev.findIndex((l) => l.id === id);
             if (index === -1) return prev;
@@ -206,6 +208,7 @@ export default function FundRequestFormModal({
                         id: crypto.randomUUID(),
                         url: '',
                         itemName: '',
+                        quantity: 1,
                     });
                 }
             }
@@ -544,6 +547,7 @@ export default function FundRequestFormModal({
                                 {vendorLinks.length > 0 && (
                                     <div className="flex gap-2 px-1 text-xs text-default-500 font-medium uppercase tracking-wide">
                                         <span className="flex-1">Item Name</span>
+                                        <span className="w-20">Qty</span>
                                         <span className="flex-[2]">URL</span>
                                         <span className="w-8"></span>
                                     </div>
@@ -551,13 +555,26 @@ export default function FundRequestFormModal({
 
                                 {/* Existing links as editable rows */}
                                 {vendorLinks.map((link, index) => (
-                                    <div key={link.id} className="group flex gap-2 items-start">
+                                    <div key={link.id} className="group flex gap-2 items-center">
                                         <Input
                                             placeholder="Item name"
                                             value={link.itemName || link.label || ''}
                                             onValueChange={(value) => handleLinkChange(link.id, 'itemName', value)}
                                             onBlur={() => handleLinkBlur(link.id)}
                                             className="flex-1"
+                                            size="sm"
+                                            variant="bordered"
+                                        />
+                                        <Input
+                                            placeholder="1"
+                                            value={link.quantity?.toString() || '1'}
+                                            onValueChange={(value) => {
+                                                const num = parseInt(value) || 1;
+                                                handleLinkChange(link.id, 'quantity', Math.max(1, num));
+                                            }}
+                                            type="number"
+                                            min={1}
+                                            className="w-20"
                                             size="sm"
                                             variant="bordered"
                                         />
@@ -573,19 +590,17 @@ export default function FundRequestFormModal({
                                             size="sm"
                                             variant="bordered"
                                         />
-                                        <div className="flex items-center h-full pt-1">
-                                            <Button
-                                                isIconOnly
-                                                size="sm"
-                                                variant="light"
-                                                color="danger"
-                                                onPress={() => handleRemoveLink(link.id)}
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                                aria-label="Remove link"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </Button>
-                                        </div>
+                                        <Button
+                                            isIconOnly
+                                            size="sm"
+                                            variant="light"
+                                            color="danger"
+                                            onPress={() => handleRemoveLink(link.id)}
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                            aria-label="Remove link"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </Button>
                                     </div>
                                 ))}
                             </div>

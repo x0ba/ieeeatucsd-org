@@ -350,14 +350,16 @@ export default function ManageEventsContent() {
 
                                     {/* Pagination Controls */}
                                     {totalPages > 1 && (
-                                        <EventsPagination
-                                            currentPage={currentPage}
-                                            totalPages={totalPages}
-                                            totalItems={sortedEventRequests.length}
-                                            startIndex={startIndex}
-                                            endIndex={endIndex}
-                                            onPageChange={setCurrentPage}
-                                        />
+                                        <div className="mt-4">
+                                            <EventsPagination
+                                                currentPage={currentPage}
+                                                totalPages={totalPages}
+                                                totalItems={sortedEventRequests.length}
+                                                startIndex={startIndex}
+                                                endIndex={endIndex}
+                                                onPageChange={setCurrentPage}
+                                            />
+                                        </div>
                                     )}
                                 </Tab>
 
