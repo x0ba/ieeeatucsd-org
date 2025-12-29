@@ -80,17 +80,30 @@ export default function OverviewContent() {
         // Events are already filtered by query to only include attended events
         const attendedEventsData = currentEvents;
 
-        // Filter for "this year" statistics
-        const currentYear = new Date().getFullYear();
+        // Filter for "this academic year" statistics (September 1 - August 31)
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth(); // 0-indexed (0 = January, 8 = September)
+
+        // If we're in September or later (month >= 8), the academic year started this year
+        // If we're before September (month < 8), the academic year started last year
+        const academicYearStart = currentMonth >= 8
+            ? new Date(currentYear, 8, 1, 0, 0, 0, 0)  // September 1 of current year
+            : new Date(currentYear - 1, 8, 1, 0, 0, 0, 0);  // September 1 of previous year
+
+        const academicYearEnd = currentMonth >= 8
+            ? new Date(currentYear + 1, 7, 31, 23, 59, 59, 999)  // August 31 of next year
+            : new Date(currentYear, 7, 31, 23, 59, 59, 999);  // August 31 of current year
+
         const thisYearAttendedEvents = attendedEventsData.filter(event => {
             const eventStart = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
-            const year = eventStart.getFullYear();
-            console.log('Overview: Event - ID:', event.id, 'Name:', event.eventName, 'Start Date:', eventStart.toISOString(), 'Year:', year);
-            return year === currentYear;
+            console.log('Overview: Event - ID:', event.id, 'Name:', event.eventName, 'Start Date:', eventStart.toISOString());
+            // Check if event falls within the academic year (September 1 - August 31)
+            return eventStart >= academicYearStart && eventStart <= academicYearEnd;
         });
 
         console.log('Overview: attendedEventsData count (all time):', attendedEventsData.length);
-        console.log('Overview: thisYearAttendedEvents count:', thisYearAttendedEvents.length);
+        console.log('Overview: thisYearAttendedEvents count (academic year):', thisYearAttendedEvents.length);
 
         // Process Reimbursements
         const reimbursementActivities: RecentActivity[] = reimbursementsData.map((r: any, index) => ({
@@ -151,7 +164,7 @@ export default function OverviewContent() {
         // Build chronological history
         const chronologicalActivities = [...allActivities].reverse();
         let runningTotal = 0;
-        
+
         let history = [{
             date: creationDate,
             points: 0,
@@ -171,7 +184,7 @@ export default function OverviewContent() {
         });
 
         setPointsHistory(history);
-        
+
         // Update statistics - use this year's data for display
         const submitted = reimbursementsData.length;
         const approved = reimbursementsData.filter((r: any) => r.status === 'approved' || r.status === 'paid').length;
@@ -180,12 +193,12 @@ export default function OverviewContent() {
             const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
             return dateB.getTime() - dateA.getTime();
         });
-        
+
         // Calculate total points from this year's attended events
         const thisYearTotalPoints = thisYearAttendedEvents.reduce((sum, event) => sum + (event.pointsToReward || 0), 0);
 
         // Events are already sorted and set in the events state above
-        
+
         setUserStats(prev => ({
             ...prev,
             totalPoints: thisYearTotalPoints, // Points from this year only
@@ -351,12 +364,12 @@ export default function OverviewContent() {
     // Update statistics when all data is loaded - coordinate to prevent duplicate calls
     useEffect(() => {
         if (!user || events.length === 0) return;
-        
+
         // Prevent duplicate processing by checking if we've already computed stats
         if (hasComputedEventStats.current) {
             return;
         }
-        
+
         // Only process if we have all the required data (reimbursements and fundDeposits can be empty)
         console.log('Overview: Processing data with', events.length, 'events,', reimbursements.length, 'reimbursements,', fundDeposits.length, 'fund deposits');
         updateFromWorkingEvents(events, reimbursements, fundDeposits);
@@ -582,7 +595,7 @@ export default function OverviewContent() {
                                     <div className="relative space-y-0">
                                         {/* Vertical Line */}
                                         <div className="absolute left-4 top-2 bottom-2 w-px bg-gray-100" />
-                                        
+
                                         {recentActivity.slice(0, RECENT_ACTIVITY_PREVIEW_COUNT).map((activity) => {
                                             const config = {
                                                 event: { icon: CheckCircle, color: 'text-blue-500', bg: 'bg-blue-50' },
@@ -590,9 +603,9 @@ export default function OverviewContent() {
                                                 achievement: { icon: Award, color: 'text-yellow-500', bg: 'bg-yellow-50' },
                                                 fund_deposit: { icon: DollarSign, color: 'text-green-500', bg: 'bg-green-50' }
                                             }[activity.type];
-                                            
+
                                             if (!config) return null;
-                                            
+
                                             const Icon = config.icon;
 
                                             return (

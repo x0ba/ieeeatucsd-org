@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, Award, Crown, TrendingUp, Users, Star, Search } from 'lucide-react';
 import { Pagination } from '@heroui/react';
-import { collection, query, orderBy, onSnapshot, getCountFromServer, limit } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getCountFromServer, limit, collectionGroup, where, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
@@ -17,6 +17,88 @@ interface LeaderboardUser {
     eventsAttended: number;
     position: string;
     rank: number;
+}
+
+// Cache for user events attended counts (to avoid re-fetching)
+const userEventsCache = new Map<string, { count: number; year: number }>();
+
+// Helper function to get academic year boundaries (September 1 - August 31)
+function getAcademicYearBounds(): { start: Date; end: Date; yearKey: number } {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-indexed (0 = January, 8 = September)
+
+    // If we're in September or later (month >= 8), the academic year started this year
+    // If we're before September (month < 8), the academic year started last year
+    const academicYearStart = currentMonth >= 8
+        ? new Date(currentYear, 8, 1, 0, 0, 0, 0)  // September 1 of current year
+        : new Date(currentYear - 1, 8, 1, 0, 0, 0, 0);  // September 1 of previous year
+
+    const academicYearEnd = currentMonth >= 8
+        ? new Date(currentYear + 1, 7, 31, 23, 59, 59, 999)  // August 31 of next year
+        : new Date(currentYear, 7, 31, 23, 59, 59, 999);  // August 31 of current year
+
+    // Use the start year as the cache key
+    const yearKey = academicYearStart.getFullYear();
+
+    return { start: academicYearStart, end: academicYearEnd, yearKey };
+}
+
+// Helper function to calculate events attended for the current academic year
+async function calculateEventsAttendedThisYear(userId: string): Promise<number> {
+    const { start: academicYearStart, end: academicYearEnd, yearKey } = getAcademicYearBounds();
+
+    // Check cache first
+    const cached = userEventsCache.get(userId);
+    if (cached && cached.year === yearKey) {
+        return cached.count;
+    }
+
+    try {
+        // Query the attendees subcollection for this user
+        const attendeesQuery = query(
+            collectionGroup(db, 'attendees'),
+            where('userId', '==', userId)
+        );
+
+        const snapshot = await getDocs(attendeesQuery);
+
+        // Get unique event IDs
+        const eventIds = new Set<string>();
+        snapshot.docs.forEach(doc => {
+            const eventId = doc.ref.parent.parent?.id;
+            if (eventId) eventIds.add(eventId);
+        });
+
+        // Fetch events and filter by current academic year and published status
+        let count = 0;
+        const eventPromises = Array.from(eventIds).map(async (eventId) => {
+            const eventRef = doc(db, 'events', eventId);
+            const eventSnap = await getDoc(eventRef);
+            if (eventSnap.exists()) {
+                const data = eventSnap.data();
+                if (data.published === true) {
+                    const eventStart = data.startDate?.toDate ? data.startDate.toDate() : new Date(data.startDate);
+                    // Check if event falls within the academic year (September 1 - August 31)
+                    if (eventStart >= academicYearStart && eventStart <= academicYearEnd) {
+                        return 1;
+                    }
+                }
+            }
+            return 0;
+        });
+
+        const results = await Promise.all(eventPromises);
+        count = results.reduce((sum: number, val: number) => sum + val, 0);
+
+        // Update cache
+        userEventsCache.set(userId, { count, year: yearKey });
+
+        return count;
+    } catch (error) {
+        console.error('Error calculating events attended for user:', userId, error);
+        return 0;
+    }
 }
 
 export default function LeaderboardContent() {
@@ -52,26 +134,42 @@ export default function LeaderboardContent() {
                 console.error('Error getting total count:', error);
             });
 
-            const unsubscribe = onSnapshot(publicProfilesQuery, (snapshot) => {
-                const users = snapshot.docs.map((doc, index) => {
-                    const data = doc.data();
+            const unsubscribe = onSnapshot(publicProfilesQuery, async (snapshot) => {
+                // First, build users with basic data (eventsAttended will be updated dynamically)
+                const usersBasic = snapshot.docs.map((docSnap, index) => {
+                    const data = docSnap.data();
 
                     return {
-                        id: doc.id,
+                        id: docSnap.id,
                         name: data.name || 'Unknown User',
                         points: data.points || 0,
                         major: data.major || '',
                         graduationYear: data.graduationYear || null,
-                        eventsAttended: data.eventsAttended || 0,
+                        eventsAttended: 0, // Will be calculated dynamically below
                         position: data.position || 'Member',
                         rank: index + 1
                     };
                 }) as LeaderboardUser[];
 
                 // Only filter out users with invalid names, but keep users with 0 points
-                const validUsers = users.filter(u => u.name && u.name !== 'Unknown User' && u.name.trim() !== '');
+                const validUsers = usersBasic.filter(u => u.name && u.name !== 'Unknown User' && u.name.trim() !== '');
 
-                setLeaderboardData(validUsers);
+                // Calculate eventsAttended dynamically for all users (using same method as Overview tab)
+                // Process in batches to avoid overwhelming the database
+                const BATCH_SIZE = 50;
+                const updatedUsers = [...validUsers];
+
+                for (let i = 0; i < validUsers.length; i += BATCH_SIZE) {
+                    const batch = validUsers.slice(i, i + BATCH_SIZE);
+                    const eventsPromises = batch.map(u => calculateEventsAttendedThisYear(u.id));
+                    const eventsCounts = await Promise.all(eventsPromises);
+
+                    for (let j = 0; j < batch.length; j++) {
+                        updatedUsers[i + j].eventsAttended = eventsCounts[j];
+                    }
+                }
+
+                setLeaderboardData(updatedUsers);
 
                 // Find current user's rank and calculate accurate ranking beyond top 1000
                 if (user) {
