@@ -448,9 +448,13 @@ export default function LeaderboardContent() {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className={`
                                                     w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm mx-auto
-                                                    ${member.rank <= 3
+                                                    ${member.rank === 1
                                                         ? 'bg-gradient-to-br from-yellow-100 to-amber-100 text-amber-800 shadow-sm'
-                                                        : 'text-gray-500 bg-gray-100/50'
+                                                        : member.rank === 2
+                                                            ? 'bg-gradient-to-br from-gray-100 to-slate-200 text-slate-700 shadow-sm'
+                                                            : member.rank === 3
+                                                                ? 'bg-gradient-to-br from-orange-100 to-orange-200 text-orange-800 shadow-sm'
+                                                                : 'text-gray-500 bg-gray-100/50'
                                                     }
                                                 `}>
                                                     {member.rank}
