@@ -43,6 +43,8 @@ export const NAVIGATION_PATHS = {
   MANAGE_EVENTS: "/dashboard/manage-events",
   MANAGE_REIMBURSEMENTS: "/dashboard/manage-reimbursements",
   FUND_DEPOSITS: "/dashboard/fund-deposits",
+  FUND_REQUESTS: "/dashboard/fund-requests",
+  MANAGE_FUND_REQUESTS: "/dashboard/manage-fund-requests",
   SLACK_ACCESS: "/dashboard/slack-access",
   MANAGE_USERS: "/dashboard/manage-users",
   MANAGE_SPONSORS: "/dashboard/manage-sponsors",
