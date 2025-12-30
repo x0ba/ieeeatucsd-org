@@ -84,7 +84,11 @@ service cloud.firestore {
           'resume',
           'signedUp',
           'joinDate',
-          'navigationLayout'
+          'navigationLayout',
+          'tosVersion',
+          'tosAcceptedAt',
+          'privacyPolicyVersion',
+          'privacyPolicyAcceptedAt'
         ])
         && noForbiddenKeys(['role','ieeeEmail']);
 

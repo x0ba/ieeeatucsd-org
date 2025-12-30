@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState, useRef } from 'react';
 import { TopNavbar } from './TopNavbar.tsx';
 import { SidebarNavigation } from './SidebarNavigation.tsx';
 import { auth, db } from '../../../firebase/client';
@@ -23,6 +23,8 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
     const [user] = useAuthState(auth);
     const [userData, setUserData] = useState<User | null>(null);
     const [showPolicyModal, setShowPolicyModal] = useState(false);
+    // Ref to track when user has just accepted policies - prevents race condition with onSnapshot
+    const policyJustAcceptedRef = useRef(false);
 
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged(user => {
@@ -48,7 +50,16 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
                     // Check if user needs to accept updated policies (only for users who have completed onboarding)
                     if (data.signedUp) {
                         const { needsAny } = needsPolicyUpdate(data.tosVersion, data.privacyPolicyVersion);
-                        setShowPolicyModal(needsAny);
+
+                        // Only show the modal if policies are actually needed AND user hasn't just accepted them
+                        // This prevents a race condition where onSnapshot fires with stale data right after acceptance
+                        if (needsAny && !policyJustAcceptedRef.current) {
+                            setShowPolicyModal(true);
+                        } else if (!needsAny) {
+                            // Policies are up to date - clear the flag and ensure modal is hidden
+                            policyJustAcceptedRef.current = false;
+                            setShowPolicyModal(false);
+                        }
                     }
                 }
             },
@@ -104,7 +115,11 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
                         onClose={() => setShowPolicyModal(false)}
                         user={user}
                         userData={userData}
-                        onAccepted={() => setShowPolicyModal(false)}
+                        onAccepted={() => {
+                            // Set the flag to prevent race condition with onSnapshot
+                            policyJustAcceptedRef.current = true;
+                            setShowPolicyModal(false);
+                        }}
                     />
                 </ModalProvider>
             </SyncStatusProvider>
