@@ -152,7 +152,8 @@ Required JSON structure:
     {
       "description": "Item description",
       "category": "Category",
-      "amount": 0.00
+      "amount": 0.00,
+      "quantity": 1
     }
   ],
   "subtotal": 0.00,
@@ -165,6 +166,13 @@ Required JSON structure:
 
 Categories must be one of: Food & Beverages, Transportation, Materials & Supplies, Registration Fees, Equipment, Software/Subscriptions, Printing/Marketing, Other
 
+IMPORTANT - Quantity Field Guidelines:
+- Always include a "quantity" field for each line item
+- Extract the quantity (QTY) if shown on the receipt (e.g., "2x Item Name" or "QTY: 3")
+- If no quantity is shown, default to 1
+- Quantity must be a positive integer (not a decimal)
+- The amount should be the TOTAL for that line (unit price × quantity)
+
 IMPORTANT - otherCharges Field Guidelines:
 - ONLY include fees that don't fit into tax, tip, or shipping categories
 - INCLUDE: service fees, processing fees, environmental fees, convenience fees, bag fees, delivery fees (if not shipping), handling fees, restocking fees
@@ -175,8 +183,9 @@ IMPORTANT - otherCharges Field Guidelines:
 Strict Rules:
 - Return ONLY the JSON object, no markdown code blocks
 - All amounts must be numbers (not strings) with 2 decimal places
+- Quantity must be a positive integer
 - Date must be in YYYY-MM-DD format
-- If a field is not found, use empty string for text or 0 for numbers
+- If a field is not found, use empty string for text, 0 for numbers, or 1 for quantity
 - Subtotal should be sum of line items before any additional charges
 - Verify calculation: total should equal subtotal + tax + tip + shipping + otherCharges
 - Round all monetary values to exactly 2 decimal places`;

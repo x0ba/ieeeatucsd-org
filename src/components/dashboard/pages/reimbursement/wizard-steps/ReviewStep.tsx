@@ -218,8 +218,17 @@ export default function ReviewStep({ formData, receipts, setFormData, setReceipt
                                                 onChange={(e) => updateLineItem(receipt.id, item.id, 'description', e.target.value)}
                                                 size="sm"
                                             />
+                                            <Input
+                                                className="col-span-1"
+                                                type="number"
+                                                value={(item.quantity ?? 1).toString()}
+                                                onChange={(e) => updateLineItem(receipt.id, item.id, 'quantity', parseInt(e.target.value) || 1)}
+                                                placeholder="QTY"
+                                                size="sm"
+                                                min="1"
+                                            />
                                             <Select
-                                                className="col-span-4"
+                                                className="col-span-3"
                                                 selectedKeys={item.category ? [item.category] : []}
                                                 onSelectionChange={(keys) => {
                                                     const value = Array.from(keys)[0] as string;
@@ -265,7 +274,12 @@ export default function ReviewStep({ formData, receipts, setFormData, setReceipt
                                             <div key={item.id} className="flex items-center justify-between text-sm">
                                                 <div className="flex-1">
                                                     <span className="font-medium text-gray-900">{item.description}</span>
-                                                    <span className="block text-xs text-gray-500">{item.category}</span>
+                                                    <span className="block text-xs text-gray-500">
+                                                        {item.category}
+                                                        {item.quantity && item.quantity > 1 && (
+                                                            <span className="ml-2 text-blue-600">× {item.quantity}</span>
+                                                        )}
+                                                    </span>
                                                 </div>
                                                 <span className="font-semibold text-gray-900">${item.amount.toFixed(2)}</span>
                                             </div>

@@ -11,6 +11,7 @@ export interface LineItem {
   description: string;
   category: string;
   amount: number;
+  quantity?: number;
 }
 
 export interface ReimbursementReceipt {
@@ -42,6 +43,7 @@ export interface AIReceiptResponse {
     description: string;
     category: string;
     amount: number;
+    quantity?: number;
   }[];
   subtotal: number;
   tax?: number;

@@ -94,7 +94,8 @@ export default function ReimbursementWizardModal({ isOpen, onClose, onSubmit }: 
                 id: item.id,
                 description: item.description,
                 category: item.category,
-                amount: item.amount
+                amount: item.amount,
+                quantity: item.quantity ?? 1
             })),
             receiptFile: receipt.receiptFile?.url,
             notes: receipt.notes,

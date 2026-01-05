@@ -226,6 +226,7 @@ export default function ReceiptUploadStep({
             description: item.description || "",
             category: item.category || "Other",
             amount: parseFloat(item.amount) || 0,
+            quantity: parseInt(item.quantity) || 1,
           }))
           : [
             {
@@ -233,6 +234,7 @@ export default function ReceiptUploadStep({
               description: "Receipt Total",
               category: "Other",
               amount: parsedData.total || 0,
+              quantity: 1,
             },
           ],
         subtotal: parseFloat(parsedData.subtotal) || 0,

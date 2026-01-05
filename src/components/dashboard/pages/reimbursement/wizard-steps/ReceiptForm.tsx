@@ -124,6 +124,7 @@ export default function ReceiptForm({
       description: "",
       category: "",
       amount: 0,
+      quantity: 1,
     };
     updateReceipt(receipt.id, {
       lineItems: [...receipt.lineItems, newLineItem],
@@ -529,7 +530,24 @@ export default function ReceiptForm({
                           aria-label={`Item ${index + 1} description`}
                         />
                       </div>
-                      <div className="md:col-span-4">
+                      <div className="md:col-span-1">
+                        <Input
+                          type="number"
+                          value={(item.quantity ?? 1).toString()}
+                          onChange={(e) =>
+                            updateLineItem(
+                              item.id,
+                              "quantity",
+                              parseInt(e.target.value) || 1,
+                            )
+                          }
+                          placeholder="QTY"
+                          size="sm"
+                          min="1"
+                          aria-label={`Item ${index + 1} quantity`}
+                        />
+                      </div>
+                      <div className="md:col-span-3">
                         <Select
                           selectedKeys={item.category ? [item.category] : []}
                           onSelectionChange={(keys) => {
