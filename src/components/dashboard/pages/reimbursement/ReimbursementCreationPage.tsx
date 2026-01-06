@@ -83,9 +83,9 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
     // Global image paste handler
     useGlobalImagePaste({
         modalType: "reimbursement-submission",
-        enabled: step === 2,
+        enabled: step === 3,
         onImagePaste: (file) => {
-            if (activeReceiptTab && step === 2) {
+            if (activeReceiptTab && step === 3) {
                 handleReceiptUpload(activeReceiptTab, file);
             }
         },
@@ -281,13 +281,13 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
 
     const validateStep = (currentStep: number) => {
         if (currentStep === 2) {
+            return formData.title && formData.department && formData.paymentMethod && formData.businessPurpose;
+        }
+        if (currentStep === 3) {
             if (receipts.length === 0) return false;
             // Basic check: each receipt must have a total > 0 and a vendor and file
             // Relaxing strict check for file if manual entry is allowed, but usually receipt is required. Let's enforce file.
             return receipts.every(r => r.receiptFile && r.total > 0 && r.vendorName);
-        }
-        if (currentStep === 3) {
-            return formData.title && formData.department && formData.paymentMethod && formData.businessPurpose;
         }
         return true;
     };
@@ -397,76 +397,8 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                         </div>
                     )}
 
-                    {/* Step 2: Receipt Upload */}
+                    {/* Step 2: Basic Info */}
                     {step === 2 && (
-                        <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden">
-                            <div className="flex items-center justify-between mb-4 px-2 shrink-0">
-                                <div>
-                                    <h2 className="text-xl font-bold text-gray-900">Upload Receipts</h2>
-                                    <p className="text-xs text-gray-500">Manage expenses for this report</p>
-                                </div>
-                                <Button onPress={addReceipt} startContent={<Plus className="w-4 h-4" />} size="sm" color="primary" className="font-semibold">
-                                    Add Another Receipt
-                                </Button>
-                            </div>
-
-                            <Tabs
-                                selectedKey={activeReceiptTab}
-                                onSelectionChange={(key) => setActiveReceiptTab(key as string)}
-                                aria-label="Receipt Tabs"
-                                variant="underlined"
-                                classNames={{
-                                    tabList: "gap-6 w-full relative rounded-none p-0 border-b border-gray-200 mb-4",
-                                    cursor: "w-full bg-blue-600",
-                                    tab: "max-w-fit px-0 h-10",
-                                }}
-                            >
-                                {receipts.map((receipt, index) => (
-                                    <Tab
-                                        key={receipt.id}
-                                        title={
-                                            <div className="flex items-center space-x-2">
-                                                <span>Receipt {index + 1}</span>
-                                                {receipts.length > 1 && (
-                                                    <div
-                                                        role="button"
-                                                        onClick={(e) => { e.stopPropagation(); removeReceipt(receipt.id); }}
-                                                        className="ml-2 text-gray-400 hover:text-red-500 rounded-full p-0.5 hover:bg-red-50 transition-colors"
-                                                    >
-                                                        <X className="w-3 h-3" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        }
-                                    >
-                                        <ReceiptForm
-                                            receipt={receipt}
-                                            updateReceipt={updateReceipt}
-                                            errors={errors}
-                                            uploadingFiles={uploadingFiles}
-                                            parsingReceipts={parsingReceipts}
-                                            parseResults={parseResults}
-                                            onFileUpload={handleReceiptUpload}
-                                        />
-                                    </Tab>
-                                ))}
-                            </Tabs>
-
-                            <div className="flex justify-between mt-4 py-4 border-t border-gray-200 bg-gray-50 shrink-0">
-                                <Button variant="light" onPress={() => setStep(1)}>Back</Button>
-                                <Button
-                                    color="primary"
-                                    onPress={() => validateStep(2) && setStep(3)}
-                                    isDisabled={!validateStep(2)}
-                                >
-                                    Next: Report Details
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Step 3: Basic Info */}
-                    {step === 3 && (
                         <div className="flex flex-col items-center justify-center flex-1 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <Card className="w-full max-w-2xl shadow-sm border border-gray-200">
                                 <CardBody className="gap-8 p-8">
@@ -524,13 +456,81 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                                         />
                                     </div>
                                     <div className="flex justify-between pt-4">
-                                        <Button variant="light" onPress={() => setStep(2)}>Back</Button>
-                                        <Button color="primary" onPress={() => validateStep(3) && setStep(4)} isDisabled={!validateStep(3)}>
-                                            Review & Submit
+                                        <Button variant="light" onPress={() => setStep(1)}>Back</Button>
+                                        <Button color="primary" onPress={() => validateStep(2) && setStep(3)} isDisabled={!validateStep(2)}>
+                                            Next: Upload Receipts
                                         </Button>
                                     </div>
                                 </CardBody>
                             </Card>
+                        </div>
+                    )}
+
+                    {/* Step 3: Receipt Upload */}
+                    {step === 3 && (
+                        <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden">
+                            <div className="flex items-center justify-between mb-4 px-2 shrink-0">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Upload Receipts</h2>
+                                    <p className="text-xs text-gray-500">Manage expenses for this report</p>
+                                </div>
+                                <Button onPress={addReceipt} startContent={<Plus className="w-4 h-4" />} size="sm" color="primary" className="font-semibold">
+                                    Add Another Receipt
+                                </Button>
+                            </div>
+
+                            <Tabs
+                                selectedKey={activeReceiptTab}
+                                onSelectionChange={(key) => setActiveReceiptTab(key as string)}
+                                aria-label="Receipt Tabs"
+                                variant="underlined"
+                                classNames={{
+                                    tabList: "gap-6 w-full relative rounded-none p-0 border-b border-gray-200 mb-4",
+                                    cursor: "w-full bg-blue-600",
+                                    tab: "max-w-fit px-0 h-10",
+                                }}
+                            >
+                                {receipts.map((receipt, index) => (
+                                    <Tab
+                                        key={receipt.id}
+                                        title={
+                                            <div className="flex items-center space-x-2">
+                                                <span>Receipt {index + 1}</span>
+                                                {receipts.length > 1 && (
+                                                    <div
+                                                        role="button"
+                                                        onClick={(e) => { e.stopPropagation(); removeReceipt(receipt.id); }}
+                                                        className="ml-2 text-gray-400 hover:text-red-500 rounded-full p-0.5 hover:bg-red-50 transition-colors"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        }
+                                    >
+                                        <ReceiptForm
+                                            receipt={receipt}
+                                            updateReceipt={updateReceipt}
+                                            errors={errors}
+                                            uploadingFiles={uploadingFiles}
+                                            parsingReceipts={parsingReceipts}
+                                            parseResults={parseResults}
+                                            onFileUpload={handleReceiptUpload}
+                                        />
+                                    </Tab>
+                                ))}
+                            </Tabs>
+
+                            <div className="flex justify-between mt-4 py-4 border-t border-gray-200 bg-gray-50 shrink-0">
+                                <Button variant="light" onPress={() => setStep(2)}>Back</Button>
+                                <Button
+                                    color="primary"
+                                    onPress={() => validateStep(3) && setStep(4)}
+                                    isDisabled={!validateStep(3)}
+                                >
+                                    Review & Submit
+                                </Button>
+                            </div>
                         </div>
                     )}
 
