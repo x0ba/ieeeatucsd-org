@@ -546,7 +546,9 @@ export default function ManageReimbursementsContent() {
                                 size="sm"
                                 variant="bordered"
                                 classNames={{
-                                    trigger: "h-[38px] border-gray-200"
+                                    trigger: "h-[38px] border-gray-200",
+                                    popoverContent: "rounded-xl",
+                                    listboxWrapper: "rounded-xl"
                                 }}
                             >
                                 <SelectItem key="submitted">Submitted</SelectItem>

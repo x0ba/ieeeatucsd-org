@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -37,6 +38,7 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
@@ -72,10 +74,12 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
+
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -83,6 +87,7 @@
 
 /* Mobile-Specific Utilities */
 @layer utilities {
+
   /* Touch-friendly interactions */
   .touch-manipulation {
     touch-action: manipulation;
@@ -146,6 +151,7 @@
 
 /* Mobile-specific responsive breakpoints */
 @media (max-width: 320px) {
+
   /* Extra small mobile devices */
   .text-responsive {
     font-size: 14px;
@@ -153,6 +159,7 @@
 }
 
 @media (max-width: 375px) {
+
   /* Small mobile devices */
   .container-mobile {
     padding-left: 1rem;
@@ -161,6 +168,7 @@
 }
 
 @media (max-width: 414px) {
+
   /* Medium mobile devices */
   .grid-mobile-stack {
     grid-template-columns: 1fr;
@@ -168,6 +176,7 @@
 }
 
 @media (max-width: 768px) {
+
   /* Large mobile devices and tablets */
   .hide-mobile {
     display: none;
@@ -192,19 +201,34 @@
 /* HeroUI dropdown/listbox rounding */
 [data-slot="popover"] [data-slot="content"],
 [data-slot="content"][data-placement] {
-  border-radius: 0.75rem;
-  overflow: hidden;
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
 }
 
 [data-slot="popover"] [data-slot="content"] [data-slot="listboxWrapper"],
 [data-slot="popover"] [data-slot="content"] [data-slot="base"],
 [data-slot="popover"] [data-slot="content"] [data-slot="list"],
 [data-slot="content"][data-placement] [data-slot="listboxWrapper"] {
-  border-radius: inherit;
+  border-radius: inherit !important;
+}
+
+/* Specific fix for Select component dropdowns */
+[data-slot="listbox"],
+ul[data-slot="list"] {
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+}
+
+/* Ensure the popover wrapper itself has rounded corners */
+div[data-slot="base"][role="presentation"],
+section[data-slot="base"] {
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
 }
 
 /* Constitution Print Styles - Hide everything except constitution content when printing */
 @media print {
+
   /* When in constitution print mode, hide all elements by default */
   body.constitution-print-mode * {
     visibility: hidden !important;
@@ -409,8 +433,7 @@
   background: rgba(255, 255, 255, 0.2) !important;
 }
 
-.dark
-  [data-sidebar="content"].sidebar-thin-scroll::-webkit-scrollbar-thumb:hover {
+.dark [data-sidebar="content"].sidebar-thin-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.35) !important;
 }
 
@@ -434,31 +457,32 @@
 
 /* HeroUI Modal fix - ensure consistent rounded corners across all modal layers */
 /* This fixes the issue where a sharp-edged lighter layer appears behind rounded modals */
-[data-slot="base"][class*="modal"],
-section[data-slot="base"] {
+/* Made more specific to only target modals, not Select dropdowns */
+[role="dialog"] [data-slot="base"][class*="modal"],
+[role="dialog"] section[data-slot="base"] {
   border-radius: 14px !important;
   overflow: hidden !important;
 }
 
 /* Target the modal wrapper to ensure proper overflow handling */
-[role="dialog"][aria-modal="true"] > section,
-[role="dialog"][aria-modal="true"] > div[data-slot="base"] {
+[role="dialog"][aria-modal="true"]>section,
+[role="dialog"][aria-modal="true"]>div[data-slot="base"] {
   border-radius: 14px !important;
   overflow: hidden !important;
 }
 
 /* Ensure modal content also respects the border radius */
-[data-slot="body"],
-[data-slot="header"],
-[data-slot="footer"] {
+[role="dialog"] [data-slot="body"],
+[role="dialog"] [data-slot="header"],
+[role="dialog"] [data-slot="footer"] {
   /* Inherit proper clipping from parent */
   overflow: visible;
 }
 
 /* Fix for HeroUI Modal base wrapper - the outer container */
-.group[data-slot="base"],
-div[data-slot="base"].bg-content1,
-section.bg-content1 {
+[role="dialog"] .group[data-slot="base"],
+[role="dialog"] div[data-slot="base"].bg-content1,
+[role="dialog"] section.bg-content1 {
   border-radius: 14px !important;
   overflow: hidden !important;
 }
