@@ -171,7 +171,6 @@ IMPORTANT - Quantity Field Guidelines:
 - Extract the quantity (QTY) if shown on the receipt (e.g., "2x Item Name" or "QTY: 3")
 - If no quantity is shown or implied, default to 1
 - Quantity must be a positive integer (not a decimal)
-- The amount should be the TOTAL for that line (unit price × quantity)
 
 IMPORTANT - otherCharges Field Guidelines:
 - ONLY include fees that don't fit into tax, tip, or shipping categories

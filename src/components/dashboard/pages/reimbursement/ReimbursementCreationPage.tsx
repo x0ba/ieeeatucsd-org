@@ -408,52 +408,57 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                                     </div>
 
                                     <div className="space-y-6">
-                                        <Input
-                                            label="Report Title"
-                                            labelPlacement="outside"
-                                            placeholder="e.g. Flight to conference"
-                                            value={formData.title}
-                                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                            variant="bordered"
-                                            radius="md"
-                                        />
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <Select
-                                                label="Department"
-                                                labelPlacement="outside"
-                                                selectedKeys={formData.department ? [formData.department] : []}
-                                                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-semibold text-gray-700">Report Title</p>
+                                            <Input
+                                                placeholder="e.g. Flight to conference"
+                                                value={formData.title}
+                                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                                 variant="bordered"
                                                 radius="md"
-                                                placeholder="Select Department"
-                                                classNames={{ trigger: "bg-white" }}
-                                            >
-                                                {DEPARTMENTS.map(dept => <SelectItem key={dept.value}>{dept.label}</SelectItem>)}
-                                            </Select>
-                                            <Select
-                                                label="Payment Method"
-                                                labelPlacement="outside"
-                                                selectedKeys={formData.paymentMethod ? [formData.paymentMethod] : []}
-                                                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                                                variant="bordered"
-                                                radius="md"
-                                                placeholder="Select Method"
-                                                classNames={{ trigger: "bg-white" }}
-                                            >
-                                                {PAYMENT_METHODS.map(method => <SelectItem key={method}>{method}</SelectItem>)}
-                                            </Select>
+                                                classNames={{ inputWrapper: "bg-white" }}
+                                            />
                                         </div>
-                                        <Textarea
-                                            label="Business Purpose"
-                                            labelPlacement="outside"
-                                            placeholder="Explain business reason..."
-                                            value={formData.businessPurpose}
-                                            onChange={(e) => setFormData({ ...formData, businessPurpose: e.target.value })}
-                                            variant="bordered"
-                                            radius="md"
-                                            minRows={3}
-                                            classNames={{ inputWrapper: "bg-white" }}
-                                        />
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <p className="text-sm font-semibold text-gray-700">Department</p>
+                                                <Select
+                                                    selectedKeys={formData.department ? [formData.department] : []}
+                                                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                                                    variant="bordered"
+                                                    radius="md"
+                                                    placeholder="Select Department"
+                                                    classNames={{ trigger: "bg-white" }}
+                                                >
+                                                    {DEPARTMENTS.map(dept => <SelectItem key={dept.value}>{dept.label}</SelectItem>)}
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <p className="text-sm font-semibold text-gray-700">Payment Method</p>
+                                                <Select
+                                                    selectedKeys={formData.paymentMethod ? [formData.paymentMethod] : []}
+                                                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                                                    variant="bordered"
+                                                    radius="md"
+                                                    placeholder="Select Method"
+                                                    classNames={{ trigger: "bg-white" }}
+                                                >
+                                                    {PAYMENT_METHODS.map(method => <SelectItem key={method}>{method}</SelectItem>)}
+                                                </Select>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-semibold text-gray-700">Business Purpose</p>
+                                            <Textarea
+                                                placeholder="Explain business reason..."
+                                                value={formData.businessPurpose}
+                                                onChange={(e) => setFormData({ ...formData, businessPurpose: e.target.value })}
+                                                variant="bordered"
+                                                radius="md"
+                                                minRows={3}
+                                                classNames={{ inputWrapper: "bg-white" }}
+                                            />
+                                        </div>
                                     </div>
                                     <div className="flex justify-between pt-4">
                                         <Button variant="light" onPress={() => setStep(1)}>Back</Button>
@@ -474,9 +479,21 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                                     <h2 className="text-xl font-bold text-gray-900">Upload Receipts</h2>
                                     <p className="text-xs text-gray-500">Manage expenses for this report</p>
                                 </div>
-                                <Button onPress={addReceipt} startContent={<Plus className="w-4 h-4" />} size="sm" color="primary" className="font-semibold">
-                                    Add Another Receipt
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button onPress={addReceipt} startContent={<Plus className="w-4 h-4" />} size="sm" variant="flat" color="primary" className="font-semibold">
+                                        Add Receipt
+                                    </Button>
+                                    <Button
+                                        onPress={() => validateStep(3) && setStep(4)}
+                                        isDisabled={!validateStep(3)}
+                                        size="sm"
+                                        color="primary"
+                                        className="font-semibold"
+                                        endContent={<ArrowRight className="w-4 h-4" />}
+                                    >
+                                        Review & Submit
+                                    </Button>
+                                </div>
                             </div>
 
                             <Tabs
