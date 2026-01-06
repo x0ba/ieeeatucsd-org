@@ -4,8 +4,9 @@ import { collection, query, where, orderBy, onSnapshot, addDoc, Timestamp, doc }
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
-import ReimbursementWizardModal from './ReimbursementWizardModal';
-import ReimbursementDetailModal from './ReimbursementDetailModal';
+import ReimbursementWizardModal from './ReimbursementWizardModal'; // Keeping for reference/fallback if needed, or delete? I'll keep but unused for now
+import ReimbursementDetailsPage from './ReimbursementDetailsPage';
+import ReimbursementCreationPage from './ReimbursementCreationPage';
 import { ReimbursementListSkeleton, MetricCardSkeleton } from '../../../ui/loading';
 import { showToast } from '../../shared/utils/toast';
 
@@ -77,6 +78,7 @@ export default function ReimbursementContent() {
     const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
     const [loading, setLoading] = useState(false); // Start false to show cached data immediately
     const [isWizardOpen, setIsWizardOpen] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
     const [viewReimbursement, setViewReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -162,7 +164,7 @@ export default function ReimbursementContent() {
             );
             return;
         }
-        setIsWizardOpen(true);
+        setIsCreating(true);
     };
 
     const handleSubmitReimbursement = async (data: any) => {
@@ -294,6 +296,28 @@ export default function ReimbursementContent() {
                     </div>
                 </main>
             </div>
+        );
+    }
+
+    if (isCreating) {
+        return (
+            <ReimbursementCreationPage
+                onBack={() => setIsCreating(false)}
+                onSubmitSuccess={() => {
+                    setIsCreating(false);
+                }}
+            />
+        );
+    }
+
+    // Render Details Page if a reimbursement is selected
+    if (viewReimbursement) {
+        return (
+            <ReimbursementDetailsPage
+                reimbursement={viewReimbursement}
+                onBack={() => setViewReimbursement(null)}
+            // Pass other props as needed if you implement editing/updating
+            />
         );
     }
 
@@ -523,13 +547,7 @@ export default function ReimbursementContent() {
                 onClose={() => setIsWizardOpen(false)}
                 onSubmit={handleSubmitReimbursement}
             />
-
-            {viewReimbursement && (
-                <ReimbursementDetailModal
-                    reimbursement={viewReimbursement}
-                    onClose={() => setViewReimbursement(null)}
-                />
-            )}
         </div>
     );
 }
+
