@@ -168,9 +168,17 @@ Categories must be one of: Food & Beverages, Transportation, Materials & Supplie
 
 IMPORTANT - Quantity Field Guidelines:
 - Always include a "quantity" field for each line item
+- Quantity is the number of line items purchased (e.g., number of packs), not the count of units inside a pack
 - Extract the quantity (QTY) if shown on the receipt (e.g., "2x Item Name" or "QTY: 3")
+- If quantity is shown only in the description (e.g., "QTY 2" or "2 x Item"), use it
+- Do NOT treat pack/bundle size as quantity (e.g., "2-pack", "Pack of 2", "3 ct" still means quantity is 1 unless a separate QTY is shown)
 - If no quantity is shown or implied, default to 1
 - Quantity must be a positive integer (not a decimal)
+
+IMPORTANT - Line Item Amount Guidelines:
+- "amount" is the total line price as printed on the receipt for that item
+- If quantity > 1 or the description indicates a pack/bundle, keep "amount" as the total for the bundle
+- Do NOT split or divide bundles into per-unit prices
 
 IMPORTANT - otherCharges Field Guidelines:
 - ONLY include fees that don't fit into tax, tip, or shipping categories
@@ -320,6 +328,25 @@ Strict Rules:
     // Round and normalize all monetary values to 2 decimal places
     const roundToTwo = (num: number | string) =>
       Math.round((parseFloat(String(num)) || 0) * 100) / 100;
+    const inferQuantityFromDescription = (
+      description: string | undefined,
+    ): number | null => {
+      if (!description || typeof description !== "string") return null;
+      const patterns = [
+        /\b(?:qty|quantity)\s*[:#]?\s*(\d+)\b/i,
+        /^\s*(\d+)\s*[x×]\s+\S/i,
+      ];
+
+      for (const pattern of patterns) {
+        const match = description.match(pattern);
+        if (match) {
+          const quantity = parseInt(match[1], 10);
+          if (Number.isFinite(quantity) && quantity > 1) return quantity;
+        }
+      }
+
+      return null;
+    };
 
     const normalizedData = {
       vendorName: parsedData.vendorName || "Unknown Vendor",
@@ -405,16 +432,22 @@ Strict Rules:
 
     normalizedData.lineItems = normalizedData.lineItems.map(
       (item: any, index: number) => {
-        const quantity = parseInt(item.quantity) || 1;
+        const explicitQuantity = parseInt(item.quantity);
+        const inferredQuantity = inferQuantityFromDescription(item.description);
+        let quantity =
+          explicitQuantity > 0
+            ? explicitQuantity
+            : inferredQuantity ?? 1;
+        if (explicitQuantity === 1 && inferredQuantity && inferredQuantity > 1) {
+          quantity = inferredQuantity;
+        }
         const totalAmount = roundToTwo(item.amount);
-        // Convert to unit price by dividing total by quantity
-        const unitPrice = quantity > 0 ? totalAmount / quantity : totalAmount;
 
         return {
           description: item.description || `Item ${index + 1}`,
           category: item.category || "Other",
-          amount: roundToTwo(unitPrice), // Store as unit price
-          quantity: quantity,
+          amount: totalAmount, // Keep line total; do not split bundles
+          quantity,
         };
       },
     );

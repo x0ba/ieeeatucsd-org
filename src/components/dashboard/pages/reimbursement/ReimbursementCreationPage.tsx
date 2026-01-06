@@ -646,7 +646,7 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                                                                     );
                                                                 })}
                                                                 {/* Summary Rows */}
-                                                                {(r.tax || r.tip || r.shipping) && (
+                                                                {((r.tax || 0) > 0 || (r.tip || 0) > 0 || (r.shipping || 0) > 0) && (
                                                                     <tr className="bg-gray-50/50 text-xs text-gray-500">
                                                                         <td colSpan={4} className="px-4 py-2 text-right uppercase font-semibold tracking-wide">Additional (Tax/Tip/Ship)</td>
                                                                         <td className="px-4 py-2 text-right font-medium text-gray-700">

@@ -189,6 +189,20 @@
   }
 }
 
+/* HeroUI dropdown/listbox rounding */
+[data-slot="popover"] [data-slot="content"],
+[data-slot="content"][data-placement] {
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+[data-slot="popover"] [data-slot="content"] [data-slot="listboxWrapper"],
+[data-slot="popover"] [data-slot="content"] [data-slot="base"],
+[data-slot="popover"] [data-slot="content"] [data-slot="list"],
+[data-slot="content"][data-placement] [data-slot="listboxWrapper"] {
+  border-radius: inherit;
+}
+
 /* Constitution Print Styles - Hide everything except constitution content when printing */
 @media print {
   /* When in constitution print mode, hide all elements by default */
