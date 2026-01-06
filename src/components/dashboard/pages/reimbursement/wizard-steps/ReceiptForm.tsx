@@ -121,7 +121,10 @@ export default function ReceiptForm({
 
   // Recalculate totals effect
   React.useEffect(() => {
-    const subtotal = receipt.lineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+    // Calculate subtotal: sum of (unit price × quantity) for all line items
+    const subtotal = receipt.lineItems.reduce((sum, item) =>
+      sum + ((item.amount || 0) * (item.quantity || 1)), 0
+    );
     const total = subtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.shipping || 0) + (receipt.otherCharges || 0);
     // Only update if changed to avoid infinite loops
     if (Math.abs(receipt.total - total) > 0.01 || Math.abs(receipt.subtotal - subtotal) > 0.01) {
@@ -272,7 +275,7 @@ export default function ReceiptForm({
                         </Select>
                       </div>
                       <div className="col-span-5 space-y-1">
-                        <p className="text-[10px] font-semibold text-gray-500 uppercase">Amount</p>
+                        <p className="text-[10px] font-semibold text-gray-500 uppercase">Unit Price</p>
                         <Input
                           type="number"
                           value={item.amount.toString()}

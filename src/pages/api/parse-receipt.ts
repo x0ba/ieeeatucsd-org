@@ -406,11 +406,19 @@ Strict Rules:
     }
 
     normalizedData.lineItems = normalizedData.lineItems.map(
-      (item: any, index: number) => ({
-        description: item.description || `Item ${index + 1}`,
-        category: item.category || "Other",
-        amount: roundToTwo(item.amount),
-      }),
+      (item: any, index: number) => {
+        const quantity = parseInt(item.quantity) || 1;
+        const totalAmount = roundToTwo(item.amount);
+        // Convert to unit price by dividing total by quantity
+        const unitPrice = quantity > 0 ? totalAmount / quantity : totalAmount;
+
+        return {
+          description: item.description || `Item ${index + 1}`,
+          category: item.category || "Other",
+          amount: roundToTwo(unitPrice), // Store as unit price
+          quantity: quantity,
+        };
+      },
     );
 
     // Final validation log

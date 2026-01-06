@@ -416,7 +416,7 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                                 aria-label="Receipt Tabs"
                                 variant="underlined"
                                 classNames={{
-                                    tabList: "gap-6 w-full relative rounded-none px-2 py-0 border-b border-gray-200 mb-4",
+                                    tabList: "gap-6 w-full relative rounded-none p-0 border-b border-gray-200 mb-4",
                                     cursor: "w-full bg-blue-600",
                                     tab: "max-w-fit px-0 h-10",
                                 }}
@@ -611,22 +611,27 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                                                                     <th className="px-4 py-2">Line Item</th>
                                                                     <th className="px-4 py-2 text-center">Category</th>
                                                                     <th className="px-4 py-2 text-center">Qty</th>
-                                                                    <th className="px-4 py-2 text-right">Amount</th>
+                                                                    <th className="px-4 py-2 text-right">Unit Price</th>
+                                                                    <th className="px-4 py-2 text-right">Line Total</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody className="divide-y divide-gray-100">
-                                                                {r.lineItems.map((item, idx) => (
-                                                                    <tr key={idx} className="bg-white">
-                                                                        <td className="px-4 py-2 font-medium text-gray-900">{item.description}</td>
-                                                                        <td className="px-4 py-2 text-center text-gray-500 text-xs">{item.category}</td>
-                                                                        <td className="px-4 py-2 text-center text-gray-500">{item.quantity}</td>
-                                                                        <td className="px-4 py-2 text-right text-gray-900">${item.amount.toFixed(2)}</td>
-                                                                    </tr>
-                                                                ))}
+                                                                {r.lineItems.map((item, idx) => {
+                                                                    const lineTotal = (item.amount || 0) * (item.quantity || 1);
+                                                                    return (
+                                                                        <tr key={idx} className="bg-white">
+                                                                            <td className="px-4 py-2 font-medium text-gray-900">{item.description}</td>
+                                                                            <td className="px-4 py-2 text-center text-gray-500 text-xs">{item.category}</td>
+                                                                            <td className="px-4 py-2 text-center text-gray-500">{item.quantity}</td>
+                                                                            <td className="px-4 py-2 text-right text-gray-700">${item.amount.toFixed(2)}</td>
+                                                                            <td className="px-4 py-2 text-right text-gray-900 font-medium">${lineTotal.toFixed(2)}</td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
                                                                 {/* Summary Rows */}
                                                                 {(r.tax || r.tip || r.shipping) && (
                                                                     <tr className="bg-gray-50/50 text-xs text-gray-500">
-                                                                        <td colSpan={3} className="px-4 py-2 text-right uppercase font-semibold tracking-wide">Additional (Tax/Tip/Ship)</td>
+                                                                        <td colSpan={4} className="px-4 py-2 text-right uppercase font-semibold tracking-wide">Additional (Tax/Tip/Ship)</td>
                                                                         <td className="px-4 py-2 text-right font-medium text-gray-700">
                                                                             ${((r.tax || 0) + (r.tip || 0) + (r.shipping || 0)).toFixed(2)}
                                                                         </td>
