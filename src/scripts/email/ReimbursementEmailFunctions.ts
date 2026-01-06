@@ -191,10 +191,9 @@ export async function sendReimbursementSubmissionEmail(
 
             <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0;">
               <h4 style="margin-top: 0; color: #495057;">Itemized Expenses (${reimbursement.expenses?.length || 0} items)</h4>
-              ${
-                reimbursement.expenses
-                  ?.map(
-                    (expense: any, index: number) => `
+              ${reimbursement.expenses
+        ?.map(
+          (expense: any, index: number) => `
                 <div class="expense-item">
                   <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
                     <strong>${expense.description}</strong>
@@ -206,21 +205,20 @@ export async function sendReimbursementSubmissionEmail(
                   </div>
                 </div>
               `,
-                  )
-                  .join("") || "<p>No expenses listed</p>"
-              }
+        )
+        .join("") || "<p>No expenses listed</p>"
+      }
             </div>
 
-            ${
-              reimbursement.additionalInfo
-                ? `
+            ${reimbursement.additionalInfo
+        ? `
               <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0;">
                 <h4 style="margin-top: 0; color: #495057;">Additional Information</h4>
                 <p style="margin: 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">${reimbursement.additionalInfo}</p>
               </div>
             `
-                : ""
-            }
+        : ""
+      }
             
             <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 25px 0;">
               <h4 style="margin: 0 0 12px 0; color: #155724; font-size: 16px;">📋 Next Steps</h4>
@@ -503,16 +501,15 @@ export async function sendAuditRequestEmail(
               </table>
             </div>
             
-            ${
-              data.requestNote
-                ? `
+            ${data.requestNote
+        ? `
               <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 20px 0;">
                 <h4 style="margin-top: 0; color: #856404;">Request Message</h4>
                 <p style="margin: 0; color: #856404;">${data.requestNote}</p>
               </div>
             `
-                : ""
-            }
+        : ""
+      }
             
             <div style="background: #e7f3ff; border: 1px solid #b3d4fc; border-radius: 8px; padding: 15px; margin: 20px 0;">
               <h4 style="margin-top: 0; color: #004085;">Next Steps</h4>
@@ -570,6 +567,8 @@ export async function sendReimbursementStatusChangeEmail(
     changedByUserId?: string;
     rejectionReason?: string;
     paymentConfirmation?: any;
+    approvedAmount?: number;
+    partialReason?: string;
   },
 ): Promise<boolean> {
   try {
@@ -622,12 +621,21 @@ export async function sendReimbursementStatusChangeEmail(
     let statusText = data.newStatus;
     let statusMessage = "";
 
+    const approvedAmount = data.approvedAmount ?? reimbursement.approvedAmount;
+    const partialReason = data.partialReason ?? reimbursement.partialReason;
+
     switch (data.newStatus) {
       case "approved":
-        statusColor = IEEE_COLORS.success;
-        statusText = "Approved";
-        statusMessage =
-          "Your reimbursement request has been approved and is being processed for payment.";
+        if (partialReason || (approvedAmount !== undefined && approvedAmount < calculateReimbursementTotal(reimbursement))) {
+          statusColor = IEEE_COLORS.warning; // Or specific color for partial?
+          statusText = "Partially Approved";
+          statusMessage = `Your reimbursement request has been approved for a partial amount of ${formatCurrency(approvedAmount || 0)}. It is being processed for payment.`;
+        } else {
+          statusColor = IEEE_COLORS.success;
+          statusText = "Approved";
+          statusMessage =
+            "Your reimbursement request has been approved and is being processed for payment.";
+        }
         break;
       case "rejected":
       case "declined":
@@ -655,17 +663,31 @@ export async function sendReimbursementStatusChangeEmail(
         statusMessage = `Your reimbursement status has been updated to ${statusText}.`;
     }
 
+    const totalAmount = calculateReimbursementTotal(reimbursement);
+
     // Build details section
     let detailsHtml = `
       <div style="background: ${IEEE_COLORS.gray[50]}; border-radius: 8px; padding: 20px; margin: 20px 0;">
         ${createDetailRow("Reimbursement Title", reimbursement.title)}
-        ${createDetailRow("Amount", formatCurrency(calculateReimbursementTotal(reimbursement)))}
+        ${createDetailRow("Requested Amount", formatCurrency(totalAmount))}
+        ${approvedAmount && approvedAmount !== totalAmount ? createDetailRow("Approved Amount", formatCurrency(approvedAmount)) : ""}
         ${createDetailRow("Department", reimbursement.department.charAt(0).toUpperCase() + reimbursement.department.slice(1))}
         ${createDetailRow("Previous Status", data.previousStatus ? data.previousStatus.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A")}
         ${createDetailRow("New Status", `<span style="color: ${statusColor}; font-weight: 600;">${statusText}</span>`)}
         ${createDetailRow("Changed By", changedByName)}
       </div>
     `;
+
+    // Add partial reason if applicable
+    if (partialReason) {
+      detailsHtml += createInfoBox(
+        `
+        <h4 style="margin: 0 0 8px 0; color: ${IEEE_COLORS.warning};">Partial Approval Notes</h4>
+        <p style="margin: 0;">${partialReason}</p>
+      `,
+        "warning",
+      );
+    }
 
     // Add rejection reason if applicable
     if (data.rejectionReason) {
@@ -699,12 +721,11 @@ export async function sendReimbursementStatusChangeEmail(
       <h2>Reimbursement Status Update</h2>
       <p>${statusMessage}</p>
       ${detailsHtml}
-      ${
-        data.newStatus === "rejected" || data.newStatus === "declined"
-          ? `
+      ${data.newStatus === "rejected" || data.newStatus === "declined"
+        ? `
         <p style="margin-top: 20px;">If you believe this rejection was made in error or have additional information to provide, please contact the finance team at <a href="mailto:treasurer@ieeeatucsd.org" style="color: ${IEEE_COLORS.primary};">treasurer@ieeeatucsd.org</a>.</p>
       `
-          : ""
+        : ""
       }
     `;
 

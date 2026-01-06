@@ -4,7 +4,7 @@ import { collection, query, where, orderBy, onSnapshot, addDoc, Timestamp, doc }
 import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
-import ReimbursementWizardModal from './ReimbursementWizardModal'; // Keeping for reference/fallback if needed, or delete? I'll keep but unused for now
+
 import ReimbursementDetailsPage from './ReimbursementDetailsPage';
 import ReimbursementCreationPage from './ReimbursementCreationPage';
 import { ReimbursementListSkeleton, MetricCardSkeleton } from '../../../ui/loading';
@@ -23,6 +23,8 @@ interface Reimbursement {
     receipts?: any[];
     submittedAt: any;
     additionalInfo?: string;
+    approvedAmount?: number;
+    partialReason?: string;
 }
 
 const getStatusColor = (status: string) => {
@@ -77,9 +79,9 @@ export default function ReimbursementContent() {
     const [user] = useAuthState(auth);
     const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
     const [loading, setLoading] = useState(false); // Start false to show cached data immediately
-    const [isWizardOpen, setIsWizardOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [viewReimbursement, setViewReimbursement] = useState<Reimbursement | null>(null);
+    const [editReimbursement, setEditReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
 
@@ -165,9 +167,24 @@ export default function ReimbursementContent() {
             return;
         }
         setIsCreating(true);
+        setEditReimbursement(null);
+    };
+
+    const handleEditRequest = (reimbursement: Reimbursement) => {
+        setEditReimbursement(reimbursement);
+        setIsCreating(true);
     };
 
     const handleSubmitReimbursement = async (data: any) => {
+        if (!user) return;
+        // This is now mainly handled inside ReimbursementCreationPage,
+        // but kept here if we need to refresh or handle closing
+        setIsCreating(false);
+        setEditReimbursement(null);
+    };
+
+    // Legacy submission handler (can be removed if fully moved to CreationPage, but keeping for compatibility)
+    const handleLegacySubmit = async (data: any) => {
         if (!user) return;
 
         try {
@@ -302,10 +319,15 @@ export default function ReimbursementContent() {
     if (isCreating) {
         return (
             <ReimbursementCreationPage
-                onBack={() => setIsCreating(false)}
+                onBack={() => {
+                    setIsCreating(false);
+                    setEditReimbursement(null);
+                }}
                 onSubmitSuccess={() => {
                     setIsCreating(false);
+                    setEditReimbursement(null);
                 }}
+                initialData={editReimbursement}
             />
         );
     }
@@ -531,6 +553,18 @@ export default function ReimbursementContent() {
                                                 >
                                                     <Eye className="w-5 h-5" />
                                                 </button>
+                                                {reimbursement.status === 'submitted' && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleEditRequest(reimbursement);
+                                                        }}
+                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors md:block hidden"
+                                                        title="Edit Request"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil w-5 h-5"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -541,12 +575,7 @@ export default function ReimbursementContent() {
                 </div>
             </main>
 
-            {/* Modals */}
-            <ReimbursementWizardModal
-                isOpen={isWizardOpen}
-                onClose={() => setIsWizardOpen(false)}
-                onSubmit={handleSubmitReimbursement}
-            />
+
         </div>
     );
 }

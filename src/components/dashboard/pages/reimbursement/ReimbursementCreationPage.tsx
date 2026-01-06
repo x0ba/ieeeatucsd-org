@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Button,
     Input,
@@ -44,9 +44,10 @@ import { usePasteNotification } from '../../shared/components/PasteNotification'
 interface ReimbursementCreationPageProps {
     onBack: () => void;
     onSubmitSuccess: () => void;
+    initialData?: any; // Using any to avoid circular deps or duplicate types for now, ideally import shared type
 }
 
-export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: ReimbursementCreationPageProps) {
+export default function ReimbursementCreationPage({ onBack, onSubmitSuccess, initialData }: ReimbursementCreationPageProps) {
     const [user] = useAuthState(auth);
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -73,12 +74,75 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
     // Paste notification
     const { showPasteNotification, PasteNotificationComponent } = usePasteNotification("Receipt file pasted");
 
-    // Initialize with one receipt if empty
+    // Initialize with data or one receipt
     React.useEffect(() => {
-        if (receipts.length === 0) {
+        if (initialData) {
+            setFormData({
+                title: initialData.title || '',
+                department: initialData.department || '',
+                paymentMethod: initialData.paymentMethod || '',
+                additionalInfo: initialData.additionalInfo || '',
+                businessPurpose: initialData.businessPurpose || ''
+            });
+
+            if (initialData.receipts && initialData.receipts.length > 0) {
+                const mappedReceipts = initialData.receipts.map((r: any) => ({
+                    id: r.id || Date.now().toString() + Math.random(),
+                    vendorName: r.vendorName || '',
+                    location: r.location || '',
+                    dateOfPurchase: r.dateOfPurchase || '',
+                    lineItems: r.lineItems || [],
+                    receiptFile: r.receiptFile ? (typeof r.receiptFile === 'string' ? {
+                        url: r.receiptFile,
+                        name: 'Receipt',
+                        size: 0,
+                        type: r.receiptFile.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'
+                    } : r.receiptFile) : undefined,
+                    notes: r.notes || '',
+                    subtotal: r.subtotal || 0,
+                    tax: r.tax || 0,
+                    tip: r.tip || 0,
+                    shipping: r.shipping || 0,
+                    otherCharges: r.otherCharges || 0,
+                    total: r.total || 0
+                }));
+                setReceipts(mappedReceipts);
+                setActiveReceiptTab(mappedReceipts[0].id);
+            } else {
+                addReceipt();
+            }
+
+            // Skip warning step if editing
+            setStep(2);
+        } else if (receipts.length === 0) {
             addReceipt();
         }
-    }, []);
+    }, [initialData]);
+
+    // Fetch user profile for default payment info
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            if (user && !formData.additionalInfo && !initialData) {
+                try {
+                    const { doc, getDoc } = await import('firebase/firestore');
+                    const { db } = await import('../../../../firebase/client');
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        if (userData.zelleInformation) {
+                            setFormData(prev => ({
+                                ...prev,
+                                additionalInfo: userData.zelleInformation
+                            }));
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error fetching user profile for default Zelle info", error);
+                }
+            }
+        };
+        fetchUserProfile();
+    }, [user, initialData]);  // Run once when user loads or if initialData changes (though initialData handles its own set)
 
     // Global image paste handler
     useGlobalImagePaste({
@@ -298,7 +362,7 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
 
         try {
             const { db } = await import('../../../../firebase/client');
-            const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+            const { collection, addDoc, updateDoc, doc, serverTimestamp, arrayUnion, Timestamp } = await import('firebase/firestore');
 
             const formattedReceipts = receipts.map(r => ({
                 id: r.id,
@@ -306,7 +370,7 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                 location: r.location || '',
                 dateOfPurchase: r.dateOfPurchase ? new Date(r.dateOfPurchase).toISOString() : new Date().toISOString(),
                 lineItems: r.lineItems,
-                receiptFile: r.receiptFile?.url || '',
+                receiptFile: r.receiptFile || '',
                 notes: r.notes || '',
                 subtotal: r.subtotal || 0,
                 tax: r.tax || 0,
@@ -316,22 +380,39 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                 total: r.total || 0
             }));
 
-            await addDoc(collection(db, 'reimbursements'), {
+            const submissionData = {
                 ...formData,
                 status: 'submitted',
                 submittedBy: user.uid,
                 submittedByName: user.displayName || 'Unknown',
-                submittedAt: serverTimestamp(),
                 receipts: formattedReceipts,
                 totalAmount: receipts.reduce((sum, r) => sum + (r.total || 0), 0),
-                history: [{
-                    action: 'created',
-                    by: user.uid,
-                    at: new Date()
-                }]
-            });
+            };
 
-            showToast.success('Reimbursement submitted successfully!');
+            if (initialData?.id) {
+                await updateDoc(doc(db, 'reimbursements', initialData.id), {
+                    ...submissionData,
+                    updatedAt: serverTimestamp(),
+                    auditLogs: arrayUnion({
+                        action: 'Request edited',
+                        editedBy: user.uid,
+                        timestamp: Timestamp.now()
+                    })
+                });
+                showToast.success('Reimbursement updated successfully!');
+            } else {
+                await addDoc(collection(db, 'reimbursements'), {
+                    ...submissionData,
+                    submittedAt: serverTimestamp(),
+                    history: [{
+                        action: 'created',
+                        by: user.uid,
+                        at: new Date()
+                    }]
+                });
+                showToast.success('Reimbursement submitted successfully!');
+            }
+
             onSubmitSuccess();
 
         } catch (error) {
@@ -355,7 +436,9 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                         <ChevronLeft className="w-5 h-5 text-gray-500" />
                     </Button>
                     <div>
-                        <h1 className="text-lg font-bold text-gray-900 leading-tight">New Request</h1>
+                        <h1 className="text-lg font-bold text-gray-900 leading-tight">
+                            {initialData ? 'Edit Request' : 'New Request'}
+                        </h1>
                         <p className="text-xs text-gray-500">Step {step} of 4</p>
                     </div>
                 </div>
@@ -447,6 +530,24 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                                                 </Select>
                                             </div>
                                         </div>
+
+                                        {/* Additional Info for Payment (Zelle/Venmo etc) */}
+                                        {(formData.paymentMethod === 'Zelle' || formData.paymentMethod === 'Venmo' || formData.paymentMethod === 'PayPal' || formData.paymentMethod === 'Other') && (
+                                            <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                                                <p className="text-sm font-semibold text-gray-700">
+                                                    {formData.paymentMethod} Details
+                                                    <span className="text-gray-400 font-normal ml-1">(Email, Phone, or Username)</span>
+                                                </p>
+                                                <Input
+                                                    placeholder={`Enter your ${formData.paymentMethod} details...`}
+                                                    value={formData.additionalInfo}
+                                                    onChange={(e) => setFormData({ ...formData, additionalInfo: e.target.value })}
+                                                    variant="bordered"
+                                                    radius="md"
+                                                    classNames={{ inputWrapper: "bg-white" }}
+                                                />
+                                            </div>
+                                        )}
                                         <div className="space-y-2">
                                             <p className="text-sm font-semibold text-gray-700">Business Purpose</p>
                                             <Textarea
@@ -597,7 +698,7 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess }: R
                                             startContent={!isSubmitting && <CheckCircle className="w-5 h-5" />}
                                             className="w-full font-bold shadow-md shadow-blue-500/20"
                                         >
-                                            Submit Request
+                                            {initialData ? 'Update Request' : 'Submit Request'}
                                         </Button>
                                         <Button variant="light" onPress={() => setStep(3)}>Back to Edit</Button>
                                     </div>

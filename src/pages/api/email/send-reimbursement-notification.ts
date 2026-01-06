@@ -51,6 +51,8 @@ export const POST: APIRoute = async ({ request }) => {
             changedByUserId: data.changedByUserId,
             rejectionReason: data.rejectionReason,
             paymentConfirmation: data.paymentConfirmation,
+            approvedAmount: data.approvedAmount,
+            partialReason: data.partialReason,
           },
         );
         break;

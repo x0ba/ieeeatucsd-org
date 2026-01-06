@@ -230,6 +230,33 @@ export default function ReimbursementDetailsPage({
                                     />
                                 </div>
                                 <div className="space-y-1">
+                                    <p className="text-xs font-semibold text-gray-600 uppercase">Payment Method</p>
+                                    <Input
+                                        value={editedReimbursement.paymentMethod || ''}
+                                        variant="bordered"
+                                        radius="md"
+                                        isReadOnly
+                                        classNames={{
+                                            inputWrapper: "bg-white border-gray-300 hover:border-gray-400 focus-within:!border-blue-500 shadow-sm transition-all"
+                                        }}
+                                    />
+                                </div>
+                                {editedReimbursement.paymentMethod !== 'Check' && editedReimbursement.paymentMethod !== 'Cash' && editedReimbursement.paymentMethod !== 'Personal Credit Card' && (
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-semibold text-gray-600 uppercase">Additional Info (Zelle/etc)</p>
+                                        <Input
+                                            value={editedReimbursement.additionalInfo || ''}
+                                            placeholder="Not provided"
+                                            variant="bordered"
+                                            radius="md"
+                                            isReadOnly
+                                            classNames={{
+                                                inputWrapper: "bg-white border-gray-300 hover:border-gray-400 focus-within:!border-blue-500 shadow-sm transition-all"
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                                <div className="space-y-1">
                                     <p className="text-xs font-semibold text-gray-600 uppercase">Business Purpose</p>
                                     <Input
                                         value={editedReimbursement.businessPurpose || ''}
@@ -265,7 +292,7 @@ export default function ReimbursementDetailsPage({
                                         <p className="text-xs font-semibold text-gray-600 uppercase">Tax</p>
                                         <Input
                                             type="number"
-                                            value={currentReceipt.tax?.toString() || ''}
+                                            value={currentReceipt.tax?.toString() ?? '0'}
                                             onChange={(e) => handleReceiptUpdate('tax', parseFloat(e.target.value) || 0)}
                                             variant="bordered"
                                             radius="md"
@@ -276,7 +303,7 @@ export default function ReimbursementDetailsPage({
                                         <p className="text-xs font-semibold text-gray-600 uppercase">Tip</p>
                                         <Input
                                             type="number"
-                                            value={currentReceipt.tip?.toString() || ''}
+                                            value={currentReceipt.tip?.toString() ?? '0'}
                                             onChange={(e) => handleReceiptUpdate('tip', parseFloat(e.target.value) || 0)}
                                             variant="bordered"
                                             radius="md"
@@ -287,7 +314,7 @@ export default function ReimbursementDetailsPage({
                                         <p className="text-xs font-semibold text-gray-600 uppercase">Shipping</p>
                                         <Input
                                             type="number"
-                                            value={currentReceipt.shipping?.toString() || ''}
+                                            value={currentReceipt.shipping?.toString() ?? '0'}
                                             onChange={(e) => handleReceiptUpdate('shipping', parseFloat(e.target.value) || 0)}
                                             variant="bordered"
                                             radius="md"
@@ -298,7 +325,7 @@ export default function ReimbursementDetailsPage({
                                         <p className="text-xs font-semibold text-gray-600 uppercase">Other</p>
                                         <Input
                                             type="number"
-                                            value={currentReceipt.otherCharges?.toString() || ''}
+                                            value={currentReceipt.otherCharges?.toString() ?? '0'}
                                             onChange={(e) => handleReceiptUpdate('otherCharges', parseFloat(e.target.value) || 0)}
                                             variant="bordered"
                                             radius="md"

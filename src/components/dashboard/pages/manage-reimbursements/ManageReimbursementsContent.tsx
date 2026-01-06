@@ -5,7 +5,7 @@ import { db } from '../../../../firebase/client';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../../../firebase/client';
 import { Card, CardHeader, CardBody, Button, Chip, Select, SelectItem, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
-import ReimbursementModal from '../reimbursement/ReimbursementModal';
+import ManageReimbursementDetails from './ManageReimbursementDetails';
 import type { UserRole } from '../../shared/types/firestore';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { TableSkeleton } from '../../../ui/loading';
@@ -421,6 +421,21 @@ export default function ManageReimbursementsContent() {
         return currentUserRole === 'Executive Officer' || currentUserRole === 'Administrator';
     };
 
+    // If a reimbursement is selected, show the details view
+    if (selectedReimbursement) {
+        return (
+            <ManageReimbursementDetails
+                reimbursement={selectedReimbursement}
+                onBack={() => {
+                    setSelectedReimbursement(null);
+                    setAuditReimbursement(null);
+                }}
+                currentUser={user}
+                onUpdate={updateReimbursementStatus}
+            />
+        );
+    }
+
     return (
         <div className="flex-1 overflow-auto">
             {/* Manage Reimbursements Content */}
@@ -605,7 +620,11 @@ export default function ManageReimbursementsContent() {
                                             </tr>
                                         ) : (
                                             filteredReimbursements.map((reimbursement) => (
-                                                <tr key={reimbursement.id} className="group hover:bg-gray-50/50 transition-colors">
+                                                <tr
+                                                    key={reimbursement.id}
+                                                    onClick={() => setSelectedReimbursement(reimbursement)}
+                                                    className="group hover:bg-gray-50/50 transition-colors cursor-pointer"
+                                                >
                                                     <td className="px-6 py-4">
                                                         <div className="max-w-xs">
                                                             <div className="text-sm font-semibold text-gray-900 truncate mb-0.5" title={reimbursement.title}>
@@ -674,7 +693,7 @@ export default function ManageReimbursementsContent() {
                                                                         size="sm"
                                                                         variant="light"
                                                                         color="success"
-                                                                        onPress={() => setAuditReimbursement(reimbursement)}
+                                                                        onPress={() => setSelectedReimbursement(reimbursement)}
                                                                         className="text-success-600 hover:bg-success-50"
                                                                         title="Approve"
                                                                     >
@@ -685,7 +704,7 @@ export default function ManageReimbursementsContent() {
                                                                         size="sm"
                                                                         variant="light"
                                                                         color="danger"
-                                                                        onPress={() => setAuditReimbursement(reimbursement)}
+                                                                        onPress={() => setSelectedReimbursement(reimbursement)}
                                                                         className="text-danger-600 hover:bg-danger-50"
                                                                         title="Decline"
                                                                     >
@@ -699,7 +718,7 @@ export default function ManageReimbursementsContent() {
                                                                     size="sm"
                                                                     variant="light"
                                                                     color="success"
-                                                                    onPress={() => setAuditReimbursement(reimbursement)}
+                                                                    onPress={() => setSelectedReimbursement(reimbursement)}
                                                                     className="text-success-600 hover:bg-success-50"
                                                                     title="Mark as Paid"
                                                                 >
@@ -744,21 +763,7 @@ export default function ManageReimbursementsContent() {
 
             </main>
 
-            {/* Unified Modal */}
-            {
-                (selectedReimbursement || auditReimbursement) && (
-                    <ReimbursementModal
-                        reimbursement={selectedReimbursement || auditReimbursement}
-                        onClose={() => {
-                            setSelectedReimbursement(null);
-                            setAuditReimbursement(null);
-                        }}
-                        userRole={currentUserRole || undefined}
-                        onUpdate={updateReimbursementStatus}
-                        canPerformOfficerActions={canPerformOfficerActions()}
-                    />
-                )
-            }
+
 
             {/* Delete Confirmation Modal */}
             <Modal
