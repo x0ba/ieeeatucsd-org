@@ -169,7 +169,6 @@ Categories must be one of: Food & Beverages, Transportation, Materials & Supplie
 IMPORTANT - Quantity Field Guidelines:
 - Always include a "quantity" field for each line item
 - Extract the quantity (QTY) if shown on the receipt (e.g., "2x Item Name" or "QTY: 3")
-- If quantity is not explicitly labeled (e.g. Amazon receipts), infer it from context or columns.
 - If no quantity is shown or implied, default to 1
 - Quantity must be a positive integer (not a decimal)
 - The amount should be the TOTAL for that line (unit price × quantity)
