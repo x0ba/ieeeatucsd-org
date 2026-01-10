@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Create IMAP client with MXRoute settings
     const client = new ImapFlow({
-      host: "mail.ieeeatucsd.org",
+      host: "heracles.mxrouting.net",
       port: 993,
       secure: true,
       auth: {
@@ -70,8 +70,8 @@ export const POST: APIRoute = async ({ request }) => {
       try {
         const mailboxExists =
           client.mailbox &&
-          typeof client.mailbox === "object" &&
-          "exists" in client.mailbox
+            typeof client.mailbox === "object" &&
+            "exists" in client.mailbox
             ? client.mailbox.exists
             : 0;
         console.log(`Mailbox info: ${mailboxExists} messages exist`);
@@ -91,122 +91,131 @@ export const POST: APIRoute = async ({ request }) => {
             bodyStructure: true,
             bodyParts: ["1", "TEXT", "HEADER"], // Get different body parts for better content extraction
           })) {
-            // Extract email preview from body parts
-            let preview = "";
+            try {
+              // Extract email preview from body parts
+              let preview = "";
 
-            // Try to get text content from different body parts
-            const bodyParts = message.bodyParts;
-            if (bodyParts) {
-              // Try TEXT first (plain text), then fallback to other parts
-              let textContent =
-                bodyParts.get("TEXT") ||
-                bodyParts.get("1") ||
-                bodyParts.get("1.1");
+              // Try to get text content from different body parts
+              const bodyParts = message.bodyParts;
+              if (bodyParts) {
+                // Try TEXT first (plain text), then fallback to other parts
+                let textContent =
+                  bodyParts.get("TEXT") ||
+                  bodyParts.get("1") ||
+                  bodyParts.get("1.1");
 
-              if (textContent) {
-                try {
-                  // Convert buffer to string and clean up
-                  let fullText = textContent.toString("utf-8");
+                if (textContent) {
+                  try {
+                    // Convert buffer to string and clean up
+                    let fullText = textContent.toString("utf-8");
 
-                  // Remove HTML tags if present
-                  fullText = fullText.replace(/<[^>]*>/g, " ");
+                    // Remove HTML tags if present
+                    fullText = fullText.replace(/<[^>]*>/g, " ");
 
-                  // Clean up whitespace and special characters
-                  fullText = fullText
-                    .replace(/\r\n/g, " ")
-                    .replace(/\n/g, " ")
-                    .replace(/\t/g, " ")
-                    .replace(/\s+/g, " ")
-                    .trim();
+                    // Clean up whitespace and special characters
+                    fullText = fullText
+                      .replace(/\r\n/g, " ")
+                      .replace(/\n/g, " ")
+                      .replace(/\t/g, " ")
+                      .replace(/\s+/g, " ")
+                      .trim();
 
-                  // Extract meaningful preview (skip common email headers/footers)
-                  const lines = fullText
-                    .split(/[.!?]+/)
-                    .filter(
-                      (line) =>
-                        line.trim().length > 10 &&
-                        !line.toLowerCase().includes("unsubscribe") &&
-                        !line.toLowerCase().includes("click here"),
-                    );
+                    // Extract meaningful preview (skip common email headers/footers)
+                    const lines = fullText
+                      .split(/[.!?]+/)
+                      .filter(
+                        (line) =>
+                          line.trim().length > 10 &&
+                          !line.toLowerCase().includes("unsubscribe") &&
+                          !line.toLowerCase().includes("click here"),
+                      );
 
-                  if (lines.length > 0) {
-                    preview = lines[0].trim().substring(0, 150);
-                    if (lines[0].length > 150) {
-                      preview += "...";
+                    if (lines.length > 0) {
+                      preview = lines[0].trim().substring(0, 150);
+                      if (lines[0].length > 150) {
+                        preview += "...";
+                      }
+                    } else {
+                      preview = fullText.substring(0, 150);
+                      if (fullText.length > 150) {
+                        preview += "...";
+                      }
                     }
-                  } else {
-                    preview = fullText.substring(0, 150);
-                    if (fullText.length > 150) {
-                      preview += "...";
-                    }
+                  } catch (parseError) {
+                    console.warn("Error parsing email content:", parseError);
+                    preview = "Unable to parse email content";
                   }
-                } catch (parseError) {
-                  console.warn("Error parsing email content:", parseError);
-                  preview = "Unable to parse email content";
                 }
               }
-            }
 
-            // If no text preview, try to get it from subject or use default
-            if (!preview && message.envelope?.subject) {
-              preview = `Email about: ${message.envelope.subject}`;
-            } else if (!preview) {
-              preview = "No preview available";
-            }
-
-            // Parse sender information
-            let fromAddress = "Unknown sender";
-            if (message.envelope?.from && message.envelope.from.length > 0) {
-              const sender = message.envelope.from[0];
-              if (sender.name) {
-                fromAddress = `${sender.name} <${sender.address}>`;
-              } else {
-                fromAddress = sender.address || "Unknown sender";
+              // If no text preview, try to get it from subject or use default
+              if (!preview && message.envelope?.subject) {
+                preview = `Email about: ${message.envelope.subject}`;
+              } else if (!preview) {
+                preview = "No preview available";
               }
-            }
 
-            // Format date
-            let formattedDate = "Unknown date";
-            if (message.envelope?.date) {
-              try {
-                formattedDate = new Date(
-                  message.envelope.date,
-                ).toLocaleDateString();
-              } catch (e) {
-                console.warn("Error parsing date:", message.envelope.date);
+              // Parse sender information
+              let fromAddress = "Unknown sender";
+              if (message.envelope?.from && message.envelope.from.length > 0) {
+                const sender = message.envelope.from[0];
+                if (sender.name) {
+                  fromAddress = `${sender.name} <${sender.address}>`;
+                } else {
+                  fromAddress = sender.address || "Unknown sender";
+                }
               }
-            }
 
-            // Check if message is read (not in \Seen flags means unread)
-            const isRead = message.flags && message.flags.has("\\Seen");
-
-            // Count attachments from body structure
-            let attachmentCount = 0;
-            if (message.bodyStructure && message.bodyStructure.childNodes) {
-              const countAttachments = (node: any) => {
-                if (
-                  node.disposition === "attachment" &&
-                  node.dispositionParameters?.filename
-                ) {
-                  attachmentCount++;
+              // Format date
+              let formattedDate = "Unknown date";
+              if (message.envelope?.date) {
+                try {
+                  const dateObj = new Date(message.envelope.date);
+                  if (!isNaN(dateObj.getTime())) {
+                    formattedDate = dateObj.toLocaleDateString();
+                  }
+                } catch (e) {
+                  console.warn("Error parsing date:", message.envelope.date);
                 }
-                if (node.childNodes) {
-                  node.childNodes.forEach(countAttachments);
-                }
-              };
-              countAttachments(message.bodyStructure);
-            }
+              }
 
-            emails.push({
-              id: message.uid.toString(),
-              subject: message.envelope?.subject || "No subject",
-              from: fromAddress,
-              date: formattedDate,
-              preview: preview,
-              isRead: isRead || false,
-              uid: message.uid,
-              attachmentCount: attachmentCount,
-            });
+              // Check if message is read (not in \Seen flags means unread)
+              const isRead = message.flags && message.flags.has("\\Seen");
+
+              // Count attachments from body structure
+              let attachmentCount = 0;
+              if (message.bodyStructure && message.bodyStructure.childNodes) {
+                const countAttachments = (node: any) => {
+                  if (
+                    node.disposition === "attachment" &&
+                    node.dispositionParameters?.filename
+                  ) {
+                    attachmentCount++;
+                  }
+                  if (node.childNodes) {
+                    node.childNodes.forEach(countAttachments);
+                  }
+                };
+                countAttachments(message.bodyStructure);
+              }
+
+              emails.push({
+                id: message.uid.toString(),
+                subject: message.envelope?.subject || "No subject",
+                from: fromAddress,
+                date: formattedDate,
+                preview: preview,
+                isRead: isRead || false,
+                uid: message.uid,
+                attachmentCount: attachmentCount,
+              });
+            } catch (messageError) {
+              console.error(
+                `Error processing message ${message.uid}:`,
+                messageError,
+              );
+              // Continue to next message instead of failing the whole request
+            }
           }
         }
 
@@ -260,18 +269,38 @@ export const POST: APIRoute = async ({ request }) => {
         },
       },
     );
-  } catch (error) {
-    // Provide more specific error messages
+  } catch (error: any) {
+    console.error("Error fetching emails:", error);
+
+    // Provide more specific error messages and status codes
     let errorMessage = "Failed to fetch emails";
+    let statusCode = 500;
+
     if (error instanceof Error) {
-      if (error.message.includes("authentication")) {
+      const err = error as any;
+      if (
+        err.responseText?.includes("Authentication failed") ||
+        err.serverResponseCode === "AUTHENTICATIONFAILED" ||
+        err.authenticationFailed === true ||
+        error.message.includes("authentication") ||
+        error.message.includes("LOGIN failed")
+      ) {
         errorMessage =
           "Authentication failed. Please check your email and password.";
-      } else if (error.message.includes("connection")) {
+        statusCode = 401;
+      } else if (
+        error.message.includes("connection") ||
+        error.message.includes("ECONNREFUSED")
+      ) {
         errorMessage =
           "Could not connect to email server. Please try again later.";
-      } else if (error.message.includes("timeout")) {
+        statusCode = 502; // Bad Gateway
+      } else if (
+        error.message.includes("timeout") ||
+        error.message.includes("ETIMEDOUT")
+      ) {
         errorMessage = "Connection timed out. Please try again.";
+        statusCode = 504; // Gateway Timeout
       } else {
         errorMessage = error.message;
       }
@@ -282,9 +311,10 @@ export const POST: APIRoute = async ({ request }) => {
         success: false,
         message: errorMessage,
         emails: [],
+        debug: error instanceof Error ? error.message : String(error)
       }),
       {
-        status: 500,
+        status: statusCode,
         headers: {
           "Content-Type": "application/json",
         },

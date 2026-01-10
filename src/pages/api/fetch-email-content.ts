@@ -52,7 +52,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Create IMAP client with MXRoute settings
     const client = new ImapFlow({
-      host: "mail.ieeeatucsd.org",
+      host: "heracles.mxrouting.net",
       port: 993,
       secure: true,
       auth: {
@@ -386,18 +386,36 @@ export const POST: APIRoute = async ({ request }) => {
         },
       },
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching email content:", error);
 
     let errorMessage = "Failed to fetch email content";
+    let statusCode = 500;
+
     if (error instanceof Error) {
-      if (error.message.includes("authentication")) {
+      const err = error as any;
+      if (
+        err.responseText?.includes("Authentication failed") ||
+        err.serverResponseCode === "AUTHENTICATIONFAILED" ||
+        err.authenticationFailed === true ||
+        error.message.includes("authentication") ||
+        error.message.includes("LOGIN failed")
+      ) {
         errorMessage = "Authentication failed. Please check your credentials.";
-      } else if (error.message.includes("connection")) {
+        statusCode = 401;
+      } else if (
+        error.message.includes("connection") ||
+        error.message.includes("ECONNREFUSED")
+      ) {
         errorMessage =
           "Could not connect to email server. Please try again later.";
-      } else if (error.message.includes("timeout")) {
+        statusCode = 502;
+      } else if (
+        error.message.includes("timeout") ||
+        error.message.includes("ETIMEDOUT")
+      ) {
         errorMessage = "Connection timed out. Please try again.";
+        statusCode = 504;
       } else {
         errorMessage = error.message;
       }
@@ -407,9 +425,10 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({
         success: false,
         message: errorMessage,
+        debug: error instanceof Error ? error.message : String(error)
       }),
       {
-        status: 500,
+        status: statusCode,
         headers: {
           "Content-Type": "application/json",
         },
