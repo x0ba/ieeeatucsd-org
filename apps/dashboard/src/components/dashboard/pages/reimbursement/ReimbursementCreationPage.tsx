@@ -409,6 +409,23 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess, ini
                         by: user.uid,
                         at: new Date()
                     }]
+                }).then(async (docRef) => {
+                    // Send notification email
+                    try {
+                        await fetch('/api/email/send-reimbursement-notification', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                type: 'reimbursement_submission',
+                                reimbursementId: docRef.id
+                            }),
+                        });
+                    } catch (emailError) {
+                        console.error('Failed to send notification emails:', emailError);
+                        // Don't fail the submission if email fails
+                    }
                 });
                 showToast.success('Reimbursement submitted successfully!');
             }
