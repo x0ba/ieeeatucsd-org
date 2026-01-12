@@ -48,9 +48,9 @@ RUN bun install
 # Copy environment files (Optional: Coolify might not use .env files but pass ARGs)
 # We use conditional copy or just ignore failure if .env is missing?
 # Actually, for Coolify, we rely on build args.
-COPY .env ./
-COPY .env ./apps/website/.env
-COPY .env ./apps/dashboard/.env
+# COPY .env ./
+# COPY .env ./apps/website/.env
+# COPY .env ./apps/dashboard/.env
 
 # Define Build Arguments (For Coolify/Vite)
 # Firebase Client (Shared)
