@@ -16,7 +16,7 @@ export async function sendFirebaseEventRequestSubmissionEmail(
 ): Promise<boolean> {
   try {
     console.log(
-      "🎪 Starting Firebase event request submission email process...",
+      "Starting Firebase event request submission email process...",
     );
 
     const db = getFirestore(app);
@@ -27,7 +27,7 @@ export async function sendFirebaseEventRequestSubmissionEmail(
       .doc(data.eventRequestId)
       .get();
     if (!eventRequestDoc.exists) {
-      console.error("❌ Event request not found");
+      console.error("Event request not found");
       return false;
     }
 
@@ -42,7 +42,7 @@ export async function sendFirebaseEventRequestSubmissionEmail(
       .doc(eventRequest.requestedUser)
       .get();
     if (!userDoc.exists) {
-      console.error("❌ User not found");
+      console.error("User not found");
       return false;
     }
 
@@ -73,207 +73,79 @@ export async function sendFirebaseEventRequestSubmissionEmail(
       }
     };
 
-    // Create beautiful HTML template for events team
-    const eventsHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${eventsSubject}</title>
-        <style>
-          .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
-          .header { background: #003B5C; color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
-          .content { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
-          .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
-          .info-table { width: 100%; border-collapse: collapse; }
-          .info-table td { padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
-          .info-table td:first-child { font-weight: 600; color: #475569; width: 35%; }
-          .badge { display: inline-block; padding: 6px 12px; background: #dbeafe; color: #1e40af; border-radius: 20px; font-size: 12px; font-weight: 500; margin: 2px; }
-          .footer { text-align: center; color: #64748b; font-size: 14px; margin-top: 30px; }
-        </style>
-      </head>
-      <body style="margin: 0; padding: 20px; background-color: #f1f5f9;">
-        <div class="container">
-          <div class="header">
-            <h1 style="margin: 0; font-size: 28px; font-weight: 700;">🎪 New Event Request</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Review Required</p>
-          </div>
-          
-          <div class="content">
-            <h2 style="margin: 0 0 20px 0; color: #1e293b; font-size: 22px;">Hello Events Team!</h2>
-            <p style="margin: 0 0 20px 0; color: #475569; font-size: 16px; line-height: 1.6;">
-              A new event request has been submitted by <strong style="color: #1e40af;">${user.name || user.email}</strong> and requires your review.
-            </p>
-            
-            <div class="info-card">
-              <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 18px;">📋 Event Details</h3>
-              <table class="info-table">
-                <tr>
-                  <td>Event Name</td>
-                  <td style="font-weight: 600; color: #1e293b;">${eventRequest.name}</td>
-                </tr>
-                <tr>
-                  <td>Location</td>
-                  <td>${eventRequest.location}</td>
-                </tr>
-                <tr>
-                  <td>Start Date & Time</td>
-                  <td>${formatDateTime(eventRequest.startDateTime)}</td>
-                </tr>
-                <tr>
-                  <td>End Date & Time</td>
-                  <td>${formatDateTime(eventRequest.endDateTime)}</td>
-                </tr>
-                <tr>
-                  <td>Expected Attendance</td>
-                  <td>${eventRequest.expectedAttendance || "Not specified"}</td>
-                </tr>
-                <tr>
-                  <td>Department</td>
-                  <td>${eventRequest.department || "General"}</td>
-                </tr>
-                <tr>
-                  <td>Submitted By</td>
-                  <td><strong>${user.name || user.email}</strong> (${user.email})</td>
-                </tr>
-              </table>
-            </div>
+    const detailsHtml = `
+      <div style="background: ${IEEE_COLORS.gray[50]}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        ${createDetailRow("Event Name", eventRequest.name)}
+        ${createDetailRow("Location", eventRequest.location)}
+        ${createDetailRow("Start Date", formatDateTime(eventRequest.startDateTime))}
+        ${createDetailRow("End Date", formatDateTime(eventRequest.endDateTime))}
+        ${createDetailRow("Attendance", eventRequest.expectedAttendance || "Not specified")}
+        ${createDetailRow("Department", eventRequest.department || "General")}
+        ${createDetailRow("Submitted By", `${user.name || user.email} (${user.email})`)}
+      </div>
 
-            ${
-              eventRequest.eventDescription
-                ? `
-            <div class="info-card">
-              <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 18px;">📝 Description</h3>
-              <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6;">
-                <p style="margin: 0; white-space: pre-wrap; line-height: 1.6;">${eventRequest.eventDescription}</p>
-              </div>
-            </div>
-            `
-                : ""
-            }
+      ${eventRequest.eventDescription ? createInfoBox(`<h4 style="margin:0 0 8px 0;color:${IEEE_COLORS.gray[800]}">Description</h4><p style="margin:0;white-space:pre-wrap">${eventRequest.eventDescription}</p>`, "info") : ""}
 
-            ${
-              eventRequest.needsGraphics ||
-              eventRequest.needsAsFunding ||
-              eventRequest.flyersNeeded ||
-              (eventRequest.flyerType && eventRequest.flyerType.length > 0) ||
-              eventRequest.photographyNeeded
-                ? `
-            <div class="info-card">
-              <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 18px;">⚡ Special Requirements</h3>
-              <div>
-                ${eventRequest.needsGraphics || (eventRequest.flyerType && eventRequest.flyerType.length > 0) ? '<span class="badge">Graphics Required</span>' : ""}
-                ${eventRequest.needsAsFunding ? '<span class="badge">AS Funding</span>' : ""}
-                ${eventRequest.flyersNeeded || (eventRequest.flyerType && eventRequest.flyerType.length > 0) ? '<span class="badge">Flyers Needed</span>' : ""}
-                ${eventRequest.photographyNeeded ? '<span class="badge">Photography</span>' : ""}
-              </div>
-            </div>
-            `
-                : ""
-            }
-            
-            <div style="background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 25px 0;">
-              <h4 style="margin: 0 0 12px 0; color: #15803d; font-size: 16px;">✅ Next Steps</h4>
-              <ul style="margin: 0; padding-left: 20px; color: #15803d; line-height: 1.7;">
-                <li>Review the event request in the dashboard</li>
-                <li>Contact the submitter if clarification is needed</li>
-                <li>Assign tasks to appropriate team members</li>
-                <li>Update the status once processed</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <p>Event Request ID: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${eventRequest.id}</code></p>
-            <p>Questions? Contact the submitter at <a href="mailto:${user.email}" style="color: #3b82f6; text-decoration: none;">${user.email}</a></p>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-            <p style="font-size: 12px; color: #94a3b8;">IEEE UCSD Event Management System</p>
+      ${eventRequest.needsGraphics ||
+        eventRequest.needsAsFunding ||
+        eventRequest.flyersNeeded ||
+        (eventRequest.flyerType && eventRequest.flyerType.length > 0) ||
+        eventRequest.photographyNeeded
+        ? `
+        <div style="margin-top: 20px; background: white; border: 1px solid ${IEEE_COLORS.gray[200]}; border-radius: 8px; padding: 16px;">
+          <h4 style="margin: 0 0 12px 0; color: ${IEEE_COLORS.gray[800]};">Special Requirements</h4>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            ${eventRequest.needsGraphics || (eventRequest.flyerType && eventRequest.flyerType.length > 0) ? `<span style="background:${IEEE_COLORS.gray[100]};color:${IEEE_COLORS.gray[800]};padding:4px 8px;border-radius:12px;font-size:12px;font-weight:500">Graphics Required</span>` : ""}
+            ${eventRequest.needsAsFunding ? `<span style="background:${IEEE_COLORS.gray[100]};color:${IEEE_COLORS.gray[800]};padding:4px 8px;border-radius:12px;font-size:12px;font-weight:500">AS Funding</span>` : ""}
+            ${eventRequest.flyersNeeded || (eventRequest.flyerType && eventRequest.flyerType.length > 0) ? `<span style="background:${IEEE_COLORS.gray[100]};color:${IEEE_COLORS.gray[800]};padding:4px 8px;border-radius:12px;font-size:12px;font-weight:500">Flyers Needed</span>` : ""}
+            ${eventRequest.photographyNeeded ? `<span style="background:${IEEE_COLORS.gray[100]};color:${IEEE_COLORS.gray[800]};padding:4px 8px;border-radius:12px;font-size:12px;font-weight:500">Photography</span>` : ""}
           </div>
         </div>
-      </body>
-      </html>
+        `
+        : ""
+      }
     `;
+
+    // Create beautiful HTML template for events team
+    const eventsHtml = generateEmailTemplate({
+      title: "New Event Request",
+      preheader: `New event request from ${user.name || user.email}`,
+      headerText: "IEEE at UC San Diego",
+      bodyContent: `
+        <h2>Review Required</h2>
+        <p>A new event request has been submitted by <strong>${user.name || user.email}</strong> and requires your review.</p>
+        ${detailsHtml}
+      `,
+      referenceId: eventRequest.id,
+      contactEmail: "events@ieeeatucsd.org",
+      ctaButton: {
+        text: "Review Request",
+        url: "https://ieeeatucsd.org/manage-events",
+      },
+    });
 
     // Create confirmation email for the event requester
-    const userHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${userSubject}</title>
-        <style>
-          .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
-          .header { background: #003B5C; color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
-          .content { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
-          .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
-          .info-table { width: 100%; border-collapse: collapse; }
-          .info-table td { padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
-          .info-table td:first-child { font-weight: 600; color: #475569; width: 35%; }
-          .footer { text-align: center; color: #64748b; font-size: 14px; margin-top: 30px; }
-        </style>
-      </head>
-      <body style="margin: 0; padding: 20px; background-color: #f1f5f9;">
-        <div class="container">
-          <div class="header">
-            <h1 style="margin: 0; font-size: 28px; font-weight: 700;">✅ Request Submitted!</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Thank you for your submission</p>
-          </div>
-          
-          <div class="content">
-            <h2 style="margin: 0 0 20px 0; color: #1e293b; font-size: 22px;">Hello ${user.name || user.email}!</h2>
-            <p style="margin: 0 0 20px 0; color: #475569; font-size: 16px; line-height: 1.6;">
-              Your event request "<strong style="color: #059669;">${eventRequest.name}</strong>" has been successfully submitted to the IEEE UCSD Events Team.
-            </p>
-            
-            <div class="info-card">
-              <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 18px;">📋 Your Submission Summary</h3>
-              <table class="info-table">
-                <tr>
-                  <td>Event Name</td>
-                  <td style="font-weight: 600; color: #1e293b;">${eventRequest.name}</td>
-                </tr>
-                <tr>
-                  <td>Location</td>
-                  <td>${eventRequest.location}</td>
-                </tr>
-                <tr>
-                  <td>Date & Time</td>
-                  <td>${formatDateTime(eventRequest.startDateTime)}</td>
-                </tr>
-                <tr>
-                  <td>Expected Attendance</td>
-                  <td>${eventRequest.expectedAttendance || "Not specified"}</td>
-                </tr>
-                <tr>
-                  <td>Status</td>
-                  <td><span style="background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">Submitted for Review</span></td>
-                </tr>
-              </table>
-            </div>
-            
-            <div style="background: #dbeafe; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin: 25px 0;">
-              <h4 style="margin: 0 0 12px 0; color: #1d4ed8; font-size: 16px;">⏱️ What Happens Next?</h4>
-              <ul style="margin: 0; padding-left: 20px; color: #1d4ed8; line-height: 1.7;">
-                <li>Our Events Team will review your request</li>
-                <li>You'll receive email updates as the status changes</li>
-                <li>We may contact you if we need additional information</li>
-                <li>Typical review time is 3-5 business days</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <p>Reference ID: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${eventRequest.id}</code></p>
-            <p>Questions? Contact us at <a href="mailto:events@ieeeatucsd.org" style="color: #3b82f6; text-decoration: none;">events@ieeeatucsd.org</a></p>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-            <p style="font-size: 12px; color: #94a3b8;">IEEE UCSD Event Management System</p>
-          </div>
+    const userHtml = generateEmailTemplate({
+      title: "Event Request Submitted",
+      preheader: "Your event request has been submitted",
+      headerText: "IEEE at UC San Diego",
+      bodyContent: `
+        <h2>Request Submitted!</h2>
+        <p>Your event request "<strong>${eventRequest.name}</strong>" has been successfully submitted to the IEEE UCSD Events Team.</p>
+        ${detailsHtml}
+        
+        <div style="margin-top: 24px;">
+           <h4 style="color: ${IEEE_COLORS.primary}; margin-bottom: 8px;">What Happens Next?</h4>
+           <ul style="color: ${IEEE_COLORS.gray[700]}; margin-top: 0;">
+             <li>Our Events Team will review your request.</li>
+             <li>You'll receive email updates as the status changes.</li>
+             <li>We may contact you if we need additional information.</li>
+           </ul>
         </div>
-      </body>
-      </html>
-    `;
+      `,
+      referenceId: eventRequest.id,
+      contactEmail: "events@ieeeatucsd.org",
+    });
 
     // Send to events team
     await resend.emails.send({
@@ -294,12 +166,12 @@ export async function sendFirebaseEventRequestSubmissionEmail(
     });
 
     console.log(
-      "✅ Firebase event request notification emails sent successfully!",
+      "Firebase event request notification emails sent successfully!",
     );
     return true;
   } catch (error) {
     console.error(
-      "❌ Failed to send Firebase event request notification email:",
+      "Failed to send Firebase event request notification email:",
       error,
     );
     return false;
@@ -314,7 +186,7 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
 ): Promise<boolean> {
   try {
     console.log(
-      "🎯 Starting Firebase event request status change email process...",
+      "Starting Firebase event request status change email process...",
     );
 
     const db = getFirestore(app);
@@ -325,7 +197,7 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
       .doc(data.eventRequestId)
       .get();
     if (!eventRequestDoc.exists) {
-      console.error("❌ Event request not found");
+      console.error("Event request not found");
       return false;
     }
 
@@ -340,7 +212,7 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
       .doc(eventRequest.requestedUser)
       .get();
     if (!userDoc.exists) {
-      console.error("❌ User not found");
+      console.error("User not found");
       return false;
     }
 
@@ -349,15 +221,15 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
     const getStatusColor = (status: string) => {
       switch (status) {
         case "approved":
-          return "#28a745";
+          return IEEE_COLORS.success;
         case "declined":
         case "rejected":
-          return "#dc3545";
+          return IEEE_COLORS.danger;
         case "submitted":
         case "pending":
-          return "#ffc107";
+          return IEEE_COLORS.warning;
         default:
-          return "#6c757d";
+          return IEEE_COLORS.gray[500];
       }
     };
 
@@ -400,100 +272,59 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
 
     const userSubject = `Your Event Request Status Updated: ${eventRequest.name}`;
 
-    const userHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${userSubject}</title>
-        <style>
-          .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
-          .header { background: #003B5C; color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
-          .content { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
-          .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
-          .info-table { width: 100%; border-collapse: collapse; }
-          .info-table td { padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
-          .info-table td:first-child { font-weight: 600; color: #475569; width: 35%; }
-          .footer { text-align: center; color: #64748b; font-size: 14px; margin-top: 30px; }
-        </style>
-      </head>
-      <body style="margin: 0; padding: 20px; background-color: #f1f5f9;">
-        <div class="container">
-          <div class="header">
-            <h1 style="margin: 0; font-size: 28px; font-weight: 700;">📋 Event Status Update</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">IEEE UCSD Events</p>
-          </div>
-          
-          <div class="content">
-            <h2 style="margin: 0 0 20px 0; color: #1e293b; font-size: 22px;">Hello ${user.name || user.email}!</h2>
-            <p style="margin: 0 0 20px 0; color: #475569; font-size: 16px; line-height: 1.6;">
-              Your event request "<strong>${eventRequest.name}</strong>" has been updated.
-            </p>
-            
-            <div class="info-card" style="border-left: 4px solid ${getStatusColor(data.newStatus)};">
-              <div style="margin-bottom: 15px;">
-                <span style="font-weight: bold; color: #666;">Status:</span>
-                <span style="background: ${getStatusColor(data.newStatus)}; color: white; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 500; margin-left: 10px;">${getStatusText(data.newStatus)}</span>
-              </div>
-              
-              ${
-                data.previousStatus && data.previousStatus !== data.newStatus
-                  ? `
-                <div style="color: #666; font-size: 14px;">
-                  Changed from: <span style="text-decoration: line-through;">${getStatusText(data.previousStatus)}</span> → <strong>${getStatusText(data.newStatus)}</strong>
-                </div>
-              `
-                  : ""
-              }
+    const statusColor = getStatusColor(data.newStatus);
+    const statusText = getStatusText(data.newStatus);
 
-              ${
-                (data.newStatus === "declined" ||
-                  data.newStatus === "rejected") &&
-                data.declinedReason
-                  ? `
-                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                  <p style="margin: 0; color: #991b1b; font-weight: 600;">Decline Reason:</p>
-                  <p style="margin: 5px 0 0 0; color: #991b1b;">${data.declinedReason}</p>
-                </div>
-              `
-                  : ""
-              }
-            </div>
-            
-            <div class="info-card">
-              <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 18px;">Event Details</h3>
-              <table class="info-table">
-                <tr>
-                  <td>Event Name</td>
-                  <td style="font-weight: 600; color: #1e293b;">${eventRequest.name}</td>
-                </tr>
-                <tr>
-                  <td>Status</td>
-                  <td><span style="background: ${getStatusColor(data.newStatus)}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">${getStatusText(data.newStatus)}</span></td>
-                </tr>
-                <tr>
-                  <td>Location</td>
-                  <td>${eventRequest.location}</td>
-                </tr>
-                <tr>
-                  <td>Date & Time</td>
-                  <td>${formatDateTime(eventRequest.startDateTime)}</td>
-                </tr>
-              </table>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <p>Event Request ID: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${eventRequest.id}</code></p>
-            <p>Questions? Contact us at <a href="mailto:events@ieeeatucsd.org" style="color: #3b82f6; text-decoration: none;">events@ieeeatucsd.org</a></p>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-            <p style="font-size: 12px; color: #94a3b8;">IEEE UCSD Event Management System</p>
-          </div>
+    const statusChangeHtml = `
+      <div style="background: ${IEEE_COLORS.gray[50]}; border-left: 4px solid ${statusColor}; border-radius: 4px; padding: 16px; margin: 20px 0;">
+        <h3 style="margin: 0 0 8px 0; color: ${IEEE_COLORS.gray[800]}; font-size: 18px;">Status Update</h3>
+        <div style="margin-bottom: 8px;">
+          <span style="font-weight: 600; color: ${IEEE_COLORS.gray[600]};">Current Status:</span>
+          <span style="background: ${statusColor}; color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-left: 8px; display: inline-block;">${statusText}</span>
         </div>
-      </body>
-      </html>
+        ${data.previousStatus && data.previousStatus !== data.newStatus
+        ? `<div style="color: ${IEEE_COLORS.gray[600]}; font-size: 14px;">Changed from: <strong>${getStatusText(data.previousStatus)}</strong></div>`
+        : ""
+      }
+        ${(data.newStatus === "declined" || data.newStatus === "rejected") && data.declinedReason
+        ? `
+          <div style="background: ${IEEE_COLORS.white}; border: 1px solid ${IEEE_COLORS.danger}; padding: 15px; border-radius: 8px; margin-top: 15px;">
+            <p style="margin: 0 0 5px 0; color: ${IEEE_COLORS.danger}; font-weight: 600;">Reason for Decline:</p>
+            <p style="margin: 0; color: ${IEEE_COLORS.gray[700]};">${data.declinedReason}</p>
+          </div>
+          `
+        : ""
+      }
+      </div>
     `;
+
+    const detailsHtml = `
+      <div style="background: ${IEEE_COLORS.gray[50]}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+         ${createDetailRow("Event Name", eventRequest.name)}
+         ${createDetailRow("Location", eventRequest.location)}
+         ${createDetailRow("Date & Time", formatDateTime(eventRequest.startDateTime))}
+      </div>
+    `;
+
+    const userHtml = generateEmailTemplate({
+      title: "Event Status Update",
+      preheader: `Your event request status has been updated to ${statusText}`,
+      headerText: "IEEE at UC San Diego",
+      bodyContent: `
+            <h2>Event Request Updated</h2>
+            <p>Your event request "<strong>${eventRequest.name}</strong>" has been updated.</p>
+            ${statusChangeHtml}
+            ${detailsHtml}
+            
+            <p style="margin-top: 24px;">You can view more details in the dashboard.</p>
+        `,
+      referenceId: eventRequest.id,
+      contactEmail: "events@ieeeatucsd.org",
+      ctaButton: {
+        text: "View Dashboard",
+        url: "https://ieeeatucsd.org/dashboard",
+      }
+    });
 
     // Send email to user
     await resend.emails.send({
@@ -505,12 +336,12 @@ export async function sendFirebaseEventRequestStatusChangeEmail(
     });
 
     console.log(
-      "✅ Firebase event request status change email sent successfully!",
+      "Firebase event request status change email sent successfully!",
     );
     return true;
   } catch (error) {
     console.error(
-      "❌ Failed to send Firebase event request status change email:",
+      "Failed to send Firebase event request status change email:",
       error,
     );
     return false;
@@ -524,7 +355,7 @@ export async function sendFirebaseEventEditEmail(
   data: any,
 ): Promise<boolean> {
   try {
-    console.log("✏️ Starting Firebase event edit email process...");
+    console.log("Starting Firebase event edit email process...");
 
     const db = getFirestore(app);
 
@@ -534,7 +365,7 @@ export async function sendFirebaseEventEditEmail(
       .doc(data.eventRequestId)
       .get();
     if (!eventRequestDoc.exists) {
-      console.error("❌ Event request not found");
+      console.error("Event request not found");
       return false;
     }
 
@@ -549,7 +380,7 @@ export async function sendFirebaseEventEditEmail(
       .doc(eventRequest.requestedUser)
       .get();
     if (!userDoc.exists) {
-      console.error("❌ User not found");
+      console.error("User not found");
       return false;
     }
 
@@ -659,9 +490,9 @@ export async function sendFirebaseEventEditEmail(
         .map(
           (change) => `
         <tr>
-          <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${change.field}</td>
-          <td style="padding: 8px; border: 1px solid #ddd; color: #dc3545; text-decoration: line-through;">${change.before}</td>
-          <td style="padding: 8px; border: 1px solid #ddd; color: #28a745; font-weight: 500;">${change.after}</td>
+          <td style="padding: 12px; border: 1px solid ${IEEE_COLORS.gray[200]}; font-weight: 600; color: ${IEEE_COLORS.gray[700]};">${change.field}</td>
+          <td style="padding: 12px; border: 1px solid ${IEEE_COLORS.gray[200]}; color: ${IEEE_COLORS.danger}; text-decoration: line-through;">${change.before}</td>
+          <td style="padding: 12px; border: 1px solid ${IEEE_COLORS.gray[200]}; color: ${IEEE_COLORS.success}; font-weight: 600;">${change.after}</td>
         </tr>
       `,
         )
@@ -670,101 +501,51 @@ export async function sendFirebaseEventEditEmail(
 
     const changesTable = generateChangesTable(data.previousData, data.newData);
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${subject}</title>
-        <style>
-          .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
-          .header { background: #003B5C; color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
-          .content { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
-          .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
-          .info-table { width: 100%; border-collapse: collapse; }
-          .info-table td { padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
-          .info-table td:first-child { font-weight: 600; color: #475569; width: 35%; }
-          .footer { text-align: center; color: #64748b; font-size: 14px; margin-top: 30px; }
-        </style>
-      </head>
-      <body style="margin: 0; padding: 20px; background-color: #f1f5f9;">
-        <div class="container">
-          <div class="header">
-            <h1 style="margin: 0; font-size: 28px; font-weight: 700;">✏️ Event Request Edited</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Changes Made</p>
-          </div>
-          
-          <div class="content">
-            <h2 style="margin: 0 0 20px 0; color: #1e293b; font-size: 22px;">Event Changes</h2>
-            <p style="margin: 0 0 20px 0; color: #475569; font-size: 16px; line-height: 1.6;">
-              The event request "<strong>${eventRequest.name}</strong>" submitted by <strong>${user.name || user.email}</strong> has been edited.
-            </p>
-            
-            ${
-              changesTable
-                ? `
-            <div class="info-card" style="border-left: 4px solid #f59e0b;">
-              <h3 style="margin: 0 0 15px 0; color: #92400e; font-size: 18px;">📝 Changes Made</h3>
+    const changesHtml = changesTable
+      ? `
+            <div style="margin: 20px 0; border: 1px solid ${IEEE_COLORS.gray[200]}; border-radius: 8px; overflow: hidden;">
+              <div style="background: ${IEEE_COLORS.gray[50]}; padding: 12px 16px; border-bottom: 1px solid ${IEEE_COLORS.gray[200]};">
+                <h3 style="margin: 0; color: ${IEEE_COLORS.gray[800]}; font-size: 16px;">Changes Made</h3>
+              </div>
               <table style="width: 100%; border-collapse: collapse;">
-                <tr style="background: #f8f9fa;">
-                  <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Field</th>
-                  <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Before</th>
-                  <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">After</th>
+                <tr style="background: ${IEEE_COLORS.gray[50]};">
+                  <th style="padding: 12px; border: 1px solid ${IEEE_COLORS.gray[200]}; text-align: left; color: ${IEEE_COLORS.gray[600]}; font-size: 14px;">Field</th>
+                  <th style="padding: 12px; border: 1px solid ${IEEE_COLORS.gray[200]}; text-align: left; color: ${IEEE_COLORS.gray[600]}; font-size: 14px;">Before</th>
+                  <th style="padding: 12px; border: 1px solid ${IEEE_COLORS.gray[200]}; text-align: left; color: ${IEEE_COLORS.gray[600]}; font-size: 14px;">After</th>
                 </tr>
                 ${changesTable}
               </table>
             </div>
             `
-                : `
-            <div class="info-card" style="border-left: 4px solid #3b82f6;">
-              <p style="margin: 0; color: #1e40af;">Minor changes were made to the event request. Please review the updated details in the dashboard.</p>
-            </div>
-            `
-            }
+      : createInfoBox(`<p style="margin:0">Minor changes were made to the event request. Please review the updated details in the dashboard.</p>`, "info");
 
-            <div class="info-card">
-              <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 18px;">📋 Current Event Details</h3>
-              <table class="info-table">
-                <tr>
-                  <td>Event Name</td>
-                  <td style="font-weight: 600; color: #1e293b;">${eventRequest.name}</td>
-                </tr>
-                <tr>
-                  <td>Location</td>
-                  <td>${eventRequest.location}</td>
-                </tr>
-                <tr>
-                  <td>Start Date & Time</td>
-                  <td>${formatDateTime(eventRequest.startDateTime)}</td>
-                </tr>
-                <tr>
-                  <td>Status</td>
-                  <td>${eventRequest.status}</td>
-                </tr>
-              </table>
-            </div>
-            
-            <div style="background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 25px 0;">
-              <h4 style="margin: 0 0 12px 0; color: #15803d; font-size: 16px;">✅ Next Steps</h4>
-              <ul style="margin: 0; padding-left: 20px; color: #15803d; line-height: 1.7;">
-                <li>Review the changes in the dashboard</li>
-                <li>Contact the submitter if clarification is needed</li>
-                <li>Update any assigned tasks if necessary</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <p>Event Request ID: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${eventRequest.id}</code></p>
-            <p>Questions? Contact the submitter at <a href="mailto:${user.email}" style="color: #3b82f6; text-decoration: none;">${user.email}</a></p>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-            <p style="font-size: 12px; color: #94a3b8;">IEEE UCSD Event Management System</p>
-          </div>
-        </div>
-      </body>
-      </html>
+    const detailsHtml = `
+      <div style="background: ${IEEE_COLORS.gray[50]}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+         <h3 style="margin: 0 0 12px 0; color: ${IEEE_COLORS.gray[800]}; font-size: 16px;">Current Details</h3>
+         ${createDetailRow("Event Name", eventRequest.name)}
+         ${createDetailRow("Location", eventRequest.location)}
+         ${createDetailRow("Date & Time", formatDateTime(eventRequest.startDateTime))}
+         ${createDetailRow("Status", eventRequest.status)}
+      </div>
     `;
+
+    const html = generateEmailTemplate({
+      title: "Event Request Edited",
+      preheader: "Changes were made to an event request",
+      headerText: "IEEE at UC San Diego",
+      bodyContent: `
+           <h2>Event Request Edited</h2>
+           <p>The event request "<strong>${eventRequest.name}</strong>" submitted by <strong>${user.name || user.email}</strong> has been edited.</p>
+           ${changesHtml}
+           ${detailsHtml}
+        `,
+      referenceId: eventRequest.id,
+      contactEmail: "events@ieeeatucsd.org",
+      ctaButton: {
+        text: "View Dashboard",
+        url: "https://ieeeatucsd.org/dashboard",
+      }
+    });
 
     // Send to events team
     await resend.emails.send({
@@ -777,13 +558,24 @@ export async function sendFirebaseEventEditEmail(
 
     // Send to event requester
     const userSubject = `Your Event Request Has Been Updated: ${eventRequest.name}`;
-    const userHtml = html
-      .replace("Event Changes", "Your Event Update")
-      .replace("has been edited.", "has been updated.")
-      .replace(
-        "Review the changes in the dashboard",
-        "You can view the updated details in the dashboard",
-      );
+    const userHtml = generateEmailTemplate({
+      title: "Event Request Updated",
+      preheader: "Your event request has been updated",
+      headerText: "IEEE at UC San Diego",
+      bodyContent: `
+           <h2>Your Event Update</h2>
+           <p>Your event request "<strong>${eventRequest.name}</strong>" has been updated.</p>
+           ${changesHtml}
+           ${detailsHtml}
+           <p>You can view the updated details in the dashboard.</p>
+        `,
+      referenceId: eventRequest.id,
+      contactEmail: "events@ieeeatucsd.org",
+      ctaButton: {
+        text: "View Dashboard",
+        url: "https://ieeeatucsd.org/dashboard",
+      }
+    });
 
     await resend.emails.send({
       from: fromEmail,
@@ -793,10 +585,10 @@ export async function sendFirebaseEventEditEmail(
       html: userHtml,
     });
 
-    console.log("✅ Firebase event edit emails sent successfully!");
+    console.log("Firebase event edit emails sent successfully!");
     return true;
   } catch (error) {
-    console.error("❌ Failed to send Firebase event edit email:", error);
+    console.error("Failed to send Firebase event edit email:", error);
     return false;
   }
 }
@@ -808,88 +600,43 @@ export async function sendFirebaseEventDeleteEmail(
   data: any,
 ): Promise<boolean> {
   try {
-    console.log("🗑️ Starting Firebase event delete email process...");
+    console.log("Starting Firebase event delete email process...");
 
     const eventsEmail = "events@ieeeatucsd.org";
     const subject = `Event Request Deleted: ${data.eventName}`;
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${subject}</title>
-        <style>
-          .container { max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
-          .header { background: #003B5C; color: white; padding: 40px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
-          .content { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
-          .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
-          .info-table { width: 100%; border-collapse: collapse; }
-          .info-table td { padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
-          .info-table td:first-child { font-weight: 600; color: #475569; width: 35%; }
-          .footer { text-align: center; color: #64748b; font-size: 14px; margin-top: 30px; }
-        </style>
-      </head>
-      <body style="margin: 0; padding: 20px; background-color: #f1f5f9;">
-        <div class="container">
-          <div class="header">
-            <h1 style="margin: 0; font-size: 28px; font-weight: 700;">🗑️ Event Request Deleted</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Deletion Notice</p>
-          </div>
-          
-          <div class="content">
-            <h2 style="margin: 0 0 20px 0; color: #1e293b; font-size: 22px;">Event Deletion Notice</h2>
-            <p style="margin: 0 0 20px 0; color: #475569; font-size: 16px; line-height: 1.6;">
-              The event request "<strong>${data.eventName}</strong>" has been deleted from the system.
-            </p>
-            
-            <div class="info-card" style="border-left: 4px solid #dc2626;">
-              <h3 style="margin: 0 0 15px 0; color: #991b1b; font-size: 18px;">📋 Deleted Event Details</h3>
-              <table class="info-table">
-                <tr>
-                  <td>Event Name</td>
-                  <td style="font-weight: 600; color: #1e293b;">${data.eventName}</td>
-                </tr>
-                <tr>
-                  <td>Location</td>
-                  <td>${data.location || "Not specified"}</td>
-                </tr>
-                <tr>
-                  <td>Submitted By</td>
-                  <td>${data.userName} (${data.userEmail})</td>
-                </tr>
-                <tr>
-                  <td>Status</td>
-                  <td>${data.status || "Unknown"}</td>
-                </tr>
-                <tr>
-                  <td>Event Request ID</td>
-                  <td><code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${data.eventRequestId}</code></td>
-                </tr>
-              </table>
-            </div>
-            
-            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 25px 0;">
-              <h4 style="margin: 0 0 12px 0; color: #991b1b; font-size: 16px;">⚠️ Action Required</h4>
-              <ul style="margin: 0; padding-left: 20px; color: #991b1b; line-height: 1.7;">
+    const detailsHtml = `
+      <div style="background: ${IEEE_COLORS.gray[50]}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+         ${createDetailRow("Event Name", data.eventName)}
+         ${createDetailRow("Location", data.location || "Not specified")}
+         ${createDetailRow("Submitted By", `${data.userName} (${data.userEmail})`)}
+         ${createDetailRow("Status", data.status || "Unknown")}
+         ${createDetailRow("Request ID", data.eventRequestId)}
+      </div>
+    `;
+
+    const html = generateEmailTemplate({
+      title: "Event Request Deleted",
+      preheader: "An event request has been deleted",
+      headerText: "IEEE at UC San Diego",
+      bodyContent: `
+           <h2 style="color:${IEEE_COLORS.danger}">Event Deletion Notice</h2>
+           <p>The event request "<strong>${data.eventName}</strong>" has been deleted from the system.</p>
+           ${detailsHtml}
+           
+           <div style="background: ${IEEE_COLORS.white}; border: 1px solid ${IEEE_COLORS.danger}; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h4 style="margin: 0 0 12px 0; color: ${IEEE_COLORS.danger}; font-size: 16px;">Action Required</h4>
+              <ul style="margin: 0; padding-left: 20px; color: ${IEEE_COLORS.danger}; line-height: 1.7;">
                 <li>Cancel any ongoing work related to this event</li>
                 <li>Notify team members who were assigned to this event</li>
                 <li>Update any external communications if necessary</li>
                 <li>Contact the submitter if follow-up is needed</li>
               </ul>
             </div>
-          </div>
-          
-          <div class="footer">
-            <p>Questions? Contact the submitter at <a href="mailto:${data.userEmail}" style="color: #3b82f6; text-decoration: none;">${data.userEmail}</a></p>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-            <p style="font-size: 12px; color: #94a3b8;">IEEE UCSD Event Management System</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+        `,
+      referenceId: data.eventRequestId,
+      contactEmail: "events@ieeeatucsd.org"
+    });
 
     // Send to events team
     await resend.emails.send({
@@ -902,25 +649,20 @@ export async function sendFirebaseEventDeleteEmail(
 
     // Send to event requester
     const userSubject = `Your Event Request Has Been Deleted: ${data.eventName}`;
-    const userHtml = html
-      .replace("Event Deletion Notice", `Hello ${data.userName}!`)
-      .replace("has been deleted from the system.", "has been deleted.")
-      .replace(
-        "Cancel any ongoing work related to this event",
-        "The event request has been removed from the system",
-      )
-      .replace(
-        "Notify team members who were assigned to this event",
-        "Any related materials and tasks have been cancelled",
-      )
-      .replace(
-        "Update any external communications if necessary",
-        "Please contact us if you need to submit a new request",
-      )
-      .replace(
-        "Contact the submitter if follow-up is needed",
-        "Feel free to reach out if you have any questions",
-      );
+    const userHtml = generateEmailTemplate({
+      title: "Event Request Deleted",
+      preheader: "Your event request has been deleted",
+      headerText: "IEEE at UC San Diego",
+      bodyContent: `
+           <h2>Hello ${data.userName}!</h2>
+           <p>Your event request "<strong>${data.eventName}</strong>" has been deleted.</p>
+           ${detailsHtml}
+           
+           <p>If you have any questions, please contact us.</p>
+        `,
+      referenceId: data.eventRequestId,
+      contactEmail: "events@ieeeatucsd.org"
+    });
 
     await resend.emails.send({
       from: fromEmail,
@@ -930,10 +672,10 @@ export async function sendFirebaseEventDeleteEmail(
       html: userHtml,
     });
 
-    console.log("✅ Firebase event delete emails sent successfully!");
+    console.log("Firebase event delete emails sent successfully!");
     return true;
   } catch (error) {
-    console.error("❌ Failed to send Firebase event delete email:", error);
+    console.error("Failed to send Firebase event delete email:", error);
     return false;
   }
 }
@@ -949,16 +691,16 @@ export async function sendGraphicsUploadEmail(
   },
 ): Promise<boolean> {
   try {
-    console.log("🎨 Starting graphics upload email process...");
+    console.log("Starting graphics upload email process...");
 
     // Validate input parameters
     if (!data.eventRequestId || typeof data.eventRequestId !== "string") {
-      console.error("❌ Invalid eventRequestId parameter");
+      console.error("Invalid eventRequestId parameter");
       return false;
     }
 
     if (!data.uploadedByUserId || typeof data.uploadedByUserId !== "string") {
-      console.error("❌ Invalid uploadedByUserId parameter");
+      console.error("Invalid uploadedByUserId parameter");
       return false;
     }
 
@@ -968,13 +710,13 @@ export async function sendGraphicsUploadEmail(
       !Number.isInteger(data.filesUploaded)
     ) {
       console.error(
-        "❌ Invalid filesUploaded parameter: must be a non-negative integer",
+        "Invalid filesUploaded parameter: must be a non-negative integer",
       );
       return false;
     }
 
     if (data.filesUploaded === 0) {
-      console.log("ℹ️ No files uploaded, skipping email notification");
+      console.log("No files uploaded, skipping email notification");
       return true;
     }
 
@@ -1004,7 +746,7 @@ export async function sendGraphicsUploadEmail(
       .doc(data.eventRequestId)
       .get();
     if (!eventRequestDoc.exists) {
-      console.error("❌ Event request not found");
+      console.error("Event request not found");
       return false;
     }
 
@@ -1019,7 +761,7 @@ export async function sendGraphicsUploadEmail(
       .doc(data.uploadedByUserId)
       .get();
     if (!uploaderDoc.exists) {
-      console.error("❌ Uploader not found");
+      console.error("Uploader not found");
       return false;
     }
     const uploader = { id: uploaderDoc.id, ...uploaderDoc.data() } as any;
@@ -1030,7 +772,7 @@ export async function sendGraphicsUploadEmail(
       .doc(eventRequest.requestedUser)
       .get();
     if (!submitterDoc.exists) {
-      console.error("❌ Event submitter not found");
+      console.error("Event submitter not found");
       return false;
     }
     const submitter = { id: submitterDoc.id, ...submitterDoc.data() } as any;
@@ -1056,11 +798,11 @@ export async function sendGraphicsUploadEmail(
       <p>Graphics files have been uploaded for your event request.</p>
       ${detailsHtml}
       ${createInfoBox(
-        `
+      `
         <p style="margin: 0;">The graphics team has uploaded ${data.filesUploaded} file(s) for your event. You can view and download these files from the event management dashboard.</p>
       `,
-        "success",
-      )}
+      "success",
+    )}
     `;
 
     const uploaderBodyContent = `
@@ -1068,11 +810,11 @@ export async function sendGraphicsUploadEmail(
       <p>Your graphics files have been successfully uploaded.</p>
       ${detailsHtml}
       ${createInfoBox(
-        `
+      `
         <p style="margin: 0;">You have successfully uploaded ${data.filesUploaded} graphics file(s) for this event. The event organizer has been notified.</p>
       `,
-        "success",
-      )}
+      "success",
+    )}
     `;
 
     // Email to event submitter
@@ -1121,10 +863,10 @@ export async function sendGraphicsUploadEmail(
       html: uploaderEmailHtml,
     });
 
-    console.log("✅ Graphics upload emails sent successfully!");
+    console.log("Graphics upload emails sent successfully!");
     return true;
   } catch (error) {
-    console.error("❌ Failed to send graphics upload emails:", error);
+    console.error("Failed to send graphics upload emails:", error);
     return false;
   }
 }

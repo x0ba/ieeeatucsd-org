@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, DollarSign, AlertCircle, FileText, ChevronLeft, ChevronRight, Calculator, Table } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, DollarSign, AlertCircle, FileText, ChevronLeft, ChevronRight, Calculator, Table, Sparkles, UploadCloud } from 'lucide-react';
 import { Button, Chip, Input, Textarea, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Tabs, Tab } from '@heroui/react';
 import { doc, getDoc, updateDoc, Timestamp, arrayUnion, deleteField } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { showToast } from '../../shared/utils/toast';
 import ReceiptViewer from '../reimbursement/components/ReceiptViewer';
 
@@ -46,11 +47,18 @@ export default function ManageReimbursementDetails({
     const { isOpen: isPaidOpen, onOpen: onPaidOpen, onOpenChange: onPaidOpenChange } = useDisclosure();
     const [paidConfirmationNumber, setPaidConfirmationNumber] = useState('');
     const [paidProofFile, setPaidProofFile] = useState<File | null>(null);
+    const [aiProcessing, setAiProcessing] = useState(false);
+    const [paymentReviewData, setPaymentReviewData] = useState<any>(null);
+    const [paymentDate, setPaymentDate] = useState('');
+    const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentMemo, setPaymentMemo] = useState('');
+    const [uploadedProofUrl, setUploadedProofUrl] = useState('');
 
+    // Handle paste event for file upload
     // Handle paste event for file upload
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
-            if (!isPaidOpen) return;
+            if (!isPaidOpen || paymentReviewData) return; // Don't allow paste if already reviewing
 
             const items = e.clipboardData?.items;
             if (!items) return;
@@ -70,7 +78,7 @@ export default function ManageReimbursementDetails({
 
         window.addEventListener('paste', handlePaste);
         return () => window.removeEventListener('paste', handlePaste);
-    }, [isPaidOpen]);
+    }, [isPaidOpen, paymentReviewData]);
 
     // Partial Reimbursement State
     const { isOpen: isPartialOpen, onOpen: onPartialOpen, onOpenChange: onPartialOpenChange } = useDisclosure();
@@ -158,47 +166,115 @@ export default function ManageReimbursementDetails({
     };
 
     const handlePaidSubmit = async () => {
-        if (!paidConfirmationNumber.trim()) {
-            showToast.error('Missing Information', 'Please provide a confirmation number.');
+        // Step 2: Final Confirmation
+        if (paymentReviewData) {
+            if (!paidConfirmationNumber.trim()) {
+                showToast.error('Missing Information', 'Please provide a confirmation number.');
+                return;
+            }
+
+            setIsProcessing(true);
+            try {
+                await onUpdate(reimbursement.id, 'paid', 'Marked as paid', {
+                    confirmationNumber: paidConfirmationNumber,
+                    paymentDate: Timestamp.fromDate(new Date(paymentDate || Date.now())),
+                    amountPaid: parseFloat(paymentAmount) || calculateTotalAmount(),
+                    proofFileUrl: uploadedProofUrl,
+                    memo: paymentMemo
+                });
+
+                onPaidOpenChange();
+                onBack();
+            } catch (error) {
+                console.error(error);
+                showToast.error('Failed', 'Could not save payment details.');
+            } finally {
+                setIsProcessing(false);
+            }
             return;
         }
+
+        // Step 1: Initial Processing (Upload & AI)
         if (!paidProofFile) {
             showToast.error('Missing File', 'Please upload a proof of payment.');
             return;
         }
 
         setIsProcessing(true);
+        setAiProcessing(true);
         try {
-            // Upload proof file
+            // 1. Upload proof file first
             let proofUrl = '';
             try {
-                const { getStorage, ref, uploadBytesResumable, getDownloadURL } = await import('firebase/storage');
                 const storage = getStorage();
                 const timestamp = Date.now();
                 const storageRef = ref(storage, `reimbursements/${reimbursement.id}/payment_proof/${timestamp}_${paidProofFile.name}`);
 
                 const uploadTask = await uploadBytesResumable(storageRef, paidProofFile);
                 proofUrl = await getDownloadURL(uploadTask.ref);
+                setUploadedProofUrl(proofUrl);
             } catch (uploadError) {
                 console.error("Upload failed", uploadError);
                 showToast.error('Upload Failed', 'Could not upload proof file.');
                 setIsProcessing(false);
+                setAiProcessing(false);
                 return;
             }
 
-            await onUpdate(reimbursement.id, 'paid', 'Marked as paid', {
-                confirmationNumber: paidConfirmationNumber,
-                photoAttachment: proofUrl
-            });
+            // 2. Call AI Endpoint
+            try {
+                const response = await fetch('/api/extract-payment-details', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageUrl: proofUrl })
+                });
 
-            onPaidOpenChange();
-            onBack();
+                if (!response.ok) throw new Error('AI Extraction failed');
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const data = result.data;
+                    setPaymentReviewData(data);
+
+                    // Pre-fill fields
+                    if (data.confirmationNumber) setPaidConfirmationNumber(data.confirmationNumber);
+                    if (data.paymentDate) setPaymentDate(data.paymentDate);
+                    if (data.amountPaid) setPaymentAmount(data.amountPaid.toString());
+                    if (data.memo) setPaymentMemo(data.memo);
+
+                    showToast.success('Details Extracted', 'Please review the payment usage.');
+                } else {
+                    throw new Error('No data returned');
+                }
+
+            } catch (aiError) {
+                console.error("AI failed, falling back", aiError);
+                showToast.error('AI Extraction Failed', 'Please enter details manually.');
+                // Fallback to manual entry state
+                setPaymentReviewData({ manual: true });
+                setPaymentDate(new Date().toISOString().split('T')[0]);
+                setPaymentAmount(calculateTotalAmount().toFixed(2));
+            }
+
         } catch (error) {
             console.error(error);
-            showToast.error('Failed', 'Could not process payment confirmation.');
+            showToast.error('Failed', 'Could not process payment proof.');
         } finally {
             setIsProcessing(false);
+            setAiProcessing(false);
         }
+    };
+
+    const resetPaidModal = () => {
+        setPaidConfirmationNumber('');
+        setPaidProofFile(null);
+        setPaymentReviewData(null);
+        setPaymentDate('');
+        setPaymentAmount('');
+        setPaymentMemo('');
+        setUploadedProofUrl('');
+        setIsProcessing(false);
+        setAiProcessing(false);
     };
 
     const getStatusColor = (status: string) => {
@@ -553,7 +629,8 @@ export default function ManageReimbursementDetails({
             {/* Paid Confirmation Modal */}
             <Modal
                 isOpen={isPaidOpen}
-                onClose={onPaidOpenChange}
+                onClose={() => { onPaidOpenChange(); setTimeout(resetPaidModal, 300); }}
+                size={paymentReviewData ? "2xl" : "md"}
                 motionProps={{
                     variants: {
                         enter: {
@@ -578,44 +655,143 @@ export default function ManageReimbursementDetails({
                 <ModalContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader className="flex flex-col gap-1">Confirm Payment Details</ModalHeader>
+                            <ModalHeader className="flex flex-col gap-1">
+                                {paymentReviewData ? 'Review Payment Details' : 'Process Payment'}
+                            </ModalHeader>
                             <ModalBody>
-                                <p className="text-sm text-gray-500 mb-4">
-                                    Please provide the payment confirmation details and upload proof of payment.
-                                </p>
-                                <div className="space-y-4">
-                                    <Input
-                                        label="Confirmation Number"
-                                        placeholder="Enter transaction/confirmation ID"
-                                        variant="bordered"
-                                        value={paidConfirmationNumber}
-                                        onChange={(e) => setPaidConfirmationNumber(e.target.value)}
-                                    />
-                                    <div className="space-y-2">
-                                        <p className="text-sm text-gray-600 font-medium">Proof of Payment</p>
-                                        <input
-                                            type="file"
-                                            accept="image/*,application/pdf"
-                                            onChange={(e) => setPaidProofFile(e.target.files ? e.target.files[0] : null)}
-                                            className="block w-full text-sm text-gray-500
-                                                file:mr-4 file:py-2 file:px-4
-                                                file:rounded-full file:border-0
-                                                file:text-sm file:font-semibold
-                                                file:bg-blue-50 file:text-blue-700
-                                                hover:file:bg-blue-100"
-                                        />
-                                        {paidProofFile && (
-                                            <p className="text-xs text-green-600">Selected: {paidProofFile.name}</p>
-                                        )}
+                                {paymentReviewData ? (
+                                    <div className="flex gap-6">
+                                        {/* Left: Inputs */}
+                                        <div className="flex-1 space-y-4">
+                                            <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-start gap-3">
+                                                <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
+                                                <div className="text-sm text-blue-800">
+                                                    <p className="font-semibold">AI Extraction Complete</p>
+                                                    <p className="opacity-80">Please verify the details below match the proof.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Input
+                                                    label="Payment Date"
+                                                    type="date"
+                                                    variant="bordered"
+                                                    value={paymentDate}
+                                                    onChange={(e) => setPaymentDate(e.target.value)}
+                                                />
+                                                <Input
+                                                    label="Amount Paid"
+                                                    type="number"
+                                                    variant="bordered"
+                                                    startContent={<span className="text-gray-500">$</span>}
+                                                    value={paymentAmount}
+                                                    onChange={(e) => setPaymentAmount(e.target.value)}
+                                                />
+                                            </div>
+
+                                            <Input
+                                                label="Confirmation Number"
+                                                placeholder="Transaction ID"
+                                                variant="bordered"
+                                                value={paidConfirmationNumber}
+                                                onChange={(e) => setPaidConfirmationNumber(e.target.value)}
+                                                isRequired
+                                            />
+
+                                            <Textarea
+                                                label="Memo / Notes"
+                                                placeholder="Any additional notes"
+                                                variant="bordered"
+                                                value={paymentMemo}
+                                                onChange={(e) => setPaymentMemo(e.target.value)}
+                                                minRows={2}
+                                            />
+                                        </div>
+
+                                        {/* Right: Preview */}
+                                        <div className="w-1/3 shrink-0">
+                                            <p className="text-xs font-semibold text-gray-500 mb-2 uppercase">Proof Preview</p>
+                                            <div className="border rounded-lg overflow-hidden h-64 bg-gray-100 flex items-center justify-center relative group">
+                                                {uploadedProofUrl ? (
+                                                    <img src={uploadedProofUrl} className="w-full h-full object-contain" alt="Proof" />
+                                                ) : (
+                                                    <FileText className="text-gray-400 w-12 h-12" />
+                                                )}
+                                                <a
+                                                    href={uploadedProofUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-medium"
+                                                >
+                                                    View Full
+                                                </a>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="py-6">
+                                        <div
+                                            className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${paidProofFile ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+                                                }`}
+                                        >
+                                            <input
+                                                type="file"
+                                                id="payment-proof-upload"
+                                                accept="image/*,application/pdf"
+                                                onChange={(e) => setPaidProofFile(e.target.files ? e.target.files[0] : null)}
+                                                className="hidden"
+                                            />
+
+                                            <label htmlFor="payment-proof-upload" className="cursor-pointer space-y-3 block">
+                                                {paidProofFile ? (
+                                                    <>
+                                                        <CheckCircle className="w-12 h-12 text-blue-500 mx-auto" />
+                                                        <div>
+                                                            <p className="font-bold text-gray-900">{paidProofFile.name}</p>
+                                                            <p className="text-sm text-gray-500">Ready to process</p>
+                                                        </div>
+                                                        <Button size="sm" color="danger" variant="light" onPress={() => setPaidProofFile(null)}>Remove</Button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                                                            <UploadCloud className="w-6 h-6" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-gray-900 text-lg">Upload Proof of Payment</p>
+                                                            <p className="text-sm text-gray-500">Click to browse or paste screenshot (Ctrl+V)</p>
+                                                        </div>
+                                                        <div className="flex gap-2 justify-center mt-4">
+                                                            <Chip size="sm" variant="flat">Use "Paste" for quick screenshots</Chip>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </label>
+                                        </div>
+
+                                        {/* Info about AI */}
+                                        <div className="mt-6 flex gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 items-start">
+                                            <Sparkles className="w-5 h-5 text-purple-500 shrink-0 mt-0.5" />
+                                            <div className="text-xs text-gray-600">
+                                                <p className="font-semibold text-gray-900">AI-Powered Extraction</p>
+                                                <p>Upload a screenshot and our AI will automatically extract the confirmation number, date, and amount for you to review.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </ModalBody>
                             <ModalFooter>
                                 <Button color="danger" variant="light" onPress={onClose}>
                                     Cancel
                                 </Button>
-                                <Button color="primary" onPress={handlePaidSubmit} isLoading={isProcessing}>
-                                    Confirm Payment
+                                <Button
+                                    color="primary"
+                                    onPress={handlePaidSubmit}
+                                    isLoading={isProcessing || aiProcessing}
+                                    className={aiProcessing ? "bg-purple-600" : ""}
+                                    startContent={aiProcessing}
+                                >
+                                    {paymentReviewData ? 'Confirm Payment' : 'Process & Analyze'}
                                 </Button>
                             </ModalFooter>
                         </>

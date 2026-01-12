@@ -246,7 +246,7 @@ Strict Rules:
           "X-Title": "IEEE UCSD Reimbursement System",
         },
         body: JSON.stringify({
-          model: "x-ai/grok-4.1-fast",
+          model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: contentParts },

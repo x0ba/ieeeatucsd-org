@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
+import { ArrowLeft, Save, ChevronLeft, ChevronRight, DollarSign, CheckCircle, FileText, ExternalLink, Calendar, CreditCard } from 'lucide-react';
 import { Button, Input, Select, SelectItem, Chip, ScrollShadow, Divider, Tabs, Tab } from '@heroui/react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../../firebase/client';
@@ -184,6 +184,69 @@ export default function ReimbursementDetailsPage({
 
                     <div className="flex-1 overflow-y-auto">
                         <div className="px-6 py-6 space-y-8 max-w-2xl mx-auto w-full">
+                            {/* Payment Information (New) */}
+                            {editedReimbursement.status === 'paid' && editedReimbursement.paymentDetails && (
+                                <section className="bg-green-50 border border-green-200 rounded-xl p-5 space-y-4">
+                                    <div className="flex items-center gap-2 border-b border-green-100 pb-2 mb-2">
+                                        <CheckCircle className="w-5 h-5 text-green-600" />
+                                        <h3 className="text-sm font-bold text-green-900 uppercase tracking-wide">
+                                            Payment Confirmation
+                                        </h3>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                                        <div>
+                                            <p className="text-xs font-semibold text-green-700 uppercase mb-1">Confirmation Number</p>
+                                            <p className="text-sm font-mono font-medium text-gray-900 bg-white/50 px-2 py-1 rounded border border-green-100 inline-block">
+                                                {editedReimbursement.paymentDetails.confirmationNumber}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-semibold text-green-700 uppercase mb-1">Payment Date</p>
+                                            <div className="flex items-center gap-1.5 text-sm text-gray-900">
+                                                <Calendar className="w-4 h-4 text-green-500" />
+                                                <span>
+                                                    {editedReimbursement.paymentDetails.paymentDate?.toDate
+                                                        ? editedReimbursement.paymentDetails.paymentDate.toDate().toLocaleDateString()
+                                                        : new Date(editedReimbursement.paymentDetails.paymentDate).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-semibold text-green-700 uppercase mb-1">Amount Paid</p>
+                                            <p className="text-lg font-bold text-gray-900 flex items-center gap-1">
+                                                <span className="text-green-600 text-sm">$</span>
+                                                {editedReimbursement.paymentDetails.amountPaid?.toFixed(2)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-semibold text-green-700 uppercase mb-1">Payment Proof</p>
+                                            {editedReimbursement.paymentDetails.proofFileUrl ? (
+                                                <a
+                                                    href={editedReimbursement.paymentDetails.proofFileUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                                                >
+                                                    <FileText className="w-4 h-4" />
+                                                    View Proof Document
+                                                    <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                            ) : (
+                                                <span className="text-sm text-gray-500 italic">No proof attached</span>
+                                            )}
+                                        </div>
+                                        {editedReimbursement.paymentDetails.memo && (
+                                            <div className="col-span-2 mt-1">
+                                                <p className="text-xs font-semibold text-green-700 uppercase mb-1">Memo</p>
+                                                <p className="text-sm text-gray-700 bg-white/50 p-2 rounded border border-green-100">
+                                                    {editedReimbursement.paymentDetails.memo}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+                            )}
+
                             {/* Section 1: Vendor & Date */}
                             <section className="space-y-4">
                                 <h3 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 mb-4 uppercase tracking-wide">

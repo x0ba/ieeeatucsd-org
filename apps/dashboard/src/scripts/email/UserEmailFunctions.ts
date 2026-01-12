@@ -18,14 +18,14 @@ export async function sendUserProfileUpdateEmail(
   },
 ): Promise<boolean> {
   try {
-    console.log("👤 Starting user profile update email process...");
+    console.log("Starting user profile update email process...");
 
     const db = getFirestore(app);
 
     // Get user details
     const userDoc = await db.collection("users").doc(data.userId).get();
     if (!userDoc.exists) {
-      console.error("❌ User not found:", data.userId);
+      console.error("User not found:", data.userId);
       return false;
     }
     const user = { id: userDoc.id, ...userDoc.data() } as any;
@@ -79,11 +79,11 @@ export async function sendUserProfileUpdateEmail(
       ${changesHtml}
       
       ${createInfoBox(
-        `
+      `
         <p style="margin: 0;">If you believe these changes were made in error or have any questions, please contact the administrator at <a href="mailto:ieee@ucsd.edu" style="color: ${IEEE_COLORS.primary};">ieee@ucsd.edu</a>.</p>
       `,
-        "info",
-      )}
+      "info",
+    )}
     `;
 
     const emailHtml = generateEmailTemplate({
@@ -107,10 +107,10 @@ export async function sendUserProfileUpdateEmail(
       html: emailHtml,
     });
 
-    console.log("✅ User profile update email sent successfully!");
+    console.log("User profile update email sent successfully!");
     return true;
   } catch (error) {
-    console.error("❌ Failed to send user profile update email:", error);
+    console.error("Failed to send user profile update email:", error);
     return false;
   }
 }
@@ -127,14 +127,14 @@ export async function sendUserRoleChangeEmail(
   },
 ): Promise<boolean> {
   try {
-    console.log("🎖️ Starting user role change email process...");
+    console.log("Starting user role change email process...");
 
     const db = getFirestore(app);
 
     // Get user details
     const userDoc = await db.collection("users").doc(data.userId).get();
     if (!userDoc.exists) {
-      console.error("❌ User not found:", data.userId);
+      console.error("User not found:", data.userId);
       return false;
     }
     const user = { id: userDoc.id, ...userDoc.data() } as any;
@@ -174,21 +174,19 @@ export async function sendUserRoleChangeEmail(
 
     const bodyContent = `
       <h2>${isPromotion ? "Congratulations!" : "Role Update"}</h2>
-      <p>${
-        isPromotion
-          ? `You have been promoted to ${data.newRole}! This is a recognition of your contributions to IEEE UCSD.`
-          : `Your role has been updated to ${data.newRole}.`
+      <p>${isPromotion
+        ? `You have been promoted to ${data.newRole}! This is a recognition of your contributions to IEEE UCSD.`
+        : `Your role has been updated to ${data.newRole}.`
       }</p>
       ${detailsHtml}
-      ${
-        isPromotion
-          ? createInfoBox(
-              `
+      ${isPromotion
+        ? createInfoBox(
+          `
         <p style="margin: 0;">With your new role, you now have access to additional features and responsibilities in the IEEE UCSD dashboard. Log in to explore your new permissions.</p>
       `,
-              "success",
-            )
-          : ""
+          "success",
+        )
+        : ""
       }
     `;
 
@@ -215,10 +213,10 @@ export async function sendUserRoleChangeEmail(
       html: emailHtml,
     });
 
-    console.log("✅ User role change email sent successfully!");
+    console.log("User role change email sent successfully!");
     return true;
   } catch (error) {
-    console.error("❌ Failed to send user role change email:", error);
+    console.error("Failed to send user role change email:", error);
     return false;
   }
 }

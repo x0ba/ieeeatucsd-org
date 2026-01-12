@@ -243,6 +243,14 @@ export interface Reimbursement {
   }[];
   requiresExecutiveOverride?: boolean;
 
+  paymentDetails?: {
+    confirmationNumber: string;
+    paymentDate: Timestamp;
+    amountPaid: number;
+    proofFileUrl?: string; // URL to the uploaded image
+    memo?: string;
+  };
+
   // New multi-receipt structure
   receipts?: Receipt[];
 

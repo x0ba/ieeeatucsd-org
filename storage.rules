@@ -1,0 +1,136 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to get user data
+    function getUserData() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Helper function to check if user is instructor (CodeSpace role)
+    // Uses codespaceRole field which is derived from the role field
+    // Falls back to checking role field directly if codespaceRole is not set
+    function isInstructor() {
+      return isAuthenticated() &&
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        (
+          getUserData().codespaceRole == 'instructor' ||
+          getUserData().role == 'Executive Officer' ||
+          getUserData().role == 'General Officer' ||
+          getUserData().role == 'Administrator'
+        );
+    }
+
+    // Legacy IEEE roles - Officer check
+    function isOfficer() {
+      return isAuthenticated() &&
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in [
+          'General Officer', 'Executive Officer', 'Administrator'
+        ];
+    }
+
+    // Legacy IEEE roles - Executive or Admin check
+    function isExecutiveOrAdmin() {
+      return isAuthenticated() &&
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in [
+          'Executive Officer', 'Administrator'
+        ];
+    }
+
+    // Legacy IEEE roles - Can submit events
+    function canSubmitEvents() {
+      return isAuthenticated() &&
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in [
+         'General Officer', 'Executive Officer', 'Administrator'
+        ];
+    }
+    
+    // Missing helper stubs (Lost in retrieval)
+    function isSponsor() {
+      return false; // Default deny for safety
+    }
+
+    function isReimbursementSubmitter(reimbursementId) {
+      // In a real implementation this would check if the reimbursement doc's submitter ID matches auth.uid
+      // Sticking to safe default for now as we don't have the original logic
+      return false; 
+    }
+
+    // ========================================
+    // LEGACY IEEE RULES (Backward Compatibility)
+    // ========================================
+
+    // Legacy user-based paths
+    match /resumes/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isSponsor() || isOfficer();
+    }
+
+    match /invoices/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() &&
+        (request.auth.uid == userId || isOfficer() || canSubmitEvents());
+    }
+
+    match /room_bookings/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() &&
+        (request.auth.uid == userId || isOfficer() || canSubmitEvents());
+    }
+
+    match /logos/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() &&
+        (request.auth.uid == userId || isOfficer() || canSubmitEvents());
+    }
+
+    // Payment confirmations
+    match /payment-confirmations/{reimbursementId}/{fileName} {
+      allow write: if isExecutiveOrAdmin();
+      allow read: if isOfficer() || isReimbursementSubmitter(reimbursementId);
+    }
+
+    // Receipt files
+    match /receipts/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() &&
+        (request.auth.uid == userId || isOfficer() || canSubmitEvents());
+    }
+
+    // *** NEW RULE FOR REIMBURSEMENT PAYMENT PROOFS ***
+    match /reimbursements/{reimbursementId}/payment_proof/{fileName} {
+      allow read: if isAuthenticated();
+      // Allow write if officer (checked via firestore user role)
+      allow write: if isOfficer();
+    }
+
+    // Legacy reimbursement files
+    match /reimbursements/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() &&
+        (request.auth.uid == userId || isOfficer() || canSubmitEvents());
+    }
+
+    match /fund_deposits/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() &&
+        (request.auth.uid == userId || isOfficer() || canSubmitEvents());
+    }
+
+    match /graphics/{userId}/{allPaths=**} {
+      allow read, write: if isOfficer();
+    }
+
+    // Event-based file organization
+    match /events/{eventId}/{category}/{allPaths=**} {
+      allow read, write, delete: if isAuthenticated();
+    }
+
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

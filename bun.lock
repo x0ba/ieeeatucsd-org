@@ -78,6 +78,7 @@
         "googleapis": "^163.0.0",
         "heic-convert": "^2.1.0",
         "highlight.js": "^11.11.1",
+        "html2canvas": "^1.4.1",
         "html2pdf.js": "^0.10.3",
         "imapflow": "^1.0.193",
         "input-otp": "^1.4.2",
@@ -115,6 +116,7 @@
         "zod": "^3.25.69",
       },
       "devDependencies": {
+        "@types/html2canvas": "^1.0.0",
         "@types/jest": "^30.0.0",
         "@types/prismjs": "^1.26.5",
         "@vite-pwa/astro": "^1.1.1",
@@ -1419,6 +1421,8 @@
     "@types/highlight.js": ["@types/highlight.js@10.1.0", "", { "dependencies": { "highlight.js": "*" } }, "sha512-77hF2dGBsOgnvZll1vymYiNUtqJ8cJfXPD6GG/2M0aLRc29PkvB7Au6sIDjIEFcSICBhCh2+Pyq6WSRS7LUm6A=="],
 
     "@types/hoist-non-react-statics": ["@types/hoist-non-react-statics@3.3.7", "", { "dependencies": { "hoist-non-react-statics": "^3.3.0" }, "peerDependencies": { "@types/react": "*" } }, "sha512-PQTyIulDkIDro8P+IHbKCsw7U2xxBYflVzW/FgWdCAePD9xGSidgA76/GeJ6lBKoblyhf9pBY763gbrN+1dI8g=="],
+
+    "@types/html2canvas": ["@types/html2canvas@1.0.0", "", { "dependencies": { "html2canvas": "*" } }, "sha512-BJpVf+FIN9UERmzhbtUgpXj6XBZpG67FMgBLLoj9HZKd9XifcCpSV+UnFcwTZfEyun4U/KmCrrVOG7829L589w=="],
 
     "@types/http-errors": ["@types/http-errors@2.0.5", "", {}, "sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg=="],
 

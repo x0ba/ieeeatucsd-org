@@ -79,6 +79,7 @@
     "googleapis": "^163.0.0",
     "heic-convert": "^2.1.0",
     "highlight.js": "^11.11.1",
+    "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
     "imapflow": "^1.0.193",
     "input-otp": "^1.4.2",
@@ -116,6 +117,7 @@
     "zod": "^3.25.69"
   },
   "devDependencies": {
+    "@types/html2canvas": "^1.0.0",
     "@types/jest": "^30.0.0",
     "@types/prismjs": "^1.26.5",
     "@vite-pwa/astro": "^1.1.1",
