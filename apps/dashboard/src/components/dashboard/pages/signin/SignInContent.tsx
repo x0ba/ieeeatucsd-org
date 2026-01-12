@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, signInWithPopup, GoogleAuthProvider, browserPopupRedirectResolver } from '../../../../firebase/client';
 import { Skeleton } from '@heroui/react';
+import CircuitBackground from './CircuitBackground';
 
 // Blue IEEE Logo SVG Component
 const BlueIEEELogo = ({ className = "w-32 h-auto" }: { className?: string }) => (
@@ -16,7 +17,7 @@ const BlueIEEELogo = ({ className = "w-32 h-auto" }: { className?: string }) => 
 // Loading Skeleton for Sign In Button
 const SignInButtonSkeleton = () => (
     <div className="w-full">
-        <Skeleton className="h-12 w-full rounded-xl" />
+        <Skeleton className="h-12 w-full rounded-lg" />
     </div>
 );
 
@@ -79,15 +80,15 @@ export default function SignInContent() {
             let errorMessage = 'Failed to sign in with Google';
 
             if (err.code === 'auth/popup-blocked') {
-                errorMessage = 'Popup was blocked by your browser. Please allow popups for this site and try again.';
+                errorMessage = 'Popup was blocked by your browser because of privacy settings. Please allow popups for this site.';
             } else if (err.code === 'auth/popup-closed-by-user') {
-                errorMessage = 'Sign-in was cancelled. Please try again.';
+                errorMessage = 'Sign-in was cancelled.';
             } else if (err.code === 'auth/cancelled-popup-request') {
-                errorMessage = 'Another sign-in popup is already open. Please complete or close it first.';
+                errorMessage = 'Another sign-in popup is already open.';
             } else if (err.code === 'auth/network-request-failed') {
-                errorMessage = 'Network error. Please check your internet connection and try again.';
+                errorMessage = 'Network error. Please check your internet connection.';
             } else if (err.code === 'auth/internal-error' || err.message?.includes('initial state')) {
-                errorMessage = 'Authentication error. This may be caused by browser privacy settings blocking third-party cookies or storage. Try using a different browser or adjusting your privacy settings.';
+                errorMessage = 'Authentication error. Browser privacy settings might be blocking access.';
                 setStorageWarning(true);
             } else if (err.message) {
                 errorMessage = err.message;
@@ -100,95 +101,73 @@ export default function SignInContent() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full">
-                {/* Main Card */}
-                <div className="bg-white shadow-xl rounded-2xl border border-gray-100 overflow-hidden">
-                    {/* Header Section */}
-                    <div className="px-8 pt-10 pb-6 text-center">
-                        {/* IEEE Logo */}
-                        <div className="flex justify-center mb-6">
-                            <BlueIEEELogo className="w-20 h-20" />
-                        </div>
+        <div className="min-h-screen relative flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8 overflow-hidden bg-gray-50">
+            {/* Background Animation */}
+            <CircuitBackground />
 
-                        {/* Title and Subtitle */}
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="relative z-10 w-full max-w-md">
+                <div className="bg-white/90 backdrop-blur-sm py-10 px-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-gray-900/5 sm:rounded-2xl sm:px-10">
+                    {/* Header Section */}
+                    <div className="mb-8 text-center">
+                        <div className="flex justify-center mb-6">
+                            <BlueIEEELogo className="w-24 h-24" />
+                        </div>
+                        <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">
                             Welcome
-                        </h1>
-                        <p className="text-gray-600 text-sm mb-6">
-                            Sign in to access your IEEE UCSD dashboard
+                        </h2>
+                        <p className="text-sm text-gray-600">
+                            Sign in to the <span className="font-semibold text-gray-800">IEEE Student Branch at UC San Diego</span> dashboard
                         </p>
                     </div>
 
-                    {/* Sign In Section */}
-                    <div className="px-8 pb-10">
+                    <div>
                         {loading ? (
                             <SignInButtonSkeleton />
                         ) : (
                             <button
                                 onClick={handleGoogleSignIn}
                                 disabled={loading}
-                                className="w-full flex items-center justify-center gap-3 px-6 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed group"
+                                className="w-full relative flex justify-center items-center px-4 py-3.5 border border-transparent text-sm font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 shadow-md transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
                                 aria-label="Sign in with Google"
                             >
-                                <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M12.545,10.917v2.919h4.74c-0.195,1.248-1.458,3.656-4.74,3.656c-2.853,0-5.182-2.363-5.182-5.275c0-2.912,2.329-5.275,5.182-5.275c1.625,0,3.058,0.55,4.204,1.626l-3.04,2.919C13.862,9.292,13.254,10.917,12.545,10.917z" fill="#EB4335" />
-                                    <path d="M12,20.75c4.125,0,7.583-1.366,7.583-7.583c0-0.5-0.046-0.991-0.133-1.458H12v2.919h4.74c-0.195,1.248-1.458,3.656-4.74,3.656C8.692,16.5,6.818,14.137,6.818,12c0-2.912,2.329-5.275,5.182-5.275c1.625,0,3.058,0.55,4.204,1.626l-3.04,2.919C13.862,9.292,13.254,10.917,12.545,10.917v2.919h4.74c-0.195,1.248-1.458,3.656-4.74,3.656C8.692,16.5,6.818,14.137,6.818,12z" fill="#34A853" />
-                                    <path d="M12,20.75c4.125,0,7.583-1.366,7.583-7.583c0-0.5-0.046-0.991-0.133-1.458H12v2.919h4.74c-0.195,1.248-1.458,3.656-4.74,3.656C8.692,16.5,6.818,14.137,6.818,12c0-2.912,2.329-5.275,5.182-5.275c1.625,0,3.058,0.55,4.204,1.626l-3.04,2.919C13.862,9.292,13.254,10.917,12.545,10.917v2.919h4.74c-0.195,1.248-1.458,3.656-4.74,3.656C8.692,16.5,6.818,14.137,6.818,12z" fill="#4285F4" />
-                                    <path d="M12,20.75c4.125,0,7.583-1.366,7.583-7.583c0-0.5-0.046-0.991-0.133-1.458H12v2.919h4.74c-0.195,1.248-1.458,3.656-4.74,3.656C8.692,16.5,6.818,14.137,6.818,12c0-2.912,2.329-5.275,5.182-5.275c1.625,0,3.058,0.55,4.204,1.626l-3.04,2.919C13.862,9.292,13.254,10.917,12.545,10.917v2.919h4.74c-0.195,1.248-1.458,3.656-4.74,3.656C8.692,16.5,6.818,14.137,6.818,12z" fill="#FBBC05" />
-                                </svg>
-                                <span>Continue with Google</span>
+                                Continue with Google
                             </button>
                         )}
+                    </div>
 
-                        {/* Error Message */}
-                        {error && (
-                            <div
-                                className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg"
-                                role="alert"
-                                aria-live="polite"
-                            >
-                                <p className="text-sm text-red-600 text-center">{error}</p>
-                            </div>
-                        )}
-
-                        {/* Storage Warning */}
-                        {storageWarning && (
-                            <div
-                                className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg"
-                                role="alert"
-                            >
-                                <div className="flex items-start">
-                                    <div className="flex-shrink-0">
-                                        <svg className="w-5 h-5 text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                    <div className="ml-3">
-                                        <h3 className="text-sm font-medium text-yellow-800">
-                                            Browser Compatibility Issue
-                                        </h3>
-                                        <p className="text-xs text-yellow-700 mt-1">
-                                            Your browser's settings may be blocking authentication.
-                                        </p>
+                    {error && (
+                        <div className="mt-6 rounded-md bg-red-50 p-4 border border-red-200">
+                            <div className="flex">
+                                <div className="ml-3">
+                                    <h3 className="text-sm font-medium text-red-800">Authentication Failed</h3>
+                                    <div className="mt-2 text-sm text-red-700">
+                                        <p>{error}</p>
                                     </div>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </div>
+                    )}
 
-                {/* Footer */}
-                <div className="mt-6 text-center">
-                    <p className="text-sm text-gray-500">
-                        Need access?{' '}
-                        <a
-                            href="mailto:ieee@ucsd.edu"
-                            className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
-                        >
-                            Contact IEEE UCSD
-                        </a>
-                    </p>
+                    {storageWarning && (
+                        <div className="mt-6 rounded-md bg-yellow-50 p-4 border border-yellow-200">
+                            <div className="flex">
+                                <div className="ml-3">
+                                    <h3 className="text-sm font-medium text-yellow-800">Browser Issue</h3>
+                                    <div className="mt-2 text-sm text-yellow-700">
+                                        <p>Your browser settings may be hindering the sign-in process.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="mt-8 border-t border-gray-100 pt-6">
+                        <div className="relative flex justify-center text-sm">
+                            <span className="bg-white/50 px-2 text-gray-500">
+                                Need access? <a href="mailto:ieee@ucsd.edu" className="font-semibold text-blue-600 hover:text-blue-500">Contact IEEE UCSD</a>
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
