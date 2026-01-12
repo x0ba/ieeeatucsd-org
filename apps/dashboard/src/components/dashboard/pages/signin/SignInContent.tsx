@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { auth, signInWithPopup, GoogleAuthProvider, browserPopupRedirectResolver } from '../../../../firebase/client';
 import { Skeleton } from '@heroui/react';
 import CircuitBackground from './CircuitBackground';
+import { Toaster, toast } from 'sonner';
 
 // Blue IEEE Logo SVG Component
 const BlueIEEELogo = ({ className = "w-32 h-auto" }: { className?: string }) => (
@@ -22,7 +23,7 @@ const SignInButtonSkeleton = () => (
 );
 
 export default function SignInContent() {
-    const [error, setError] = useState<string | null>(null);
+    // const [error, setError] = useState<string | null>(null); // Removed error state
     const [loading, setLoading] = useState(false);
     const [storageWarning, setStorageWarning] = useState(false);
 
@@ -45,7 +46,7 @@ export default function SignInContent() {
     };
 
     const handleGoogleSignIn = async () => {
-        setError(null);
+        // setError(null); // No longer needed
         setLoading(true);
 
         try {
@@ -94,7 +95,7 @@ export default function SignInContent() {
                 errorMessage = err.message;
             }
 
-            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -104,6 +105,7 @@ export default function SignInContent() {
         <div className="min-h-screen relative flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8 overflow-hidden bg-gray-50">
             {/* Background Animation */}
             <CircuitBackground />
+            <Toaster richColors />
 
             <div className="relative z-10 w-full max-w-md">
                 <div className="bg-white/90 backdrop-blur-sm py-10 px-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-gray-900/5 sm:rounded-2xl sm:px-10">
@@ -134,19 +136,6 @@ export default function SignInContent() {
                             </button>
                         )}
                     </div>
-
-                    {error && (
-                        <div className="mt-6 rounded-md bg-red-50 p-4 border border-red-200">
-                            <div className="flex">
-                                <div className="ml-3">
-                                    <h3 className="text-sm font-medium text-red-800">Authentication Failed</h3>
-                                    <div className="mt-2 text-sm text-red-700">
-                                        <p>{error}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     {storageWarning && (
                         <div className="mt-6 rounded-md bg-yellow-50 p-4 border border-yellow-200">
