@@ -3,6 +3,7 @@ import { ArrowRight, Calendar, MapPin, Users, DollarSign, FileText, AlertCircle,
 import { extractFilename } from '../utils/filenameUtils';
 import { useChangeTracking } from '../hooks/useChangeTracking';
 import { Spinner } from '@heroui/react';
+import { parseDateMMDDYY } from '../utils/eventRequestUtils';
 
 interface FieldChange {
   field: string;
@@ -85,6 +86,11 @@ export default function EventEditComparison({
           const [y, mth, d] = datePart.split('-').map((v) => parseInt(v, 10));
           const [hh, mm] = timePart.split(':').map((v) => parseInt(v, 10));
           return new Date(y, mth - 1, d, hh, mm || 0, 0, 0);
+        }
+        const parsed = parseDateMMDDYY(val);
+        if (parsed) {
+          const [y, mth, d] = parsed.split('-').map((v) => parseInt(v, 10));
+          return new Date(y, mth - 1, d, 0, 0, 0, 0);
         }
       }
       const d = new Date(val);
@@ -174,6 +180,11 @@ export default function EventEditComparison({
               const [y, m, d] = datePart.split('-').map(v => parseInt(v, 10));
               const [hh, mm] = timePart.split(':').map(v => parseInt(v, 10));
               return new Date(y, m - 1, d, hh, mm || 0, 0, 0).getTime();
+            }
+            const parsed = parseDateMMDDYY(value);
+            if (parsed) {
+              const [y, m, d] = parsed.split('-').map(v => parseInt(v, 10));
+              return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
             }
           }
           const dnum = new Date(value).getTime();

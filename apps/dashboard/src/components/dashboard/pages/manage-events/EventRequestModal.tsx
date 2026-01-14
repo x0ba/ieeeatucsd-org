@@ -37,8 +37,7 @@ import { useInvoiceManagement } from "./hooks/useInvoiceManagement";
 import { validateStep, validateCompleteForm } from "./utils/validationUtils";
 import {
   safeGetTimeString,
-  safeGetDateString,
-  safeGetDateTimeString,
+  safeGetDateInputString,
   convertLegacyInvoices,
   createSafeDateTime,
 } from "./utils/eventRequestUtils";
@@ -149,7 +148,7 @@ export default function EventRequestModal({
       setOriginalData({
         name: editingRequest.name || "",
         location: editingRequest.location || "",
-        startDate: safeGetDateString(editingRequest.startDateTime),
+        startDate: safeGetDateInputString(editingRequest.startDateTime),
         startTime: safeGetTimeString(editingRequest.startDateTime),
         endTime: safeGetTimeString(editingRequest.endDateTime),
         eventDescription: editingRequest.eventDescription || "",
@@ -191,7 +190,7 @@ export default function EventRequestModal({
       setFormData({
         name: editingRequest.name || "",
         location: editingRequest.location || "",
-        startDate: safeGetDateString(editingRequest.startDateTime),
+        startDate: safeGetDateInputString(editingRequest.startDateTime),
         startTime: safeGetTimeString(editingRequest.startDateTime),
         endTime: safeGetTimeString(editingRequest.endDateTime),
         eventDescription: editingRequest.eventDescription || "",
@@ -245,7 +244,7 @@ export default function EventRequestModal({
       setInvoices(invoicesData);
     } else if (preselectedDate && !editingRequest) {
       // Set the start date from the calendar selection
-      const dateString = preselectedDate.toISOString().split('T')[0];
+      const dateString = safeGetDateInputString(preselectedDate);
       setFormData((prev) => ({
         ...prev,
         startDate: dateString,
@@ -749,6 +748,7 @@ export default function EventRequestModal({
             formData={formData}
             fieldErrors={fieldErrors}
             onInputChange={handleInputChange}
+            editingRequestId={editingRequest?.id}
           />
         ),
       },

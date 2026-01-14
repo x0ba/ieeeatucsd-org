@@ -76,6 +76,8 @@ export const extractFileName = (url: string) => {
 const pad2 = (n: number) => n.toString().padStart(2, "0");
 const formatLocalDate = (d: Date) =>
   `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const formatLocalDateMDY = (d: Date) =>
+  `${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}/${d.getFullYear()}`;
 const formatLocalDateTime = (d: Date) =>
   `${formatLocalDate(d)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 
@@ -98,6 +100,18 @@ export const safeGetDateString = (timestamp: any) => {
     if (isNaN(date.getTime())) return "";
     // Use local date to avoid UTC off-by-one
     return formatLocalDate(date);
+  } catch (error) {
+    console.warn("Error parsing date:", error);
+    return "";
+  }
+};
+
+export const safeGetDateInputString = (timestamp: any) => {
+  try {
+    if (!timestamp) return "";
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    if (isNaN(date.getTime())) return "";
+    return formatLocalDateMDY(date);
   } catch (error) {
     console.warn("Error parsing date:", error);
     return "";

@@ -14,12 +14,14 @@ interface BasicInformationSectionProps {
   formData: EventFormData;
   fieldErrors: FieldError;
   onInputChange: (field: string, value: any) => void;
+  editingRequestId?: string;
 }
 
 export default function BasicInformationSection({
   formData,
   fieldErrors,
   onInputChange,
+  editingRequestId,
 }: BasicInformationSectionProps) {
   // State to track raw time input for editing
   const [rawTimeInput, setRawTimeInput] = useState(() => {
@@ -31,6 +33,7 @@ export default function BasicInformationSection({
     }
     return formData.startTime || "";
   });
+  const [hasUserEditedTime, setHasUserEditedTime] = useState(false);
 
   // State for real-time validation feedback
   const [dateValidation, setDateValidation] = useState<{ isValid: boolean; message: string }>({
@@ -121,14 +124,38 @@ export default function BasicInformationSection({
     // The live validation will show whether the input is valid
   };
 
+  useEffect(() => {
+    setHasUserEditedTime(false);
+  }, [editingRequestId]);
+
+  useEffect(() => {
+    validateDate(formData.startDate);
+  }, [formData.startDate]);
+
   // Sync raw input when formData changes from external sources (e.g., loading existing data)
   // Only update if the times are set but rawTimeInput is empty (initial load case)
   useEffect(() => {
-    if (!rawTimeInput && formData.startTime?.includes(":") && formData.endTime?.includes(":")) {
+    if (hasUserEditedTime) {
+      return;
+    }
+
+    if (formData.startTime?.includes(":") && formData.endTime?.includes(":")) {
       const formattedValue = `${formatTimeTo12H(formData.startTime)} - ${formatTimeTo12H(formData.endTime)}`;
       setRawTimeInput(formattedValue);
+      validateTime(formattedValue);
+      return;
     }
-  }, [formData.startTime, formData.endTime]);
+
+    if (formData.startTime?.includes(":")) {
+      const formattedValue = formatTimeTo12H(formData.startTime);
+      setRawTimeInput(formattedValue);
+      validateTime(formattedValue);
+      return;
+    }
+
+    setRawTimeInput("");
+    validateTime("");
+  }, [formData.startTime, formData.endTime, hasUserEditedTime]);
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6">
@@ -225,6 +252,7 @@ export default function BasicInformationSection({
               onValueChange={(value) => {
                 // Only update the raw input value without parsing
                 setRawTimeInput(value);
+                setHasUserEditedTime(true);
                 validateTime(value);
               }}
               onBlur={(e) => {

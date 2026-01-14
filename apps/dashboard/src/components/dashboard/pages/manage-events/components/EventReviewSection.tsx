@@ -4,6 +4,7 @@ import { truncateFilename } from '../utils/filenameUtils';
 import type { EventFormData } from '../types/EventRequestTypes';
 import EventEditComparison from './EventEditComparison';
 import { Spinner } from '@heroui/react';
+import { parseDateMMDDYY } from '../utils/eventRequestUtils';
 
 interface EventReviewSectionProps {
   eventData?: any;
@@ -89,8 +90,17 @@ export default function EventReviewSection({
     if (!date || !time) return 'Not specified';
     try {
       // Build local Date to avoid timezone shifts and reject invalid inputs
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return 'Invalid date';
-      const [yStr, mStr, dStr] = date.split('-');
+      let normalizedDate = date;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        normalizedDate = date;
+      } else {
+        const parsedDate = parseDateMMDDYY(date);
+        if (!parsedDate) return 'Invalid date';
+        normalizedDate = parsedDate;
+      }
+
+      if (!/^\d{2}:\d{2}$/.test(time)) return 'Invalid date';
+      const [yStr, mStr, dStr] = normalizedDate.split('-');
       const [hhStr, mmStr] = time.split(':');
       const y = Number(yStr), m = Number(mStr), d = Number(dStr);
       const hh = Number(hhStr), mm = Number(mmStr);

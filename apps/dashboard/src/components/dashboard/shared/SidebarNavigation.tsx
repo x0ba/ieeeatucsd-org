@@ -28,6 +28,7 @@ import type { NavigationCategory } from "./types/navigation";
 import type { UserRole } from "./types/firestore";
 import { NAVIGATION_PATHS } from "./types/navigation";
 import { SyncStatusIndicator } from "./components/SyncStatusIndicator.tsx";
+import { OfficerAiChat } from "./OfficerAiChat";
 import {
   Sidebar,
   SidebarContent,
@@ -339,6 +340,13 @@ function SidebarNavigationContent({ currentPath = "" }: { currentPath?: string }
         </div>
         <div className="flex items-center gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1">
           <SidebarTrigger className="flex-shrink-0 group-data-[collapsible=icon]:w-full" />
+
+          {["General Officer", "Executive Officer", "Administrator"].includes(currentUserRole || "") && (
+            <div className="group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+              <OfficerAiChat />
+            </div>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -373,7 +381,7 @@ function SidebarNavigationContent({ currentPath = "" }: { currentPath?: string }
           </DropdownMenu>
         </div>
       </SidebarFooter>
-    </Sidebar>
+    </Sidebar >
   );
 }
 

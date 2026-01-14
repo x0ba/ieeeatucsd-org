@@ -1,4 +1,7 @@
 // @ts-check
+import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
 
 import tailwind from "@astrojs/tailwind";
@@ -16,6 +19,10 @@ import icon from "astro-icon";
 import sitemap from "@astrojs/sitemap";
 
 // import AstroPWA from "@vite-pwa/astro";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 // https://astro.build/config
 export default defineConfig({
@@ -63,6 +70,13 @@ export default defineConfig({
       ),
       "import.meta.env.PUBLIC_FIREBASE_APP_ID": JSON.stringify(
         process.env.PUBLIC_FIREBASE_APP_ID,
+      ),
+      // Qdrant config (server-side)
+      "import.meta.env.QDRANT_URL": JSON.stringify(
+        process.env.QDRANT_URL,
+      ),
+      "import.meta.env.QDRANT_API_KEY": JSON.stringify(
+        process.env.QDRANT_API_KEY,
       ),
     },
     resolve: {
