@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle } from "lucide-react";
+
 interface Message {
     role: "user" | "assistant";
     content: string;
@@ -192,10 +195,19 @@ export function OfficerAiChat() {
                     <div className="flex items-center gap-2">
                         <Bot className="w-5 h-5 text-blue-500" />
                         <h4 className="font-semibold text-sm">Officer Assistant</h4>
+                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px] tracking-wider font-bold">BETA</Badge>
                     </div>
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsOpen(false)}>
                         <X className="w-4 h-4" />
                     </Button>
+                </div>
+
+                {/* Beta Disclaimer */}
+                <div className="bg-blue-50/50 dark:bg-blue-900/10 px-4 py-2 border-b border-blue-100 dark:border-blue-900/20 flex gap-2 items-start">
+                    <AlertCircle className="w-3 h-3 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-[11px] text-blue-700 dark:text-blue-300 leading-tight">
+                        This tool is in <span className="font-semibold">beta</span>. Please double check all info & report issues to the webmaster.
+                    </p>
                 </div>
 
                 {/* Messages */}
