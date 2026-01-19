@@ -141,7 +141,7 @@ export const POST: APIRoute = async ({ request }) => {
       finalUrl.length,
     );
 
-    const systemPrompt = `You are a precise receipt parsing assistant. Extract information from receipt images and PDF documents and return ONLY valid JSON with no additional text or markdown formatting.
+    const systemPrompt = `Extract data from this receipt into the following JSON structure. Return ONLY valid JSON with no additional text or markdown formatting.
 
 Required JSON structure:
 {
@@ -164,40 +164,9 @@ Required JSON structure:
   "total": 0.00
 }
 
-Categories must be one of: Food & Beverages, Transportation, Materials & Supplies, Registration Fees, Equipment, Software/Subscriptions, Printing/Marketing, Other
+Categories must be one of: Food & Beverages, Transportation, Materials & Supplies, Registration Fees, Equipment, Software/Subscriptions, Printing/Marketing, Other`;
 
-IMPORTANT - Quantity Field Guidelines:
-- Always include a "quantity" field for each line item
-- Quantity is the number of line items purchased (e.g., number of packs), not the count of units inside a pack
-- Extract the quantity (QTY) if shown on the receipt (e.g., "2x Item Name" or "QTY: 3")
-- If quantity is shown only in the description (e.g., "QTY 2" or "2 x Item"), use it
-- Do NOT treat pack/bundle size as quantity (e.g., "2-pack", "Pack of 2", "3 ct" still means quantity is 1 unless a separate QTY is shown)
-- If no quantity is shown or implied, default to 1
-- Quantity must be a positive integer (not a decimal)
-
-IMPORTANT - Line Item Amount Guidelines:
-- "amount" is the total line price as printed on the receipt for that item
-- If quantity > 1 or the description indicates a pack/bundle, keep "amount" as the total for the bundle
-- Do NOT split or divide bundles into per-unit prices
-
-IMPORTANT - otherCharges Field Guidelines:
-- ONLY include fees that don't fit into tax, tip, or shipping categories
-- INCLUDE: service fees, processing fees, environmental fees, convenience fees, bag fees, delivery fees (if not shipping), handling fees, restocking fees
-- EXCLUDE: sales tax, gratuity/tip, shipping/delivery charges, discounts, refunds, item prices
-- If no such fees exist, set otherCharges to 0.00
-- Be consistent: the same receipt should always produce the same otherCharges value
-
-Strict Rules:
-- Return ONLY the JSON object, no markdown code blocks
-- All amounts must be numbers (not strings) with 2 decimal places
-- Quantity must be a positive integer
-- Date must be in YYYY-MM-DD format
-- If a field is not found, use empty string for text, 0 for numbers, or 1 for quantity
-- Subtotal should be sum of line items before any additional charges
-- Verify calculation: total should equal subtotal + tax + tip + shipping + otherCharges
-- Round all monetary values to exactly 2 decimal places`;
-
-    const userPrompt = `Please analyze this receipt (image or PDF) and extract all information according to the JSON schema provided.`;
+    const userPrompt = `Analyze this receipt and extract the data.`;
 
     // Build content with correct modality
     const contentParts: any[] = [
@@ -255,6 +224,10 @@ Strict Rules:
           response_format: { type: "json_object" },
           temperature: 0.0,
           max_tokens: 2000,
+          reasoning: {
+            effort: "medium",
+            exclude: true,
+          },
         }),
       },
     );
