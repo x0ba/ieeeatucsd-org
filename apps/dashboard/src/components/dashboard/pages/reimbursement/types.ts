@@ -73,8 +73,8 @@ export const EXPENSE_CATEGORIES = [
 ];
 
 export const PAYMENT_METHODS = [
-  "Personal Credit Card",
-  "Personal Debit Card",
+  "Credit Card",
+  "Debit Card",
   "Cash",
   "Venmo",
   "Zelle",
