@@ -53,17 +53,35 @@ interface ImportMeta {
 // Helper function to get environment variable with fallback
 function getEnvVar(key: string, fallback: string = ""): string {
   // Try process.env first (for dotenv), then import.meta.env (for Astro)
+  let value = "";
   if (typeof process !== "undefined" && process.env[key]) {
-    return process.env[key] || fallback;
-  }
-  if (
+    value = process.env[key] || fallback;
+  } else if (
     typeof import.meta !== "undefined" &&
     import.meta.env &&
     import.meta.env[key]
   ) {
-    return import.meta.env[key] || fallback;
+    value = import.meta.env[key] || fallback;
+  } else {
+    return fallback;
   }
-  return fallback;
+
+  // Decode base64 for FIREBASE_PRIVATE_KEY
+  if (key === "FIREBASE_PRIVATE_KEY" && value) {
+    try {
+      // Check if the value is base64 encoded
+      const isBase64 = /^[A-Za-z0-9+/]*={0,2}$/.test(value.trim()) && value.length % 4 === 0;
+      if (isBase64 && !value.includes("BEGIN PRIVATE KEY")) {
+        const decodedValue = Buffer.from(value, 'base64').toString('utf8');
+        return decodedValue;
+      }
+    } catch (error) {
+      console.warn("Failed to decode FIREBASE_PRIVATE_KEY from base64, using original value");
+      // Return original value if decoding fails
+    }
+  }
+
+  return value;
 }
 
 /**
@@ -228,7 +246,7 @@ export function validateFirebaseServerConfig(): {
     firebaseEnv.privateKey &&
     !firebaseEnv.privateKey.includes("BEGIN PRIVATE KEY")
   ) {
-    errors.push("FIREBASE_PRIVATE_KEY should be a valid private key");
+    errors.push("FIREBASE_PRIVATE_KEY should be a valid private key (either base64 encoded or PEM format)");
   }
 
   return {

@@ -35,7 +35,7 @@ export const POST: APIRoute = async ({ request }) => {
         type: "service_account",
         project_id: firebaseEnv.projectId,
         private_key_id: firebaseEnv.privateKeyId,
-        private_key: firebaseEnv.privateKey?.replace(/\\n/g, "\n"),
+        private_key: firebaseEnv.privateKey?.replace(/\\n/g, "\n"), // Fix escaped newlines from env vars (already decoded from base64 if needed)
         client_email: firebaseEnv.clientEmail,
         client_id: firebaseEnv.clientId,
       },
