@@ -7,11 +7,33 @@ import Officer from "../board/Officer.astro";
 import Filter from "../board/Filter.astro";
 import officers from "../../data/officers.json";
 
+const officerImages = import.meta.glob("../../images/officers/*.webp", {
+  eager: true,
+});
+
+function resolveOfficerImage(picturePath: string, name: string) {
+
+  if (picturePath?.startsWith("http")) return picturePath;
+
+  if (!picturePath) {
+    const text = encodeURIComponent(name.toUpperCase());
+    return `https://placehold.co/334x440?text=${text}`;
+  }
+
+  const base = picturePath.split("/").pop() || "";
+  const filename = base.endsWith(".webp") ? base : `${base}.webp`;
+
+  const key = Object.keys(officerImages).find((k) => k.endsWith(`/${filename}`));
+  return key ? (officerImages as any)[key].default : `https://placehold.co/334x440?text=${encodeURIComponent(name.toUpperCase())}`;
+}
+
 // Get all unique types and add 'All' option
 const typeOrder = ["Executives", "Internal", "Events", "Projects"];
 const types = ["All", ...typeOrder];
 
 const currentFilter = "All";
+const eagerCount = 6;
+
 ---
 
 <div
@@ -44,21 +66,18 @@ const currentFilter = "All";
   <Filter filters={types} currentFilter={currentFilter} />
 
   <div class="grid gap-[3vw] md:grid-cols-3 grid-cols-2 mt-[2vh]">
-    {
-      officers.map((officer) => (
-        <div
-          data-officer
-          data-types={JSON.stringify(officer.type)}
-          style="opacity: 0; visibility: hidden"
-        >
-          <Officer
-            name={officer.name}
-            position={officer.position}
-            picture={officer.picture}
-            email={officer.email}
-          />
-        </div>
-      ))
-    }
+  {
+    officers.map((officer, i) => (
+      <div data-officer data-types={JSON.stringify(officer.type)} style="opacity:0; visibility:hidden">
+        <Officer
+          name={officer.name}
+          position={officer.position}
+          picture={resolveOfficerImage(officer.picture, officer.name)}
+          email={officer.email}
+          eager={i < eagerCount}
+        />
+      </div>
+    ))
+  }
   </div>
 </div>

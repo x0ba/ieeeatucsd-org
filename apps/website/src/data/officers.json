@@ -21,13 +21,6 @@
     "type": ["Executives"]
   },
   {
-    "name": "Yu Chen Tai",
-    "position": "Vice Chair Projects",
-    "picture": "/officers/terri.webp",
-    "email": "projects@ieeeatucsd.org",
-    "type": ["Executives", "Projects"]
-  },
-  {
     "name": "Anupama Nambiar",
     "position": "Vice Chair Events",
     "picture": "/officers/anu.webp",
@@ -54,13 +47,6 @@
     "picture": "/officers/anusha.webp",
     "email": "coordinators@ieeeatucsd.org",
     "type": ["Executives", "Events"]
-  },
-  {
-    "name": "Nian-Nian Wang",
-    "position": "Project Space Chair",
-    "picture": "https://placehold.co/800x800?text=NIAN-NIAN%20WANG",
-    "email": "@ieeeatucsd.org",
-    "type": ["Projects"]
   },
   {
     "name": "Raymond Rada",
@@ -93,7 +79,7 @@
   {
     "name": "Angel Rinea Arguilla",
     "position": "Quarterly Projects Chair",
-    "picture": "https://placehold.co/800x800?text=ANGEL%20RINEA%20ARGUILLA",
+    "picture": "https://placehold.co/334x440?text=ANGEL%20RINEA%20ARGUILLA",
     "email": "qp@ieeeatucsd.org",
     "type": ["Projects"]
   },
@@ -107,7 +93,7 @@
   {
     "name": "Iris Chou",
     "position": "Professional Chair",
-    "picture": "https://placehold.co/800x800?text=IRIS%20CHOU",
+    "picture": "https://placehold.co/334x440?text=IRIS%20CHOU",
     "email": "professional@ieeeatucsd.org",
     "type": ["Events"]
   },
@@ -121,14 +107,14 @@
   {
     "name": "Aryen Singhal",
     "position": "Technical Chair",
-    "picture": "https://placehold.co/800x800?text=ARYEN%20SINGHAL",
+    "picture": "https://placehold.co/334x440?text=ARYEN%20SINGHAL",
     "email": "technical@ieeeatucsd.org",
     "type": ["Events"]
   },
   {
     "name": "Riya Bhatia",
     "position": "Technical Chair",
-    "picture": "https://placehold.co/800x800?text=RIYA%20BHATIA",
+    "picture": "https://placehold.co/334x440?text=RIYA%20BHATIA",
     "email": "technical@ieeeatucsd.org",
     "type": ["Events"]
   },
@@ -156,7 +142,7 @@
   {
     "name": "Cailey Murad",
     "position": "Social Chair",
-    "picture": "https://placehold.co/800x800?text=CAILEY%20MURAD",
+    "picture": "https://placehold.co/334x440?text=CAILEY%20MURAD",
     "email": "social@ieeeatucsd.org",
     "type": ["Events"]
   },
@@ -177,7 +163,7 @@
   {
     "name": "Katie Ngo",
     "position": "Webmaster",
-    "picture": "https://placehold.co/800x800?text=KATIE%20NGO",
+    "picture": "https://placehold.co/334x440?text=KATIE%20NGO",
     "email": "webmaster@ieeeatucsd.org",
     "type": ["Internal"]
   },
@@ -191,7 +177,7 @@
   {
     "name": "Loraine Diosa",
     "position": "Marketing Chair",
-    "picture": "https://placehold.co/800x800?text=LORAINE%20DOISA",
+    "picture": "https://placehold.co/334x440?text=LORAINE%20DOISA",
     "email": "marketing@ieeeatucsd.org",
     "type": ["Internal"]
   },
@@ -212,7 +198,7 @@
   {
     "name": "Paul Moore",
     "position": "UI/UX Chair",
-    "picture": "https://placehold.co/800x800?text=PAUL%20MOORE",
+    "picture": "https://placehold.co/334x440?text=PAUL%20MOORE",
     "email": "@ieeeatucsd.org",
     "type": ["Internal"]
   }
