@@ -1,0 +1,38 @@
+---
+import GetStartedContent from '../../components/dashboard/pages/get-started/GetStartedContent';
+import getSession from '../../lib/better-auth';
+import { redirect } from 'astro/navigation';
+
+// Check authentication and onboarding status
+const session = await getSession();
+
+if (!session) {
+  redirect('/dashboard-v2/signin');
+}
+
+// Redirect if already onboarded
+if (session.user.signedUp) {
+  redirect('/dashboard-v2/overview');
+}
+
+const authUserId = session.user.id;
+const email = session.user.email;
+const name = session.user.name;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Get Started - IEEE at UC San Diego</title>
+  </head>
+  <body>
+    <GetStartedContent
+      client:load
+      authUserId={authUserId}
+      email={email}
+      name={name}
+    />
+  </body>
+</html>
