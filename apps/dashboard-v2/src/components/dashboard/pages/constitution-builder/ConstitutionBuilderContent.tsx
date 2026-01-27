@@ -198,7 +198,7 @@ const ConstitutionBuilderContent: React.FC<ConstitutionBuilderContentProps> = ()
                             setCurrentView('editor');
 
                             // Auto-expand parent sections in sidebar
-                            const section = sections.find(s => s.id === sectionId);
+                            const section = sections.find(s => s._id === sectionId);
                             if (section) {
                                 const newExpandedSections = new Set(expandedSections);
 
@@ -206,7 +206,7 @@ const ConstitutionBuilderContent: React.FC<ConstitutionBuilderContentProps> = ()
                                 let currentParentId = section.parentId;
                                 while (currentParentId) {
                                     newExpandedSections.add(currentParentId);
-                                    const parentSection = sections.find(s => s.id === currentParentId);
+                                    const parentSection = sections.find(s => s._id === currentParentId);
                                     currentParentId = parentSection?.parentId;
                                 }
 
@@ -260,7 +260,7 @@ const ConstitutionBuilderContent: React.FC<ConstitutionBuilderContentProps> = ()
                         {currentView === 'preview' ? (
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 h-[calc(100vh-200px)]">
                                 <PDFPreview
-                                    constitution={constitution}
+                                    constitution={constitution ?? null}
                                     sections={getSectionHierarchy(sections)}
                                     currentPage={currentPage}
                                     onPageChange={setCurrentPage}

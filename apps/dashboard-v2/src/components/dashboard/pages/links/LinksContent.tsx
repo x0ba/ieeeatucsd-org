@@ -4,7 +4,7 @@ import { useLinksManagement } from "./hooks/useLinksManagement";
 import LinkCard from "./components/LinkCard";
 import LinkModal from "./components/LinkModal";
 import LinkFilters from "./components/LinkFilters";
-import type { Link } from "../../shared/types/firestore";
+import type { Link } from "../../shared/types/constitution";
 import { Skeleton } from "@heroui/react";
 
 export default function LinksContent() {

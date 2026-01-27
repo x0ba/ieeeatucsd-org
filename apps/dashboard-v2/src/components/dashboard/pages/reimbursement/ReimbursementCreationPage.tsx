@@ -26,8 +26,8 @@ import {
     Save
 } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
-import { api } from '../../../../convex/_generated/api';
-import { Id } from '../../../../convex/_generated/dataModel';
+import { api } from '../../../../../../convex/_generated/api';
+import { Id } from '../../../../../../convex/_generated/dataModel';
 import { useConvexAuth } from '../../hooks/useConvexAuth';
 import { showToast } from '../../shared/utils/toast';
 import type {

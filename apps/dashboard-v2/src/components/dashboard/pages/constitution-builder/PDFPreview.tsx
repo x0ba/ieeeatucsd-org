@@ -35,7 +35,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({
 
     // Generate a hash of sections to detect changes
     const getSectionsHash = (sections: ConstitutionSection[]) => {
-        return JSON.stringify(sections.map(s => ({ id: s.id, content: s.content, order: s.order })));
+        return JSON.stringify(sections.map(s => ({ _id: s._id, content: s.content, order: s.order })));
     };
 
     // Auto-regenerate PDF when sections or constitution change

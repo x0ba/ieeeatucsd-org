@@ -389,6 +389,91 @@ export const updateApprovedAmount = mutation({
   },
 });
 
+// Generic update mutation for reimbursement details
+// Used by ManageReimbursementDetails for partial approvals and payment info
+export const update = mutation({
+  args: {
+    id: v.id("reimbursements"),
+    approvedAmount: v.optional(v.number()),
+    partialReason: v.optional(v.string()),
+    originalAmount: v.optional(v.number()),
+    status: v.optional(v.union(v.literal("submitted"), v.literal("declined"), v.literal("approved"), v.literal("paid"))),
+    paymentConfirmation: v.optional(v.string()),
+    paymentDate: v.optional(v.number()),
+    amountPaid: v.optional(v.number()),
+    proofFileUrl: v.optional(v.string()),
+    paymentMemo: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity || !identity.subject) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check if user has officer/admin role
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authUserId", (q) => q.eq("authUserId", identity.subject))
+      .first();
+
+    if (!user || (!user.role.includes("Officer") && user.role !== "Administrator")) {
+      throw new Error("Not authorized to update reimbursement");
+    }
+
+    const reimbursement = await ctx.db.get(args.id);
+    if (!reimbursement) {
+      throw new Error("Reimbursement not found");
+    }
+
+    // Build update data object with only provided fields
+    const updateData: any = {};
+
+    if (args.approvedAmount !== undefined) {
+      updateData.approvedAmount = args.approvedAmount;
+    }
+    if (args.partialReason !== undefined) {
+      updateData.partialReason = args.partialReason;
+    }
+    if (args.originalAmount !== undefined) {
+      updateData.originalAmount = args.originalAmount;
+    }
+    if (args.status !== undefined) {
+      updateData.status = args.status;
+    }
+    if (args.paymentConfirmation !== undefined) {
+      updateData.paymentConfirmation = args.paymentConfirmation;
+    }
+    if (args.paymentDate !== undefined) {
+      updateData.paymentDate = args.paymentDate;
+    }
+    if (args.amountPaid !== undefined) {
+      updateData.amountPaid = args.amountPaid;
+    }
+    if (args.proofFileUrl !== undefined) {
+      updateData.proofFileUrl = args.proofFileUrl;
+    }
+    if (args.paymentMemo !== undefined) {
+      updateData.paymentMemo = args.paymentMemo;
+    }
+
+    // Add audit log entry if there are changes
+    if (Object.keys(updateData).length > 0) {
+      const currentAuditLogs = reimbursement.auditLogs || [];
+      const changes = Object.keys(updateData).join(", ");
+      const newAuditLog = {
+        action: `Updated: ${changes}`,
+        createdBy: identity.subject,
+        timestamp: Date.now(),
+      };
+      updateData.auditLogs = [...currentAuditLogs, newAuditLog];
+    }
+
+    await ctx.db.patch(args.id, updateData);
+
+    return await ctx.db.get(args.id);
+  },
+});
+
 // Get user by ID (for fetching submitter details)
 export const getUserById = query({
   args: { userId: v.string() },

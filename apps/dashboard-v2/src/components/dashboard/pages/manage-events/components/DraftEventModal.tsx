@@ -11,7 +11,7 @@ import {
 } from '@heroui/react';
 import { Calendar, MapPin, FileText } from 'lucide-react';
 import { useMutation } from 'convex/react';
-import { api } from '../../../../../convex/_generated/api';
+import { api } from '@/../convex/_generated/api';
 import { useCurrentUser } from '../../../../hooks/useConvexAuth';
 import { showToast } from '../../../shared/utils/toast';
 import type { DraftEventModalProps, DraftEventFormData } from '../types/EventRequestTypes';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from '../../../../../../convex/_generated/api';
 import {
   Card,
   CardBody,
@@ -16,7 +16,7 @@ import type {
   OfficerTeam,
   TeamMember,
 } from "./types/OfficerLeaderboardTypes";
-import type { UserRole } from "../../shared/types/firestore";
+import type { UserRole } from "../../../lib/types";
 import { useCurrentUser } from "../../hooks/useConvexAuth";
 
 // Allowed roles for viewing officer leaderboard

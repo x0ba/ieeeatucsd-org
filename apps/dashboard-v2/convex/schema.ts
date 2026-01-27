@@ -543,7 +543,7 @@ export default defineSchema({
     collaborators: v.array(v.string()),
     isTemplate: v.optional(v.boolean()),
   })
-    .index("by_id", ["id"])
+    .index("by_customId", ["id"])
     .index("by_status", ["status"])
     .index("by_lastModified", ["lastModified"]),
 

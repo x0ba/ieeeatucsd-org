@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Mail, List, Lock } from 'lucide-react';
 import { useQuery } from 'convex/react';
-import { api } from '../../../../convex/_generated/api';
+import { api } from '../../../../../../convex/_generated/api';
 import { useAuth } from '../../../../hooks/useAuth';
 import type { OnboardingTab } from './types/OnboardingTypes';
-import type { UserRole } from '../../shared/types/firestore';
+import type { UserRole } from '../../../../lib/types';
 import InvitationFlowTab from './components/InvitationFlowTab';
 import DirectOnboardingTab from './components/DirectOnboardingTab';
 import PendingInvitationsTab from './components/PendingInvitationsTab';

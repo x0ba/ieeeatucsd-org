@@ -7,7 +7,7 @@ import type {
   OfficerTeamData,
 } from "../types/OfficerLeaderboardTypes";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from '../../../../../../convex/_generated/api';
 
 export class OfficerLeaderboardService {
   private static readonly SETTINGS_DOC_ID = "settings";

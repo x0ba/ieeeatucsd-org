@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
@@ -22,116 +22,110 @@ export function useSyncUserFromSession() {
   return useMutation(api.users.syncUserFromSession);
 }
 
-// Storage hooks - not implemented yet
-// export function useUploadFile() {
-//   return useMutation(api.storage.uploadFile);
-// }
+// Storage hooks
+export function useUploadFile() {
+  return useAction(api.storage.uploadFile);
+}
 
-// export function useUploadMultipleFiles() {
-//   return useMutation(api.storage.uploadMultipleFiles);
-// }
+export function useUploadMultipleFiles() {
+  return useAction(api.storage.uploadMultipleFiles);
+}
 
-// export function useGetFileUrl(storageId: Id<"_storage">) {
-//   return useQuery(api.storage.getFileUrl, { storageId });
-// }
+export function useGetFileUrl(storageId: Id<"_storage">) {
+  return useQuery(api.storage.getFileUrl, { storageId });
+}
 
-// export function useDeleteFile() {
-//   return useMutation(api.storage.deleteFile);
-// }
+export function useDeleteFile() {
+  return useMutation(api.storage.deleteFile);
+}
 
-// Overview hooks - not implemented yet
-// export function useOverviewData(authUserId: string) {
-//   return useQuery(api.overview.getOverviewData, { authUserId });
-// }
+// Overview hooks
+export function useOverviewData(authUserId: string) {
+  return useQuery(api.overview.getOverviewData, { authUserId });
+}
 
-// Events hooks - TODO: Regenerate Convex API to include events module
+// Events hooks
 export function usePublishedEvents() {
-  // TODO: Replace with actual API call when Convex API is regenerated
-  return [];
+  return useQuery(api.events.getPublishedEvents, {});
 }
 
 export function useUserAttendedEvents(authUserId: string) {
-  // TODO: Replace with actual API call when Convex API is regenerated
-  return [];
+  return useQuery(api.events.getUserAttendedEvents, { authUserId });
 }
 
-// export function useEventRequests() {
-//   return useQuery(api.events.getEventRequests, {});
-// }
+export function useEventRequests() {
+  return useQuery(api.events.getEventRequests, {});
+}
 
-// export function useUserEventRequests(authUserId: string) {
-//   return useQuery(api.events.getEventRequestsByUser, { authUserId });
-// }
+export function useUserEventRequests(authUserId: string) {
+  return useQuery(api.events.getEventRequestsByUser, { authUserId });
+}
 
-// export function useUsers() {
-//   return useQuery(api.events.getUsers, {});
-// }
+export function useUsers() {
+  return useQuery(api.events.getUsers, {});
+}
 
-// Links hooks - TODO: Regenerate Convex API to include dashboard module
-// export function useLinks() {
-//   return useQuery(api.dashboard.getLinks, {});
-// }
+// Links hooks
+export function useLinks() {
+  return useQuery(api.dashboard.getLinks, {});
+}
 
-// export function useLinksByCategory(category: string) {
-//   return useQuery(api.dashboard.getLinksByCategory, { category });
-// }
+export function useLinksByCategory(category: string) {
+  return useQuery(api.dashboard.getLinksByCategory, { category });
+}
 
-// Fund deposits hooks - TODO: Regenerate Convex API to include fundDeposits module
-// export function useUserFundDeposits(authUserId: string) {
-//   return useQuery(api.fundDeposits.getUserFundDeposits, { depositedBy: authUserId });
-// }
+// Fund deposits hooks
+export function useUserFundDeposits(authUserId: string) {
+  return useQuery(api.fundDeposits.getUserFundDeposits, { depositedBy: authUserId });
+}
 
-// export function useAllFundDeposits() {
-//   return useQuery(api.fundDeposits.getAllFundDeposits, {});
-// }
+export function useAllFundDeposits() {
+  return useQuery(api.fundDeposits.getAllFundDeposits, {});
+}
 
-// Notifications hooks - TODO: Regenerate Convex API to include dashboard module
-// export function useUserNotifications(authUserId: string) {
-//   return useQuery(api.dashboard.getUserNotifications, { userId: authUserId });
-// }
+// Notifications hooks
+export function useUserNotifications(authUserId: string) {
+  return useQuery(api.dashboard.getUserNotifications, { authUserId });
+}
 
-// export function useUnreadNotifications(authUserId: string) {
-//   return useQuery(api.dashboard.getUnreadNotifications, { userId: authUserId });
-// }
+export function useUnreadNotifications(authUserId: string) {
+  return useQuery(api.dashboard.getUnreadNotifications, { authUserId });
+}
 
-// Public profiles hooks - TODO: Regenerate Convex API to include dashboard module
-// export function usePublicProfiles() {
-//   return useQuery(api.dashboard.getPublicProfiles, {});
-// }
+// Public profiles hooks
+export function usePublicProfiles() {
+  return useQuery(api.dashboard.getPublicProfiles, {});
+}
 
-// Constitutions hooks - TODO: Regenerate Convex API to include dashboard module
-// export function useConstitutions() {
-//   return useQuery(api.dashboard.getConstitutions, {});
-// }
+// Constitutions hooks
+export function useConstitutions() {
+  return useQuery(api.dashboard.getConstitutions, {});
+}
 
-// export function useConstitutionsByStatus(status: "draft" | "published" | "archived") {
-//   return useQuery(api.dashboard.getConstitutionsByStatus, { status });
-// }
+export function useConstitutionsByStatus(status: "draft" | "published" | "archived") {
+  return useQuery(api.dashboard.getConstitutionsByStatus, { status });
+}
 
-// Fund requests hooks - TODO: Regenerate Convex API to include fundRequests module
+// Fund requests hooks
 export function useUserFundRequests(authUserId: string) {
-  // TODO: Replace with actual API call when Convex API is regenerated
-  return [];
+  return useQuery(api.fundRequests.getUserFundRequests, { submittedBy: authUserId });
 }
 
 export function useAllFundRequests() {
-  // TODO: Replace with actual API call when Convex API is regenerated
-  return [];
+  return useQuery(api.fundRequests.getAllFundRequests, {});
 }
 
 export function useFundRequestById(id: string) {
-  // TODO: Replace with actual API call when Convex API is regenerated
-  return null;
+  return useQuery(api.fundRequests.getFundRequestById, { id: id as any });
 }
 
 export function useBudgetConfig(department: "events" | "projects" | "internal" | "other") {
-  // TODO: Replace with actual API call when Convex API is regenerated
-  return null;
+  return useQuery(api.fundRequests.getBudgetConfig, { department });
 }
 
-// export function useBudgetAdjustments(department: "events" | "projects" | "internal" | "other") {
-//   return useQuery(api.fundRequests.getBudgetAdjustments, { department });
-// }
+export function useBudgetAdjustments(department: "events" | "projects" | "internal" | "other") {
+  return useQuery(api.fundRequests.getBudgetAdjustments, { department });
+}
 
 // Combined auth hook for components that need both authUserId and user data
 export function useAuth() {

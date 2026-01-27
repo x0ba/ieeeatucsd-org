@@ -18,25 +18,13 @@ export const useConstitutionData = () => {
 
   const constitutionId = "ieee-ucsd-constitution";
 
-  // TODO: Re-enable when Convex API includes constitutions module
-  // const constitution = useQuery(api.constitutions.getConstitution, { constitutionId });
-  // const sections = useQuery(api.constitutions.getSections, { constitutionId }) || [];
-  
-  // Placeholder data
-  const constitution = null;
-  const sections: any[] = [];
+  const constitution = useQuery(api.constitutions.getConstitution, { constitutionId });
+  const sections = useQuery(api.constitutions.getSections, { constitutionId }) || [];
 
-  // TODO: Re-enable when Convex API includes constitutions module
-  // const initializeConstitution = useMutation(api.constitutions.initializeConstitution);
-  // const addSectionMutation = useMutation(api.constitutions.addSection);
-  // const updateSectionMutation = useMutation(api.constitutions.updateSection);
-  // const deleteSectionMutation = useMutation(api.constitutions.deleteSection);
-  
-  // Placeholder mutations
-  const initializeConstitution = null as any;
-  const addSectionMutation = null as any;
-  const updateSectionMutation = null as any;
-  const deleteSectionMutation = null as any;
+  const initializeConstitution = useMutation(api.constitutions.initializeConstitution);
+  const addSectionMutation = useMutation(api.constitutions.addSection);
+  const updateSectionMutation = useMutation(api.constitutions.updateSection);
+  const deleteSectionMutation = useMutation(api.constitutions.deleteSection);
 
   // Initialize audit functionality
   const { createAuditEntry } = useConstitutionAudit(constitutionId);

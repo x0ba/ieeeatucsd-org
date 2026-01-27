@@ -63,6 +63,29 @@ export const uploadMultipleFiles = action({
   },
 });
 
+// Upload a single file with path (alias for uploadFile with path parameter)
+// Used by FundRequestFormModal for uploading files with custom paths
+export const uploadFiles = action({
+  args: {
+    file: v.bytes(),
+    path: v.string(),
+  },
+  handler: async (ctx, { file, path }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity || !identity.subject) {
+      throw new Error("Not authenticated");
+    }
+
+    // Convert ArrayBuffer to Blob for Convex storage
+    const blob = new Blob([file], { type: "application/octet-stream" });
+    const storageId = await ctx.storage.store(blob);
+
+    // Return the storage ID and URL
+    const url = await ctx.storage.getUrl(storageId);
+    return { storageId, url };
+  },
+});
+
 // Delete a file from storage (server-side only, requires admin)
 export const deleteFile = mutation({
   args: {

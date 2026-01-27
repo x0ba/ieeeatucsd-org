@@ -46,3 +46,55 @@ export interface OnboardingStats {
 }
 
 export type NavigationLayout = "sidebar" | "horizontal";
+
+export type UserStatus = "active" | "inactive" | "suspended";
+
+export type SignInMethod = "email" | "google" | "microsoft" | "github" | "facebook" | "twitter" | "apple" | "other";
+
+export type Team = "Internal" | "Events" | "Projects";
+
+export interface User {
+  authUserId: string;
+  email: string;
+  emailVisibility: boolean;
+  verified: boolean;
+  name: string;
+  username?: string;
+  avatar?: string;
+  pid?: string;
+  memberId?: string;
+  graduationYear?: number;
+  major?: string;
+  zelleInformation?: string;
+  lastLogin?: number;
+  notificationPreferences?: Record<string, any>;
+  displayPreferences?: Record<string, any>;
+  accessibilitySettings?: Record<string, any>;
+  navigationLayout?: NavigationLayout;
+  resume?: string;
+  signedUp: boolean;
+  requestedEmail: boolean;
+  role: UserRole;
+  position?: string;
+  status: UserStatus;
+  joinDate: number;
+  eventsAttended?: number;
+  points?: number;
+  team?: Team;
+  invitedBy?: string;
+  inviteAccepted?: number;
+  lastUpdated?: number;
+  lastUpdatedBy?: string;
+  signInMethod?: SignInMethod;
+  hasIEEEEmail?: boolean;
+  ieeeEmail?: string;
+  ieeeEmailCreatedAt?: number;
+  ieeeEmailStatus?: "active" | "disabled";
+  sponsorTier?: SponsorTier;
+  sponsorOrganization?: string;
+  autoAssignedSponsor?: boolean;
+  tosAcceptedAt?: number;
+  tosVersion?: string;
+  privacyPolicyAcceptedAt?: number;
+  privacyPolicyVersion?: string;
+}

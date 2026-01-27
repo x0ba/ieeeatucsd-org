@@ -22,7 +22,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from '../../../../../../convex/_generated/api';
 import type { NavigationCategory } from "./types/navigation";
 import type { UserRole } from "./types/firestore";
 import { NAVIGATION_PATHS } from "./types/navigation";

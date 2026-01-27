@@ -105,19 +105,19 @@ const SectionRenderer: React.FC<SectionRendererProps> = ({ section, allSections,
                 return 'PREAMBLE';
             case 'article':
                 const articles = allSections.filter(s => s.type === 'article').sort((a, b) => (a.order || 0) - (b.order || 0));
-                const articleIndex = articles.findIndex(a => a.id === section.id) + 1;
+                const articleIndex = articles.findIndex(a => a._id === section._id) + 1;
                 return section.title ? `Article ${toRomanNumeral(articleIndex)}: ${section.title}` : `Article ${toRomanNumeral(articleIndex)}`;
             case 'section':
                 const siblingSections = allSections
                     .filter(s => s.parentId === section.parentId && s.type === 'section')
                     .sort((a, b) => (a.order || 0) - (b.order || 0));
-                const sectionIndex = siblingSections.findIndex(s => s.id === section.id) + 1;
+                const sectionIndex = siblingSections.findIndex(s => s._id === section._id) + 1;
                 return section.title ? `Section ${sectionIndex}: ${section.title}` : `Section ${sectionIndex}`;
             case 'subsection':
                 return getSectionDisplayTitle(section, allSections);
             case 'amendment':
                 const amendments = allSections.filter(s => s.type === 'amendment').sort((a, b) => (a.order || 0) - (b.order || 0));
-                const amendmentIndex = amendments.findIndex(a => a.id === section.id) + 1;
+                const amendmentIndex = amendments.findIndex(a => a._id === section._id) + 1;
                 return section.title ? `AMENDMENT ${amendmentIndex}: ${section.title.toUpperCase()}` : `AMENDMENT ${amendmentIndex}`;
             default:
                 return section.title || 'Untitled Section';
@@ -334,11 +334,11 @@ const SectionRenderer: React.FC<SectionRendererProps> = ({ section, allSections,
     const HeadingTag = getHeadingTag() as keyof React.JSX.IntrinsicElements;
 
     // Check if this section should be highlighted
-    const isHighlighted = highlightedSectionId === section.id;
+    const isHighlighted = highlightedSectionId === section._id;
 
     return (
         <div
-            id={`section-${section.id}`}
+            id={`section-${section._id}`}
             style={{
                 marginBottom: section.type === 'article' ? '8px' : '14px',  // Reduced spacing for better density
                 ...getIndentStyle(),

@@ -39,10 +39,10 @@ const ConstitutionEditor: React.FC<ConstitutionEditorProps> = ({
     const [originalTitle, setOriginalTitle] = useState('');
     const [originalContent, setOriginalContent] = useState('');
 
-    const currentSection = sections.find(s => s.id === selectedSection);
+    const currentSection = sections.find(s => s._id === selectedSection);
 
     useEffect(() => {
-        if (currentSection && editingSection === currentSection.id) {
+        if (currentSection && editingSection === currentSection._id) {
             setEditTitle(currentSection.title);
             setEditContent(currentSection.content);
             setOriginalTitle(currentSection.title);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, Settings, Save, AlertCircle } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from '../../../../../../convex/_generated/api';
 import { useCurrentUser } from "../../../../hooks/useConvexAuth";
 import {
   Card,

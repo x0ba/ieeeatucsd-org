@@ -263,7 +263,7 @@ const ConstitutionPreview: React.FC<ConstitutionPreviewProps> = ({
                                     let currentParentId = section.parentId;
 
                                     while (currentParentId) {
-                                        const parent = sections.find(s => s.id === currentParentId);
+                                        const parent = sections.find(s => s._id === currentParentId);
                                         if (parent && parent.type === 'subsection') {
                                             depth++;
                                             currentParentId = parent.parentId;
@@ -285,24 +285,24 @@ const ConstitutionPreview: React.FC<ConstitutionPreviewProps> = ({
                                 if (section.type === 'preamble') return 'Preamble';
                                 if (section.type === 'article') {
                                     const articles = sections.filter(s => s.type === 'article').sort((a, b) => (a.order || 0) - (b.order || 0));
-                                    const articleIndex = articles.findIndex(a => a.id === section.id) + 1;
+                                    const articleIndex = articles.findIndex(a => a._id === section._id) + 1;
                                     return `Article ${toRomanNumeral(articleIndex)} - ${section.title}`;
                                 }
                                 if (section.type === 'section') {
                                     const siblingSections = sections.filter(s => s.parentId === section.parentId && s.type === 'section').sort((a, b) => (a.order || 0) - (b.order || 0));
-                                    const sectionIndex = siblingSections.findIndex(s => s.id === section.id) + 1;
+                                    const sectionIndex = siblingSections.findIndex(s => s._id === section._id) + 1;
                                     return `Section ${sectionIndex} - ${section.title}`;
                                 }
                                 if (section.type === 'amendment') {
                                     const amendments = sections.filter(s => s.type === 'amendment').sort((a, b) => (a.order || 0) - (b.order || 0));
-                                    const amendmentIndex = amendments.findIndex(a => a.id === section.id) + 1;
+                                    const amendmentIndex = amendments.findIndex(a => a._id === section._id) + 1;
                                     return `Amendment ${amendmentIndex}`;
                                 }
                                 return getSectionDisplayTitle(section, sections);
                             };
 
                             return (
-                                <div key={section.id} className="flex justify-between items-start">
+                                <div key={section._id} className="flex justify-between items-start">
                                     <div className={`flex-1 ${getIndentClass(section)}`}>
                                         <button
                                             onClick={() => onPageChange(pageNum)}
@@ -355,7 +355,7 @@ const ConstitutionPreview: React.FC<ConstitutionPreviewProps> = ({
             <div className="constitution-page" style={{ position: 'relative' }}>
                 {page.map((section, index) => (
                     <SectionRenderer
-                        key={section.id}
+                        key={section._id}
                         section={section}
                         allSections={sections}
                         highlightedSectionId={highlightedSectionId}

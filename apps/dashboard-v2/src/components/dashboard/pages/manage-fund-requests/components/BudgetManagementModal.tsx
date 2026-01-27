@@ -18,7 +18,7 @@ import {
 } from '@heroui/react';
 import { DollarSign, Calendar, Save, Plus, Trash2, Briefcase } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
-import { api } from '../../../../../convex/_generated/api';
+import { api } from '@/../convex/_generated/api';
 import type { FundRequestDepartment, BudgetConfig, BudgetAdjustment } from '../../../shared/types/fund-requests';
 import { DEPARTMENT_LABELS } from '../../../shared/types/fund-requests';
 import { showToast } from '../../../shared/utils/toast';

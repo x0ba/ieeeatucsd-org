@@ -311,7 +311,7 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({ cons
                         <SelectContent>
                             <SelectItem value="all">All Users</SelectItem>
                             {uniqueUsers.map(user => (
-                                <SelectItem key={user} value={user}>{user}</SelectItem>
+                                <SelectItem key={user} value={user || ''}>{user}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>

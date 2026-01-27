@@ -3,7 +3,7 @@ import { Search, Calendar, Bell, User, Filter, Edit, CheckCircle, XCircle, Clock
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useAuth } from '../../hooks/useConvexAuth';
-import type { UserRole } from '../../../shared/types/firestore';
+import type { UserRole } from '../../../../lib/types';
 import { PublicProfileService } from '../../../shared/services/publicProfile';
 import { TableSkeleton, MetricCardSkeleton } from '../../ui/loading';
 import { useGlobalImagePaste } from '../../shared/hooks/useGlobalImagePaste';

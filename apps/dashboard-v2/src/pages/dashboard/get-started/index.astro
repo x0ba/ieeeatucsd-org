@@ -1,18 +1,27 @@
 ---
 import GetStartedContent from '../../components/dashboard/pages/get-started/GetStartedContent';
-import getSession from '../../lib/better-auth';
-import { redirect } from 'astro/navigation';
+import { getSession } from '../../lib/auth';
 
 // Check authentication and onboarding status
-const session = await getSession();
+const session = await getSession(Astro.request);
 
 if (!session) {
-  redirect('/dashboard-v2/signin');
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: '/dashboard-v2/signin',
+    },
+  });
 }
 
 // Redirect if already onboarded
 if (session.user.signedUp) {
-  redirect('/dashboard-v2/overview');
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: '/dashboard-v2/overview',
+    },
+  });
 }
 
 const authUserId = session.user.id;

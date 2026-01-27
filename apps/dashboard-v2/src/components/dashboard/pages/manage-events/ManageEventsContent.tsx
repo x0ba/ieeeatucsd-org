@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Plus, List, CalendarDays, Search } from 'lucide-react';
 import { Card, CardHeader, CardBody, Button, Tabs, Tab, Switch } from '@heroui/react';
 import { useQuery, useMutation } from 'convex/react';
-import { api } from '../../../../convex/_generated/api';
+import { api } from '../../../../../../convex/_generated/api';
 import { useAuth } from '../../../../hooks/useConvexAuth';
 import { showToast } from '../../shared/utils/toast';
 import { EventManagementStats } from './EventManagementStats';

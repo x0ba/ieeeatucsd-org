@@ -34,7 +34,7 @@ import {
     Send
 } from 'lucide-react';
 import { useMutation } from 'convex/react';
-import { api } from '../../../../../convex/_generated/api';
+import { api } from '@/../convex/_generated/api';
 import { useConvexAuth } from '../../../shared/hooks/useConvexAuth';
 import type { FundRequest, FundRequestStatus, FundingSource } from '../../../shared/types/fund-requests';
 import {

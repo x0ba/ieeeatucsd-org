@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshCw, Mail, CheckCircle, XCircle, Clock, AlertCircle, Send } from 'lucide-react';
 import { Card, CardBody, Button, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Tooltip } from '@heroui/react';
-import type { OfficerInvitation } from '../../../shared/types/firestore';
+import type { OfficerInvitation } from '../../../shared/types/constitution';
 import { showToast } from '../../../shared/utils/toast';
 
 interface PendingInvitationsTabProps {

@@ -119,18 +119,18 @@ const AddSectionModal: React.FC<AddSectionModalProps> = ({
                                     const getDisplayTitle = (section: ConstitutionSection) => {
                                         if (section.type === 'article') {
                                             const articles = sections.filter(s => s.type === 'article').sort((a, b) => (a.order || 0) - (b.order || 0));
-                                            const articleIndex = articles.findIndex(a => a.id === section.id) + 1;
+                                            const articleIndex = articles.findIndex(a => a._id === section._id) + 1;
                                             return section.title ? `Article ${articleIndex} - ${section.title}` : `Article ${articleIndex}`;
                                         }
                                         if (section.type === 'section') {
                                             // Find the parent article
-                                            const parentArticle = sections.find(s => s.id === section.parentId && s.type === 'article');
+                                            const parentArticle = sections.find(s => s._id === section.parentId && s.type === 'article');
                                             if (parentArticle) {
                                                 const articles = sections.filter(s => s.type === 'article').sort((a, b) => (a.order || 0) - (b.order || 0));
-                                                const articleIndex = articles.findIndex(a => a.id === parentArticle.id) + 1;
+                                                const articleIndex = articles.findIndex(a => a._id === parentArticle._id) + 1;
 
                                                 const siblingSections = sections.filter(s => s.parentId === section.parentId && s.type === 'section').sort((a, b) => (a.order || 0) - (b.order || 0));
-                                                const sectionIndex = siblingSections.findIndex(s => s.id === section.id) + 1;
+                                                const sectionIndex = siblingSections.findIndex(s => s._id === section._id) + 1;
 
                                                 return section.title ? `Article ${articleIndex} Section ${sectionIndex} - ${section.title}` : `Article ${articleIndex} Section ${sectionIndex}`;
                                             }
@@ -139,46 +139,46 @@ const AddSectionModal: React.FC<AddSectionModalProps> = ({
                                         if (section.type === 'subsection') {
                                             // Build full hierarchy path for subsections
                                             const buildHierarchy = (subsectionId: string): string => {
-                                                const subsection = sections.find(s => s.id === subsectionId);
+                                                const subsection = sections.find(s => s._id === subsectionId);
                                                 if (!subsection) return '';
 
-                                                const parent = sections.find(s => s.id === subsection.parentId);
+                                                const parent = sections.find(s => s._id === subsection.parentId);
                                                 if (!parent) return '';
 
                                                 if (parent.type === 'section') {
                                                     // Parent is a section, find its article
-                                                    const article = sections.find(s => s.id === parent.parentId && s.type === 'article');
+                                                    const article = sections.find(s => s._id === parent.parentId && s.type === 'article');
                                                     if (article) {
                                                         const articles = sections.filter(s => s.type === 'article').sort((a, b) => (a.order || 0) - (b.order || 0));
-                                                        const articleIndex = articles.findIndex(a => a.id === article.id) + 1;
+                                                        const articleIndex = articles.findIndex(a => a._id === article._id) + 1;
 
                                                         const siblingSections = sections.filter(s => s.parentId === parent.parentId && s.type === 'section').sort((a, b) => (a.order || 0) - (b.order || 0));
-                                                        const sectionIndex = siblingSections.findIndex(s => s.id === parent.id) + 1;
+                                                        const sectionIndex = siblingSections.findIndex(s => s._id === parent._id) + 1;
 
                                                         const siblingSubsections = sections.filter(s => s.parentId === subsection.parentId && s.type === 'subsection').sort((a, b) => (a.order || 0) - (b.order || 0));
-                                                        const subsectionIndex = siblingSubsections.findIndex(s => s.id === subsection.id) + 1;
+                                                        const subsectionIndex = siblingSubsections.findIndex(s => s._id === subsection._id) + 1;
 
                                                         return `Article ${articleIndex} Section ${sectionIndex} Subsection ${subsectionIndex}`;
                                                     }
                                                 } else if (parent.type === 'subsection') {
                                                     // Parent is another subsection, build recursively
-                                                    const parentHierarchy = buildHierarchy(parent.id);
+                                                    const parentHierarchy = buildHierarchy(parent._id);
                                                     const siblingSubsections = sections.filter(s => s.parentId === subsection.parentId && s.type === 'subsection').sort((a, b) => (a.order || 0) - (b.order || 0));
-                                                    const subsectionIndex = siblingSubsections.findIndex(s => s.id === subsection.id) + 1;
+                                                    const subsectionIndex = siblingSubsections.findIndex(s => s._id === subsection._id) + 1;
                                                     return `${parentHierarchy} Subsection ${subsectionIndex}`;
                                                 }
 
                                                 return 'Subsection';
                                             };
 
-                                            const hierarchy = buildHierarchy(section.id);
+                                            const hierarchy = buildHierarchy(section._id);
                                             return section.title ? `${hierarchy} - ${section.title}` : hierarchy;
                                         }
                                         return section.title || `${section.type.charAt(0).toUpperCase() + section.type.slice(1)}`;
                                     };
 
                                     return (
-                                        <option key={section.id} value={section.id}>
+                                        <option key={section._id} value={section._id}>
                                             {getDisplayTitle(section)}
                                         </option>
                                     );

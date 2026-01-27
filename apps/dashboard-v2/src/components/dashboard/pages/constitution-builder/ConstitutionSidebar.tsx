@@ -52,7 +52,7 @@ const ConstitutionSidebar: React.FC<ConstitutionSidebarProps> = ({
     }, [selectedSection]);
 
     const moveSection = async (sectionId: string, direction: 'up' | 'down') => {
-        const currentSection = sections.find(s => s.id === sectionId);
+        const currentSection = sections.find(s => s._id === sectionId);
         if (!currentSection) return;
 
         // Get sibling sections (same parent)
@@ -60,7 +60,7 @@ const ConstitutionSidebar: React.FC<ConstitutionSidebarProps> = ({
             .filter(s => (currentSection.parentId ? s.parentId === currentSection.parentId : !s.parentId))
             .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-        const currentIndex = siblings.findIndex(s => s.id === sectionId);
+        const currentIndex = siblings.findIndex(s => s._id === sectionId);
         if (currentIndex === -1) return;
 
         const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
@@ -70,8 +70,8 @@ const ConstitutionSidebar: React.FC<ConstitutionSidebarProps> = ({
         const targetSection = siblings[newIndex];
 
         await Promise.all([
-            updateSection(currentSection.id, { order: targetSection.order }),
-            updateSection(targetSection.id, { order: currentSection.order })
+            updateSection(currentSection._id, { order: targetSection.order }),
+            updateSection(targetSection._id, { order: currentSection.order })
         ]);
     };
 
@@ -83,28 +83,28 @@ const ConstitutionSidebar: React.FC<ConstitutionSidebarProps> = ({
         return (
             <>
                 {childSections.map((section, index) => {
-                    const isExpanded = expandedSections.has(section.id);
-                    const hasChildren = allSections.some(s => s.parentId === section.id);
+                    const isExpanded = expandedSections.has(section._id);
+                    const hasChildren = allSections.some(s => s.parentId === section._id);
 
                     return (
-                        <div key={section.id}>
+                        <div key={section._id}>
                             <SectionNavigationItem
                                 section={section}
-                                isSelected={selectedSection === section.id}
+                                isSelected={selectedSection === section._id}
                                 isExpanded={isExpanded}
                                 onSelect={onSelectSection}
                                 onToggleExpand={onToggleExpand}
                                 allSections={sections}
                                 currentUserId={currentUserId}
-                                onMoveUp={() => moveSection(section.id, 'up')}
-                                onMoveDown={() => moveSection(section.id, 'down')}
+                                onMoveUp={() => moveSection(section._id, 'up')}
+                                onMoveDown={() => moveSection(section._id, 'down')}
                                 canMoveUp={index > 0}
                                 canMoveDown={index < childSections.length - 1}
                                 sectionRefs={selectedSectionRefs}
                             />
                             {hasChildren && isExpanded && (
                                 <div className="ml-4">
-                                    {renderSectionHierarchy(allSections, section.id, depth + 1)}
+                                    {renderSectionHierarchy(allSections, section._id, depth + 1)}
                                 </div>
                             )}
                         </div>
@@ -220,7 +220,7 @@ const SectionNavigationItem: React.FC<{
     canMoveDown,
     sectionRefs
 }) => {
-        const hasChildren = allSections.some(s => s.parentId === section.id);
+        const hasChildren = allSections.some(s => s.parentId === section._id);
 
         // Indentation is now handled by parent component nesting
 
@@ -232,13 +232,13 @@ const SectionNavigationItem: React.FC<{
             <div
                 ref={(el) => {
                     if (el) {
-                        sectionRefs.current.set(section.id, el);
+                        sectionRefs.current.set(section._id, el);
                     } else {
-                        sectionRefs.current.delete(section.id);
+                        sectionRefs.current.delete(section._id);
                     }
                 }}
                 className={`flex items-center gap-1 md:gap-2 p-2 rounded-md cursor-pointer transition-colors ${isSelected ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'}`}
-                onClick={() => onSelect(section.id)}
+                onClick={() => onSelect(section._id)}
             >
                 <div className="flex flex-col">
                     <button
@@ -269,7 +269,7 @@ const SectionNavigationItem: React.FC<{
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            onToggleExpand(section.id);
+                            onToggleExpand(section._id);
                         }}
                         className="p-0.5 md:p-1 hover:bg-gray-200 rounded min-h-[24px] min-w-[24px] flex items-center justify-center"
                     >

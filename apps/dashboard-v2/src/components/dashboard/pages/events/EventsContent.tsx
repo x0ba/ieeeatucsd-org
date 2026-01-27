@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Search, Calendar, MapPin, Clock, Users, UserCheck, Award, FileText, Eye, Download, TrendingUp } from 'lucide-react';
 import { useMutation } from 'convex/react';
-import { api } from '../../../../convex/_generated/api';
+import { api } from '../../../../../../convex/_generated/api';
 import { useCurrentUser, usePublishedEvents, useUserAttendedEvents } from '../../../../hooks/useConvexAuth';
 import { PublicProfileService } from '../../shared/services/publicProfile';
 import { EventCardSkeleton, MetricCardSkeleton } from '../../../ui/loading';

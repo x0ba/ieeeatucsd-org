@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Spacer, Card, CardBody, Spinner } from '@heroui/react';
 import { useQuery } from 'convex/react';
-import { api } from '../../../../../convex/_generated/api';
-import type { UserRole } from '../../../shared/types/firestore';
+import { api } from '@/../convex/_generated/api';
+import type { UserRole } from '../../../../lib/types';
 
 interface User {
   _id: string;

@@ -1,4 +1,4 @@
-import type { User as FirestoreUser, UserRole } from '../../../shared/types/firestore';
+import type { User as FirestoreUser, UserRole } from '../../../../lib/types';
 import type { UserFilters, SortConfig, UserStats } from '../types/UserManagementTypes';
 
 export class UserFilteringService {

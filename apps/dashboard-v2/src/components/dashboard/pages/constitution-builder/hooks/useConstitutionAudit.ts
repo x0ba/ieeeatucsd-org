@@ -10,13 +10,8 @@ import type {
 export const useConstitutionAudit = (constitutionId: string) => {
   const { authUserId, user } = useAuth();
   
-  // TODO: Re-enable when Convex API includes constitutions module
-  // const auditLogs = useQuery(api.constitutions.getAuditLogs, { constitutionId }) || [];
-  // const createAuditLogMutation = useMutation(api.constitutions.createAuditLog);
-  
-  // Placeholder data
-  const auditLogs: any[] = [];
-  const createAuditLogMutation = null as any;
+  const auditLogs = useQuery(api.constitutions.getAuditLogs, { constitutionId }) || [];
+  const createAuditLogMutation = useMutation(api.constitutions.createAuditLog);
 
   // Return empty audit entries for now
   const auditEntries: ConstitutionAuditEntry[] = [];
@@ -178,9 +173,12 @@ export const useConstitutionAudit = (constitutionId: string) => {
             )
           : undefined;
 
+        // Map changeType to action (reorder is not supported by Convex mutation)
+        const action: "create" | "update" | "delete" = changeType === "reorder" ? "update" : (changeType || "update");
+        
         await createAuditLogMutation({
           constitutionId,
-          action: changeType,
+          action,
           sectionId: sectionId || "",
           beforeState: beforeAuditValue,
           afterState: afterAuditValue,

@@ -3,7 +3,7 @@
  * This file handles Better Auth server-side operations
  */
 
-import { auth } from "./better-auth";
+import { auth } from "./auth";
 
 export function getServerAuth() {
   return auth;

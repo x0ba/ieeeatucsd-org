@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from '../../../../../../convex/_generated/api';
 import type {
   User as FirestoreUser,
   UserRole,

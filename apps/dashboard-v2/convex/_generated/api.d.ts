@@ -8,8 +8,21 @@
  * @module
  */
 
+import type * as constitutions from "../constitutions.js";
+import type * as dashboard from "../dashboard.js";
+import type * as eventManagement from "../eventManagement.js";
+import type * as events from "../events.js";
+import type * as fundDeposits from "../fundDeposits.js";
+import type * as fundRequests from "../fundRequests.js";
 import type * as invitations from "../invitations.js";
+import type * as leaderboard from "../leaderboard.js";
+import type * as links from "../links.js";
 import type * as onboarding from "../onboarding.js";
+import type * as overview from "../overview.js";
+import type * as reimbursements from "../reimbursements.js";
+import type * as sponsorDomains from "../sponsorDomains.js";
+import type * as storage from "../storage.js";
+import type * as userManagement from "../userManagement.js";
 import type * as users from "../users.js";
 
 import type {
@@ -19,8 +32,21 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  constitutions: typeof constitutions;
+  dashboard: typeof dashboard;
+  eventManagement: typeof eventManagement;
+  events: typeof events;
+  fundDeposits: typeof fundDeposits;
+  fundRequests: typeof fundRequests;
   invitations: typeof invitations;
+  leaderboard: typeof leaderboard;
+  links: typeof links;
   onboarding: typeof onboarding;
+  overview: typeof overview;
+  reimbursements: typeof reimbursements;
+  sponsorDomains: typeof sponsorDomains;
+  storage: typeof storage;
+  userManagement: typeof userManagement;
   users: typeof users;
 }>;
 

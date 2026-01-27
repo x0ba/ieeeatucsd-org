@@ -4,7 +4,7 @@ import { AlertTriangle, Calendar, CheckCircle2, Clock, MapPin, Megaphone, Settin
 import { canApproveOrPublish } from '../utils/permissionUtils';
 import { formatDate, formatDateTime, getStatusColor, getUserName } from './utils';
 import type { EventRequest, UserDirectory, UserOption } from './types';
-import type { UserRole } from '../../../shared/types/firestore';
+import type { UserRole } from '../../../../../lib/types';
 
 interface EventDetailsTabProps {
     request: EventRequest;

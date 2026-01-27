@@ -37,7 +37,7 @@ import {
     Progress,
 } from '@heroui/react';
 import { useMutation } from 'convex/react';
-import { api } from '../../../../convex/_generated/api';
+import { api } from '../../../../../../convex/_generated/api';
 import { useCurrentUser, useUserFundRequests, useAllFundRequests, useBudgetConfig, useBudgetAdjustments } from '../../../../hooks/useConvexAuth';
 import type { FundRequest, FundRequestStatus, FundRequestDepartment, BudgetConfig } from '../../shared/types/fund-requests';
 import { STATUS_LABELS, STATUS_COLORS, CATEGORY_LABELS, DEPARTMENT_LABELS } from '../../shared/types/fund-requests';

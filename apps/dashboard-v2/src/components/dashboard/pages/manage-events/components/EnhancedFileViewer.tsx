@@ -44,7 +44,7 @@ export default function EnhancedFileViewer({
     if (!showAuditLogging || !eventRequestId) return;
 
     try {
-      const session = auth.getSession();
+      const session = await auth.getSession();
       if (!session) return;
 
       const userName = await EventAuditService.getUserName(session.user.id);

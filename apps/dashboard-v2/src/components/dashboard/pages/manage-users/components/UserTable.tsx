@@ -1,7 +1,7 @@
 import React from 'react';
 import { Edit, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Avatar, Tooltip, Card } from '@heroui/react';
-import type { User as FirestoreUser } from '../../../shared/types/firestore';
+import type { User as FirestoreUser } from '../../../../lib/types';
 import type { SortConfig, UserPermissions } from '../types/UserManagementTypes';
 import { UserDisplayService } from '../utils/userFiltering';
 

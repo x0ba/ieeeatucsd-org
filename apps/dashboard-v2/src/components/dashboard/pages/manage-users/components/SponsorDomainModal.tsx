@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem } from '@heroui/react';
-import type { SponsorTier } from '../../../shared/types/firestore';
+import type { SponsorTier } from '../../../../lib/types';
 import type { SponsorDomainWithId } from '../hooks/useSponsorDomainsConvex';
 import { showToast } from '../../../shared/utils/toast';
 

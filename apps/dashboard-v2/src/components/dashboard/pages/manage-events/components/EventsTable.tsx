@@ -3,7 +3,7 @@ import { Edit, Trash2, Eye, ChevronUp, ChevronDown, ChevronsUpDown, MapPin, Cale
 import { Button, Chip, Tooltip, Checkbox } from '@heroui/react';
 import { getStatusColor, getStatusIcon } from '../utils/statusUtils';
 import { canEditEvent as checkCanEditEvent, canDeleteEvent as checkCanDeleteEvent, canManageGraphics } from '../utils/permissionUtils';
-import type { UserRole } from '../../../shared/types/firestore';
+import type { UserRole } from '../../../../../lib/types';
 
 interface EventRequest {
     id: string;

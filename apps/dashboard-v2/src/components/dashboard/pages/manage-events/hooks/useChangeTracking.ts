@@ -329,7 +329,7 @@ export function useChangeTracking(
   const logChangesToAudit = async (changes: ChangeTrackingState) => {
     if (!enableAuditLogging || !eventRequestId) return;
 
-    const session = auth.getSession();
+    const session = await auth.getSession();
     if (!session) return;
 
     try {

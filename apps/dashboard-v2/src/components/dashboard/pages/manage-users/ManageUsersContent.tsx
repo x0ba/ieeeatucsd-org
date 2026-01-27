@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from '../../../../../../convex/_generated/api';
 import { useAuth } from "../../../../hooks/useConvexAuth";
 import { Pagination } from "@heroui/react";
 import type {

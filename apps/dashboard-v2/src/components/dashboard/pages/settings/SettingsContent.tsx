@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Shield, UserCircle, Upload, FileText, AlertCircle, CheckCircle, Eye, EyeOff, LayoutDashboard, Sidebar, PanelTop } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
+import { api } from '../../../../../../convex/_generated/api';
 import { useAuth } from '../../../hooks/useConvexAuth';
 import { Skeleton } from '@heroui/react';
 import { useNavigationPreference } from '../../shared/hooks/useNavigationPreference';

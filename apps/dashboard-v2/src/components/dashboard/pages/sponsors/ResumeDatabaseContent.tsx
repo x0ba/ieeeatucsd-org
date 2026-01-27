@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '../../../../hooks/useConvexAuth';
 import { useQuery } from 'convex/react';
-import { api } from '../../../../convex/_generated/api';
+import { api } from '../../../../../../convex/_generated/api';
 import { AlertCircle, Search, FileText, Users, GraduationCap, Briefcase, Filter, Download } from 'lucide-react';
-import type { User as FirestoreUser, UserRole } from '../../shared/types/firestore';
+import type { User as FirestoreUser, UserRole } from '../../../lib/types';
 import { SponsorPermissionService } from './utils/sponsorPermissions';
 import {
   normalizeMajorName,

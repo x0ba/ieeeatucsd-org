@@ -1,6 +1,6 @@
 /**
- * Simple Auth Configuration for Self-Hosted Setup
- * Using localStorage for session management
+ * Client-side Auth Configuration for BetterAuth
+ * Provides client-side session access for React components
  */
 
 export interface SessionUser {
@@ -8,6 +8,7 @@ export interface SessionUser {
   email: string;
   name: string;
   avatar?: string;
+  signedUp?: boolean;
 }
 
 export interface Session {
@@ -15,54 +16,61 @@ export interface Session {
   expiresAt: number;
 }
 
-const SESSION_KEY = "dashboard_session";
+/**
+ * Get the current session from BetterAuth
+ * This makes a server request to get the session from cookies
+ */
+export async function getSession(): Promise<Session | null> {
+  try {
+    const response = await fetch('/api/auth/session', {
+      credentials: 'include',
+    });
 
-export const auth = {
-  // Get current session from localStorage
-  getSession: (): Session | null => {
-    if (typeof window === "undefined") return null;
-
-    try {
-      const sessionData = localStorage.getItem(SESSION_KEY);
-      if (!sessionData) return null;
-
-      const session: Session = JSON.parse(sessionData);
-
-      // Check if session is expired
-      if (session.expiresAt < Date.now()) {
-        localStorage.removeItem(SESSION_KEY);
-        return null;
-      }
-
-      return session;
-    } catch {
+    if (!response.ok) {
       return null;
     }
-  },
 
-  // Set session in localStorage
-  setSession: (
-    user: SessionUser,
-    expiresIn: number = 60 * 60 * 24 * 5 * 1000,
-  ): void => {
-    if (typeof window === "undefined") return;
+    const data = await response.json();
+    
+    if (!data || !data.user) {
+      return null;
+    }
 
-    const session: Session = {
-      user,
-      expiresAt: Date.now() + expiresIn,
+    return {
+      user: data.user,
+      expiresAt: data.expiresAt || Date.now() + (60 * 60 * 24 * 7 * 1000),
     };
+  } catch (error) {
+    console.error('Failed to get session:', error);
+    return null;
+  }
+}
 
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  },
+/**
+ * Check if user is authenticated
+ */
+export async function isAuthenticated(): Promise<boolean> {
+  const session = await getSession();
+  return !!session;
+}
 
-  // Clear session
-  clearSession: (): void => {
-    if (typeof window === "undefined") return;
-    localStorage.removeItem(SESSION_KEY);
-  },
+/**
+ * Sign out the user
+ */
+export async function signOut(): Promise<void> {
+  try {
+    await fetch('/api/auth/sign-out', {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch (error) {
+    console.error('Failed to sign out:', error);
+  }
+}
 
-  // Check if user is authenticated
-  isAuthenticated: (): boolean => {
-    return !!auth.getSession();
-  },
+// Legacy export for backward compatibility
+export const auth = {
+  getSession,
+  isAuthenticated,
+  signOut,
 };

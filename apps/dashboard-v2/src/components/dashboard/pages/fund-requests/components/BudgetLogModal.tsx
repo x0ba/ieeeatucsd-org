@@ -21,7 +21,7 @@ import {
 } from '@heroui/react';
 import { DollarSign, Calendar, User, ExternalLink, TrendingUp, Clock, CheckCircle, Wrench } from 'lucide-react';
 import { useQuery } from 'convex/react';
-import { api } from '../../../../../convex/_generated/api';
+import { api } from '@/../convex/_generated/api';
 import type { FundRequest, FundRequestDepartment, BudgetAdjustment } from '../../../shared/types/fund-requests';
 import { STATUS_LABELS, STATUS_COLORS, DEPARTMENT_LABELS } from '../../../shared/types/fund-requests';
 

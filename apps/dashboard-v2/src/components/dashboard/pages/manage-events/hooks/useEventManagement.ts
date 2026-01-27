@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from '../../../../../../convex/_generated/api';
 import type { UserRole } from "../../shared/types/constitution";
 import type { EventStats } from "../types";
 import { showToast } from "../../../shared/utils/toast";
