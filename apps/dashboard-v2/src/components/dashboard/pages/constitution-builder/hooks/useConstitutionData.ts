@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useAuth } from "../../../../shared/hooks/useConvexAuth";
+import { useAuth } from "../../../../../hooks/useConvexAuth";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "../../../../../../convex/_generated/api";
 import type {
   Constitution,
   ConstitutionSection,
-} from "../../shared/types/constitution"";
+} from "../../../shared/types/constitution";
 import { useConstitutionAudit } from "./useConstitutionAudit";
 
 export const useConstitutionData = () => {
@@ -18,15 +18,25 @@ export const useConstitutionData = () => {
 
   const constitutionId = "ieee-ucsd-constitution";
 
-  // Query constitution and sections from Convex
-  const constitution = useQuery(api.constitutions.getConstitution, { constitutionId });
-  const sections = useQuery(api.constitutions.getSections, { constitutionId }) || [];
+  // TODO: Re-enable when Convex API includes constitutions module
+  // const constitution = useQuery(api.constitutions.getConstitution, { constitutionId });
+  // const sections = useQuery(api.constitutions.getSections, { constitutionId }) || [];
+  
+  // Placeholder data
+  const constitution = null;
+  const sections: any[] = [];
 
-  // Mutations
-  const initializeConstitution = useMutation(api.constitutions.initializeConstitution);
-  const addSectionMutation = useMutation(api.constitutions.addSection);
-  const updateSectionMutation = useMutation(api.constitutions.updateSection);
-  const deleteSectionMutation = useMutation(api.constitutions.deleteSection);
+  // TODO: Re-enable when Convex API includes constitutions module
+  // const initializeConstitution = useMutation(api.constitutions.initializeConstitution);
+  // const addSectionMutation = useMutation(api.constitutions.addSection);
+  // const updateSectionMutation = useMutation(api.constitutions.updateSection);
+  // const deleteSectionMutation = useMutation(api.constitutions.deleteSection);
+  
+  // Placeholder mutations
+  const initializeConstitution = null as any;
+  const addSectionMutation = null as any;
+  const updateSectionMutation = null as any;
+  const deleteSectionMutation = null as any;
 
   // Initialize audit functionality
   const { createAuditEntry } = useConstitutionAudit(constitutionId);

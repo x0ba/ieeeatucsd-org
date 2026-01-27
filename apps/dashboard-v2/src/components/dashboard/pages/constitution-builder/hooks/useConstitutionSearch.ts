@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import type { ConstitutionSection } from "../../shared/types/constitution";
+import type { ConstitutionSection } from "../../../shared/types/constitution";
 import { getSectionDisplayTitle } from "../utils/constitutionUtils";
 import {
   generateContentPages,

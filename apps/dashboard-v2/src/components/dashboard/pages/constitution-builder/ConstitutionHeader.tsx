@@ -11,7 +11,7 @@ import {
     Download,
     ExternalLink,  // for View PDF icon
 } from 'lucide-react';
-import type { Constitution, ConstitutionSection } from "../../shared/types/constitution"';
+import type { Constitution, ConstitutionSection } from "../../shared/types/constitution";
 import ConstitutionSearch from './ConstitutionSearch';
 
 // Simple View PDF Button Component (unused in layout but kept for parity)

@@ -8,7 +8,7 @@ import {
     ArrowUp,
     ArrowDown
 } from 'lucide-react';
-import type { ConstitutionSection } from "../../shared/types/constitution"';
+import type { ConstitutionSection } from "../../shared/types/constitution";
 import { getSectionHierarchy, getSectionDisplayTitle, getSubsectionIndentLevel } from './utils/constitutionUtils';
 import AddSectionModal from './AddSectionModal';
 

@@ -5,7 +5,7 @@
 import type {
   Constitution,
   ConstitutionSection,
-} from "../../shared/types/constitution";
+} from "../../../shared/types/constitution";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -105,7 +105,7 @@ export class PreviewPdfValidator {
         // Check for image placeholder format
         const imageMatches = section.content.match(/\[IMAGE:[^\]]*\]/g);
         if (imageMatches) {
-          imageMatches.forEach((match) => {
+          imageMatches.forEach((match: any) => {
             if (match === "[IMAGE:]") {
               result.warnings.push(
                 `Section "${section.title}" has empty image placeholder`,
@@ -144,7 +144,7 @@ export class PreviewPdfValidator {
       if (section.content) {
         const imageMatches = section.content.match(/\[IMAGE:[^\]]*\]/g);
         if (imageMatches) {
-          imageMatches.forEach((match) => {
+          imageMatches.forEach((match: any) => {
             const description = match
               .replace(/^\[IMAGE:/, "")
               .replace(/\]$/, "");

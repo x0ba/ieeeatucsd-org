@@ -3,7 +3,7 @@ import {
     ChevronLeft,
     ChevronRight
 } from 'lucide-react';
-import type { Constitution, ConstitutionSection } from "../../shared/types/constitution"';
+import type { Constitution, ConstitutionSection } from "../../shared/types/constitution";
 import { generateContentPages, generateTableOfContents } from './utils/printUtils';
 import { getSectionDisplayTitle, toRomanNumeral } from './utils/constitutionUtils';
 import SectionRenderer from './SectionRenderer';
@@ -46,13 +46,13 @@ const ConstitutionPreview: React.FC<ConstitutionPreviewProps> = ({
 
         // Add constitution's lastModified if it exists
         if (constitution?.lastModified) {
-            timestamps.push(constitution.lastModified.toDate());
+            timestamps.push(new Date(constitution.lastModified));
         }
 
         // Add all sections' lastModified timestamps
         sections.forEach(section => {
             if (section.lastModified) {
-                timestamps.push(section.lastModified.toDate());
+                timestamps.push(new Date(section.lastModified));
             }
         });
 

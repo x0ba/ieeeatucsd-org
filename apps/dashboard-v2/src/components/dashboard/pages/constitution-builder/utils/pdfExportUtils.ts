@@ -3,7 +3,7 @@ import jsPDF from "jspdf";
 import type {
   Constitution,
   ConstitutionSection,
-} from "../../shared/types/constitution";
+} from "../../../shared/types/constitution";
 import { calculateTotalPages } from "./printUtils";
 
 export interface PDFExportOptions {
@@ -226,7 +226,7 @@ export class PixelPerfectPDFExporter {
       removeContainer: this.options.removeContainer,
       logging: false,
       allowTaint: true,
-      onclone: (clonedDoc) => {
+      onclone: (clonedDoc: any) => {
         // Ensure fonts are loaded in cloned document
         const style = clonedDoc.createElement("style");
         style.textContent = `

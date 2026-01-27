@@ -22,7 +22,7 @@ import {
 } from '../../../ui/dialog';
 import { ScrollArea } from '../../../ui/scroll-area';
 import { useConstitutionAudit } from './hooks/useConstitutionAudit';
-import type { ConstitutionAuditEntry } from "../../shared/types/constitution"';
+import type { ConstitutionAuditEntry } from "../../shared/types/constitution";
 
 interface ConstitutionAuditLogProps {
     constitutionId: string;
@@ -47,7 +47,7 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({ cons
 
     // Get unique users for filter - memoized for performance
     const uniqueUsers = useMemo(() => {
-        const users = new Set(auditEntries.map(entry => entry.userName));
+        const users = new Set(auditEntries.map(entry => entry.userName).filter(Boolean));
         return Array.from(users).sort();
     }, [auditEntries]);
 
@@ -58,9 +58,9 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({ cons
         const lowerQuery = query.toLowerCase();
 
         // Search in basic fields
-        if (entry.changeDescription.toLowerCase().includes(lowerQuery) ||
-            entry.userName.toLowerCase().includes(lowerQuery) ||
-            entry.changeType.toLowerCase().includes(lowerQuery)) {
+        if (entry.changeDescription?.toLowerCase().includes(lowerQuery) ||
+            entry.userName?.toLowerCase().includes(lowerQuery) ||
+            entry.changeType?.toLowerCase().includes(lowerQuery)) {
             return true;
         }
 
@@ -119,6 +119,8 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({ cons
     }, []);
 
     const getChangeTypeBadge = useCallback((changeType: ConstitutionAuditEntry['changeType']) => {
+        if (!changeType) return null;
+        
         const variants = {
             create: 'bg-green-100 text-green-800 hover:bg-green-100',
             update: 'bg-blue-100 text-blue-800 hover:bg-blue-100',

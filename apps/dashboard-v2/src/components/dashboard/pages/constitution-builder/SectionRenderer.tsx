@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ConstitutionSection } from "../../shared/types/constitution"';
+import type { ConstitutionSection } from "../../shared/types/constitution";
 import { getSectionDisplayTitle, getSubsectionIndentLevel, toRomanNumeral } from './utils/constitutionUtils';
 
 interface SectionRendererProps {

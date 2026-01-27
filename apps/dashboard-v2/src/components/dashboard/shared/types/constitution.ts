@@ -1,6 +1,7 @@
-import type { Doc } from "../../../../../../convex/_generated/dataModel";
+// import type { Doc } from "../../../../convex/_generated/dataModel";
 
-export type ConstitutionSection = Doc<"sections">;
+// Placeholder types until Convex API is regenerated
+export type ConstitutionSection = any;
 
 export interface Constitution {
   id: string;
@@ -16,6 +17,7 @@ export interface Constitution {
 }
 
 export interface ConstitutionAuditEntry {
+  id: string;
   constitutionId: string;
   action: "create" | "update" | "delete";
   sectionId: string;
@@ -23,4 +25,12 @@ export interface ConstitutionAuditEntry {
   afterState: any;
   performedBy: string;
   timestamp: number;
+  // Additional properties for audit log display
+  changeDescription?: string;
+  userName?: string;
+  changeType?: "create" | "update" | "delete" | "reorder";
+  beforeValue?: any;
+  afterValue?: any;
+  ipAddress?: string;
+  userAgent?: string;
 }

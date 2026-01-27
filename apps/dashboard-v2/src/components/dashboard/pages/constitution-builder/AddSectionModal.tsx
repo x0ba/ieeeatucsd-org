@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { ConstitutionSection } from '../../../shared/types/constitution';
+import type { ConstitutionSection } from '../../shared/types/constitution';
 import { showToast } from '../../shared/utils/toast';
 
 interface AddSectionModalProps {

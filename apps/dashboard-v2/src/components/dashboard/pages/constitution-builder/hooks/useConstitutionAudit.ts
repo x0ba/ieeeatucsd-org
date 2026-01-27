@@ -1,36 +1,25 @@
 import { useState, useCallback } from "react";
-import { useAuth } from "../../../../shared/hooks/useConvexAuth";
+import { useAuth } from "../../../../../hooks/useConvexAuth";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "../../../../../../convex/_generated/api";
 import type {
   ConstitutionAuditEntry,
   ConstitutionSection,
-} from "../../shared/types/constitution";
+} from "../../../shared/types/constitution";
 
 export const useConstitutionAudit = (constitutionId: string) => {
   const { authUserId, user } = useAuth();
   
-  // Query audit logs from Convex
-  const auditLogs = useQuery(api.constitutions.getAuditLogs, { constitutionId }) || [];
+  // TODO: Re-enable when Convex API includes constitutions module
+  // const auditLogs = useQuery(api.constitutions.getAuditLogs, { constitutionId }) || [];
+  // const createAuditLogMutation = useMutation(api.constitutions.createAuditLog);
   
-  // Mutations
-  const createAuditLogMutation = useMutation(api.constitutions.createAuditLog);
+  // Placeholder data
+  const auditLogs: any[] = [];
+  const createAuditLogMutation = null as any;
 
-  // Transform Convex audit logs to match expected format
-  const auditEntries: ConstitutionAuditEntry[] = auditLogs.map((log) => ({
-    id: log._id,
-    constitutionId: log.constitutionId,
-    sectionId: log.sectionId,
-    changeType: log.action,
-    changeDescription: generateChangeDescription(log.action, log.beforeState, log.afterState),
-    beforeValue: log.beforeState,
-    afterValue: log.afterState,
-    userId: log.performedBy,
-    userName: user?.name || "Unknown User", // Could be enhanced with user lookup
-    timestamp: log.timestamp,
-    ipAddress: "Not tracked",
-    userAgent: navigator.userAgent,
-  }));
+  // Return empty audit entries for now
+  const auditEntries: ConstitutionAuditEntry[] = [];
 
   const isLoading = auditLogs === undefined;
 

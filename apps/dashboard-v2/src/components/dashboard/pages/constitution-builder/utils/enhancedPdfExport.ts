@@ -1,7 +1,7 @@
 import type {
   Constitution,
   ConstitutionSection,
-} from "../../shared/types/constitution";
+} from "../../../shared/types/constitution";
 
 export interface EnhancedPDFOptions {
   quality: number;

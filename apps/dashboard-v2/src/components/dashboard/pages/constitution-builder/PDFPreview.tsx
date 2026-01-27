@@ -5,7 +5,7 @@ import {
     RefreshCw,
     AlertCircle
 } from 'lucide-react';
-import type { Constitution, ConstitutionSection } from "../../shared/types/constitution"';
+import type { Constitution, ConstitutionSection } from "../../shared/types/constitution";
 import { getSectionHierarchy } from './utils/constitutionUtils';
 
 

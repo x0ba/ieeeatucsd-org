@@ -1,4 +1,4 @@
-import type { ConstitutionSection } from "../../shared/types/constitution";
+import type { ConstitutionSection } from "../../../shared/types/constitution";
 
 export const toRomanNumeral = (num: number): string => {
   const romanNumerals = [

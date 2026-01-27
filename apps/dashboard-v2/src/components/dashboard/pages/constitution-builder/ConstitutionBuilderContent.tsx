@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { ConstitutionSection } from "../../shared/types/constitution"';
+import type { ConstitutionSection } from "../../shared/types/constitution";
 import { useConstitutionData } from './hooks/useConstitutionData';
 import { getSectionHierarchy } from './utils/constitutionUtils';
 import ConstitutionHeader from './ConstitutionHeader';

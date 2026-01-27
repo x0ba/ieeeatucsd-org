@@ -8,7 +8,7 @@ import {
     Plus,
     FileText
 } from 'lucide-react';
-import type { ConstitutionSection } from "../../shared/types/constitution"';
+import type { ConstitutionSection } from "../../shared/types/constitution";
 
 interface ConstitutionEditorProps {
     sections: ConstitutionSection[];

@@ -1,7 +1,7 @@
 import type {
   Constitution,
   ConstitutionSection,
-} from "../../shared/types/constitution";
+} from "../../../shared/types/constitution";
 import { toRomanNumeral, getSectionDisplayTitle } from "./constitutionUtils";
 
 // Legacy interface for backward compatibility
@@ -433,7 +433,7 @@ const estimateContentHeight = (section: ConstitutionSection): number => {
     const wordsPerLine = 12; // Further reduced from 13 to 12 for more conservative estimation
     const words = section.content
       .split(/\s+/)
-      .filter((word) => word.length > 0).length;
+      .filter((word: any) => word.length > 0).length;
     const estimatedLines = Math.max(
       contentLines,
       Math.ceil(words / wordsPerLine),
