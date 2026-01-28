@@ -25,10 +25,10 @@ import {
     DollarSign,
     Save
 } from 'lucide-react';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, useQuery, useAction } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { Id } from "#convex/_generated/dataModel";
-import { useConvexAuth } from '../../hooks/useConvexAuth';
+import type { Id } from "#convex/_generated/dataModel";
+import { useAuth } from '../../../../hooks/useConvexAuth';
 import { showToast } from '../../shared/utils/toast';
 import type {
     ReimbursementFormData,
@@ -40,7 +40,6 @@ import {
 } from './types';
 import ReceiptForm from './wizard-steps/ReceiptForm';
 import { useGlobalImagePaste } from '../../shared/hooks/useGlobalImagePaste';
-import { usePasteNotification } from '../../shared/components/PasteNotification';
 
 interface ReimbursementCreationPageProps {
     onBack: () => void;
@@ -49,11 +48,11 @@ interface ReimbursementCreationPageProps {
 }
 
 export default function ReimbursementCreationPage({ onBack, onSubmitSuccess, initialData }: ReimbursementCreationPageProps) {
-    const { authUser } = useConvexAuth();
+    const { authUser } = useAuth();
     const createReimbursement = useMutation(api.reimbursements.createReimbursement);
-    const uploadFile = useMutation(api.storage.uploadFile);
+    const uploadFile = useAction(api.storage.uploadFile);
     const user = useQuery(api.users.getUserByAuthId,
-        authUser ? { authUserId: authUser.id } : "skip");
+        authUser ? { authUserId: authUser._id } : "skip");
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -77,7 +76,7 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess, ini
     const [parseResults, setParseResults] = useState<Record<string, { success: boolean; message: string }>>({});
 
     // Paste notification
-    const { showPasteNotification, PasteNotificationComponent } = usePasteNotification("Receipt file pasted");
+    // const { showPasteNotification, PasteNotificationComponent } = usePasteNotification("Receipt file pasted");
 
     // Initialize with data or one receipt
     React.useEffect(() => {
@@ -146,7 +145,7 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess, ini
             }
         },
         onPasteSuccess: () => {
-            showPasteNotification();
+            // showPasteNotification();
         },
     });
 
@@ -215,7 +214,7 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess, ini
             const arrayBuffer = await file.arrayBuffer();
             const bytes = new Uint8Array(arrayBuffer);
             const { storageId } = await uploadFile({
-                file: bytes,
+                file: arrayBuffer,
                 fileName: file.name,
                 fileType: file.type,
             });
@@ -363,7 +362,7 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess, ini
                 location: r.location || '',
                 dateOfPurchase: r.dateOfPurchase ? new Date(r.dateOfPurchase).getTime() : Date.now(),
                 lineItems: r.lineItems,
-                receiptFile: r.receiptFile?.storageId || '',
+                receiptFile: (r.receiptFile as any)?.storageId || '',
                 notes: r.notes || '',
                 subtotal: r.subtotal || 0,
                 tax: r.tax || 0,
@@ -414,7 +413,7 @@ export default function ReimbursementCreationPage({ onBack, onSubmitSuccess, ini
 
     return (
         <div className="flex flex-col h-screen bg-gray-50 absolute inset-0 z-50 overflow-hidden">
-            {PasteNotificationComponent}
+            {/* {PasteNotificationComponent} */}
 
             {/* Header */}
             <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0 h-16 box-border">

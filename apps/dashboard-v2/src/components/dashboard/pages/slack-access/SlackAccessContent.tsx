@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Key, Eye, EyeOff, AlertCircle, CheckCircle, MessageSquare, Shield, RefreshCw, Inbox } from 'lucide-react';
-import { useAuth } from '../shared/hooks/useConvexAuth';
+import { useAuth } from '../../../../hooks/useConvexAuth';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import type { User as UserType } from '../../../lib/types';
 import { Spinner, Card, CardBody, Input, Button, Pagination as HeroPagination, Chip } from '@heroui/react';
 import PasswordStrengthIndicator from './components/PasswordStrengthIndicator';
 import EmailModal from './components/EmailModal';
 import type { EmailMessage, EmailInboxState, EmailGenerationState } from './types';
 
 export default function SlackAccessContent() {
-    const { authUserId, user: authUser } = useAuth();
+    const { authUserId } = useAuth();
     const userData = useQuery(api.users.getUserByAuthId, authUserId ? { authUserId } : 'skip');
     const updateUser = useMutation(api.users.updateIEEEEmail);
 
@@ -21,7 +20,6 @@ export default function SlackAccessContent() {
     // Separate state for inbox authentication password
     const [showInboxPassword, setShowInboxPassword] = useState(false);
     const [inboxPassword, setInboxPassword] = useState('');
-    const [inboxPasswordValidation, setInboxPasswordValidation] = useState({ isValid: false, strength: 0, requirements: { minLength: false, hasUppercase: false, hasLowercase: false, hasNumber: false, hasSpecialChar: false } });
 
     // Email pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -52,7 +50,7 @@ export default function SlackAccessContent() {
     }, [customPassword]);
 
     useEffect(() => {
-        setInboxPasswordValidation(validatePassword(inboxPassword));
+        // Removed unused validation
     }, [inboxPassword]);
 
     useEffect(() => {

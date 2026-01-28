@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Save, Shield, UserCircle, Upload, FileText, AlertCircle, CheckCircle, Eye, EyeOff, LayoutDashboard, Sidebar, PanelTop } from 'lucide-react';
-import { useMutation, useQuery } from 'convex/react';
+import { useState, useEffect } from 'react';
+import { Save, Shield, UserCircle, Upload, FileText, AlertCircle, CheckCircle, LayoutDashboard, Sidebar, PanelTop } from 'lucide-react';
+import { useMutation, useQuery, useAction } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { useAuth } from '../../../hooks/useConvexAuth';
+import { useAuth } from '../../../../hooks/useConvexAuth';
 import { Skeleton } from '@heroui/react';
 import { useNavigationPreference } from '../../shared/hooks/useNavigationPreference';
 import type { NavigationLayout } from '../../shared/types/navigation';
 
 export default function SettingsContent() {
-  const { user, authUserId } = useAuth();
-  const userData = useQuery(api.users.getUserByAuthUserId, authUserId ? { authUserId } : 'skip');
+  const { authUserId } = useAuth();
+  const userData = useQuery(api.users.getUserByAuthId, authUserId ? { authUserId } : 'skip');
   
   const updateProfile = useMutation(api.users.updateProfile);
   const updateResume = useMutation(api.users.updateResume);
-  const uploadFile = useMutation(api.storage.uploadFile);
-  const getFileUrl = useQuery(api.storage.getFileUrl);
+  const uploadFiles = useAction(api.storage.uploadFile);
+  const getFileUrl = useQuery(api.storage.getFileUrl, userData?.resume ? { storageId: userData.resume as any } : 'skip');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -92,10 +92,9 @@ export default function SettingsContent() {
 
     try {
       const arrayBuffer = await resumeFile.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
 
-      const result = await uploadFile({
-        file: uint8Array,
+      const result = await uploadFiles({
+        file: arrayBuffer,
         fileName: resumeFile.name,
         fileType: resumeFile.type,
       });
@@ -161,7 +160,7 @@ export default function SettingsContent() {
       return userData.resume;
     }
     if (userData?.resume) {
-      return getFileUrl({ storageId: userData.resume });
+      return getFileUrl;
     }
     return null;
   };

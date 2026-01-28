@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import { useState } from 'react';
 import { UserPlus, Mail, List, Lock } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 // @ts-ignore - Types will be generated after convex dev runs
 import { api } from "#convex/_generated/api";
 import { Spinner } from "@heroui/react";
 import { authClient } from "../../lib/auth-client";
-import type { UserRole } from "../../lib/types";
 import InvitationFlowTab from "./InvitationFlowTab";
 import DirectOnboardingTab from "./DirectOnboardingTab";
 import PendingInvitationsTab from "./PendingInvitationsTab";
@@ -13,7 +12,7 @@ import { useUser } from "../providers/ConvexClientProvider";
 
 export default function OnboardingContent() {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
-  const { convexUser: user, syncStatus } = useUser();
+  const { syncStatus } = useUser();
   const userLoading = syncStatus === "loading";
 
   const stats = useQuery(api.invitations.getStats);

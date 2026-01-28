@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Input, Textarea, Select, SelectItem, Button } from "@heroui/react";
+import { Input, Select, SelectItem, Button } from "@heroui/react";
 import {
   Upload,
   Loader2,
@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Plus,
   Trash2,
-  DollarSign,
 } from "lucide-react";
 import {
   EXPENSE_CATEGORIES,
@@ -40,7 +39,7 @@ export default function ReceiptForm({
   const isUploading = uploadingFiles.has(receipt.id);
   const isParsing = parsingReceipts.has(receipt.id);
   const parseResult = parseResults[receipt.id];
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [, setValidationError] = useState<string | null>(null);
 
   // Helper validation (same as before)
   const validateFileWithServer = async (file: File): Promise<{ valid: boolean; error?: string }> => {
@@ -80,7 +79,7 @@ export default function ReceiptForm({
       return convertedFile;
     } catch (error) {
       console.error('Error processing file:', error);
-      toast({ title: 'Error processing file', variant: 'destructive' });
+      toast({ title: 'Error processing file' });
       return null;
     }
   };
@@ -216,13 +215,13 @@ export default function ReceiptForm({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Line Items</h3>
-                <Button size="sm" variant="light" color="primary" onClick={addLineItem} isDisabled={isProcessing} startContent={<Plus className="w-3 h-3" />}>
+                <Button size="sm" variant="light" color="primary" onPress={addLineItem} isDisabled={isProcessing} startContent={<Plus className="w-3 h-3" />}>
                   Add Item
                 </Button>
               </div>
 
               <div className="space-y-3">
-                {receipt.lineItems.map((item, index) => (
+                {receipt.lineItems.map((item) => (
                   <div key={item.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3 group">
                     <div className="flex gap-2">
                       <div className="flex-1 space-y-1">
@@ -239,7 +238,7 @@ export default function ReceiptForm({
                         />
                       </div>
                       {receipt.lineItems.length > 1 && (
-                        <Button isIconOnly size="sm" variant="light" color="danger" onClick={() => removeLineItem(item.id)} isDisabled={isProcessing} className="opacity-50 group-hover:opacity-100">
+                        <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => removeLineItem(item.id)} isDisabled={isProcessing} className="opacity-50 group-hover:opacity-100">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       )}

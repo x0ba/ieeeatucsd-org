@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Calendar, Bell, User, Filter, Edit, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, FileText, MessageCircle, Eye, CreditCard, Check, X, Plus, Upload, Banknote, Trash2, Save, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from "#convex/_generated/api";
 import { useAuth } from '../../../../hooks/useConvexAuth';
 import type { UserRole } from '../../../../lib/types';
@@ -24,7 +24,7 @@ interface FundDeposit {
   otherDepositMethod?: string;
   purpose: string;
   receiptFiles?: string[];
-  description: string;
+  description?: string;
   submittedAt: number;
   verifiedBy?: string;
   verifiedByName?: string;
@@ -92,7 +92,7 @@ const getStatusLabel = (status: string) => {
 
 const FundDepositsContent: React.FC = () => {
   const { user } = useAuth();
-  const authUserId = user?.id || '';
+  const authUserId = user?._id || '';
 
   // Query based on user role
   const userData = useQuery(api.users.getUserByAuthId, { authUserId });
@@ -113,7 +113,7 @@ const FundDepositsContent: React.FC = () => {
   const updateDeposit = useMutation(api.fundDeposits.updateFundDeposit);
   const removeReceipt = useMutation(api.fundDeposits.removeReceiptFile);
   const deleteDeposit = useMutation(api.fundDeposits.deleteFundDeposit);
-  const uploadFiles = useMutation(api.storage.uploadMultipleFiles);
+  const uploadFiles = useAction(api.storage.uploadMultipleFiles);
   const deleteFile = useMutation(api.storage.deleteFile);
 
   const [filteredDeposits, setFilteredDeposits] = useState<FundDeposit[]>([]);
@@ -321,13 +321,25 @@ const FundDepositsContent: React.FC = () => {
     try {
       let receiptFileIds: string[] = [];
       if (receiptFiles.length > 0) {
-        const uploadedFiles = await uploadFiles({ files: receiptFiles });
+        const uploadedFiles = await uploadFiles({ 
+          files: await Promise.all(receiptFiles.map(async (file) => ({
+            file: await file.arrayBuffer(),
+            fileName: file.name,
+            fileType: file.type
+          })))
+        });
         receiptFileIds = uploadedFiles.storageIds || [];
       }
 
       let bankTransferFileIds: string[] = [];
       if (bankTransferFiles.length > 0) {
-        const uploadedFiles = await uploadFiles({ files: bankTransferFiles });
+        const uploadedFiles = await uploadFiles({ 
+          files: await Promise.all(bankTransferFiles.map(async (file) => ({
+            file: await file.arrayBuffer(),
+            fileName: file.name,
+            fileType: file.type
+          })))
+        });
         bankTransferFileIds = uploadedFiles.storageIds || [];
       }
 
@@ -425,7 +437,13 @@ const FundDepositsContent: React.FC = () => {
 
       let newReceiptFileIds: string[] = [];
       if (editReceiptFiles.length > 0) {
-        const uploadedFiles = await uploadFiles({ files: editReceiptFiles });
+        const uploadedFiles = await uploadFiles({ 
+          files: await Promise.all(editReceiptFiles.map(async (file) => ({
+            file: await file.arrayBuffer(),
+            fileName: file.name,
+            fileType: file.type
+          })))
+        });
         newReceiptFileIds = uploadedFiles.storageIds || [];
       }
 
@@ -467,7 +485,7 @@ const FundDepositsContent: React.FC = () => {
       if (deposit.receiptFiles && deposit.receiptFiles.length > 0) {
         for (const fileId of deposit.receiptFiles) {
           try {
-            await deleteFile({ storageId: fileId });
+            await deleteFile({ storageId: fileId as any });
           } catch (deleteError) {
             console.warn('Failed to delete receipt file:', deleteError);
           }

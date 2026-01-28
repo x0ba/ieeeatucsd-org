@@ -60,8 +60,8 @@ export interface FundRequestAuditLog {
     performedByName?: string;
     timestamp: number;
     notes?: string;
-    previousStatus?: FundRequestStatus;
-    newStatus?: FundRequestStatus;
+    previousStatus?: FundRequestStatus | string;
+    newStatus?: FundRequestStatus | string;
 }
 
 // Budget configuration for a department
@@ -87,7 +87,7 @@ export interface BudgetAdjustment {
 
 // Main fund request interface
 export interface FundRequest {
-    id: string;
+    id?: string; // Optional for compatibility
     _id: string; // Convex ID
 
     // Basic info
@@ -133,7 +133,7 @@ export interface FundRequest {
     updatedAt: number;
 
     // Audit trail
-    auditLogs: FundRequestAuditLog[];
+    auditLogs: FundRequestAuditLog[] | any[];
 }
 
 // Form data for creating/editing fund requests

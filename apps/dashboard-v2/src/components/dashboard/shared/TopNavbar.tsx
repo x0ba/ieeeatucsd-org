@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Navbar,
   NavbarBrand,
@@ -14,8 +13,8 @@ interface TopNavbarProps {
   currentPath?: string;
 }
 
-export default function TopNavbar({ currentPath }: TopNavbarProps) {
-  const { user } = useAuth();
+export default function TopNavbar({ }: TopNavbarProps) {
+  const { } = useAuth();
 
   const handleSignOut = async () => {
     // For now, redirect to signin
@@ -75,7 +74,7 @@ export default function TopNavbar({ currentPath }: TopNavbarProps) {
         </NavbarItem>
         <NavbarItem>
           <Button
-            onClick={handleSignOut}
+            onPress={handleSignOut}
             variant="light"
             startContent={<LogOut className="w-4 h-4" />}
             className="text-red-600"

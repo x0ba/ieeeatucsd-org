@@ -200,13 +200,11 @@ const navigationCategories: NavigationCategory[] = [
 ];
 
 function SidebarNavigationContent({ currentPath = "" }: { currentPath?: string }) {
-  const { user, signOut: authSignOut } = useAuth();
+  const { signOut: authSignOut } = useAuth();
   const currentUser = useQuery(api.users.getCurrentUser, {});
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [sponsorTier, setSponsorTier] = useState<string | null>(null);
-  const [isLoadingRole, setIsLoadingRole] = useState(false);
   const [userData, setUserData] = useState<UserType | null>(null);
-  const [unreadCount] = useState(0);
   // Initialize with all navigation categories expanded by default
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(navigationCategories.map(cat => cat.title))
@@ -235,10 +233,8 @@ function SidebarNavigationContent({ currentPath = "" }: { currentPath?: string }
       points: currentUser.points || 0,
       role: currentUser.role || "Member",
     });
-    setIsLoadingRole(false);
   } else {
     setCurrentUserRole(null);
-    setIsLoadingRole(false);
   }
 
   const isActiveRoute = (href: string): boolean => {
@@ -385,7 +381,7 @@ function SidebarNavigationContent({ currentPath = "" }: { currentPath?: string }
 }
 
 export function SidebarNavigation({ currentPath, children }: SidebarNavigationProps) {
-  const { user, signOut: authSignOut } = useAuth();
+  const { signOut: authSignOut } = useAuth();
   const currentUser = useQuery(api.users.getCurrentUser, {});
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [sponsorTier, setSponsorTier] = useState<string | null>(null);
@@ -418,10 +414,8 @@ export function SidebarNavigation({ currentPath, children }: SidebarNavigationPr
       points: currentUser.points || 0,
       role: currentUser.role || "Member",
     });
-    setIsLoadingRole(false);
   } else {
     setCurrentUserRole(null);
-    setIsLoadingRole(false);
   }
 
   const isActiveRoute = (href: string): boolean => {

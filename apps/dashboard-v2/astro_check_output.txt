@@ -1,0 +1,142 @@
+bun astro check output:
+13 import { Spinner, Select, SelectIt
+em, Pagination, Checkbox, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';                                              ~~~~~~~
+
+src/components/dashboard/pages/sponso
+rs/SponsorInformation.tsx:1:1 - warning ts(6133): 'React' is declared but its value is never read.             
+1 import React from 'react';
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/components/dashboard/pages/test-p
+ublic-profiles/TestPublicProfilesContent.tsx:3:25 - error ts(2307): Cannot find module '../../../hooks/useConvexAuth' or its corresponding type declarations.                            
+3 import { useAuth } from "../../../h
+ooks/useConvexAuth";                                           ~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~                  src/components/dashboard/pages/test-p
+ublic-profiles/TestPublicProfilesContent.tsx:2:40 - warning ts(6133): 'Award' is declared but its value is never read.                              
+2 import { PlayCircle, RefreshCw, Use
+rs, Award } from 'lucide-react';                                          
+    ~~~~~                            src/components/dashboard/pages/test-p
+ublic-profiles/TestPublicProfilesContent.tsx:2:33 - warning ts(6133): 'Users' is declared but its value is never read.                              
+2 import { PlayCircle, RefreshCw, Use
+rs, Award } from 'lucide-react';                                       ~~~
+~~                                   src/components/dashboard/pages/test-p
+ublic-profiles/TestPublicProfilesContent.tsx:1:8 - warning ts(6133): 'React' is declared but its value is never read.                               
+1 import React, { useState } from 're
+act';                                         ~~~~~
+
+src/components/dashboard/shared/Dashb
+oardLayout.tsx:1:47 - warning ts(6133): 'useRef' is declared but its value is never read.                      
+1 import { type ReactNode, useEffect,
+ useState, useRef } from 'react';                                         
+           ~~~~~~                    
+src/components/dashboard/shared/Offic
+erAiChat.tsx:244:58 - error ts(2339): Property 'inline' does not exist on type 'ClassAttributes<HTMLElement> & HTMLAttributes<HTMLElement> & ExtraProps'.                                
+244                                  
+               code: ({ inline, className, children }) => (                                                    
+                        ~~~~~~       src/components/dashboard/shared/Offic
+erAiChat.tsx:48:26 - warning ts(6387): The signature '(commandId: string, showUI?: boolean, value?: string): boolean' of 'document.execCommand' is deprecated.                           
+48                 document.execComma
+nd("copy");                                                      ~~~~~~~~~
+~~                                   src/components/dashboard/shared/Offic
+erAiChat.tsx:2:65 - warning ts(6133): 'ChevronRight' is declared but its value is never read.                  
+2 import { Sparkles, Send, Bot, User 
+as UserIcon, X, ChevronDown, ChevronRight, Loader2, Copy, Check } from "lucide-react";                                                              
+                             ~~~~~~~~~~~~                                 
+src/components/dashboard/shared/Polic
+yUpdateModal.tsx:1:8 - warning ts(6133): 'React' is declared but its value is never read.                      
+1 import React, { useState, useEffect
+ } from 'react';                              ~~~~~
+
+src/components/dashboard/shared/Repor
+tsSection.tsx:1:1 - warning ts(6133): 'React' is declared but its value is never read.                         
+1 import React from 'react';
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/components/dashboard/shared/Sideb
+arNavigation.tsx:392:10 - warning ts(6133): 'isLoadingRole' is declared but its value is never read.           
+392   const [isLoadingRole, setIsLoad
+ingRole] = useState(false);                       ~~~~~~~~~~~~~
+src/components/dashboard/shared/Sideb
+arNavigation.tsx:388:11 - warning ts(6133): 'user' is declared but its value is never read.                    
+388   const { user, signOut: authSign
+Out } = useAuth();                                 ~~~~
+src/components/dashboard/shared/Sideb
+arNavigation.tsx:209:10 - warning ts(6133): 'unreadCount' is declared but its value is never read.             
+209   const [unreadCount] = useState(
+0);                                               ~~~~~~~~~~~
+src/components/dashboard/shared/Sideb
+arNavigation.tsx:207:10 - warning ts(6133): 'isLoadingRole' is declared but but its value is never read.           
+207   const [isLoadingRole, setIsLoad
+ingRole] = useState(false);                       ~~~~~~~~~~~~~
+src/components/dashboard/shared/Sideb
+arNavigation.tsx:203:11 - warning ts(6133): 'user' is declared but its value is never read.                    
+203   const { user, signOut: authSign
+Out } = useAuth();                                 ~~~~
+
+src/components/dashboard/shared/Stats
+Cards.tsx:1:1 - warning ts(6133): 'React' is declared but its value is never read.                             
+1 import React from 'react';
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/components/dashboard/shared/TopNa
+vbar.tsx:78:13 - warning ts(6385): 'onClick' is deprecated.               
+78             onClick={handleSignOut
+}                                                   ~~~~~~~
+src/components/dashboard/shared/TopNa
+vbar.tsx:18:9 - warning ts(6133): 'user' is declared but its value is never read.                              
+18   const { user } = useAuth();
+           ~~~~~~~~
+src/components/dashboard/shared/TopNa
+vbar.tsx:17:35 - warning ts(6133): 'currentPath' is declared but its value is never read.                      
+17 export default function TopNavbar(
+{ currentPath }: TopNavbarProps) {                                        
+~~~~~~~~~~~~~~~                      src/components/dashboard/shared/TopNa
+vbar.tsx:1:1 - warning ts(6133): 'React' is declared but its value is never read.                              
+1 import React from "react";
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/components/onboarding/OnboardingA
+pp.tsx:1:1 - warning ts(6133): 'React' is declared but its value is never read.                                
+1 import React from "react";
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/components/onboarding/OnboardingC
+ontent.tsx:16:23 - warning ts(6133): 'user' is declared but its value is never read.                           
+16   const { convexUser: user, syncSt
+atus } = useUser();                                           ~~~~
+src/components/onboarding/OnboardingC
+ontent.tsx:8:1 - warning ts(6133): 'UserRole' is declared but its value is never read.                         
+8 import type { UserRole } from "../.
+./lib/types";                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~                        src/components/onboarding/OnboardingC
+ontent.tsx:1:8 - warning ts(6133): 'React' is declared but its value is never read.                            
+1 import React, { useState } from "re
+act";                                         ~~~~~
+
+src/components/onboarding/PendingInvi
+tationsTab.tsx:1:1 - warning ts(6133): 'React' is declared but its value is never read.                        
+1 import React from "react";
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/components/overview/OverviewApp.t
+sx:1:1 - warning ts(6133): 'React' is declared but its value is never read.                                    
+1 import React from "react";
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/components/ui/loading/PageSkeleto
+n.tsx:14:3 - warning ts(6133): 'showSidebar' is declared but its value is never read.                          
+14   showSidebar = false,
+     ~~~~~~~~~~~
+
+src/pages/dashboard/get-started/index
+.astro:3:10 - error ts(2614): Module '"*.ts"' has no exported member 'getSession'. Did you mean to use 'import getSession from "*.ts"' instead?     
+3 import { getSession } from '../../l
+ib/auth.ts';                                    ~~~~~~~~~~
+
+Result (299 files): 
+- 205 errors
+- 0 warnings
+- 378 hints
+
+error: script "astro" exited with cod
+e 1

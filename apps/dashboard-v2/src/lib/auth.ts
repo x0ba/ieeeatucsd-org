@@ -107,6 +107,8 @@ export type AuthInstance = typeof auth;
  */
 export type AuthClient = AuthInstance["$Infer"];
 
+export default getSession;
+
 /**
  * Export Better Auth types
  */

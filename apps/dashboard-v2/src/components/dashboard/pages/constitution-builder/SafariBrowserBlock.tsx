@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, ExternalLink, Chrome } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Globe } from 'lucide-react';
 import { getChromeDownloadUrl } from './utils/browserDetection';
 import { useSafariDetection } from './hooks/useBrowserDetection';
 
@@ -56,7 +56,7 @@ const SafariBrowserBlock: React.FC<SafariBrowserBlockProps> = ({ className = '' 
               onClick={handleChromeDownload}
               className="inline-flex items-center px-4 py-3 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors w-full justify-center"
             >
-              <Chrome className="h-5 w-5 mr-2" />
+              <Globe className="h-5 w-5 mr-2" />
               Download Chrome Browser
               <ExternalLink className="h-4 w-4 ml-2" />
             </button>

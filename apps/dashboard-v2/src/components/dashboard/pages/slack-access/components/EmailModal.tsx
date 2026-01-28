@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Mail, AlertCircle, RefreshCw, Paperclip, Download, X, Image, FileVideo, FileAudio, FileText, Archive, File } from 'lucide-react';
-import { Modal, ModalContent, ModalHeader, ModalBody, Spinner, Button, Card } from '@heroui/react';
+import { useState, useEffect } from 'react';
+import { Mail, AlertCircle, RefreshCw, Paperclip, Download, Image, FileVideo, FileAudio, FileText, Archive, File } from 'lucide-react';
+import { Modal, ModalContent, ModalHeader, ModalBody, Spinner, Button } from '@heroui/react';
 import DOMPurify from 'dompurify';
 import type { EmailMessage } from '../types';
 

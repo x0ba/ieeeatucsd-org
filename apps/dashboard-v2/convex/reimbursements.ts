@@ -485,3 +485,31 @@ export const getUserById = query({
     return user;
   },
 });
+
+// Delete a reimbursement request (for administrators only)
+export const deleteReimbursement = mutation({
+  args: {
+    reimbursementId: v.id("reimbursements"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity || !identity.subject) {
+      throw new Error("Unauthorized: User not authenticated");
+    }
+
+    // Check if user is administrator
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authUserId", (q) => q.eq("authUserId", identity.subject))
+      .first();
+    
+    if (!user || user.role !== "Administrator") {
+      throw new Error("Unauthorized: Only administrators can delete reimbursements");
+    }
+
+    // Delete the reimbursement
+    await ctx.db.delete(args.reimbursementId);
+    
+    return { success: true };
+  },
+});

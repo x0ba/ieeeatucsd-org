@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Checkbox } from '@heroui/react';
 import { FileText, Shield, ExternalLink } from 'lucide-react';
 import { useMutation } from 'convex/react';

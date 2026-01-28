@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { PlayCircle, RefreshCw, Users, Award } from 'lucide-react';
-import { useAuth } from "../../../hooks/useConvexAuth";
+import { useState } from 'react';
+import { PlayCircle, RefreshCw } from 'lucide-react';
+import { useAuth } from "../../../../hooks/useConvexAuth";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "#convex/_generated/api";
 

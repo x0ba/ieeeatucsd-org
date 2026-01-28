@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, ChevronLeft, ChevronRight, DollarSign, CheckCircle, FileText, ExternalLink, Calendar, CreditCard } from 'lucide-react';
-import { Button, Input, Select, SelectItem, Chip, ScrollShadow, Divider, Tabs, Tab } from '@heroui/react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Save, ChevronLeft, ChevronRight, CheckCircle, FileText, ExternalLink, Calendar } from 'lucide-react';
+import { Button, Input, Chip, Tabs, Tab } from '@heroui/react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { Id } from "#convex/_generated/dataModel";
+import type { Id } from "#convex/_generated/dataModel";
 import { useQuery as useStorageQuery } from 'convex/react';
 import { showToast } from '../../shared/utils/toast';
 import ReceiptViewer from './components/ReceiptViewer';
@@ -118,7 +118,7 @@ export default function ReimbursementDetailsPage({
                         className="font-semibold bg-[#0078D4]"
                         isDisabled={!hasChanges}
                         isLoading={isSaving}
-                        onClick={handleSave}
+                        onPress={() => {}}
                         startContent={!isSaving && <Save className="w-4 h-4" />}
                         size="sm"
                     >

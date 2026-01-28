@@ -527,6 +527,15 @@ export const getPublicProfiles = query({
   },
 });
 
+// Get all users (for admin functions)
+export const getAllUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    return users;
+  },
+});
+
 // Update user stats (for testing)
 export const updateUserStats = mutation({
   args: {

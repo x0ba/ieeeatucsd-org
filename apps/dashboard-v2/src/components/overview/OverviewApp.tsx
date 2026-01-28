@@ -1,4 +1,3 @@
-import React from "react";
 import { ConvexClientProvider } from "../providers/ConvexClientProvider";
 import { Toaster } from "sonner";
 

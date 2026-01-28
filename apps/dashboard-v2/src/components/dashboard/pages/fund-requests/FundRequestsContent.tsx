@@ -36,7 +36,7 @@ import {
     DropdownItem,
     Progress,
 } from '@heroui/react';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from "#convex/_generated/api";
 import { useCurrentUser, useUserFundRequests, useAllFundRequests, useBudgetConfig, useBudgetAdjustments } from '../../../../hooks/useConvexAuth';
 import type { FundRequest, FundRequestStatus, FundRequestDepartment, BudgetConfig } from '../../shared/types/fund-requests';
@@ -125,6 +125,12 @@ export default function FundRequestsContent() {
 
     const deleteFundRequest = useMutation(api.fundRequests.deleteFundRequest);
 
+    // Budget adjustments hooks for each department
+    const eventsAdjustments = useBudgetAdjustments('events');
+    const projectsAdjustments = useBudgetAdjustments('projects');  
+    const internalAdjustments = useBudgetAdjustments('internal');
+    const otherAdjustments = useBudgetAdjustments('other');
+
     // Fetch budget configurations and all requests for budget tracking
     useEffect(() => {
         if (!currentUser) return;
@@ -149,31 +155,24 @@ export default function FundRequestsContent() {
                 
                 setBudgetConfigs(configMap);
 
-                // Fetch manual adjustments for each department
-                const adjustmentsMap: Record<FundRequestDepartment, number> = {
-                    events: 0,
-                    projects: 0,
-                    internal: 0,
-                    other: 0,
+                // Calculate adjustments totals from hooks
+                const calculateAdjustmentTotal = (adjustments: any[]) => {
+                    return adjustments?.reduce((total, adj) => total + (adj.amount || 0), 0) || 0;
                 };
                 
-                for (const dept of departments) {
-                    const adjustments = await api.fundRequests.getBudgetAdjustments({ department: dept });
-                    let total = 0;
-                    adjustments.forEach((adj: any) => {
-                        total += adj.amount || 0;
-                    });
-                    adjustmentsMap[dept] = total;
-                }
-                
-                setAdjustmentsTotals(adjustmentsMap);
+                setAdjustmentsTotals({
+                    events: calculateAdjustmentTotal(eventsAdjustments),
+                    projects: calculateAdjustmentTotal(projectsAdjustments),
+                    internal: calculateAdjustmentTotal(internalAdjustments),
+                    other: calculateAdjustmentTotal(otherAdjustments)
+                });
             } catch (error) {
                 console.error('Error fetching budget configs:', error);
             }
         };
 
         fetchBudgetData();
-    }, [currentUser, budgetConfigs]);
+    }, [currentUser, budgetConfigs, eventsAdjustments, projectsAdjustments, internalAdjustments, otherAdjustments]);
 
     // Set loading to false when data is loaded
     useEffect(() => {
@@ -232,7 +231,7 @@ export default function FundRequestsContent() {
 
         setIsDeleting(true);
         try {
-            await deleteFundRequest({ id: requestToDelete._id });
+            await deleteFundRequest({ id: requestToDelete._id as any });
             showToast.success('Fund request deleted successfully');
             setIsDeleteModalOpen(false);
             setRequestToDelete(null);

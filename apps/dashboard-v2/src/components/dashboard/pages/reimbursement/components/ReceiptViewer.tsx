@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ZoomIn, ZoomOut, RotateCw, ExternalLink, RefreshCw, FileText, Image as ImageIcon } from 'lucide-react';
 import { Button, Chip } from '@heroui/react';
 
@@ -59,17 +59,17 @@ export default function ReceiptViewer({ url, type, fileName, className = '' }: R
                 <div className="flex items-center gap-1">
                     {!isPdf && (
                         <>
-                            <Button isIconOnly size="sm" variant="light" className="text-gray-400 hover:text-white" onClick={handleZoomOut}>
+                            <Button isIconOnly size="sm" variant="light" className="text-gray-400 hover:text-white" onPress={handleZoomOut}>
                                 <ZoomOut className="w-4 h-4" />
                             </Button>
                             <span className="text-gray-500 text-xs w-8 text-center">{Math.round(zoomLevel * 100)}%</span>
-                            <Button isIconOnly size="sm" variant="light" className="text-gray-400 hover:text-white" onClick={handleZoomIn}>
+                            <Button isIconOnly size="sm" variant="light" className="text-gray-400 hover:text-white" onPress={handleZoomIn}>
                                 <ZoomIn className="w-4 h-4" />
                             </Button>
-                            <Button isIconOnly size="sm" variant="light" className="text-gray-400 hover:text-white" onClick={handleRotate}>
+                            <Button isIconOnly size="sm" variant="light" className="text-gray-400 hover:text-white" onPress={handleRotate}>
                                 <RotateCw className="w-4 h-4" />
                             </Button>
-                            <Button isIconOnly size="sm" variant="light" className="text-gray-400 hover:text-white" onClick={resetView} title="Reset View">
+                            <Button isIconOnly size="sm" variant="light" className="text-gray-400 hover:text-white" onPress={resetView} title="Reset View">
                                 <RefreshCw className="w-3 h-3" />
                             </Button>
                         </>
@@ -80,7 +80,7 @@ export default function ReceiptViewer({ url, type, fileName, className = '' }: R
                         size="sm"
                         variant="light"
                         className="text-gray-400 hover:text-blue-400"
-                        onClick={() => window.open(url, '_blank')}
+                        onPress={() => window.open(url, '_blank')}
                         title="Open in new tab"
                     >
                         <ExternalLink className="w-4 h-4" />
@@ -119,7 +119,7 @@ export default function ReceiptViewer({ url, type, fileName, className = '' }: R
                                         size="sm"
                                         variant="flat"
                                         color="primary"
-                                        onClick={() => window.open(url, '_blank')}
+                                        onPress={() => window.open(url, '_blank')}
                                     >
                                         Try opening directly
                                     </Button>

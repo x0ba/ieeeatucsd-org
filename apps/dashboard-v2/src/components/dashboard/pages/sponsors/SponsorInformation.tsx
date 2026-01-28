@@ -1,4 +1,3 @@
-import React from 'react';
 import { Building2, Mail, Award, Check, X, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../../../hooks/useConvexAuth';
 import { useQuery } from 'convex/react';

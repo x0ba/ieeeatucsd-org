@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, Bot, User as UserIcon, X, ChevronDown, ChevronRight, Loader2, Copy, Check } from "lucide-react";
+import { useState, useEffect, useRef } from 'react';
+import { Sparkles, Send, Bot, User as UserIcon, X, ChevronDown, Loader2, Copy, Check } from "lucide-react";
 import {
     Popover,
     PopoverContent,
@@ -241,7 +241,7 @@ export function OfficerAiChat() {
                                                 a: ({ node, ...props }) => <a {...props} className="text-blue-500 underline" target="_blank" rel="noopener noreferrer" />,
                                                 ul: ({ node, ...props }) => <ul {...props} className="list-disc pl-4" />,
                                                 ol: ({ node, ...props }) => <ol {...props} className="list-decimal pl-4" />,
-                                                code: ({ inline, className, children }) => (
+                                                code: ({ inline, className, children }: any) => (
                                                     <CodeBlock inline={inline} className={className}>
                                                         {children}
                                                     </CodeBlock>

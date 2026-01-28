@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, User, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, MessageCircle, Eye, CreditCard, ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Search } from 'lucide-react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { useConvexAuth } from '../../hooks/useConvexAuth';
+import { useAuth } from '../../../../hooks/useConvexAuth';
 import { Card, CardHeader, CardBody, Button, Chip, Select, SelectItem, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import ManageReimbursementDetails from './ManageReimbursementDetails';
 import { TableSkeleton } from '../../../ui/loading';
@@ -22,8 +22,8 @@ interface Reimbursement {
     receipts?: any[];
     submittedAt: any;
     additionalInfo?: string;
-    auditNotes?: { note: string; createdBy: string; timestamp: any; }[];
-    auditLogs?: { action: string; createdBy: string; timestamp: any; }[];
+    auditNotes?: { createdBy: string; note: string; timestamp: number; }[];
+    auditLogs?: { createdBy: string; timestamp: number; action: string; }[];
     auditRequests?: {
         auditorId: string;
         requestedBy: string;
@@ -96,6 +96,7 @@ export default function ManageReimbursementsContent() {
     const reimbursements = useQuery(api.reimbursements.getAllReimbursements);
     const updateReimbursementStatusMutation = useMutation(api.reimbursements.updateReimbursementStatus);
     const updatePaymentDetailsMutation = useMutation(api.reimbursements.updatePaymentDetails);
+    const deleteReimbursementMutation = useMutation(api.reimbursements.deleteReimbursement);
     const [selectedReimbursement, setSelectedReimbursement] = useState<Reimbursement | null>(null);
     const [auditReimbursement, setAuditReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -122,7 +123,7 @@ export default function ManageReimbursementsContent() {
     };
 
     // Calculate total amount for a reimbursement
-    const calculateTotalAmount = (reimbursement: Reimbursement) => {
+    const calculateTotalAmount = (reimbursement: any) => {
         // Handle new multi-receipt structure
         if (reimbursement.receipts && reimbursement.receipts.length > 0) {
             return reimbursement.receipts.reduce((sum: number, receipt: any) => {
@@ -164,7 +165,7 @@ export default function ManageReimbursementsContent() {
         if (!reimbursements) return;
 
         // Fetch user names for all submitters from public profiles
-        const userIds = [...new Set(reimbursements.map((r: Reimbursement) => r.submittedBy))];
+        const userIds = [...new Set(reimbursements.map((r: any) => r.submittedBy))];
         const newUserNames: Record<string, string> = {};
 
         userIds.forEach((userId) => {
@@ -183,12 +184,12 @@ export default function ManageReimbursementsContent() {
         if (!authUser) return;
 
         try {
-            const currentReimbursement = reimbursements?.find((r: Reimbursement) => r._id === reimbursementId);
+            const currentReimbursement = reimbursements?.find((r: any) => r._id === reimbursementId);
             const previousStatus = currentReimbursement?.status;
 
             if (newStatus === 'paid' && paymentInfo) {
                 await updatePaymentDetailsMutation({
-                    reimbursementId,
+                    reimbursementId: reimbursementId as any,
                     confirmationNumber: paymentInfo.confirmationNumber,
                     paymentDate: new Date(paymentInfo.paymentDate).getTime(),
                     amountPaid: paymentInfo.amountPaid,
@@ -197,7 +198,7 @@ export default function ManageReimbursementsContent() {
                 });
             } else {
                 await updateReimbursementStatusMutation({
-                    reimbursementId,
+                    reimbursementId: reimbursementId as any,
                     status: newStatus as 'submitted' | 'declined' | 'approved' | 'paid',
                     auditNote
                 });
@@ -226,7 +227,7 @@ export default function ManageReimbursementsContent() {
         }
     };
 
-    const handleDeleteClick = (reimbursement: Reimbursement) => {
+    const handleDeleteClick = (reimbursement: any) => {
         setDeleteConfirmation({ isOpen: true, reimbursement });
     };
 
@@ -238,9 +239,9 @@ export default function ManageReimbursementsContent() {
 
         setIsDeleting(true);
         try {
-            // Note: Convex doesn't have a delete mutation for reimbursements yet
-            // For now, just close the modal
-            showToast.error('Delete not implemented yet', 'Contact admin to delete reimbursements.');
+            await deleteReimbursementMutation({ reimbursementId: deleteConfirmation.reimbursement!._id as any });
+            showToast.success('Reimbursement deleted successfully');
+            setDeleteConfirmation({ isOpen: false, reimbursement: null });
         } catch (error) {
             console.error('Error deleting reimbursement:', error);
             showToast.error('Failed to delete reimbursement. Please try again.');
@@ -253,7 +254,7 @@ export default function ManageReimbursementsContent() {
         setDeleteConfirmation({ isOpen: false, reimbursement: null });
     };
 
-    const filteredReimbursements = reimbursements?.filter((reimbursement: Reimbursement) => {
+    const filteredReimbursements = reimbursements?.filter((reimbursement: any) => {
         const searchLower = searchTerm.toLowerCase();
         const userName = userNames[reimbursement.submittedBy]?.toLowerCase() || '';
         const matchesSearch = reimbursement.title.toLowerCase().includes(searchLower) ||
@@ -262,7 +263,7 @@ export default function ManageReimbursementsContent() {
             userName.includes(searchLower);
         const matchesStatus = statusFilter.size === 0 || statusFilter.has(reimbursement.status);
         return matchesSearch && matchesStatus;
-    }).sort((a: Reimbursement, b: Reimbursement) => {
+    }).sort((a: any, b: any) => {
         let aValue, bValue;
 
         switch (sortField) {
@@ -312,9 +313,9 @@ export default function ManageReimbursementsContent() {
     const getStats = () => {
         if (!reimbursements) return { totalRequests: 0, pendingReview: 0, totalAmount: 0, thisMonth: 0 };
         const totalRequests = reimbursements.length;
-        const pendingReview = reimbursements.filter((r: Reimbursement) => r.status === 'submitted').length;
-        const totalAmount = reimbursements.reduce((sum: number, r: Reimbursement) => sum + calculateTotalAmount(r), 0);
-        const thisMonth = reimbursements.filter((r: Reimbursement) => {
+        const pendingReview = reimbursements.filter((r: any) => r.status === 'submitted').length;
+        const totalAmount = reimbursements.reduce((sum: number, r: any) => sum + calculateTotalAmount(r), 0);
+        const thisMonth = reimbursements.filter((r: any) => {
             const submittedDate = new Date(r._creationTime);
             const now = new Date();
             return submittedDate.getMonth() === now.getMonth() && submittedDate.getFullYear() === now.getFullYear();
@@ -486,7 +487,7 @@ export default function ManageReimbursementsContent() {
                         <div className="overflow-x-auto">
                             {loading ? (
                                 <div className="p-6">
-                                    <TableSkeleton rows={5} columns={6} />
+                                    <TableSkeleton rows={5} />
                                 </div>
                             ) : (
                                 <table className="w-full">
@@ -528,7 +529,7 @@ export default function ManageReimbursementsContent() {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredReimbursements.map((reimbursement: Reimbursement) => (
+                                            filteredReimbursements.map((reimbursement: any) => (
                                                 <tr
                                                     key={reimbursement._id}
                                                     onClick={() => setSelectedReimbursement(reimbursement)}

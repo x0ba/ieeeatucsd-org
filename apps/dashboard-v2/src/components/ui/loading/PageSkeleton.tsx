@@ -4,14 +4,12 @@ import { cn } from '@/lib/utils';
 interface PageSkeletonProps {
   layout?: 'dashboard' | 'table' | 'form' | 'content';
   showHeader?: boolean;
-  showSidebar?: boolean;
   className?: string;
 }
 
 export function PageSkeleton({
   layout = 'content',
   showHeader = true,
-  showSidebar = false,
   className
 }: PageSkeletonProps) {
   const renderDashboardLayout = () => (

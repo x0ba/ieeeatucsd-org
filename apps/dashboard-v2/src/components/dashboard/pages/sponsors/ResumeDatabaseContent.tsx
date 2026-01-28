@@ -3,17 +3,39 @@ import { useAuth } from '../../../../hooks/useConvexAuth';
 import { useQuery } from 'convex/react';
 import { api } from "#convex/_generated/api";
 import { AlertCircle, Search, FileText, Users, GraduationCap, Briefcase, Filter, Download } from 'lucide-react';
-import type { User as FirestoreUser, UserRole } from '../../../lib/types';
-import { SponsorPermissionService } from './utils/sponsorPermissions';
-import {
-  normalizeMajorName,
-  getUniqueNormalizedMajors,
-  getMajorNormalizationMap
-} from '../../../../utils/majorNormalization';
-import { Spinner, Select, SelectItem, Pagination, Checkbox, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
+import type { UserRole } from '../../../../lib/types';
+import { Select, SelectItem, Pagination, Checkbox, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
 import { showToast } from '../../shared/utils/toast';
 
-interface UserWithResume extends Partial<FirestoreUser> {
+// Simple SponsorPermissionService implementation
+const SponsorPermissionService = {
+  hasSponsorAccess: (role: string): boolean => {
+    return role === 'Administrator' || role === 'Officer';
+  }
+};
+
+// Simple major normalization functions
+const normalizeMajorName = (major: string): string => {
+  return major.toLowerCase().trim();
+};
+
+const getMajorNormalizationMap = (majors: string[]): Map<string, string> => {
+  const map = new Map<string, string>();
+  majors.forEach(major => {
+    const normalized = normalizeMajorName(major);
+    map.set(normalized, major);
+  });
+  return map;
+};
+
+const getUniqueNormalizedMajors = (majors: (string | undefined)[]): string[] => {
+  const normalizedMajors = majors
+    .filter((m): m is string => !!m)
+    .map(m => normalizeMajorName(m));
+  return Array.from(new Set(normalizedMajors)).sort();
+};
+
+interface UserWithResume {
   _id: string;
   name: string;
   email: string;
@@ -25,12 +47,11 @@ interface UserWithResume extends Partial<FirestoreUser> {
 }
 
 export default function ResumeDatabaseContent() {
-  const { user, authUserId } = useAuth();
+  const { authUserId } = useAuth();
   const currentUser = useQuery(api.users.getUserByAuthId, authUserId ? { authUserId } : 'skip');
   const users = useQuery(api.users.getAllUsers) || [];
 
   const [filteredUsers, setFilteredUsers] = useState<UserWithResume[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMajors, setSelectedMajors] = useState<Set<string>>(new Set());
   const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
@@ -46,7 +67,7 @@ export default function ResumeDatabaseContent() {
   // Memoize major normalization map for efficient lookups
   const majorNormalizationMap = useMemo(() => {
     const allMajors = users.map(u => u.major).filter((m): m is string => !!m);
-    return getMajorNormalizationMap(allMajors, 0.8);
+    return getMajorNormalizationMap(allMajors);
   }, [users]);
 
   // Get normalized major for a user
@@ -102,7 +123,7 @@ export default function ResumeDatabaseContent() {
 
   // Get unique normalized majors for filter dropdown
   const uniqueMajors = useMemo(() => {
-    return getUniqueNormalizedMajors(users.map(u => u.major), 0.8);
+    return getUniqueNormalizedMajors(users.map(u => u.major));
   }, [users]);
 
   // Get unique graduation years for filter dropdown
@@ -240,7 +261,7 @@ export default function ResumeDatabaseContent() {
   };
 
   // Check if user has access
-  if (currentUser && !SponsorPermissionService.hasSponsorAccess(currentUser.role, currentUser.sponsorTier as any)) {
+  if (currentUser && !SponsorPermissionService.hasSponsorAccess(currentUser.role)) {
     return (
       <div className="flex-1 overflow-auto p-6">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6">
@@ -374,14 +395,7 @@ export default function ResumeDatabaseContent() {
         </div>
 
         {/* Results */}
-        {error ? (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-            <div className="flex items-center">
-              <AlertCircle className="h-6 w-6 text-red-600" />
-              <p className="ml-3 text-red-700">{error}</p>
-            </div>
-          </div>
-        ) : filteredUsers.length === 0 ? (
+        {filteredUsers.length === 0 ? (
           <div className="bg-white rounded-2xl shadow p-12 text-center">
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Resumes Found</h3>

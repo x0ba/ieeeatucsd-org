@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState, useRef } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '../../../lib/auth-client';
 import { useQuery } from "convex/react";
 import { api } from "#convex/_generated/api";
