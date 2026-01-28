@@ -1,6 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import type { UserRole } from "@/lib/types";
 
+export type NavigationLayout = "sidebar" | "horizontal";
+
 export interface NavigationItem {
   icon: LucideIcon;
   label: string;
@@ -13,7 +15,7 @@ export interface NavigationCategory {
   requiresRole?: UserRole[];
 }
 
-export const NAVIGATION_PATHS = {
+const NAVIGATION_PATHS = {
   OVERVIEW: "/overview",
   EVENTS: "/events",
   REIMBURSEMENT: "/reimbursement",
@@ -36,6 +38,9 @@ export const NAVIGATION_PATHS = {
   GET_STARTED: "/get-started",
   OFFICER_LEADERBOARD: "/officer-leaderboard",
 } as const;
+
+export { NAVIGATION_PATHS };
+export default NAVIGATION_PATHS;
 
 export type NavigationPath =
   (typeof NAVIGATION_PATHS)[keyof typeof NAVIGATION_PATHS];

@@ -19,8 +19,11 @@ export const uploadFile = action({
     const blob = new Blob([file], { type: fileType || "application/octet-stream" });
     const storageId = await ctx.storage.store(blob);
 
-    // Return the storage ID that can be used to reference the file
-    return { storageId };
+    // Get the URL for immediate use
+    const url = await ctx.storage.getUrl(storageId);
+
+    // Return both storage ID and URL
+    return { storageId, url };
   },
 });
 

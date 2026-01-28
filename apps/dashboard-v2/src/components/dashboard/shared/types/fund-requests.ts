@@ -88,6 +88,7 @@ export interface BudgetAdjustment {
 // Main fund request interface
 export interface FundRequest {
     id: string;
+    _id: string; // Convex ID
 
     // Basic info
     title: string;

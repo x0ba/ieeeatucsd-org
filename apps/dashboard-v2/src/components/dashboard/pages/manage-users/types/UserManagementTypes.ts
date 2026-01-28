@@ -2,7 +2,7 @@ import type {
   UserRole,
   SponsorTier,
   OfficerTeam,
-} from "../../shared/types/constitution";
+} from "../../../../shared/types/constitution";
 
 export interface UserModalData {
   id?: string;

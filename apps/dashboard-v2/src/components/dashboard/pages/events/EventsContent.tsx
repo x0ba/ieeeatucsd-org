@@ -25,22 +25,24 @@ import {
 } from "@heroui/react";
 
 interface Event {
-    _id: string;
+    id: string;
     eventName: string;
     eventDescription: string;
     location: string;
     startDate: number;
     endDate: number;
     pointsToReward: number;
-    published: boolean;
+    published?: boolean;
     capacity?: number;
     eventCode: string;
     hasFood?: boolean;
     files?: string[];
+    eventType?: string;
 }
 
 interface UserStats {
-    lastEventAttended: string;
+    lastEventAttended?: string;
+    eventsAttended: number;
     totalPointsEarned: number;
     totalEventsAttended: number;
 }
@@ -54,6 +56,7 @@ export default function EventsContent() {
     
     const [userStats, setUserStats] = useState<UserStats>({
         lastEventAttended: 'None',
+        eventsAttended: 0,
         totalPointsEarned: 0,
         totalEventsAttended: 0
     });
@@ -95,6 +98,7 @@ export default function EventsContent() {
         if (!currentUser) {
             setUserStats({
                 lastEventAttended: 'None',
+                eventsAttended: 0,
                 totalPointsEarned: 0,
                 totalEventsAttended: 0
             });
@@ -104,7 +108,7 @@ export default function EventsContent() {
 
         setUserStatsLoading(true);
         setUserStats({
-            lastEventAttended: currentUser.lastEventAttended || 'None',
+            eventsAttended: currentUser.eventsAttended || 0,
             totalPointsEarned: currentUser.points || 0,
             totalEventsAttended: currentUser.eventsAttended || 0
         });
@@ -141,7 +145,7 @@ export default function EventsContent() {
         }
 
         try {
-            setCheckingIn(event._id);
+            setCheckingIn(event.id);
 
             const enteredCode = prompt(`Please enter event code for "${event.eventName}":`);
             if (!enteredCode) {
@@ -162,7 +166,7 @@ export default function EventsContent() {
 
             // Check in user
             await checkInUser({
-                eventId: event._id as any,
+                eventId: event.id as any,
                 authUserId: authUserId
             });
 
@@ -173,7 +177,6 @@ export default function EventsContent() {
             try {
                 await updateUserStats({
                     authUserId: authUserId,
-                    eventName: event.eventName,
                     pointsEarned: event.pointsToReward
                 });
             } catch (error) {
@@ -181,7 +184,9 @@ export default function EventsContent() {
             }
 
             try {
-                await PublicProfileService.updateUserStats(authUserId, {
+                const updateUserStats = PublicProfileService.updateUserStats();
+                await updateUserStats({
+                    userId: authUserId,
                     points: newPoints,
                     eventsAttended: newEventsAttended
                 });
@@ -235,7 +240,7 @@ export default function EventsContent() {
     };
 
     const isUserCheckedIn = (event: Event) => {
-        return currentUser && checkedInEvents.has(event._id);
+        return currentUser && checkedInEvents.has(event.id);
     };
 
     const upcomingEvents = getFilteredEvents(getUpcomingEvents());
@@ -329,7 +334,7 @@ export default function EventsContent() {
                                 size="sm"
                                 color="primary"
                                 className="shadow-md shadow-primary/20 font-semibold"
-                                isLoading={checkingIn === event._id}
+                                isLoading={checkingIn === event.id}
                                 onPress={() => handleCheckIn(event)}
                             >
                                 Check In Now
@@ -436,7 +441,7 @@ export default function EventsContent() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {todaysEvents.map(event => (
-                                        <EventCard key={event._id} event={event} />
+                                        <EventCard key={event.id} event={event} />
                                     ))}
                                 </div>
                             </div>
@@ -502,7 +507,7 @@ export default function EventsContent() {
                                 ) : (
                                     <>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {paginatedUpcomingEvents.map(event => <EventCard key={event._id} event={event} />)}
+                                            {paginatedUpcomingEvents.map(event => <EventCard key={event.id} event={event} />)}
                                         </div>
                                         {upcomingEvents.length > rowsPerPage && (
                                             <div className="flex justify-center mt-4">
@@ -537,7 +542,7 @@ export default function EventsContent() {
                                 ) : (
                                     <>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {paginatedPastEvents.map(event => <EventCard key={event._id} event={event} isPast />)}
+                                            {paginatedPastEvents.map(event => <EventCard key={event.id} event={event} isPast />)}
                                         </div>
                                         {pastEvents.length > rowsPerPage && (
                                             <div className="flex justify-center mt-4">
@@ -712,7 +717,7 @@ export default function EventsContent() {
                                                 handleCheckIn(selectedEvent);
                                                 onClose();
                                             }}
-                                            isLoading={checkingIn === selectedEvent._id}
+                                            isLoading={checkingIn === selectedEvent.id}
                                             startContent={<UserCheck size={18} />}
                                         >
                                             Check In Now

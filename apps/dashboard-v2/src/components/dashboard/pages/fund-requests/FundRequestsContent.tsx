@@ -711,7 +711,7 @@ export default function FundRequestsContent() {
                 isOpen={isBudgetLogOpen}
                 onClose={() => setIsBudgetLogOpen(false)}
                 department={selectedBudgetDepartment}
-                budgetStartDate={budgetConfigs[selectedBudgetDepartment]?.startDate || undefined}
+                budgetStartDate={budgetConfigs[selectedBudgetDepartment]?.startDate ? new Date(budgetConfigs[selectedBudgetDepartment].startDate) : undefined}
             />
         </div>
     );

@@ -48,7 +48,7 @@ export default function BasicInformationSection({
   // Real-time date validation
   const validateDate = (value: string) => {
     if (!value) {
-      setDateValidation({ isValid: false, message: <span>Enter date as MM/DD/YYYY or MMDDYYYY</span> });
+      setDateValidation({ isValid: false, message: "Enter date as MM/DD/YYYY or MMDDYYYY" });
       return;
     }
 
@@ -64,12 +64,12 @@ export default function BasicInformationSection({
       });
       setDateValidation({
         isValid: true,
-        message: <span className="text-success">✓ Valid: {formattedDate} ({parsed})</span>
+        message: `✓ Valid: ${formattedDate} (${parsed})`
       });
     } else {
       setDateValidation({
         isValid: false,
-        message: <span className="text-danger">Invalid date format. Use MM/DD/YYYY or MMDDYYYY</span>
+        message: "Invalid date format. Use MM/DD/YYYY or MMDDYYYY"
       });
     }
   };
@@ -79,7 +79,7 @@ export default function BasicInformationSection({
     if (!value) {
       setTimeValidation({
         isValid: false,
-        message: <span>Enter time range (e.g., 9am-10pm or 10:00 AM - 2:00 PM)</span>
+        message: "Enter time range (e.g., 9am-10pm or 10:00 AM - 2:00 PM)"
       });
       return;
     }
@@ -89,19 +89,19 @@ export default function BasicInformationSection({
       if (result.timeRange) {
         setTimeValidation({
           isValid: true,
-          message: <span className="text-success">✓ Valid range: {result.timeRange.displayString}</span>
+          message: `✓ Valid range: ${result.timeRange.displayString}`
         });
       } else if (result.time) {
         // Single time is parsed but not valid for this form
         setTimeValidation({
           isValid: false,
-          message: <span className="text-danger">Time must be a range (e.g., "10am-2pm" or "10:00 AM - 2:00 PM")</span>
+          message: "Time must be a range (e.g., \"10am-2pm\" or \"10:00 AM - 2:00 PM\")"
         });
       }
     } else {
       setTimeValidation({
         isValid: false,
-        message: <span className="text-danger">{result.errorMessage || "Invalid time format"}</span>
+        message: result.errorMessage || "Invalid time format"
       });
     }
   };

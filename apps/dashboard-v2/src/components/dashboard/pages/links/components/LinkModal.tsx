@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { X, Upload, Trash2, ExternalLink, Plus } from "lucide-react";
 import type { Link } from "../../shared/types/constitution";
 import { PRESET_CATEGORIES } from "../utils/linkPermissions";
-import { uploadFilesForEvent } from "../../manage-events/utils/fileUploadUtils";
+import { useFileUpload } from "../../manage-events/utils/fileUploadUtils";
 import { showToast } from "../../../shared/utils/toast";
 
 interface LinkModalProps {
@@ -48,6 +48,7 @@ export default function LinkModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState("");
+  const { uploadFilesForEvent } = useFileUpload();
 
   // Extract unique custom categories from existing links and merge with presets
   const availableCategories = useMemo(() => {

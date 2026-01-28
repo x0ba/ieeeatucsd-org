@@ -6,7 +6,7 @@ import type {
   OfficerInvitation,
   UserRole,
   GoogleGroup,
-} from "../../shared/types/constitution";
+} from "../../../../shared/types/constitution";
 import type {
   InvitationFormData,
   DirectOnboardingFormData,

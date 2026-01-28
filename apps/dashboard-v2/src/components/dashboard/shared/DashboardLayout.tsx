@@ -1,9 +1,15 @@
 import { type ReactNode, useEffect, useState, useRef } from 'react';
+import { useAuth } from '../../../lib/auth-client';
+import { useQuery } from "convex/react";
+import { api } from "#convex/_generated/api";
 import { SidebarNavigation } from './SidebarNavigation';
-import { useAuth } from '../../../hooks/useConvexAuth';
+import TopNavbar from './TopNavbar';
 import { ModalProvider } from './contexts/ModalContext';
 import { SyncStatusProvider } from './contexts/SyncStatusContext';
 import { Spinner, ToastProvider } from '@heroui/react';
+import PolicyUpdateModal from './PolicyUpdateModal';
+import { needsPolicyUpdate } from '../../../config/legalVersions';
+import { useNavigationPreference } from './hooks/useNavigationPreference';
 
 // Components successfully migrated to Convex + BetterAuth
 // Policy checking and navigation preferences are functional
@@ -15,6 +21,8 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, currentPath }: DashboardLayoutProps) {
     const { user } = useAuth();
+    const currentUser = useQuery(api.users.getCurrentUser, {});
+    const { navigationLayout, loading: prefLoading } = useNavigationPreference();
     const [showPolicyModal, setShowPolicyModal] = useState(false);
 
     useEffect(() => {
@@ -23,20 +31,22 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
         }
     }, [user]);
 
-    // TODO: Implement policy checking when migrated
-    // For now, don't show policy modal
+    // Check user data and policy versions when currentUser loads
     useEffect(() => {
-        if (user) {
-            setShowPolicyModal(false);
+        if (currentUser) {
+            // Check if user needs to accept updated policies (only for users who have completed onboarding)
+            if (currentUser.signedUp) {
+                const { needsAny } = needsPolicyUpdate(currentUser.tosVersion, currentUser.privacyPolicyVersion);
+
+                if (needsAny) {
+                    setShowPolicyModal(true);
+                }
+            }
         }
-    }, [user]);
+    }, [currentUser]);
 
-    // TODO: Implement navigation preference when migrated
-    // For now, always use sidebar layout
-    const navigationLayout = 'sidebar';
-
-    // Show loading state while user is being loaded
-    if (!user) {
+    // Show loading state while user or preference is being loaded
+    if (!user || prefLoading) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-50">
                 <div className="text-center">
@@ -64,20 +74,24 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
                             {children || <DefaultContent />}
                         </SidebarNavigation>
                     ) : (
-                        // Horizontal Navbar Layout (placeholder)
+                        // Horizontal Navbar Layout
                         <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
-                            {/* TODO: Add TopNavbar when migrated */}
+                            <TopNavbar currentPath={currentPath} />
                             <div className="flex-1 min-h-0 overflow-y-auto">
                                 {children || <DefaultContent />}
                             </div>
                         </div>
                     )}
 
-                    {/* TODO: Add PolicyUpdateModal when migrated */}
+                    {/* Policy Update Modal */}
+                    <PolicyUpdateModal
+                        isOpen={showPolicyModal}
+                        onClose={() => setShowPolicyModal(false)}
+                        userData={currentUser || null}
+                        onAccepted={() => setShowPolicyModal(false)}
+                    />
                 </ModalProvider>
             </SyncStatusProvider>
-
-            {/* TODO: Add PWAInstallPrompt when migrated */}
         </>
     );
 }

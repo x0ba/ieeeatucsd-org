@@ -2,10 +2,10 @@
 import DashboardHead from "../../components/dashboard/shared/DashboardHead.astro";
 import ClientDashboardLayout from "../../components/dashboard/shared/wrappers/ClientDashboardLayout.tsx";
 import OfficerLeaderboardContent from "../../components/dashboard/pages/officer-leaderboard/OfficerLeaderboardContent.tsx";
-import { NAVIGATION_PATHS } from "../../components/dashboard/shared/types/navigation";
+import NAVIGATION_PATHS from "../../components/dashboard/shared/types/navigation.ts";
 
 const title = "Officer Leaderboard - Dashboard";
-const currentPath = "/officer-leaderboard";
+const currentPath = NAVIGATION_PATHS.OFFICER_LEADERBOARD;
 ---
 
 <!doctype html>

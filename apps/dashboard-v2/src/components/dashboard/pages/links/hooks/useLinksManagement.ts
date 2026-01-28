@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "#convex/_generated/api";
-import { useAuth } from "../../../../../hooks/useConvexAuth";
-import type { Link } from "../../shared/types/constitution";
+import { useAuth } from "../../../hooks/useConvexAuth";
+import type { Link } from "../../../../shared/types/constitution";
 import { LinkPermissionService } from "../utils/linkPermissions";
 import { showToast } from "../../../shared/utils/toast";
 

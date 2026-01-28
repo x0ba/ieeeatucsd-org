@@ -474,7 +474,7 @@ export default function EmailManagementSection({
                                         What will happen:
                                     </p>
                                     <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
-                                        <li>The email <strong>{confirmationData.existingEmail}</strong> will be assigned to this user in Firebase</li>
+                                        <li>The email <strong>{confirmationData.existingEmail}</strong> will be assigned to this user in the system</li>
                                         <li>No changes will be made to the MXRoute email account</li>
                                         {confirmationData.currentOwner && (
                                             <li>Other users will keep access to this shared email</li>

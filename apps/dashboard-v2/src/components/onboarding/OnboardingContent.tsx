@@ -194,7 +194,8 @@ export default function OnboardingContent() {
                 try {
                   await sendDirectOnboarding({
                     ...data,
-                    authUserId: session?.user?.id || "",
+                    userId: session?.user?.id || "",
+                    onboardedBy: session?.user?.id || "",
                   });
                 } catch (error) {
                   console.error("Error sending direct onboarding:", error);

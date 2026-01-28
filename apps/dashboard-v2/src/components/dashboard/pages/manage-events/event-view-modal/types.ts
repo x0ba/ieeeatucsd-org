@@ -1,4 +1,4 @@
-import type { UserRole } from "../../shared/types/constitution";
+import type { UserRole } from "../../../../shared/types/constitution";
 
 export interface InvoiceItem {
   description: string;

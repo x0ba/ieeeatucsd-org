@@ -259,7 +259,7 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({ cons
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <AuditLogSkeleton items={5} />
+                    <AuditLogSkeleton />
                 </CardContent>
             </Card>
         );

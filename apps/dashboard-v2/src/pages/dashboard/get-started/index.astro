@@ -1,6 +1,6 @@
 ---
-import GetStartedContent from '../../components/dashboard/pages/get-started/GetStartedContent';
-import { getSession } from '../../lib/auth';
+import GetStartedContent from '../../components/dashboard/pages/get-started/GetStartedContent.tsx';
+import { getSession } from '../../lib/auth.ts';
 
 // Check authentication and onboarding status
 const session = await getSession(Astro.request);

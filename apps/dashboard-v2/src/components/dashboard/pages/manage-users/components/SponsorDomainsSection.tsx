@@ -7,16 +7,17 @@ import { Spinner, Card, CardBody, Button, Table, TableHeader, TableColumn, Table
 
 interface SponsorDomainsSectionProps {
     isAdmin: boolean;
+    currentUserId?: string;
 }
 
-export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSectionProps) {
+export default function SponsorDomainsSection({ isAdmin, currentUserId }: SponsorDomainsSectionProps) {
     const {
         domains,
         loading,
         addDomain,
         updateDomain,
         deleteDomain,
-    } = useSponsorDomains();
+    } = useSponsorDomains(currentUserId);
 
     const [showModal, setShowModal] = useState(false);
     const [editingDomain, setEditingDomain] = useState<SponsorDomainWithId | null>(null);
@@ -34,7 +35,7 @@ export default function SponsorDomainsSection({ isAdmin }: SponsorDomainsSection
 
     const handleSave = async (formData: { domain: string; organizationName: string; sponsorTier: any }) => {
         if (editingDomain) {
-            await updateDomain(editingDomain.id, formData);
+            await updateDomain(editingDomain._id, formData);
         } else {
             await addDomain(formData);
         }

@@ -2,6 +2,9 @@
 
 import type { UserRole, SponsorTier, GoogleGroup } from "../../../../lib/types";
 
+// Re-export UserRole for other modules
+export type { UserRole, SponsorTier, GoogleGroup };
+
 // Placeholder types until Convex API is regenerated
 export type ConstitutionSection = any;
 
@@ -80,5 +83,16 @@ export interface Link {
   lastModified?: number | { toDate: () => Date };
   lastModifiedBy?: string;
   order?: number;
+}
+
+export interface SponsorDomain {
+  _id: string;
+  domain: string;
+  organizationName: string;
+  sponsorTier: SponsorTier;
+  createdAt: number;
+  createdBy: string;
+  lastModified?: number;
+  lastModifiedBy?: string;
 }
 

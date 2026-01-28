@@ -140,6 +140,20 @@ export function useAuth() {
   return {
     authUserId,
     user,
+    authUser: user, // Add authUser alias for compatibility
+    role: user?.role, // Add role property
     signOut
+  };
+}
+
+// Main useConvexAuth hook that components are expecting
+export function useConvexAuth() {
+  const user = useCurrentUser();
+  
+  return {
+    user,
+    isLoading: user === undefined,
+    isAuthenticated: !!user,
+    authUserId: user?._id
   };
 }

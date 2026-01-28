@@ -2,13 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { Search, Calendar, Bell, User, Filter, Edit, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, FileText, MessageCircle, Eye, CreditCard, Check, X, Plus, Upload, Banknote, Trash2, Save, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { useAuth } from '../../hooks/useConvexAuth';
+import { useAuth } from '../../../../hooks/useConvexAuth';
 import type { UserRole } from '../../../../lib/types';
-import { PublicProfileService } from '../../../shared/services/publicProfile';
-import { TableSkeleton, MetricCardSkeleton } from '../../ui/loading';
+import { PublicProfileService } from '../../shared/services/publicProfile';
+import { TableSkeleton, MetricCardSkeleton } from '../../../ui/loading';
 import { useGlobalImagePaste } from '../../shared/hooks/useGlobalImagePaste';
 import { useModalRegistration } from '../../shared/contexts/ModalContext';
-import { usePasteNotification } from '../../shared/components/PasteNotification';
+import { usePasteNotification } from '../../shared/hooks/usePasteNotification';
 import MultiFileUpload from './components/MultiFileUpload';
 
 interface FundDeposit {
@@ -161,10 +161,29 @@ const FundDepositsContent: React.FC = () => {
     setEditReceiptFiles(prev => [...prev, file]);
   };
 
-  const { showPasteNotification: showNewDepositPaste, PasteNotificationComponent: NewDepositPasteNotification } =
-    usePasteNotification('Receipt image pasted to new deposit');
-  const { showPasteNotification: showEditDepositPaste, PasteNotificationComponent: EditDepositPasteNotification } =
-    usePasteNotification('Receipt image pasted to deposit');
+  const { showNotification: showNewDepositPaste } = usePasteNotification();
+  const { showNotification: showEditDepositPaste } = usePasteNotification();
+
+  // Create notification components inline
+  const NewDepositPasteNotification = () => {
+    const { notification } = usePasteNotification();
+    if (!notification.show) return null;
+    return (
+      <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+        {notification.message}
+      </div>
+    );
+  };
+
+  const EditDepositPasteNotification = () => {
+    const { notification } = usePasteNotification();
+    if (!notification.show) return null;
+    return (
+      <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+        {notification.message}
+      </div>
+    );
+  };
 
   useModalRegistration('fund-deposit-new', showNewDepositModal);
   useModalRegistration('fund-deposit-edit', showEditModal);
@@ -176,7 +195,7 @@ const FundDepositsContent: React.FC = () => {
       addReceiptFile(file);
     },
     onPasteSuccess: () => {
-      showNewDepositPaste();
+      showNewDepositPaste('Receipt image pasted to new deposit');
     }
   });
 
@@ -187,7 +206,7 @@ const FundDepositsContent: React.FC = () => {
       addEditReceiptFile(file);
     },
     onPasteSuccess: () => {
-      showEditDepositPaste();
+      showEditDepositPaste('Receipt image pasted to deposit');
     }
   });
 
@@ -675,7 +694,7 @@ const FundDepositsContent: React.FC = () => {
                   {!deposits ? (
                     <tr>
                       <td colSpan={6} className="p-0">
-                        <TableSkeleton rows={6} columns={6} showHeader={false} />
+                        <TableSkeleton rows={6} />
                       </td>
                     </tr>
                   ) : filteredDeposits.length === 0 ? (

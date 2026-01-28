@@ -1,37 +1,48 @@
-import { useMutation } from "convex/react";
+import { useAction } from "convex/react";
 import { api } from "#convex/_generated/api";
 import { useCurrentUser } from "../../../../hooks/useConvexAuth";
 
-// New event-based file upload function using Convex storage
-export const uploadFilesForEvent = async (
-  files: File[],
-  eventId: string,
-  category: string = "general",
-): Promise<string[]> => {
-  const uploadPromises = files.map(async (file) => {
-    try {
-      // Convert file to ArrayBuffer, then to Uint8Array for Convex
-      const arrayBuffer = await file.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
+// Hook for file upload utilities using Convex storage
+export const useFileUpload = () => {
+  const uploadAction = useAction(api.storage.uploadFile);
+  const currentUser = useCurrentUser();
 
-      // Generate a unique filename
-      const timestamp = Date.now();
-      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const finalFileName = `${timestamp}_${sanitizedFileName}`;
-
-      // Note: In a real implementation, you would call a Convex mutation here
-      // that stores the file and returns a storage ID. For now, we'll return
-      // a placeholder URL structure for compatibility.
-      // The actual implementation would use:
-      // const result = await storageUpload({ file: uint8Array, fileName: finalFileName, fileType: file.type });
-      
-      return `convex-storage:${eventId}/${category}/${finalFileName}`;
-    } catch (error: any) {
-      throw new Error(`Upload failed for ${file.name}: ${error.message}`);
+  // New event-based file upload function using Convex storage actions
+  const uploadFilesForEvent = async (
+    files: File[],
+    eventId: string,
+    category: string = "general",
+  ): Promise<string[]> => {
+    if (!currentUser) {
+      throw new Error("User not authenticated");
     }
-  });
 
-  return await Promise.all(uploadPromises);
+    const uploadPromises = files.map(async (file) => {
+      try {
+        // Convert file to ArrayBuffer, then to Uint8Array for Convex
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+
+        // Call Convex storage action
+        const result = await uploadAction({
+          file: arrayBuffer,
+          fileName: file.name,
+          fileType: file.type,
+        });
+
+        // Return the URL from Convex storage
+        return result.url!;
+      } catch (error: any) {
+        throw new Error(`Upload failed for ${file.name}: ${error.message}`);
+      }
+    });
+
+    return await Promise.all(uploadPromises);
+  };
+
+  return {
+    uploadFilesForEvent,
+  };
 };
 
 // Helper function to generate event-based storage path

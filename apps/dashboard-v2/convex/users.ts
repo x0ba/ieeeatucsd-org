@@ -499,6 +499,25 @@ export const getUserByAuthId = query({
   },
 });
 
+// Get user profile by userId
+export const getUserProfile = query({
+  args: {
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authUserId", (q) => q.eq("authUserId", args.userId))
+      .first();
+    
+    if (!user) {
+      return null;
+    }
+
+    return user;
+  },
+});
+
 // Get all public profiles (for leaderboard)
 export const getPublicProfiles = query({
   args: {},
@@ -545,5 +564,45 @@ export const updateUserStats = mutation({
     }
 
     return await ctx.db.get(user._id);
+  },
+});
+
+export const acceptPolicies = mutation({
+  args: {
+    tosVersion: v.optional(v.string()),
+    privacyPolicyVersion: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity || !identity.subject) {
+      throw new Error("Not authenticated");
+    }
+
+    const updateData: any = {
+      lastUpdated: Date.now(),
+      lastUpdatedBy: identity.subject,
+    };
+
+    if (args.tosVersion) {
+      updateData.tosAcceptedAt = Date.now();
+      updateData.tosVersion = args.tosVersion;
+    }
+
+    if (args.privacyPolicyVersion) {
+      updateData.privacyPolicyAcceptedAt = Date.now();
+      updateData.privacyPolicyVersion = args.privacyPolicyVersion;
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authUserId", (q) => q.eq("authUserId", identity.subject))
+      .first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, updateData);
+    return { success: true };
   },
 });

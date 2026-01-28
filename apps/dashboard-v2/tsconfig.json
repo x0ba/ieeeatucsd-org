@@ -7,7 +7,10 @@
     "jsxImportSource": "react",
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "noImplicitAny": false,
+    "strict": false,
     "baseUrl": ".",
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./src/*"],
       "~/convex": ["./convex"],

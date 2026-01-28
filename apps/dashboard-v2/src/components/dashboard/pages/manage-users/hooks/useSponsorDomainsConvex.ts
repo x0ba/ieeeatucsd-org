@@ -3,7 +3,7 @@ import { api } from "#convex/_generated/api";
 import type {
   SponsorDomain,
   SponsorTier,
-} from "../../shared/types/constitution";
+} from "../../../../../shared/types/constitution";
 import { showToast } from "../../../shared/utils/toast";
 
 export interface SponsorDomainWithId extends SponsorDomain {
@@ -16,16 +16,21 @@ export interface SponsorDomainFormData {
   sponsorTier: SponsorTier;
 }
 
-export const useSponsorDomains = () => {
-  const domains = useQuery(api.sponsorDomains.list, {});
-  const createMutation = useMutation(api.sponsorDomains.create);
-  const updateMutation = useMutation(api.sponsorDomains.update);
-  const deleteMutation = useMutation(api.sponsorDomains.remove);
+export const useSponsorDomains = (currentUserId?: string) => {
+  const domains = useQuery(api.userManagement.getSponsorDomains);
+  const createMutation = useMutation(api.userManagement.createSponsorDomain);
+  const updateMutation = useMutation(api.userManagement.updateSponsorDomain);
+  const deleteMutation = useMutation(api.userManagement.deleteSponsorDomain);
 
   const loading = domains === undefined;
 
   // Add a new sponsor domain
   const addDomain = async (formData: SponsorDomainFormData) => {
+    if (!currentUserId) {
+      showToast.error("User not authenticated");
+      return;
+    }
+
     try {
       // Validate domain format
       if (!formData.domain.startsWith("@")) {
@@ -53,6 +58,7 @@ export const useSponsorDomains = () => {
         domain: formData.domain,
         organizationName: formData.organizationName,
         sponsorTier: formData.sponsorTier,
+        createdBy: currentUserId,
       });
       showToast.success("Sponsor domain added successfully");
     } catch (err: any) {
@@ -66,6 +72,11 @@ export const useSponsorDomains = () => {
     domainId: string,
     formData: SponsorDomainFormData,
   ) => {
+    if (!currentUserId) {
+      showToast.error("User not authenticated");
+      return;
+    }
+
     try {
       // Validate domain format
       if (!formData.domain.startsWith("@")) {
@@ -92,10 +103,10 @@ export const useSponsorDomains = () => {
       }
 
       await updateMutation({
-        id: domainId as any,
-        domain: formData.domain,
+        domainId: domainId as any,
         organizationName: formData.organizationName,
         sponsorTier: formData.sponsorTier,
+        updatedBy: currentUserId,
       });
 
       showToast.success("Sponsor domain updated successfully");

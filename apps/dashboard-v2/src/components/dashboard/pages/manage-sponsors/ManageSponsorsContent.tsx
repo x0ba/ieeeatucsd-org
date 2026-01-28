@@ -40,7 +40,7 @@ export default function ManageSponsorsContent() {
     return (
         <div className="w-full">
             <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
-                <SponsorDomainsSection isAdmin={true} />
+                <SponsorDomainsSection isAdmin={true} currentUserId={authUserId} />
             </div>
         </div>
     );

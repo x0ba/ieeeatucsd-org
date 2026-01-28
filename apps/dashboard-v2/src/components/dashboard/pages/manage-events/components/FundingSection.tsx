@@ -27,7 +27,7 @@ import type {
 import { calculateGrandTotal } from "../utils/eventRequestUtils";
 import EnhancedFileUploadManager from "./EnhancedFileUploadManager";
 import { showToast } from "../../../shared/utils/toast";
-import { uploadFilesForEvent } from "../utils/fileUploadUtils";
+import { useFileUpload } from "../utils/fileUploadUtils";
 
 interface FundingSectionProps {
   needsAsFunding: boolean;
@@ -91,7 +91,7 @@ export default function FundingSection({
   const [parseResults, setParseResults] = useState<
     Record<string, { success: boolean; message: string }>
   >({});
-
+  const { uploadFilesForEvent } = useFileUpload();
   const hasInvoiceFiles = (invoice: InvoiceFormData): boolean => {
     const hasNewFiles =
       (invoice.invoiceFiles && invoice.invoiceFiles.length > 0) ||
@@ -140,7 +140,7 @@ export default function FundingSection({
       // Generate event ID for upload (use existing or create temp ID)
       const eventId = eventRequestId || `temp_${Date.now()}_${invoiceId}`;
 
-      // Upload file to Firebase Storage
+      // Upload file to storage
       const uploadedUrls = await uploadFilesForEvent(
         fileArray,
         eventId,

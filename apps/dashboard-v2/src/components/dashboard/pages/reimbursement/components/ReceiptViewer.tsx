@@ -25,7 +25,7 @@ export default function ReceiptViewer({ url, type, fileName, className = '' }: R
     // Enhanced PDF detection - check type prop, file extension, and URL path
     const isPdf = type?.includes('pdf') ||
         url?.toLowerCase().endsWith('.pdf') ||
-        url?.toLowerCase().includes('.pdf?') || // Firebase Storage URLs with query params
+        url?.toLowerCase().includes('.pdf?') || // Storage URLs with query params
         url?.toLowerCase().includes('/pdf/') ||
         url?.toLowerCase().includes('_pdf_') ||
         url?.toLowerCase().includes('%2Fpdf%2F'); // URL-encoded path

@@ -2,7 +2,7 @@ import puppeteer, { Browser, Page } from "puppeteer";
 import type {
   Constitution,
   ConstitutionSection,
-} from "../../shared/types/constitution";
+} from "../../../shared/types/constitution";
 import { calculateTotalPages, generatePrintHTML } from "./printUtils";
 
 export interface PuppeteerPDFOptions {
@@ -198,7 +198,7 @@ export class PuppeteerPDFExporter {
           clip: undefined, // Full element
         });
 
-        screenshots.push(screenshot as Buffer);
+        screenshots.push(Buffer.from(screenshot));
       }
 
       this.reportProgress(80, "Assembling PDF from screenshots...");

@@ -167,7 +167,7 @@ export default function ResumeDatabaseContent() {
   };
 
   const generateCSV = (users: UserWithResume[]): string => {
-    const headers = ['Name', 'Email', 'Major', 'Year Graduating', 'Firebase Resume Link'];
+    const headers = ['Name', 'Email', 'Major', 'Year Graduating', 'Resume Link'];
     
     const csvData = users.map(user => {
       const name = user.name || '';
