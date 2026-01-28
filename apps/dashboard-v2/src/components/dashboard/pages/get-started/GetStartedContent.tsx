@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, GraduationCap, CreditCard, Upload, CheckCircle, ArrowRight, ArrowLeft, LayoutDashboard, Sidebar, PanelTop, FileText, Shield, ExternalLink } from 'lucide-react';
 import { useMutation } from 'convex/react';
-import { api } from '../../../../../../convex/_generated/api';
+import { api } from "#convex/_generated/api";
 import { useAuth } from '../../../hooks/useConvexAuth';
 import type { NavigationLayout } from '../../shared/types/navigation';
 import { Spinner, Checkbox } from '@heroui/react';

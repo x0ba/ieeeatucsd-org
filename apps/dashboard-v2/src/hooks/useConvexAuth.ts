@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { authClient } from "../lib/auth-client";
 
 export function useCurrentUser() {
   return useQuery(api.users.getCurrentUser, {});
@@ -132,8 +133,13 @@ export function useAuth() {
   const user = useCurrentUser();
   const authUserId = user?._id;
   
+  const signOut = async () => {
+    await authClient.signOut();
+  };
+  
   return {
     authUserId,
-    user
+    user,
+    signOut
   };
 }

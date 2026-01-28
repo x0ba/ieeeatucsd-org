@@ -22,11 +22,11 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { useQuery } from "convex/react";
-import { api } from '../../../../../../convex/_generated/api';
+import { api } from "#convex/_generated/api";
 import type { NavigationCategory } from "./types/navigation";
-import type { UserRole } from "./types/firestore";
+import type { UserRole } from "../../../lib/types";
 import { NAVIGATION_PATHS } from "./types/navigation";
-import { SyncStatusIndicator } from "./components/SyncStatusIndicator.tsx";
+// import { SyncStatusIndicator } from "./components/SyncStatusIndicator.tsx";
 import { OfficerAiChat } from "./OfficerAiChat";
 import {
   Sidebar,
@@ -59,7 +59,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../ui/dropdown-menu";
-import { useAuth } from "../../../hooks/useAuth";
+// Simple SyncStatusIndicator component
+const SyncStatusIndicator = () => {
+  const { isSyncing } = useSyncStatus();
+  
+  return (
+    <div className="flex items-center gap-2">
+      <div className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`} />
+      <span className="text-xs text-gray-600 group-data-[collapsible=icon]:hidden">
+        {isSyncing ? 'Syncing' : 'Synced'}
+      </span>
+    </div>
+  );
+};
+
+// Simple hook to use sync status
+const useSyncStatus = () => {
+  // For now, return a simple implementation
+  // In a full implementation, this would connect to the SyncStatusContext
+  return { isSyncing: false };
+};
+
+import { useAuth } from "../../../hooks/useConvexAuth";
 
 interface SidebarNavigationProps {
   currentPath?: string;

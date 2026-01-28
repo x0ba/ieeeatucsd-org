@@ -1,10 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from '../../../../../../convex/_generated/api';
-import type {
-  User as FirestoreUser,
-  UserRole,
-} from "../../shared/types/constitution";
+import { api } from "#convex/_generated/api";
+import type { UserRole } from "../../../../../lib/types";
+import type { Doc } from "#convex/_generated/dataModel";
+type FirestoreUser = Doc<"users">;
 import type {
   UserModalData,
   InviteModalData,
@@ -13,10 +12,7 @@ import type {
 } from "../types/UserManagementTypes";
 import { UserFilteringService } from "../utils/userFiltering";
 import { UserPermissionService } from "../utils/userPermissions";
-import { PublicProfileService } from "../../../shared/services/publicProfile";
-import { normalizeMajorName } from "../../../../../utils/majorNormalization";
-import { showToast } from "../../../shared/utils/toast";
-import { useAuth } from "../../../../../hooks/useAuth";
+import { useAuth } from "../../../../hooks/useConvexAuth";
 
 export const useUserManagement = () => {
   const { user: authUser } = useAuth();

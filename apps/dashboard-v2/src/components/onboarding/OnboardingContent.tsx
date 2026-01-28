@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { UserPlus, Mail, List, Lock } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 // @ts-ignore - Types will be generated after convex dev runs
-import { api } from "../../../convex/_generated/api.js";
+import { api } from "#convex/_generated/api";
 import { Spinner } from "@heroui/react";
 import { authClient } from "../../lib/auth-client";
 import type { UserRole } from "../../lib/types";

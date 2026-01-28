@@ -37,7 +37,7 @@ import {
     Settings,
 } from 'lucide-react';
 import { useQuery } from 'convex/react';
-import { api } from '../../../../../../convex/_generated/api';
+import { api } from "#convex/_generated/api";
 import { useConvexAuth } from '../../hooks/useConvexAuth';
 import type { FundRequest, FundRequestStatus, BudgetConfig, FundRequestDepartment } from '../../shared/types/fund-requests';
 import { STATUS_LABELS, STATUS_COLORS, CATEGORY_LABELS, DEPARTMENT_LABELS } from '../../shared/types/fund-requests';

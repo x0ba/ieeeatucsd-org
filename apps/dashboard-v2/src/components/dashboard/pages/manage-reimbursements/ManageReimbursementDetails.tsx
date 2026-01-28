@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle, XCircle, DollarSign, AlertCircle, FileText, ChevronLeft, ChevronRight, Calculator, Table, Sparkles, UploadCloud } from 'lucide-react';
 import { Button, Chip, Input, Textarea, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Tabs, Tab } from '@heroui/react';
 import { useQuery, useMutation } from 'convex/react';
-import { api } from '../../../../../../convex/_generated/api';
+import { api } from "#convex/_generated/api";
 import { showToast } from '../../shared/utils/toast';
 import ReceiptViewer from '../reimbursement/components/ReceiptViewer';
 

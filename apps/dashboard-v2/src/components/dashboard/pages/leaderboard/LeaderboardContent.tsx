@@ -3,7 +3,7 @@ import { Crown, Search, Users, Star } from 'lucide-react';
 import { Pagination } from '@heroui/react';
 import { useAuth } from '../../../../hooks/useConvexAuth';
 import { useQuery } from 'convex/react';
-import { api } from '../../../../../../convex/_generated/api';
+import { api } from "#convex/_generated/api";
 import { LeaderboardTableSkeleton, MetricCardSkeleton, CardSkeleton } from '../../../ui/loading';
 
 interface LeaderboardUser {

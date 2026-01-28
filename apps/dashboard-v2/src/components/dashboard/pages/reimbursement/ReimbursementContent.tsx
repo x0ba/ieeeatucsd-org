@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, DollarSign, Receipt, Clock, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
 import { useQuery } from 'convex/react';
-import { api } from '../../../../../../convex/_generated/api';
+import { api } from "#convex/_generated/api";
 
 import ReimbursementDetailsPage from './ReimbursementDetailsPage';
 import ReimbursementCreationPage from './ReimbursementCreationPage';

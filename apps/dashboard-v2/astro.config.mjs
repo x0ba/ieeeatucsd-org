@@ -36,4 +36,7 @@ export default defineConfig({
       },
     },
   },
+  typescript: {
+    strict: true,
+  },
 });

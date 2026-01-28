@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Calendar, Bell, User, Filter, Edit, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, FileText, MessageCircle, Eye, CreditCard, Check, X, Plus, Upload, Banknote, Trash2, Save, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useQuery, useMutation } from 'convex/react';
-import { api } from '../../../../../convex/_generated/api';
+import { api } from "#convex/_generated/api";
 import { useAuth } from '../../hooks/useConvexAuth';
 import type { UserRole } from '../../../../lib/types';
 import { PublicProfileService } from '../../../shared/services/publicProfile';

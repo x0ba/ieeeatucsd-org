@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "../../../../../hooks/useConvexAuth";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../../../convex/_generated/api";
+import { api } from "#convex/_generated/api";
 import type {
   ConstitutionAuditEntry,
   ConstitutionSection,

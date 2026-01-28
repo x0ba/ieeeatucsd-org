@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../../shared/hooks/useConvexAuth";
 import { useQuery, useMutation } from "convex/react";
-import { api } from '../../../../../../convex/_generated/api';
+import { api } from "#convex/_generated/api";
 import type {
   OfficerInvitation,
   UserRole,

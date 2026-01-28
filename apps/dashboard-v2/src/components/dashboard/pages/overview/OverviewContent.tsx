@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, CreditCard, Users, Award, Clock, CheckCircle, DollarSign, Plus } from 'lucide-react';
 import { Card, CardHeader, CardBody, Button, Chip, Avatar, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import { useQuery } from 'convex/react';
-import { api } from '../../../../../../convex/_generated/api';
+import { api } from "#convex/_generated/api";
 import { useAuth } from '../../../hooks/useConvexAuth';
 import PointsChart from './PointsChart';
 

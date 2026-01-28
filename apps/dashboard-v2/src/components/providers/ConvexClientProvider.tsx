@@ -8,7 +8,7 @@ import { ConvexReactClient } from "convex/react";
 import { ConvexProvider } from "convex/react";
 import { useQuery, useMutation } from "convex/react";
 // @ts-ignore - Types will be generated after convex dev runs
-import { api } from "../../../convex/_generated/api.js";
+import { api } from "#convex/_generated/api";
 import { authClient } from "../../lib/auth-client";
 
 // Create Convex React Client

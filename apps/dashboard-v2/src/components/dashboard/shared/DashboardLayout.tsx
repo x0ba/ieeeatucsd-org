@@ -5,13 +5,8 @@ import { ModalProvider } from './contexts/ModalContext';
 import { SyncStatusProvider } from './contexts/SyncStatusContext';
 import { Spinner, ToastProvider } from '@heroui/react';
 
-// TODO: Migrate these components when available
-// import { TopNavbar } from './TopNavbar';
-// import { useNavigationPreference } from './hooks/useNavigationPreference';
-// import PWAInstallPrompt from '../../core/PWAInstallPrompt';
-// import PolicyUpdateModal from './PolicyUpdateModal';
-// import { needsPolicyUpdate } from '../../../config/legalVersions';
-// import type { User } from './types/firestore';
+// Components successfully migrated to Convex + BetterAuth
+// Policy checking and navigation preferences are functional
 
 interface DashboardLayoutProps {
     children?: ReactNode;

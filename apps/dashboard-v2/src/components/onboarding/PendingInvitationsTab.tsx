@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Button, Badge } from "@heroui/react";
 // @ts-ignore - Types will be generated after convex dev runs
-import type { Id } from '../../../../../../convex/_generated/dataModel';
+import type { Id } from "#convex/_generated/dataModel";
 import type { InvitationStatus } from "../../lib/types";
 
 interface OfficerInvitation {

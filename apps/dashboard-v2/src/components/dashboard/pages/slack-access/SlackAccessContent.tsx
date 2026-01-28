@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Key, Eye, EyeOff, AlertCircle, CheckCircle, MessageSquare, Shield, RefreshCw, Inbox } from 'lucide-react';
 import { useAuth } from '../shared/hooks/useConvexAuth';
 import { useQuery, useMutation } from 'convex/react';
-import { api } from '../../../../../../convex/_generated/api';
+import { api } from "#convex/_generated/api";
 import type { User as UserType } from '../../../lib/types';
 import { Spinner, Card, CardBody, Input, Button, Pagination as HeroPagination, Chip } from '@heroui/react';
 import PasswordStrengthIndicator from './components/PasswordStrengthIndicator';

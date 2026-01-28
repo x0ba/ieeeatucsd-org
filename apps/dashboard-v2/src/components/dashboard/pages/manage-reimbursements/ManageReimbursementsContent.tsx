@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, User, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, MessageCircle, Eye, CreditCard, ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Search } from 'lucide-react';
 import { useQuery, useMutation } from 'convex/react';
-import { api } from '../../../../../../convex/_generated/api';
+import { api } from "#convex/_generated/api";
 import { useConvexAuth } from '../../hooks/useConvexAuth';
 import { Card, CardHeader, CardBody, Button, Chip, Select, SelectItem, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import ManageReimbursementDetails from './ManageReimbursementDetails';
