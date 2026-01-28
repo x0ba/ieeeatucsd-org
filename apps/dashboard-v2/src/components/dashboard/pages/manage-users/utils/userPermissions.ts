@@ -1,5 +1,5 @@
-import type { UserRole } from "../../../../shared/types/constitution";
-import type { User as FirestoreUser } from "../../../../shared/types/constitution";
+import type { UserRole } from "../../../../../../src/lib/types";
+import type { User as FirestoreUser } from "../../../../../../src/lib/types";
 import { USER_ROLES } from "../types/UserManagementTypes";
 
 export class UserPermissionService {

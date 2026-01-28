@@ -45,7 +45,7 @@ function CodeBlock({
                 document.body.appendChild(textarea);
                 textarea.focus();
                 textarea.select();
-                document.execCommand("copy");
+                await navigator.clipboard.writeText(codeText);
                 document.body.removeChild(textarea);
             }
             setCopied(true);

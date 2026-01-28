@@ -51,10 +51,14 @@ export default function UserFilters({
                                 }}
                                 aria-label="Filter by role"
                             >
-                                <SelectItem key="all">All Roles</SelectItem>
-                                {USER_ROLES.map(role => (
-                                    <SelectItem key={role}>{role}</SelectItem>
-                                ))}
+                                {[
+                                    <SelectItem key="all">All Roles</SelectItem>,
+                                    ...USER_ROLES.map((role) => (
+                                        <SelectItem key={role}>
+                                            {role}
+                                        </SelectItem>
+                                    ))
+                                ]}
                             </Select>
                         </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserPlus, Mail, List, Lock } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { useAuth } from "../../../hooks/useConvexAuth";
+import { useAuth } from "../../../../hooks/useConvexAuth";
 import type { OnboardingTab } from './types/OnboardingTypes';
 import type { UserRole } from '../../../../lib/types';
 import InvitationFlowTab from './components/InvitationFlowTab';
@@ -98,7 +98,7 @@ export default function OnboardingContent() {
         }
     ];
 
-    if (!currentUser?.id) {
+    if (!currentUser?._id) {
         return (
             <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -177,7 +177,7 @@ export default function OnboardingContent() {
 
                     {activeTab === 'pending' && (
                         <PendingInvitationsTab
-                            invitations={invitations}
+                            invitations={invitations as any}
                             loading={loading}
                             onRefresh={refreshInvitations}
                             onResend={resendInvitation}

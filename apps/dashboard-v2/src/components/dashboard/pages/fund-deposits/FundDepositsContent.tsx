@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Calendar, Bell, User, Filter, Edit, CheckCircle, XCircle, Clock, DollarSign, Receipt, AlertCircle, FileText, MessageCircle, Eye, CreditCard, Check, X, Plus, Upload, Banknote, Trash2, Save, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Search, User, Clock, DollarSign, Receipt, AlertCircle, FileText, MessageCircle, Eye, CreditCard, Check, X, Plus, Trash2, XCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from "#convex/_generated/api";
+import type { Id } from "#convex/_generated/dataModel";
 import { useAuth } from '../../../../hooks/useConvexAuth';
 import type { UserRole } from '../../../../lib/types';
-import { PublicProfileService } from '../../shared/services/publicProfile';
 import { TableSkeleton, MetricCardSkeleton } from '../../../ui/loading';
 import { useGlobalImagePaste } from '../../shared/hooks/useGlobalImagePaste';
 import { useModalRegistration } from '../../shared/contexts/ModalContext';
@@ -144,7 +144,6 @@ const FundDepositsContent: React.FC = () => {
 
   const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
   const [bankTransferFiles, setBankTransferFiles] = useState<File[]>([]);
-  const [editBankTransferFiles, setEditBankTransferFiles] = useState<File[]>([]);
 
   const [sortField, setSortField] = useState<string>('submittedAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -485,7 +484,7 @@ const FundDepositsContent: React.FC = () => {
       if (deposit.receiptFiles && deposit.receiptFiles.length > 0) {
         for (const fileId of deposit.receiptFiles) {
           try {
-            await deleteFile({ storageId: fileId as any });
+            await deleteFile({ storageId: fileId as Id<"_storage"> });
           } catch (deleteError) {
             console.warn('Failed to delete receipt file:', deleteError);
           }
@@ -500,7 +499,7 @@ const FundDepositsContent: React.FC = () => {
     if (!user) return;
 
     try {
-      await deleteFile({ storageId: fileId });
+      await deleteFile({ storageId: fileId as Id<"_storage"> });
 
       await removeReceipt({
         id: deposit._id,
@@ -511,14 +510,6 @@ const FundDepositsContent: React.FC = () => {
     } catch (error) {
       console.error('Error removing receipt file:', error);
     }
-  };
-
-  const canModifyDeposit = (deposit: FundDeposit): boolean => {
-    return false;
-  };
-
-  const canEditDeposit = (deposit: FundDeposit): boolean => {
-    return false;
   };
 
   const canDeleteDeposit = (deposit: FundDeposit): boolean => {

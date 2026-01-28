@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { User, GraduationCap, CreditCard, Upload, CheckCircle, ArrowRight, ArrowLeft, LayoutDashboard, Sidebar, PanelTop, FileText, Shield, ExternalLink } from 'lucide-react';
-import { useMutation } from 'convex/react';
+import { useMutation, useAction } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { useAuth } from '../../../hooks/useConvexAuth';
+import { useAuth } from '../../../../hooks/useConvexAuth';
 import type { NavigationLayout } from '../../shared/types/navigation';
 import { Spinner, Checkbox } from '@heroui/react';
 import { safeLocalStorageSet } from '../../shared/utils/storage';
@@ -106,7 +106,7 @@ const questions: Question[] = [
 export default function GetStartedContent() {
   const { user, authUserId } = useAuth();
   const completeOnboarding = useMutation(api.users.completeOnboarding);
-  const uploadFile = useMutation(api.storage.uploadFile);
+  const uploadFile = useAction(api.storage.uploadFile);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
@@ -185,7 +185,7 @@ export default function GetStartedContent() {
           const uint8Array = new Uint8Array(arrayBuffer);
 
           const result = await uploadFile({
-            file: uint8Array,
+            file: arrayBuffer,
             fileName: answers.resume.name,
             fileType: answers.resume.type,
           });
@@ -221,7 +221,7 @@ export default function GetStartedContent() {
 
       setCurrentStep(questions.length);
       setTimeout(() => {
-        window.location.href = '/dashboard-v2/overview';
+        window.location.href = '/overview';
       }, 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to complete onboarding. Please try again.');

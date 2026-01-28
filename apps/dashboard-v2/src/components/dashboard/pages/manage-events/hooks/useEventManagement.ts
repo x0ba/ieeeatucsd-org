@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "#convex/_generated/api";
-import type { UserRole } from "../../../../shared/types/constitution";
+import type { UserRole } from "../../../../../lib/types";
 import type { EventStats } from "../types";
 import { showToast } from "../../../shared/utils/toast";
-import { useCurrentUser } from "../../../hooks/useConvexAuth";
+import { useCurrentUser } from "../../../../../hooks/useConvexAuth";
 
 interface EventRequest {
   id: string;
@@ -188,22 +188,32 @@ export function useEventManagement(userId: string | undefined) {
 
   // Calculate stats
   const stats: EventStats = useMemo(() => {
-    const total = (eventRequests || []).length;
-    const published = (eventRequests || []).filter(
+    const totalEvents = (eventRequests || []).length;
+    const publishedEvents = (eventRequests || []).filter(
       (req: any) => req.status === "approved",
     ).length;
-    const drafts = (eventRequests || []).filter(
-      (req: any) => req.status === "submitted" || req.status === "pending",
+    const draftEvents = (eventRequests || []).filter(
+      (req: any) => req.status === "submitted" || req.status === "draft",
+    ).length;
+    const pendingEvents = (eventRequests || []).filter(
+      (req: any) => req.status === "pending",
+    ).length;
+    const completedEvents = (eventRequests || []).filter(
+      (req: any) => req.status === "completed",
     ).length;
 
     const { totalAttendees, uniqueAttendees } = attendanceStats;
 
     return {
-      total,
-      published,
-      drafts,
+      totalEvents,
+      publishedEvents,
+      draftEvents,
+      pendingEvents,
+      completedEvents,
       totalAttendees,
-      uniqueAttendees,
+      averageAttendance: totalAttendees > 0 ? totalAttendees / (eventRequests || []).length : 0,
+      upcomingEvents: (eventRequests || []).filter((req: any) => req.startDateTime >= Date.now()).length,
+      pastEvents: (eventRequests || []).filter((req: any) => req.startDateTime < Date.now()).length,
     };
   }, [eventRequests, attendanceStats]);
 

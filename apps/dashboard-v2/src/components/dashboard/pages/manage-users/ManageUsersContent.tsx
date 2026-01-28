@@ -22,7 +22,11 @@ import AddMemberModal from "./components/AddMemberModal";
 import { UserFilteringService } from "./utils/userFiltering";
 import { UserPermissionService } from "./utils/userPermissions";
 import { showToast } from "../../shared/utils/toast";
-import type { User as ConvexUser } from "../../../../convex/schema";
+import type { Doc } from "#convex/_generated/dataModel";
+import type {
+  UserRole,
+  SponsorTier,
+} from "../../../../lib/types";
 
 export default function ManageUsersContent() {
   const { user, authUserId } = useAuth();
@@ -96,8 +100,8 @@ export default function ManageUsersContent() {
   // Filters and sorting
   const [filters, setFilters] = useState({
     searchTerm: "",
-    roleFilter: "all",
-    statusFilter: "all",
+    roleFilter: "all" as UserRole | "all",
+    statusFilter: "all" as "all" | "active" | "inactive" | "suspended",
   });
   const [sortConfig, setSortConfig] = useState({
     field: "name",
@@ -174,7 +178,7 @@ export default function ManageUsersContent() {
         memberId: userData.memberId || "",
         major: userData.major || "",
         graduationYear: userData.graduationYear || undefined,
-        team: userData.team,
+        team: (userData.team as "Internal" | "Events" | "Projects" | undefined) || undefined,
         points: userData.points,
         updatedBy: authUserId,
       });

@@ -20,16 +20,17 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, currentPath }: DashboardLayoutProps) {
-    const { user } = useAuth();
+    const { user, isLoading } = useAuth();
     const currentUser = useQuery(api.users.getCurrentUser, {});
     const { navigationLayout, loading: prefLoading } = useNavigationPreference();
     const [showPolicyModal, setShowPolicyModal] = useState(false);
 
     useEffect(() => {
-        if (!user) {
-            window.location.href = '/dashboard-v2/signin';
+        // Only redirect if auth is not loading and user is definitely not authenticated
+        if (!isLoading && !user) {
+            window.location.href = '/signin';
         }
-    }, [user]);
+    }, [user, isLoading]);
 
     // Check user data and policy versions when currentUser loads
     useEffect(() => {
@@ -46,7 +47,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
     }, [currentUser]);
 
     // Show loading state while user or preference is being loaded
-    if (!user || prefLoading) {
+    if (isLoading || !user || prefLoading) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-50">
                 <div className="text-center">

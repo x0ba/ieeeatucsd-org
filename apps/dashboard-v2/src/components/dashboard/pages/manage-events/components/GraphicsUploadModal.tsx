@@ -1,24 +1,24 @@
 import React, { useState } from "react";
-import { Button } from "../../../../../ui/button";
-import { Input } from "../../../../../ui/input";
-import { Label } from "../../../../../ui/label";
-import { Textarea } from "../../../../../ui/textarea";
+import { Button } from "../../../../ui/button";
+import { Input } from "../../../../ui/input";
+import { Label } from "../../../../ui/label";
+import { Textarea } from "../../../../ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../../../../../ui/dialog";
+} from "../../../../ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../../../ui/select";
-import { Checkbox } from "../../../../../ui/checkbox";
-import { Badge } from "../../../../../ui/badge";
+} from "../../../../ui/select";
+import { Checkbox } from "../../../../ui/checkbox";
+import { Badge } from "../../../../ui/badge";
 import { 
   Upload, 
   Image as ImageIcon, 

@@ -1,4 +1,13 @@
-import type { UserRole } from "../../../../shared/types/constitution";
+// Define UserRole locally to avoid import path issues
+export type UserRole = 
+  | "Member"
+  | "General Officer"
+  | "Executive Officer"
+  | "Member at Large"
+  | "Past Officer"
+  | "Sponsor"
+  | "Administrator"
+  | "Faculty Advisor";
 
 export interface InvoiceItem {
   description: string;

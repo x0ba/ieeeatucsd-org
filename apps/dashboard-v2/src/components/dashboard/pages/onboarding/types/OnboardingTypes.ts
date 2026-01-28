@@ -1,16 +1,13 @@
 import type {
   UserRole,
-  OfficerInvitation,
-  OnboardingEmailData,
-  OfficerTeam,
-} from "../../../../shared/types/constitution";
+} from "../../../../../lib/types";
 
 export interface InvitationFormData {
   name: string;
   email: string;
   role: UserRole;
   position: string;
-  team?: OfficerTeam;
+  team?: string;
   acceptanceDeadline: string;
   message: string;
   leaderName: string;
@@ -21,7 +18,7 @@ export interface DirectOnboardingFormData {
   email: string;
   role: UserRole;
   position: string;
-  team?: OfficerTeam;
+  team?: string;
   leaderName?: string;
   customMessage?: string;
   emailTemplate: string;

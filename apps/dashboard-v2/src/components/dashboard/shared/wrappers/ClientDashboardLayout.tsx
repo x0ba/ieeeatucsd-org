@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../DashboardLayout';
+import { ConvexClientProvider } from '../../../providers/ConvexClientProvider';
 import { Spinner } from '@heroui/react';
 
 interface ClientDashboardLayoutProps {
@@ -41,8 +42,10 @@ export default function ClientDashboardLayout({
 
   // Only render the actual DashboardLayout on the client side
   return (
-    <DashboardLayout currentPath={currentPath}>
-      {children}
-    </DashboardLayout>
+    <ConvexClientProvider>
+      <DashboardLayout currentPath={currentPath}>
+        {children}
+      </DashboardLayout>
+    </ConvexClientProvider>
   );
 }

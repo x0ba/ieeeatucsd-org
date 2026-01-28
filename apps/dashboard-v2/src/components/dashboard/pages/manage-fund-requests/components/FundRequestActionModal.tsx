@@ -35,7 +35,8 @@ import {
 } from 'lucide-react';
 import { useMutation } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { useConvexAuth } from '../../../shared/hooks/useConvexAuth';
+import type { Id } from "#convex/_generated/dataModel";
+import { useConvexAuth } from '../../../../../hooks/useConvexAuth';
 import type { FundRequest, FundRequestStatus, FundingSource } from '../../../shared/types/fund-requests';
 import {
     STATUS_LABELS,
@@ -77,7 +78,7 @@ export default function FundRequestActionModal({
     onClose,
     request,
 }: FundRequestActionModalProps) {
-    const { authUser } = useConvexAuth();
+    const { user } = useConvexAuth();
     const updateFundRequestStatus = useMutation(api.fundRequests.updateFundRequestStatus);
     const [action, setAction] = useState<'approve' | 'deny' | 'needs_info'>('approve');
     const [notes, setNotes] = useState('');
@@ -94,7 +95,7 @@ export default function FundRequestActionModal({
     }, [isOpen, request]);
 
     const handleSubmit = async () => {
-        if (!request || !authUser) return;
+        if (!request || !user) return;
 
         if (action === 'approve' && !fundingSource) {
             showToast.error('Please select a funding source');
@@ -127,8 +128,8 @@ export default function FundRequestActionModal({
             const auditLog = {
                 id: crypto.randomUUID(),
                 action,
-                performedBy: authUser.id,
-                performedByName: authUser.name || authUser.email || 'Admin',
+                performedBy: user._id,
+                performedByName: user.name || user.email || 'Admin',
                 timestamp: Date.now(),
                 previousStatus: request.status,
                 newStatus,
@@ -153,12 +154,13 @@ export default function FundRequestActionModal({
             }
 
             await updateFundRequestStatus({
-                id: request._id,
+                id: request._id as Id<"fundRequests">,
                 status: newStatus,
-                auditLogs: updateData.auditLogs,
                 selectedFundingSource: updateData.selectedFundingSource,
                 reviewNotes: updateData.reviewNotes,
                 infoRequestNotes: updateData.infoRequestNotes,
+                reviewedBy: user._id,
+                reviewedByName: user.name || user.email || 'Admin',
             });
 
             // Send email notification
@@ -210,7 +212,7 @@ export default function FundRequestActionModal({
                         <div className="flex items-center gap-2 text-sm text-default-500">
                             <span>ID: {request._id.slice(0, 8)}...</span>
                             <span>•</span>
-                            <span>Submitted on {formatDate(request._creationTime)}</span>
+                            <span>Submitted on {formatDate(request.submittedAt)}</span>
                         </div>
                     </div>
                 </ModalHeader>

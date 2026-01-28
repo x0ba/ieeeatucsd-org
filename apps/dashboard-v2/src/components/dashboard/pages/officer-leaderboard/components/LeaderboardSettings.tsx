@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Calendar, Settings, Save, AlertCircle } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "#convex/_generated/api";
-import { useCurrentUser } from "../../../../hooks/useConvexAuth";
+import { useCurrentUser } from "../../../../../hooks/useConvexAuth";
 import {
   Card,
   CardBody,
@@ -33,7 +33,12 @@ export default function LeaderboardSettings() {
 
   useEffect(() => {
     if (leaderboardSettings && leaderboardSettings.startDate) {
-      setSettings(leaderboardSettings);
+      setSettings({
+        id: "settings",
+        startDate: leaderboardSettings.startDate,
+        lastUpdated: leaderboardSettings.lastUpdated || Date.now(),
+        updatedBy: currentUser?._id || "",
+      });
       
       // Convert timestamp to date string (YYYY-MM-DD)
       const date = new Date(leaderboardSettings.startDate);
@@ -63,6 +68,7 @@ export default function LeaderboardSettings() {
       
       await updateSettings({
         startDate: localDate.getTime(),
+        updatedBy: currentUser?._id || "",
       });
 
       setSuccess("Settings updated successfully");

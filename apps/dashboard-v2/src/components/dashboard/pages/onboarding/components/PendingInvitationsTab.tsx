@@ -66,7 +66,9 @@ export default function PendingInvitationsTab({ invitations, loading, onRefresh,
 
     const isExpired = (invitation: OfficerInvitation) => {
         if (!invitation.expiresAt) return false;
-        const expiryDate = invitation.expiresAt.toDate ? invitation.expiresAt.toDate() : new Date(invitation.expiresAt);
+        const expiryDate = typeof invitation.expiresAt === 'number' 
+            ? new Date(invitation.expiresAt)
+            : invitation.expiresAt.toDate ? invitation.expiresAt.toDate() : new Date();
         return new Date() > expiryDate && invitation.status === 'pending';
     };
 

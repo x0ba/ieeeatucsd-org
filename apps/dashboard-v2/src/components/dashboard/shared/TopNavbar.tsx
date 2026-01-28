@@ -19,7 +19,7 @@ export default function TopNavbar({ }: TopNavbarProps) {
   const handleSignOut = async () => {
     // For now, redirect to signin
     // In full implementation, would use auth.signOut()
-    window.location.href = "/dashboard-v2/signin";
+    window.location.href = "/signin";
   };
 
   return (

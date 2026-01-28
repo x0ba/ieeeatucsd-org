@@ -11,7 +11,7 @@ import {
   CardBody,
   CardHeader,
 } from "@heroui/react";
-import type { OfficerTeam } from "../../../shared/types/constitution";
+import type { OfficerTeam } from "../../types/OfficerLeaderboardTypes";
 import type { TeamMember } from "../../types/OfficerLeaderboardTypes";
 
 interface OfficerDetailsTableProps {

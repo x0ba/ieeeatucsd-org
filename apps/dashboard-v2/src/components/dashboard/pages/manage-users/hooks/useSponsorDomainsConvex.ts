@@ -1,10 +1,18 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "#convex/_generated/api";
-import type {
-  SponsorDomain,
-  SponsorTier,
-} from "../../../../../shared/types/constitution";
+import type { SponsorTier } from "../../../../../../src/lib/types";
 import { showToast } from "../../../shared/utils/toast";
+
+// Define SponsorDomain locally since it's Convex-specific
+export interface SponsorDomain {
+  domain: string;
+  organizationName: string;
+  sponsorTier: SponsorTier;
+  createdAt: number;
+  createdBy: string;
+  lastModified?: number;
+  lastModifiedBy?: string;
+}
 
 export interface SponsorDomainWithId extends SponsorDomain {
   _id: string;
@@ -119,7 +127,7 @@ export const useSponsorDomains = (currentUserId?: string) => {
   // Delete a sponsor domain
   const deleteDomain = async (domainId: string) => {
     try {
-      await deleteMutation({ id: domainId as any });
+      await deleteMutation({ domainId: domainId as any });
       showToast.success("Sponsor domain deleted successfully");
     } catch (err: any) {
       console.error("Error deleting sponsor domain:", err);

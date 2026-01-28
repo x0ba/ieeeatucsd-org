@@ -1,22 +1,22 @@
 import React, { useState } from "react";
-import { Button } from "../../../../../ui/button";
-import { Input } from "../../../../../ui/input";
-import { Textarea } from "../../../../../ui/textarea";
-import { Label } from "../../../../../ui/label";
+import { Button } from "../../../../ui/button";
+import { Input } from "../../../../ui/input";
+import { Textarea } from "../../../../ui/textarea";
+import { Label } from "../../../../ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../../../../../ui/dialog";
+} from "../../../../ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../../../ui/select";
+} from "../../../../ui/select";
 
 interface EventRequestModalProps {
   open: boolean;

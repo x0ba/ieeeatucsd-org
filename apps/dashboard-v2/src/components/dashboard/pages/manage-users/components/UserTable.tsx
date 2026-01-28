@@ -1,7 +1,7 @@
 import React from 'react';
 import { Edit, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Avatar, Tooltip, Card } from '@heroui/react';
-import type { User as FirestoreUser } from '../../../../lib/types';
+import type { User as FirestoreUser } from '../../../../../../src/lib/types';
 import type { SortConfig, UserPermissions } from '../types/UserManagementTypes';
 import { UserDisplayService } from '../utils/userFiltering';
 
@@ -184,7 +184,7 @@ export default function UserTable({
                             </TableCell>
                             <TableCell>
                                 <div className="text-sm text-gray-500">
-                                    {user.joinDate ? user.joinDate.toDate().toLocaleDateString() : '-'}
+                                    {user.joinDate ? new Date(user.joinDate).toLocaleDateString() : '-'}
                                 </div>
                                 {user.graduationYear && (
                                     <div className="text-xs text-gray-400">Grad: {user.graduationYear}</div>

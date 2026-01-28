@@ -1,6 +1,6 @@
 import { useAction } from "convex/react";
 import { api } from "#convex/_generated/api";
-import { useCurrentUser } from "../../../../hooks/useConvexAuth";
+import { useCurrentUser } from "../../../../../hooks/useConvexAuth";
 
 // Hook for file upload utilities using Convex storage
 export const useFileUpload = () => {

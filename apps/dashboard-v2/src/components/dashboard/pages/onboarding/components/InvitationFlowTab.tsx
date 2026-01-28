@@ -10,7 +10,7 @@ import {
   Button,
   Spacer,
 } from "@heroui/react";
-import type { UserRole, OfficerTeam } from "../../shared/types/constitution";
+import type { UserRole } from "../../../../../lib/types";
 import type { InvitationFormData } from "../types/OnboardingTypes";
 
 interface InvitationFlowTabProps {
@@ -142,7 +142,7 @@ export default function InvitationFlowTab({
                   const value = e.target.value;
                   setFormData({
                     ...formData,
-                    team: value === "none" ? undefined : (value as OfficerTeam),
+                    team: value === "none" ? undefined : value,
                   });
                 }}
                 classNames={{

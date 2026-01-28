@@ -38,7 +38,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { useConvexAuth } from '../../hooks/useConvexAuth';
+import { useConvexAuth } from '../../../../hooks/useConvexAuth';
 import type { FundRequest, FundRequestStatus, BudgetConfig, FundRequestDepartment } from '../../shared/types/fund-requests';
 import { STATUS_LABELS, STATUS_COLORS, CATEGORY_LABELS, DEPARTMENT_LABELS } from '../../shared/types/fund-requests';
 import FundRequestActionModal from './components/FundRequestActionModal';
@@ -82,9 +82,9 @@ const formatDate = (timestamp: any): string => {
 type FilterTab = 'all' | 'pending' | 'needs_info' | 'processed';
 
 export default function ManageFundRequestsContent() {
-    const { authUser } = useConvexAuth();
+    const { user } = useConvexAuth();
     const currentUser = useQuery(api.users.getUserByAuthId,
-        authUser ? { authUserId: authUser.id } : "skip");
+        user ? { authUserId: user._id } : "skip");
     const requests = useQuery(api.fundRequests.getAllFundRequests) || [];
     const budgetConfigs = useQuery(api.fundRequests.getBudgetConfigs) || {};
     const loading = requests === undefined;
@@ -313,7 +313,7 @@ export default function ManageFundRequestsContent() {
                             </div>
                         }>
                             {items.map((request) => (
-                                <TableRow key={request.id} className="hover:bg-default-50/50 transition-colors cursor-pointer" onClick={() => handleActionClick(request)}>
+                                <TableRow key={request._id} className="hover:bg-default-50/50 transition-colors cursor-pointer" onClick={() => handleActionClick(request)}>
                                     <TableCell>
                                         <div className="flex flex-col">
                                             <span className="font-semibold text-foreground">{request.title}</span>
@@ -392,7 +392,7 @@ export default function ManageFundRequestsContent() {
                 onClose={() => setIsBudgetModalOpen(false)}
                 budgetConfigs={budgetConfigs}
                 onBudgetUpdate={() => { }} // Real-time updates handled by Convex
-                currentUserId={authUser?.id || ''}
+                currentUserId={user?._id || ''}
                 currentUserName={currentUser?.name || 'Admin'}
             />
         </div>

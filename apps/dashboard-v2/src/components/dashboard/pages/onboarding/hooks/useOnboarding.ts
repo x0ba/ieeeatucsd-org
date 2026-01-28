@@ -1,12 +1,29 @@
 import { useState } from "react";
-import { useAuth } from "../../shared/hooks/useConvexAuth";
+import { useAuth } from "../../../../../hooks/useConvexAuth";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "#convex/_generated/api";
 import type {
-  OfficerInvitation,
   UserRole,
   GoogleGroup,
-} from "../../../../shared/types/constitution";
+  InvitationStatus,
+} from "../../../../../lib/types";
+
+// Define OfficerInvitation locally since it's Convex-specific
+export interface OfficerInvitation {
+  _id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  position: string;
+  leaderName?: string;
+  message?: string;
+  acceptanceDeadline?: string;
+  status: InvitationStatus;
+  createdAt: number;
+  expiresAt: number;
+  acceptedAt?: number;
+  declinedAt?: number;
+}
 import type {
   InvitationFormData,
   DirectOnboardingFormData,

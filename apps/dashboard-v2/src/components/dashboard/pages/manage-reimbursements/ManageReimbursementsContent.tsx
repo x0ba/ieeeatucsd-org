@@ -90,9 +90,9 @@ const getStatusDisplayName = (status: string) => {
 };
 
 export default function ManageReimbursementsContent() {
-    const { authUser } = useConvexAuth();
+    const { user } = useAuth();
     const currentUser = useQuery(api.users.getUserByAuthId,
-        authUser ? { authUserId: authUser.id } : "skip");
+        user ? { authUserId: user._id } : "skip");
     const reimbursements = useQuery(api.reimbursements.getAllReimbursements);
     const updateReimbursementStatusMutation = useMutation(api.reimbursements.updateReimbursementStatus);
     const updatePaymentDetailsMutation = useMutation(api.reimbursements.updatePaymentDetails);
@@ -172,7 +172,7 @@ export default function ManageReimbursementsContent() {
             if (userId && !userNames[userId as string]) {
                 // Use Convex public profiles query
                 // Since we need to query by userId, we need to implement this
-                // For now, use the authUserId as name fallback
+                // For now, use the userId as name fallback
                 newUserNames[userId as string] = userId as string;
             }
         });
@@ -181,7 +181,7 @@ export default function ManageReimbursementsContent() {
     }, [reimbursements]);
 
     const updateReimbursementStatus = async (reimbursementId: string, newStatus: string, auditNote?: string, paymentInfo?: any) => {
-        if (!authUser) return;
+        if (!user) return;
 
         try {
             const currentReimbursement = reimbursements?.find((r: any) => r._id === reimbursementId);

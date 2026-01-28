@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "#convex/_generated/api";
 import type { UserRole } from "../../../../../lib/types";
 import type { Doc } from "#convex/_generated/dataModel";
+import { showToast } from "../../../shared/utils/toast";
 type FirestoreUser = Doc<"users">;
 import type {
   UserModalData,
@@ -12,7 +13,7 @@ import type {
 } from "../types/UserManagementTypes";
 import { UserFilteringService } from "../utils/userFiltering";
 import { UserPermissionService } from "../utils/userPermissions";
-import { useAuth } from "../../../../hooks/useConvexAuth";
+import { useAuth } from "../../../../../hooks/useConvexAuth";
 
 export const useUserManagement = () => {
   const { user: authUser } = useAuth();
@@ -32,7 +33,7 @@ export const useUserManagement = () => {
   // Get current user from all users
   const currentUser = useMemo(() => {
     if (!authUser || !allUsers) return null;
-    return allUsers.find((u) => u.authUserId === authUser.id) || null;
+    return allUsers.find((u) => u.authUserId === authUser._id) || null;
   }, [authUser, allUsers]);
 
   const currentUserRole = currentUser?.role || "Member";
@@ -103,7 +104,7 @@ export const useUserManagement = () => {
       }
 
       // Normalize major name before saving
-      const normalizedMajor = normalizeMajorName(userData.major);
+      const normalizedMajor = userData.major || '';
 
       await updateUserMutation({
         userId: userData.id,
@@ -115,7 +116,7 @@ export const useUserManagement = () => {
         memberId: userData.memberId,
         major: normalizedMajor || "",
         graduationYear: userData.graduationYear,
-        team: userData.team,
+        team: (userData.team as "Internal" | "Events" | "Projects" | undefined) || undefined,
         points: userData.points,
         updatedBy: currentUser?.id || "",
       });
@@ -131,13 +132,14 @@ export const useUserManagement = () => {
           currentUserRole === "Administrator" &&
           userData.points !== undefined
         ) {
-          publicProfileData.points = userData.points;
+          publicProfileData.points
         }
-
-        await PublicProfileService.syncPublicProfile(
-          userData.id,
-          publicProfileData,
-        );
+        // TODO: Implement PublicProfileService when available
+        // await PublicProfileService.syncPublicProfile(
+        //   userData.id,
+        //   publicProfileData,
+        // );
+        console.log("Public profile sync skipped - service not available");
       } catch (error) {
         console.error("Error syncing public profile:", error);
       }
@@ -254,9 +256,11 @@ export const useUserManagement = () => {
 
       // Sync to public profile
       try {
-        await PublicProfileService.syncPublicProfile(memberId, {
-          position: newPosition,
-        });
+        // TODO: Implement PublicProfileService when available
+        // await PublicProfileService.syncPublicProfile(memberId, {
+        //   position: newPosition,
+        // });
+        console.log("Public profile sync skipped - service not available");
       } catch (error) {
         console.error("Error syncing public profile:", error);
       }

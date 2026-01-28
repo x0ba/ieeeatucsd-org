@@ -11,7 +11,7 @@ import {
   SelectItem,
   Spacer,
 } from "@heroui/react";
-import type { UserRole, OfficerTeam } from "../../shared/types/constitution";
+import type { UserRole } from "../../../../../../src/lib/types";
 import type { UserModalData } from "../types/UserManagementTypes";
 import EmailManagementSection from "./EmailManagementSection";
 
@@ -252,7 +252,7 @@ export default function UserModal({
                               "team",
                               value === "none"
                                 ? undefined
-                                : (value as OfficerTeam),
+                                : value,
                             );
                           }}
                           size="md"

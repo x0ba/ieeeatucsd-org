@@ -1,4 +1,4 @@
-import type { User as FirestoreUser, UserRole } from '../../../../lib/types';
+import type { User as FirestoreUser, UserRole } from '../../../../../../src/lib/types';
 import type { UserFilters, SortConfig, UserStats } from '../types/UserManagementTypes';
 
 export class UserFilteringService {
@@ -67,8 +67,8 @@ export class UserFilteringService {
                     bValue = b.points || 0;
                     break;
                 case 'joinDate':
-                    aValue = a.joinDate ? a.joinDate.toDate().getTime() : 0;
-                    bValue = b.joinDate ? b.joinDate.toDate().getTime() : 0;
+                    aValue = a.joinDate || 0;
+                    bValue = b.joinDate || 0;
                     break;
                 case 'graduationYear':
                     aValue = a.graduationYear || 0;
@@ -126,7 +126,7 @@ export class UserFilteringService {
         const thisMonth = new Date();
         thisMonth.setDate(1);
         const newThisMonth = users.filter(u => 
-            u.joinDate && u.joinDate.toDate() >= thisMonth
+            u.joinDate && new Date(u.joinDate) >= thisMonth
         ).length;
 
         return { totalMembers, activeMembers, officers, newThisMonth };

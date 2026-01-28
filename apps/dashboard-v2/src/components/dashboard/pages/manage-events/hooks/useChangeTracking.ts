@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { EventAuditService } from "../../../shared/services/eventAuditService";
+import { eventAuditService, auditEventUpdate, auditFileUpload } from "../../../shared/services/eventAuditService";
 import { auth } from "../../../../../lib/auth-config";
 
 interface FieldChange {
@@ -333,7 +333,7 @@ export function useChangeTracking(
     if (!session) return;
 
     try {
-      const userName = await EventAuditService.getUserName(session.user.id);
+      const userName = session.user.email || 'Unknown User';
 
       // Log field changes
       if (changes.fieldChanges.length > 0) {
@@ -345,43 +345,21 @@ export function useChangeTracking(
           changeType: "updated" as const,
         }));
 
-        await EventAuditService.logEventUpdate(
-          eventRequestId,
-          userName,
-          fieldChanges,
-          userName,
-        );
+        await auditEventUpdate(eventRequestId, userName, fieldChanges, {});
       }
 
       // Log file changes
       if (changes.fileChanges.length > 0) {
-        const fileChanges = changes.fileChanges.map((change) => ({
-          action: change.type === "replaced" ? "added" : change.type,
-          fileName: change.filename,
-          fileType: change.field.includes("roomBooking")
-            ? ("room_booking" as const)
-            : change.field.includes("invoice")
-              ? ("invoice" as const)
-              : change.field.includes("logo")
-                ? ("logo" as const)
-                : change.field.includes("graphics")
-                  ? ("graphics" as const)
-                  : ("other" as const),
-        }));
-
-        await EventAuditService.logFileUpload(
-          eventRequestId,
-          userName,
-          fileChanges,
-          userName,
-        );
+        // Log each file change separately
+        for (const fileChange of changes.fileChanges) {
+          await auditFileUpload(eventRequestId, userName, fileChange.filename, fileChange.type || 'unknown');
+        }
       }
 
-      // Log invoice changes
+      // Log invoice changes (using generic audit entry)
       if (changes.invoiceChanges.length > 0) {
         const invoiceFieldChanges = changes.invoiceChanges.map((change) => ({
           field: change.field,
-          fieldDisplayName: `Invoice ${change.invoiceId} - ${change.field}`,
           oldValue: change.oldValue,
           newValue: change.newValue,
           changeType:
@@ -392,11 +370,13 @@ export function useChangeTracking(
                 : ("updated" as const),
         }));
 
-        await EventAuditService.logInvoiceEdit(
+        await eventAuditService.createAuditEntry(
           eventRequestId,
+          "update",
           userName,
-          invoiceFieldChanges,
-          userName,
+          "Updated invoice",
+          {},
+          { invoiceFieldChanges }
         );
       }
     } catch (error) {

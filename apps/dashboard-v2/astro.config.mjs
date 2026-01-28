@@ -20,20 +20,8 @@ export default defineConfig({
     port: process.env.PORT ? Number(process.env.PORT) : 4321,
   },
   vite: {
-    define: {
-      "import.meta.env.VITE_CONVEX_URL": JSON.stringify(
-        process.env.VITE_CONVEX_URL || "http://localhost:3210",
-      ),
-      "import.meta.env.VITE_CONVEX_SITE_URL": JSON.stringify(
-        process.env.CONVEX_SITE_URL || "http://localhost:4321",
-      ),
-    },
     resolve: {
       dedupe: ["react", "react-dom"],
-      alias: {
-        "#convex": "./convex",
-        "@convex": "./convex",
-      },
     },
   },
   typescript: {

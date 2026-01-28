@@ -43,7 +43,7 @@ export default function LeaderboardContent() {
   const { authUser } = useAuth();
   const leaderboardData = useQuery(api.leaderboard.getLeaderboard, { limit: 1000 }) || [];
   const totalUsersCount = useQuery(api.leaderboard.getLeaderboardCount) || 0;
-  const currentUserRank = useQuery(api.leaderboard.getUserRank, authUser ? { userId: authUser.id } : 'skip') || 0;
+  const currentUserRank = useQuery(api.leaderboard.getUserRank, authUser ? { userId: authUser._id } : 'skip') || 0;
   
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -284,7 +284,7 @@ export default function LeaderboardContent() {
                 {paginatedData.map((member) => (
                   <tr
                     key={member._id}
-                    className={`group transition-all duration-200 ${member._id === authUser?.id
+                    className={`group transition-all duration-200 ${member._id === authUser?._id
                       ? 'bg-blue-50/30 hover:bg-blue-50/60'
                       : 'hover:bg-gray-50'
                       }`}
@@ -320,7 +320,7 @@ export default function LeaderboardContent() {
                             <div className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                               {member.name}
                             </div>
-                            {member._id === authUser?.id && (
+                            {member._id === authUser?._id && (
                               <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
                                 You
                               </span>

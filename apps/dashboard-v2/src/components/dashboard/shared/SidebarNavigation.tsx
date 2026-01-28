@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Home,
   Calendar,
@@ -224,18 +224,22 @@ function SidebarNavigationContent({ currentPath = "" }: { currentPath?: string }
   };
 
   // Update user data when Convex query returns
-  if (currentUser) {
-    setCurrentUserRole(currentUser.role || "Member");
-    setSponsorTier(currentUser.sponsorTier || null);
-    setUserData({
-      name: currentUser.name || "User",
-      email: currentUser.email || "",
-      points: currentUser.points || 0,
-      role: currentUser.role || "Member",
-    });
-  } else {
-    setCurrentUserRole(null);
-  }
+  useEffect(() => {
+    if (currentUser) {
+      setCurrentUserRole(currentUser.role || "Member");
+      setSponsorTier(currentUser.sponsorTier || null);
+      setUserData({
+        name: currentUser.name || "User",
+        email: currentUser.email || "",
+        points: currentUser.points || 0,
+        role: currentUser.role || "Member",
+      });
+    } else {
+      setCurrentUserRole(null);
+      setSponsorTier(null);
+      setUserData(null);
+    }
+  }, [currentUser]);
 
   const isActiveRoute = (href: string): boolean => {
     if (currentPath === "/" || currentPath === "/") {
@@ -405,18 +409,22 @@ export function SidebarNavigation({ currentPath, children }: SidebarNavigationPr
   };
 
   // Update user data when Convex query returns
-  if (currentUser) {
-    setCurrentUserRole(currentUser.role || "Member");
-    setSponsorTier(currentUser.sponsorTier || null);
-    setUserData({
-      name: currentUser.name || "User",
-      email: currentUser.email || "",
-      points: currentUser.points || 0,
-      role: currentUser.role || "Member",
-    });
-  } else {
-    setCurrentUserRole(null);
-  }
+  useEffect(() => {
+    if (currentUser) {
+      setCurrentUserRole(currentUser.role || "Member");
+      setSponsorTier(currentUser.sponsorTier || null);
+      setUserData({
+        name: currentUser.name || "User",
+        email: currentUser.email || "",
+        points: currentUser.points || 0,
+        role: currentUser.role || "Member",
+      });
+    } else {
+      setCurrentUserRole(null);
+      setSponsorTier(null);
+      setUserData(null);
+    }
+  }, [currentUser]);
 
   const isActiveRoute = (href: string): boolean => {
     if (currentPath === "/" || currentPath === "/") {

@@ -1,8 +1,7 @@
 import type {
   UserRole,
   SponsorTier,
-  OfficerTeam,
-} from "../../../../shared/types/constitution";
+} from "../../../../../../src/lib/types";
 
 export interface UserModalData {
   id?: string;
@@ -17,7 +16,7 @@ export interface UserModalData {
   graduationYear?: number;
   points?: number;
   // Team assignment (optional for officers)
-  team?: OfficerTeam;
+  team?: string;
   // IEEE Email fields
   hasIEEEEmail?: boolean;
   ieeeEmail?: string;
@@ -34,7 +33,7 @@ export interface InviteModalData {
   email: string;
   role: UserRole;
   position: string;
-  team?: OfficerTeam;
+  team?: string;
   message: string;
 }
 

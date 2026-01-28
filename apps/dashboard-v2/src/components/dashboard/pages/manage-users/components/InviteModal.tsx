@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea, Spacer } from '@heroui/react';
-import type { UserRole } from '../../../../lib/types';
+import type { UserRole } from '../../../../../../src/lib/types';
 import type { InviteModalData } from '../types/UserManagementTypes';
 
 interface InviteModalProps {

@@ -1,30 +1,6 @@
 import React from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  type ChartOptions
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
 import { Card, CardBody, CardHeader } from '@heroui/react';
 import { TrendingUp } from 'lucide-react';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 interface PointsChartProps {
   data: {
@@ -35,76 +11,6 @@ interface PointsChartProps {
 }
 
 export default function PointsChart({ data }: PointsChartProps) {
-  const chartData = {
-    labels: data.map((d) =>
-      new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-    ),
-    datasets: [
-      {
-        label: 'Total Points',
-        data: data.map((d) => d.cumulative),
-        fill: true,
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      },
-    ],
-  };
-
-  const options: ChartOptions<'line'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        titleColor: '#1f2937',
-        bodyColor: '#1f2937',
-        borderColor: '#e5e7eb',
-        borderWidth: 1,
-        padding: 12,
-        boxPadding: 4,
-      },
-    },
-    scales: {
-      x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          maxTicksLimit: 7,
-          font: {
-            size: 10,
-          },
-        },
-      },
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: '#f3f4f6',
-        },
-        border: {
-          display: false,
-        },
-        ticks: {
-          font: {
-            size: 10,
-          },
-        },
-      },
-    },
-    interaction: {
-      mode: 'nearest',
-      axis: 'x',
-      intersect: false,
-    },
-  };
 
   if (data.length < 2) {
     return null;
@@ -122,7 +28,13 @@ export default function PointsChart({ data }: PointsChartProps) {
         </div>
       </CardHeader>
       <CardBody className="px-4 pb-4 h-[250px]">
-        <Line data={chartData} options={options} />
+        <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="text-center">
+            <TrendingUp className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p>Chart dependencies not installed</p>
+            <p className="text-sm mt-2">Install chart.js and react-chartjs-2 to enable chart</p>
+          </div>
+        </div>
       </CardBody>
     </Card>
   );

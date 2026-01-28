@@ -1,23 +1,23 @@
 import React, { useState } from "react";
-import { Button } from "../../../../../ui/button";
-import { Label } from "../../../../../ui/label";
+import { Button } from "../../../../ui/button";
+import { Label } from "../../../../ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../../../../../ui/dialog";
+} from "../../../../ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../../../ui/select";
-import { Textarea } from "../../../../../ui/textarea";
-import { Checkbox } from "../../../../../ui/checkbox";
-import { Badge } from "../../../../../ui/badge";
+} from "../../../../ui/select";
+import { Textarea } from "../../../../ui/textarea";
+import { Checkbox } from "../../../../ui/checkbox";
+import { Badge } from "../../../../ui/badge";
 import { 
   Mail, 
   CalendarDays, 
@@ -100,7 +100,7 @@ export function BulkActionsModal({
 
   const handleExecute = () => {
     if (selectedAction) {
-      onAction(selectedAction.type, params);
+      onAction(selectedAction, params);
       onOpenChange(false);
       setSelectedAction(null);
       setParams({});

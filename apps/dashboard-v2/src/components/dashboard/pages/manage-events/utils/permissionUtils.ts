@@ -1,4 +1,4 @@
-import type { UserRole } from "../../../../shared/types/constitution";
+import type { UserRole } from "../../../../../lib/types";
 
 interface EventRequest {
   id: string;

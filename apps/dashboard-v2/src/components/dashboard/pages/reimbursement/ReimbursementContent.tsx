@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, DollarSign, Receipt, Clock, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { api } from "#convex/_generated/api";
+import { useAuth } from "../../../../hooks/useConvexAuth";
 
 import ReimbursementDetailsPage from './ReimbursementDetailsPage';
 import ReimbursementCreationPage from './ReimbursementCreationPage';
@@ -74,11 +75,11 @@ const getStatusDisplayName = (status: string) => {
 };
 
 export default function ReimbursementContent() {
-    const { authUser } = useConvexAuth();
+    const { user } = useAuth();
     const reimbursements = useQuery(api.reimbursements.getUserReimbursements,
-        authUser ? { authUserId: authUser.id } : "skip");
-    const user = useQuery(api.users.getUserByAuthId,
-        authUser ? { authUserId: authUser.id } : "skip");
+        user ? { authUserId: user._id } : "skip");
+    const currentUser = useQuery(api.users.getUserByAuthId,
+        user ? { authUserId: user._id } : "skip");
     const [isCreating, setIsCreating] = useState(false);
     const [viewReimbursement, setViewReimbursement] = useState<Reimbursement | null>(null);
     const [editReimbursement, setEditReimbursement] = useState<Reimbursement | null>(null);
@@ -151,9 +152,9 @@ export default function ReimbursementContent() {
 
     const getStats = () => {
         const reimbList = reimbursements || [];
-        const totalSubmitted = reimbList.reduce((sum, r) => sum + calculateTotalAmount(r), 0);
-        const approved = reimbList.filter(r => r.status === 'approved' || r.status === 'paid').reduce((sum, r) => sum + calculateTotalAmount(r), 0);
-        const pending = reimbList.filter(r => r.status === 'submitted').reduce((sum, r) => sum + calculateTotalAmount(r), 0);
+        const totalSubmitted = reimbList.reduce((sum, r) => sum + calculateTotalAmount(r as any), 0);
+        const approved = reimbList.filter(r => r.status === 'approved' || r.status === 'paid').reduce((sum, r) => sum + calculateTotalAmount(r as any), 0);
+        const pending = reimbList.filter(r => r.status === 'submitted').reduce((sum, r) => sum + calculateTotalAmount(r as any), 0);
         const thisMonth = reimbList.filter(r => {
             const submittedDate = new Date(r._creationTime);
             const now = new Date();
@@ -352,7 +353,7 @@ export default function ReimbursementContent() {
                         <div className="p-0">
                             {loading ? (
                                 <div className="p-6">
-                                    <ReimbursementListSkeleton items={4} />
+                                    <ReimbursementListSkeleton />
                                 </div>
                             ) : filteredReimbursements.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -376,9 +377,9 @@ export default function ReimbursementContent() {
                                 <div className="max-h-[600px] overflow-y-auto custom-scrollbar divide-y divide-gray-100">
                                     {filteredReimbursements.map((reimbursement) => (
                                         <div
-                                            key={reimbursement.id}
+                                            key={reimbursement._id}
                                             className="group hover:bg-blue-50/30 transition-colors p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-4 cursor-pointer"
-                                            onClick={() => setViewReimbursement(reimbursement)}
+                                            onClick={() => setViewReimbursement(reimbursement as any)}
                                         >
                                             {/* Icon & Title */}
                                             <div className="flex items-start md:items-center space-x-4 flex-1">
@@ -395,7 +396,7 @@ export default function ReimbursementContent() {
                                                         </span>
                                                         <span className="text-xs text-gray-400 hidden sm:inline">•</span>
                                                         <span className="text-xs text-gray-500 truncate max-w-[200px]">
-                                                            {reimbursement.businessPurpose}
+                                                            {(reimbursement as any).businessPurpose || 'N/A'}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -405,7 +406,7 @@ export default function ReimbursementContent() {
                                             <div className="flex items-center justify-between md:justify-end gap-6 md:w-auto mt-2 md:mt-0 pl-14 md:pl-0">
                                                 <div className="flex flex-col md:items-end">
                                                     <span className="text-sm font-bold text-gray-900">
-                                                        ${calculateTotalAmount(reimbursement).toFixed(2)}
+                                                        ${calculateTotalAmount(reimbursement as any).toFixed(2)}
                                                     </span>
                                                     <span className="text-xs text-gray-500">
                                                         {new Date(reimbursement._creationTime).toLocaleDateString()}
@@ -420,7 +421,7 @@ export default function ReimbursementContent() {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setViewReimbursement(reimbursement);
+                                                        setViewReimbursement(reimbursement as any);
                                                     }}
                                                     className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors md:block hidden"
                                                     title="View Details"
@@ -431,7 +432,7 @@ export default function ReimbursementContent() {
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleEditRequest(reimbursement);
+                                                            handleEditRequest(reimbursement as any);
                                                         }}
                                                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors md:block hidden"
                                                         title="Edit Request"

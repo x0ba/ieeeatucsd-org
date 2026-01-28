@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem } from '@heroui/react';
-import type { SponsorTier } from '../../../../lib/types';
+import type { SponsorTier } from '../../../../../../src/lib/types';
 import type { SponsorDomainWithId } from '../hooks/useSponsorDomainsConvex';
 import { showToast } from '../../../shared/utils/toast';
 
@@ -31,9 +31,9 @@ export default function SponsorDomainModal({
         if (isOpen) {
             if (editingDomain) {
                 setFormData({
-                    domain: editingDomain.domain,
-                    organizationName: editingDomain.organizationName,
-                    sponsorTier: editingDomain.sponsorTier
+                    domain: (editingDomain as any).domain || '',
+                    organizationName: (editingDomain as any).organizationName || '',
+                    sponsorTier: (editingDomain as any).sponsorTier || 'Bronze'
                 });
             } else {
                 setFormData({

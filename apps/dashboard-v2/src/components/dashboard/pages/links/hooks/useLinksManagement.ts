@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "#convex/_generated/api";
-import { useAuth } from "../../../hooks/useConvexAuth";
-import type { Link } from "../../../../shared/types/constitution";
+import type { Id } from "#convex/_generated/dataModel";
+import { useAuth } from "../../../../../hooks/useConvexAuth";
+import type { Link } from "../../../shared/types/constitution";
 import { LinkPermissionService } from "../utils/linkPermissions";
 import { showToast } from "../../../shared/utils/toast";
 
@@ -18,10 +19,15 @@ export interface LinkFormData {
 }
 
 export function useLinksManagement() {
-  const { user, role: currentUserRole, loading: authLoading } = useAuth();
+  const { user, role: currentUserRole } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [loading, setLoading] = useState(false);
+
+  // Mutation hooks
+  const createLinkMutation = useMutation(api.links.create);
+  const updateLinkMutation = useMutation(api.links.update);
+  const deleteLinkMutation = useMutation(api.links.remove);
 
   // Fetch all links using Convex query
   const allLinks = useQuery(api.links.list) || [];
@@ -80,7 +86,7 @@ export function useLinksManagement() {
     try {
       setLoading(true);
 
-      await api.links.create(linkData);
+      await createLinkMutation(linkData);
       showToast.success("Link created successfully!");
     } catch (error) {
       console.error("Error creating link:", error);
@@ -105,8 +111,8 @@ export function useLinksManagement() {
     try {
       setLoading(true);
 
-      await api.links.update({
-        linkId,
+      await updateLinkMutation({
+        linkId: linkId as Id<"links">,
         url: linkData.url,
         title: linkData.title,
         category: linkData.category,
@@ -141,7 +147,7 @@ export function useLinksManagement() {
     try {
       setLoading(true);
 
-      await api.links.remove({ linkId });
+      await deleteLinkMutation({ linkId: linkId as Id<"links"> });
       showToast.success("Link deleted successfully!");
     } catch (error) {
       console.error("Error deleting link:", error);
@@ -162,7 +168,7 @@ export function useLinksManagement() {
     currentUserRole,
 
     // State
-    loading: authLoading,
+    loading: loading,
     searchTerm,
     categoryFilter,
 

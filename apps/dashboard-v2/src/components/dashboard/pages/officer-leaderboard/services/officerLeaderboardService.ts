@@ -132,13 +132,13 @@ export class OfficerLeaderboardService {
 
 // React hooks for using Convex queries/mutations
 export const useLeaderboardSettings = () => {
-  return useQuery(api.leaderboard.getLeaderboardSettings);
+  return useQuery(api.leaderboard.getSettings);
 };
 
 export const useUpdateLeaderboardSettings = () => {
-  return useMutation(api.leaderboard.updateLeaderboardSettings);
+  return useMutation(api.leaderboard.updateSettings);
 };
 
 export const useOfficers = () => {
-  return useQuery(api.leaderboard.getOfficers);
+  return useQuery(api.leaderboard.getData, {});
 };

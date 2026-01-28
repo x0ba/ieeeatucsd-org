@@ -3,8 +3,8 @@ import { Calendar, CreditCard, Users, Award, Clock, CheckCircle, DollarSign, Plu
 import { Card, CardHeader, CardBody, Button, Chip, Avatar, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import { useQuery } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { useAuth } from '../../../hooks/useConvexAuth';
-import PointsChart from './PointsChart';
+import { useAuth } from "../../../../hooks/useConvexAuth";
+// import PointsChart from './PointsChart';
 
 interface UserStats {
   totalPoints: number;
@@ -43,7 +43,11 @@ const RECENT_ACTIVITY_PREVIEW_COUNT = 5;
 
 export default function OverviewContent() {
   const { user, authUserId } = useAuth();
-  const overviewData = useQuery(api.overview.getOverviewData, authUserId ? { authUserId } : 'skip');
+  
+  // Skip Convex queries during server-side rendering or when authUserId is not available
+  const overviewData = (typeof window !== 'undefined' && authUserId) 
+    ? useQuery(api.overview.getOverviewData, { authUserId }) 
+    : undefined;
 
   const [showEventsModal, setShowEventsModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
@@ -89,25 +93,25 @@ export default function OverviewContent() {
     {
       title: 'Reimbursement',
       icon: CreditCard,
-      href: '/dashboard-v2/reimbursement',
+      href: '/reimbursement',
       color: 'bg-green-100 text-green-600',
     },
     {
       title: 'Events',
       icon: Calendar,
-      href: '/dashboard-v2/events',
+      href: '/events',
       color: 'bg-blue-100 text-blue-600',
     },
     {
       title: 'Leaderboard',
       icon: Award,
-      href: '/dashboard-v2/leaderboard',
+      href: '/leaderboard',
       color: 'bg-yellow-100 text-yellow-600',
     },
     {
       title: 'Profile',
       icon: Users,
-      href: '/dashboard-v2/settings',
+      href: '/settings',
       color: 'bg-purple-100 text-purple-600',
     },
   ];
@@ -182,7 +186,10 @@ export default function OverviewContent() {
             {/* Points Chart - Only show if we have data */}
             {pointsHistory.length > 1 && (
               <div className="w-full h-[280px]">
-                <PointsChart data={pointsHistory} />
+                {/* <PointsChart data={pointsHistory} /> */}
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  Chart dependencies not installed
+                </div>
               </div>
             )}
 

@@ -1,14 +1,39 @@
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useQuery, useMutation, useAction, useConvex } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { authClient } from "../lib/auth-client";
 
 export function useCurrentUser() {
-  return useQuery(api.users.getCurrentUser, {});
+  try {
+    // Check if we're in a browser environment first
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    // Check if Convex context is available before using useQuery
+    const convex = useConvex();
+    if (!convex) {
+      console.warn("Convex context not available in useCurrentUser");
+      return null;
+    }
+    
+    return useQuery(api.users.getCurrentUser, {});
+  } catch (error) {
+    console.warn("Convex context not available in useCurrentUser:", error);
+    return null;
+  }
 }
 
 export function useUserByAuthUserId(authUserId: string) {
-  return useQuery(api.users.getUserByAuthUserId, { authUserId });
+  try {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    return useQuery(api.users.getUserByAuthUserId, { authUserId });
+  } catch (error) {
+    console.warn("Convex context not available in useUserByAuthUserId:", error);
+    return undefined;
+  }
 }
 
 export function useUpdateNavigationLayout() {
@@ -16,7 +41,15 @@ export function useUpdateNavigationLayout() {
 }
 
 export function useHasOfficerRole(authUserId: string) {
-  return useQuery(api.users.hasOfficerRole, { authUserId });
+  try {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    return useQuery(api.users.hasOfficerRole, { authUserId });
+  } catch (error) {
+    console.warn("Convex context not available in useHasOfficerRole:", error);
+    return undefined;
+  }
 }
 
 export function useSyncUserFromSession() {
@@ -130,20 +163,42 @@ export function useBudgetAdjustments(department: "events" | "projects" | "intern
 
 // Combined auth hook for components that need both authUserId and user data
 export function useAuth() {
-  const user = useCurrentUser();
-  const authUserId = user?._id;
-  
-  const signOut = async () => {
-    await authClient.signOut();
-  };
-  
-  return {
-    authUserId,
-    user,
-    authUser: user, // Add authUser alias for compatibility
-    role: user?.role, // Add role property
-    signOut
-  };
+  // Check if we're in a browser environment first
+  if (typeof window === 'undefined') {
+    return {
+      authUserId: null,
+      user: null,
+      authUser: null,
+      role: null,
+      signOut: async () => {},
+    };
+  }
+
+  try {
+    const user = useCurrentUser();
+    const authUserId = user?._id;
+    
+    const signOut = async () => {
+      await authClient.signOut();
+    };
+    
+    return {
+      authUserId,
+      user,
+      authUser: user, // Add authUser alias for compatibility
+      role: user?.role, // Add role property
+      signOut
+    };
+  } catch (error) {
+    console.warn("Auth context not available:", error);
+    return {
+      authUserId: null,
+      user: null,
+      authUser: null,
+      role: null,
+      signOut: async () => {},
+    };
+  }
 }
 
 // Main useConvexAuth hook that components are expecting
@@ -152,7 +207,7 @@ export function useConvexAuth() {
   
   return {
     user,
-    isLoading: user === undefined,
+    isLoading: user === undefined || user === null,
     isAuthenticated: !!user,
     authUserId: user?._id
   };

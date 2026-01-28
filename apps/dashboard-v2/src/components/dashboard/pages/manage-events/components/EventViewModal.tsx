@@ -1,12 +1,12 @@
 import React from "react";
-import { Button } from "../../../../../ui/button";
+import { Button } from "../../../../ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../../../../../ui/dialog";
-import { Badge } from "../../../../../ui/badge";
+} from "../../../../ui/dialog";
+import { Badge } from "../../../../ui/badge";
 import { CalendarDays, MapPin, Users, Clock } from "lucide-react";
 
 interface EventViewModalProps {

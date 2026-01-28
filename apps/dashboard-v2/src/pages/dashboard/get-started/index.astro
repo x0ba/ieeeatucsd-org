@@ -9,7 +9,7 @@ if (!session) {
   return new Response(null, {
     status: 302,
     headers: {
-      Location: '/dashboard-v2/signin',
+      Location: '/signin',
     },
   });
 }
@@ -19,7 +19,7 @@ if (session.user.signedUp) {
   return new Response(null, {
     status: 302,
     headers: {
-      Location: '/dashboard-v2/overview',
+      Location: '/overview',
     },
   });
 }

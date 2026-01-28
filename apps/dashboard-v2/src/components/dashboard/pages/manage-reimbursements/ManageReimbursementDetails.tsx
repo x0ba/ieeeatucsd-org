@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle, XCircle, DollarSign, AlertCircle, FileText, ChevronLeft, ChevronRight, Calculator, Table, Sparkles, UploadCloud } from 'lucide-react';
 import { Button, Chip, Input, Textarea, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Tabs, Tab } from '@heroui/react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from "#convex/_generated/api";
 import { showToast } from '../../shared/utils/toast';
 import ReceiptViewer from '../reimbursement/components/ReceiptViewer';
@@ -33,7 +33,7 @@ export default function ManageReimbursementDetails({
 
     // Mutations for reimbursements
     const updateReimbursement = useMutation(api.reimbursements.update);
-    const uploadFile = useMutation(api.storage.uploadFile);
+    const uploadFile = useAction(api.storage.uploadFile);
 
     // Paid Confirmation State
     const { isOpen: isPaidOpen, onOpen: onPaidOpen, onOpenChange: onPaidOpenChange } = useDisclosure();
@@ -208,7 +208,7 @@ export default function ManageReimbursementDetails({
                 const fileName = `${timestamp}_${paidProofFile.name}`;
                 
                 const result = await uploadFile({
-                    file: uint8Array,
+                    file: uint8Array.buffer,
                     fileName,
                     fileType: paidProofFile.type,
                 });

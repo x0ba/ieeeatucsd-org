@@ -11,7 +11,7 @@ config();
 const appURL =
   process.env.CONVEX_SITE_URL ||
   (typeof import.meta !== "undefined" &&
-    import.meta.env?.VITE_CONVEX_SITE_URL) ||
+    import.meta.env?.PUBLIC_CONVEX_SITE_URL) ||
   "http://localhost:4321";
 
 /**

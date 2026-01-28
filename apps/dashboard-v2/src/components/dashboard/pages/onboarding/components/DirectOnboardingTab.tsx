@@ -25,11 +25,10 @@ import {
 } from "@heroui/react";
 import { useQuery, useMutation } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { useAuth } from "../../../hooks/useConvexAuth";
+import { useAuth } from "../../../../../hooks/useConvexAuth";
 import type {
   UserRole,
-  OfficerTeam,
-} from "../../shared/types/constitution";
+} from "../../../../../lib/types";
 import type { DirectOnboardingFormData } from "../types/OnboardingTypes";
 
 interface DirectOnboardingTabProps {
@@ -139,7 +138,7 @@ export default function DirectOnboardingTab({
       return;
     }
 
-    if (!currentUser?.id) {
+    if (!currentUser?._id) {
       setSettingsError("User not authenticated");
       return;
     }
@@ -149,7 +148,7 @@ export default function DirectOnboardingTab({
 
       await updateOrgSettings({
         googleSheetsContactListUrl: tempGoogleSheetsUrl || undefined,
-        updatedBy: currentUser.id,
+        updatedBy: currentUser._id,
       });
 
       setGoogleSheetsUrl(tempGoogleSheetsUrl);
@@ -368,7 +367,7 @@ export default function DirectOnboardingTab({
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    team: e.target.value as OfficerTeam,
+                    team: e.target.value,
                   })
                 }
                 classNames={{

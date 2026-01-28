@@ -31,9 +31,10 @@ import {
     Briefcase,
     Tag,
 } from 'lucide-react';
-import { useMutation } from 'convex/react';
+import { useMutation, useAction } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { useAuth } from "../../../hooks/useConvexAuth";
+import type { Id } from "#convex/_generated/dataModel";
+import { useAuth } from "../../../../../hooks/useConvexAuth";
 import type {
     FundRequest,
     FundRequestCategory,
@@ -84,7 +85,7 @@ export default function FundRequestFormModal({
     const createFundRequestMutation = useMutation(api.fundRequests.createFundRequest);
     const updateFundRequestMutation = useMutation(api.fundRequests.updateFundRequest);
     const submitFundRequestMutation = useMutation(api.fundRequests.submitFundRequest);
-    const uploadFilesMutation = useMutation(api.storage.uploadFiles);
+    const uploadFilesMutation = useAction(api.storage.uploadFiles);
 
     // Form state
     const [title, setTitle] = useState('');
@@ -267,17 +268,18 @@ export default function FundRequestFormModal({
     };
 
     const uploadFiles = async (files: File[], requestId: string): Promise<FundRequestAttachment[]> => {
-        if (!currentUser?.id) return [];
+        if (!currentUser?._id) return [];
 
         const attachments: FundRequestAttachment[] = [];
         const now = Date.now();
 
         for (const file of files) {
             const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-            const path = `fund_requests/${currentUser.id}/${requestId}/${now}_${sanitizedName}`;
+            const path = `fund_requests/${currentUser._id}/${requestId}/${now}_${sanitizedName}`;
 
             // Upload using Convex storage mutation
-            const { url } = await uploadFilesMutation({ file, path });
+            const arrayBuffer = await file.arrayBuffer();
+            const { url } = await uploadFilesMutation({ file: arrayBuffer, path });
 
             attachments.push({
                 id: crypto.randomUUID(),
@@ -293,7 +295,7 @@ export default function FundRequestFormModal({
     };
 
     const handleSubmit = async () => {
-        if (!currentUser?.id) return;
+        if (!currentUser?._id) return;
 
         // Final validation
         if (!validateStep(1) || !validateStep(2)) {
@@ -345,7 +347,7 @@ export default function FundRequestFormModal({
             if (isEditMode && request) {
                 // Update existing request using Convex mutation
                 await updateFundRequestMutation({
-                    id: request.id,
+                    id: request._id as Id<"fundRequests">,
                     title: requestData.title,
                     purpose: requestData.purpose,
                     category: requestData.category,
@@ -355,8 +357,8 @@ export default function FundRequestFormModal({
                     attachments: requestData.attachments,
                     fundingSourcePreference: request.fundingSourcePreference,
                     infoResponseNotes: requestData.infoResponseNotes,
-                    updatedBy: currentUser.id,
-                    updatedByName: currentUser.displayName || currentUser.email || 'Unknown',
+                    updatedBy: currentUser._id,
+                    updatedByName: currentUser.name || currentUser.email || 'Unknown',
                 });
 
                 // Send resubmission email notification
@@ -385,16 +387,16 @@ export default function FundRequestFormModal({
                     vendorLinks: requestData.vendorLinks,
                     attachments: requestData.attachments,
                     fundingSourcePreference: undefined,
-                    submittedBy: currentUser.id,
-                    submittedByName: currentUser.displayName || currentUser.email || 'Unknown',
+                    submittedBy: currentUser._id,
+                    submittedByName: currentUser.name || currentUser.email || 'Unknown',
                     submittedByEmail: currentUser.email || '',
                 });
 
                 // Submit the request (update status to 'submitted')
                 await submitFundRequestMutation({
                     id: docRef,
-                    submittedBy: currentUser.id,
-                    submittedByName: currentUser.displayName || currentUser.email || 'Unknown',
+                    submittedBy: currentUser._id,
+                    submittedByName: currentUser.name || currentUser.email || 'Unknown',
                 });
 
                 // Send email notification

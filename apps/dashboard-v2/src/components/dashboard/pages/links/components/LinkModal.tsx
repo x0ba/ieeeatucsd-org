@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { X, Upload, Trash2, ExternalLink, Plus } from "lucide-react";
-import type { Link } from "../../shared/types/constitution";
+import type { Link } from "../../../shared/types/constitution";
 import { PRESET_CATEGORIES } from "../utils/linkPermissions";
 import { useFileUpload } from "../../manage-events/utils/fileUploadUtils";
 import { showToast } from "../../../shared/utils/toast";

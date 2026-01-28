@@ -133,6 +133,21 @@ export const checkInUser = mutation({
   },
 });
 
+// Get attendees for a specific event
+export const getEventAttendees = query({
+  args: {
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, { eventId }) => {
+    const attendees = await ctx.db
+      .query("eventAttendees")
+      .withIndex("by_eventId", (q) => q.eq("eventId", eventId))
+      .collect();
+
+    return attendees;
+  },
+});
+
 // Create a new event request (draft or submitted)
 export const createEventRequest = mutation({
   args: {

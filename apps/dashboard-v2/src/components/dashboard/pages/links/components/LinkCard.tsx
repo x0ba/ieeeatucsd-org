@@ -8,7 +8,7 @@ import {
   Clock,
   AlertCircle,
 } from "lucide-react";
-import type { Link } from "../../shared/types/constitution";
+import type { Link } from "../../../shared/types/constitution";
 import { getCategoryColor } from "../utils/linkPermissions";
 
 interface LinkCardProps {
@@ -50,10 +50,10 @@ export default function LinkCard({
 
   // Check publish/expire status (for officers)
   const now = Date.now();
-  const isScheduled =
-    link.publishDate && link.publishDate > now;
-  const isExpired =
-    link.expireDate && link.expireDate < now;
+  const publishDate = typeof link.publishDate === 'number' ? link.publishDate : (link.publishDate?.toDate?.() ? link.publishDate.toDate().getTime() : 0);
+  const expireDate = typeof link.expireDate === 'number' ? link.expireDate : (link.expireDate?.toDate?.() ? link.expireDate.toDate().getTime() : 0);
+  const isScheduled = link.publishDate && publishDate > now;
+  const isExpired = link.expireDate && expireDate < now;
 
   return (
     <a

@@ -20,6 +20,56 @@ export const getCurrentUser = query({
   },
 });
 
+// Get all users (for admin use)
+export const getUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    
+    if (!identity || !identity.subject) {
+      return [];
+    }
+
+    // Check if user has admin privileges
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authUserId", (q) => q.eq("authUserId", identity.subject))
+      .first();
+
+    if (!user || (user.role !== "Administrator" && user.role !== "Executive Officer")) {
+      return [];
+    }
+
+    return await ctx.db.query("users").collect();
+  },
+});
+
+// Get user by ID (for admin use)
+export const getUserById = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, { userId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    
+    if (!identity || !identity.subject) {
+      return null;
+    }
+
+    // Check if user has admin privileges
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authUserId", (q) => q.eq("authUserId", identity.subject))
+      .first();
+
+    if (!user || (user.role !== "Administrator" && user.role !== "Executive Officer")) {
+      return null;
+    }
+
+    return await ctx.db.get(userId);
+  },
+});
+
 export const updateNavigationLayout = mutation({
   args: {
     authUserId: v.string(),

@@ -207,7 +207,7 @@ export default function BudgetLogModal({
                                                     </TableHeader>
                                                     <TableBody>
                                                         {filteredRequests.map((request) => (
-                                                            <TableRow key={request.id} className="hover:bg-default-50/50 transition-colors">
+                                                            <TableRow key={request._id} className="hover:bg-default-50/50 transition-colors">
                                                                 <TableCell>
                                                                     <p className="font-semibold text-sm truncate max-w-[200px] text-foreground">
                                                                         {request.title}
@@ -276,7 +276,7 @@ export default function BudgetLogModal({
                                                 </TableHeader>
                                                 <TableBody>
                                                     {adjustments.map((adjustment) => (
-                                                        <TableRow key={adjustment.id} className="hover:bg-default-50/50 transition-colors">
+                                                        <TableRow key={adjustment._id} className="hover:bg-default-50/50 transition-colors">
                                                             <TableCell>
                                                                 <p className="font-semibold text-sm text-foreground">
                                                                     {adjustment.description}

@@ -10,11 +10,29 @@ import { useQuery, useMutation } from "convex/react";
 // @ts-ignore - Types will be generated after convex dev runs
 import { api } from "#convex/_generated/api";
 import { authClient } from "../../lib/auth-client";
+import { ConvexErrorBoundary } from "../shared/ConvexErrorBoundary";
 
 // Create Convex React Client
-const convex = new ConvexReactClient(
-  import.meta.env.VITE_CONVEX_URL || "http://localhost:3210",
-);
+let convex: ConvexReactClient | null = null;
+let convexInitError: Error | null = null;
+
+const initializeConvex = () => {
+  if (convex || convexInitError) return;
+
+  try {
+    const convexUrl = import.meta.env.PUBLIC_CONVEX_URL || "http://localhost:3210";
+    console.log("Initializing Convex client with URL:", convexUrl);
+    
+    convex = new ConvexReactClient(convexUrl);
+    console.log("Convex client initialized successfully");
+  } catch (error) {
+    convexInitError = error as Error;
+    console.error("Failed to initialize Convex client:", error);
+  }
+};
+
+// Try to initialize immediately
+initializeConvex();
 
 const UserContext = createContext<{
   convexUser: any;
@@ -82,7 +100,14 @@ function UserSyncWrapper({ children }: { children: ReactNode }) {
       <UserContext.Provider
         value={{ convexUser: null, syncStatus: "loading" }}
       >
-        {children}
+        <div className="flex h-screen overflow-hidden bg-gray-50">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </div>
       </UserContext.Provider>
     );
   }
@@ -91,10 +116,37 @@ function UserSyncWrapper({ children }: { children: ReactNode }) {
 }
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
+  // Try to initialize if not already done
+  if (!convex && !convexInitError) {
+    initializeConvex();
+  }
+
+  if (!convex) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-gray-50">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">
+              {convexInitError ? "Failed to connect to Convex" : "Connecting to Convex..."}
+            </p>
+            {convexInitError && (
+              <p className="text-sm text-red-600 mt-2">
+                Please make sure the Convex dev server is running
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ConvexProvider client={convex}>
-      <UserSyncWrapper>{children}</UserSyncWrapper>
-    </ConvexProvider>
+    <ConvexErrorBoundary>
+      <ConvexProvider client={convex}>
+        <UserSyncWrapper>{children}</UserSyncWrapper>
+      </ConvexProvider>
+    </ConvexErrorBoundary>
   );
 }
 

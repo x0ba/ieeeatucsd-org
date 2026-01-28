@@ -16,8 +16,8 @@ import type {
   OfficerTeam,
   TeamMember,
 } from "./types/OfficerLeaderboardTypes";
-import type { UserRole } from "../../../lib/types";
-import { useCurrentUser } from "../../hooks/useConvexAuth";
+import type { UserRole } from "../../../../lib/types";
+import { useCurrentUser } from "../../../../hooks/useConvexAuth";
 
 // Allowed roles for viewing officer leaderboard
 const ALLOWED_OFFICER_ROLES: UserRole[] = [
@@ -46,7 +46,7 @@ export default function OfficerLeaderboardContent() {
   const currentUserRole = currentUser?.role || null;
 
   // Fetch leaderboard data from Convex
-  const leaderboardDataRaw = useQuery(api.leaderboard.getData);
+  const leaderboardDataRaw = useQuery(api.leaderboard.getData, {});
 
   useEffect(() => {
     if (!currentUser) return;
@@ -58,13 +58,13 @@ export default function OfficerLeaderboardContent() {
     }
 
     if (leaderboardDataRaw) {
-      const teamMetrics: TeamMetrics[] = leaderboardDataRaw.map((team, index) => ({
-        team: team.team,
-        totalAttendees: team.totalAttendees,
-        teamSize: team.teamSize,
-        attendanceRate: team.attendanceRate,
+      const teamMetrics: TeamMetrics[] = leaderboardDataRaw.map((team: any, index) => ({
+        team: team.team || 'Unknown',
+        totalAttendees: team.totalAttendees || 0,
+        teamSize: team.teamSize || 0,
+        attendanceRate: team.attendanceRate || 0,
         rank: index + 1,
-        members: team.members,
+        members: team.members || [],
       }));
 
       setLeaderboardData(teamMetrics);

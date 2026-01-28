@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, Download, ExternalLink, FileText, Image, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import { truncateFilename, extractFilename, isImageFile, isPdfFile } from '../utils/filenameUtils';
-import { EventAuditService } from '../../../shared/services/eventAuditService';
+import { eventAuditService, auditFileUpload } from '../../../shared/services/eventAuditService';
 import { auth } from '../../../../../lib/auth-config';
 
 interface PRRequirements {
@@ -47,15 +47,8 @@ export default function EnhancedFileViewer({
       const session = await auth.getSession();
       if (!session) return;
 
-      const userName = await EventAuditService.getUserName(session.user.id);
-      await EventAuditService.logFileView(
-        eventRequestId,
-        session.user.id,
-        extractedFilename,
-        'other',
-        userName,
-        { action, url }
-      );
+      // Use available audit function for file operations
+      await auditFileUpload(eventRequestId, session.user.id, extractedFilename, 'other');
     } catch (error) {
       console.error('Failed to log file view:', error);
     }

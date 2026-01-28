@@ -19,6 +19,7 @@ import {
 import { DollarSign, Calendar, Save, Plus, Trash2, Briefcase } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from "#convex/_generated/api";
+import type { Id } from "#convex/_generated/dataModel";
 import type { FundRequestDepartment, BudgetConfig, BudgetAdjustment } from '../../../shared/types/fund-requests';
 import { DEPARTMENT_LABELS } from '../../../shared/types/fund-requests';
 import { showToast } from '../../../shared/utils/toast';
@@ -149,7 +150,7 @@ export default function BudgetManagementModal({
 
     const handleDeleteAdjustment = async (adjustmentId: string) => {
         try {
-            await deleteBudgetAdjustmentMutation({ id: adjustmentId });
+            await deleteBudgetAdjustmentMutation({ id: adjustmentId as Id<"budgetAdjustments"> });
             showToast.success('Adjustment deleted');
             onBudgetUpdate();
         } catch (error) {

@@ -1,3 +1,15 @@
+export interface EventStats {
+  totalEvents: number;
+  publishedEvents: number;
+  draftEvents: number;
+  pendingEvents: number;
+  completedEvents: number;
+  totalAttendees: number;
+  averageAttendance: number;
+  upcomingEvents: number;
+  pastEvents: number;
+}
+
 export interface EventRequestModalProps {
   onClose: () => void;
   editingRequest?: any | null;

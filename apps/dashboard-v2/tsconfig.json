@@ -16,7 +16,9 @@
       "~/convex": ["./convex"],
       "~/convex/*": ["./convex/*"],
       "#convex/*": ["./convex/*"],
-      "@convex/*": ["./convex/*"]
+      "#convex/_generated/api": ["./convex/_generated/api"],
+      "@convex/*": ["./convex/*"],
+      "@convex/_generated/api": ["./convex/_generated/api"]
     },
     "types": ["astro/client"]
   }
