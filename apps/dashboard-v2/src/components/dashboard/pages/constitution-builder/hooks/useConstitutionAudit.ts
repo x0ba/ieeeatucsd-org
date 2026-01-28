@@ -6,6 +6,7 @@ import type {
   ConstitutionAuditEntry,
   ConstitutionSection,
 } from "../../../shared/types/constitution";
+import type { Id } from "#convex/_generated/dataModel";
 
 export const useConstitutionAudit = (constitutionId: string) => {
   const { authUserId, user } = useAuth();
@@ -176,14 +177,17 @@ export const useConstitutionAudit = (constitutionId: string) => {
         // Map changeType to action (reorder is not supported by Convex mutation)
         const action: "create" | "update" | "delete" = changeType === "reorder" ? "update" : (changeType || "update");
         
-        await createAuditLogMutation({
-          constitutionId,
-          action,
-          sectionId: sectionId || "",
-          beforeState: beforeAuditValue,
-          afterState: afterAuditValue,
-          performedBy: authUserId,
-        });
+        // Only create audit log if we have a valid sectionId
+        if (sectionId && sectionId !== "") {
+          await createAuditLogMutation({
+            constitutionId,
+            action,
+            sectionId: sectionId as Id<"sections">,
+            beforeState: beforeAuditValue,
+            afterState: afterAuditValue,
+            performedBy: authUserId,
+          });
+        }
       } catch (error) {
         console.error("Error creating audit entry:", error);
       }

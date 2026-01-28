@@ -1,6 +1,36 @@
 import { query, mutation } from './_generated/server';
 import { v } from 'convex/values';
 
+export const getByShortUrl = query({
+  args: {
+    shortUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const link = await ctx.db
+      .query('links')
+      .withIndex('by_shortUrl', (q) => q.eq('shortUrl', args.shortUrl))
+      .first();
+
+    if (!link) {
+      return null;
+    }
+
+    const now = Date.now();
+
+    // Check if link is published (publishDate is in the future)
+    if (link.publishDate && link.publishDate > now) {
+      return null;
+    }
+
+    // Check if link is expired (expireDate is in the past)
+    if (link.expireDate && link.expireDate < now) {
+      return null;
+    }
+
+    return link;
+  },
+});
+
 export const list = query({
   args: {},
   handler: async (ctx) => {

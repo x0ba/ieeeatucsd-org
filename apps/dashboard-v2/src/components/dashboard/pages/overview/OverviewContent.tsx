@@ -4,7 +4,7 @@ import { Card, CardHeader, CardBody, Button, Chip, Avatar, Skeleton, Modal, Moda
 import { useQuery } from 'convex/react';
 import { api } from "#convex/_generated/api";
 import { useAuth } from "../../../../hooks/useConvexAuth";
-// import PointsChart from './PointsChart';
+import PointsChart from './PointsChart';
 
 interface UserStats {
   totalPoints: number;
@@ -43,11 +43,14 @@ const RECENT_ACTIVITY_PREVIEW_COUNT = 5;
 
 export default function OverviewContent() {
   const { user, authUserId } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   
-  // Skip Convex queries during server-side rendering or when authUserId is not available
-  const overviewData = (typeof window !== 'undefined' && authUserId) 
-    ? useQuery(api.overview.getOverviewData, { authUserId }) 
-    : undefined;
+  // Always call useQuery unconditionally - use "skip" when not ready
+  const overviewData = useQuery(
+    api.overview.getOverviewData,
+    mounted && authUserId ? { authUserId } : "skip"
+  );
 
   const [showEventsModal, setShowEventsModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
@@ -186,10 +189,7 @@ export default function OverviewContent() {
             {/* Points Chart - Only show if we have data */}
             {pointsHistory.length > 1 && (
               <div className="w-full h-[280px]">
-                {/* <PointsChart data={pointsHistory} /> */}
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  Chart dependencies not installed
-                </div>
+                <PointsChart data={pointsHistory} />
               </div>
             )}
 

@@ -91,9 +91,10 @@ const getStatusDisplayName = (status: string) => {
 
 export default function ManageReimbursementsContent() {
     const { user } = useAuth();
-    const currentUser = useQuery(api.users.getUserByAuthId,
-        user ? { authUserId: user._id } : "skip");
-    const reimbursements = useQuery(api.reimbursements.getAllReimbursements);
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    const currentUser = useQuery(api.users.getUserByAuthId, mounted && user ? { authUserId: user._id } : "skip");
+    const reimbursements = useQuery(api.reimbursements.getAllReimbursements, mounted ? {} : "skip");
     const updateReimbursementStatusMutation = useMutation(api.reimbursements.updateReimbursementStatus);
     const updatePaymentDetailsMutation = useMutation(api.reimbursements.updatePaymentDetails);
     const deleteReimbursementMutation = useMutation(api.reimbursements.deleteReimbursement);
@@ -101,13 +102,16 @@ export default function ManageReimbursementsContent() {
     const [auditReimbursement, setAuditReimbursement] = useState<Reimbursement | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(['submitted', 'approved']));
-    const [userNames, setUserNames] = useState<Record<string, string>>({});
     const [sortField, setSortField] = useState<string>('_creationTime');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; reimbursement: Reimbursement | null }>({ isOpen: false, reimbursement: null });
     const [isDeleting, setIsDeleting] = useState(false);
     const loading = reimbursements === undefined;
     const currentUserRole = currentUser?.role || null;
+
+    // Fetch user names for all submitters from Convex
+    const authUserIds = reimbursements ? [...new Set(reimbursements.map((r: any) => r.submittedBy).filter(Boolean))] : [];
+    const userNames = useQuery(api.users.getUserNamesByAuthUserIds, mounted && authUserIds.length > 0 ? { authUserIds } : "skip") || {};
 
     // Calculate receipt total if it's 0 or missing
     const calculateReceiptTotal = (receipt: any) => {
@@ -161,24 +165,6 @@ export default function ManageReimbursementsContent() {
         );
     }
 
-    useEffect(() => {
-        if (!reimbursements) return;
-
-        // Fetch user names for all submitters from public profiles
-        const userIds = [...new Set(reimbursements.map((r: any) => r.submittedBy))];
-        const newUserNames: Record<string, string> = {};
-
-        userIds.forEach((userId) => {
-            if (userId && !userNames[userId as string]) {
-                // Use Convex public profiles query
-                // Since we need to query by userId, we need to implement this
-                // For now, use the userId as name fallback
-                newUserNames[userId as string] = userId as string;
-            }
-        });
-
-        setUserNames(prev => ({ ...prev, ...newUserNames }));
-    }, [reimbursements]);
 
     const updateReimbursementStatus = async (reimbursementId: string, newStatus: string, auditNote?: string, paymentInfo?: any) => {
         if (!user) return;

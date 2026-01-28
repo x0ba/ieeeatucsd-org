@@ -1,4 +1,5 @@
 import { Building2, Mail, Award, Check, X, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../../../hooks/useConvexAuth';
 import { useQuery } from 'convex/react';
 import { api } from "#convex/_generated/api";
@@ -9,7 +10,9 @@ import { Skeleton, Table, TableHeader, TableColumn, TableBody, TableRow, TableCe
 
 export default function SponsorInformation() {
   const { user, authUserId } = useAuth();
-  const userData = useQuery(api.users.getUserByAuthId, authUserId ? { authUserId } : 'skip');
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const userData = useQuery(api.users.getUserByAuthId, mounted && authUserId ? { authUserId } : "skip");
   const loading = !user && authUserId === undefined;
 
   if (loading) {

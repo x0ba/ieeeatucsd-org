@@ -201,7 +201,12 @@ const navigationCategories: NavigationCategory[] = [
 
 function SidebarNavigationContent({ currentPath = "" }: { currentPath?: string }) {
   const { signOut: authSignOut } = useAuth();
-  const currentUser = useQuery(api.users.getCurrentUser, {});
+  const [mounted, setMounted] = useState(false);
+  const currentUser = useQuery(api.users.getCurrentUser, mounted ? {} : "skip");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [sponsorTier, setSponsorTier] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserType | null>(null);
@@ -386,7 +391,12 @@ function SidebarNavigationContent({ currentPath = "" }: { currentPath?: string }
 
 export function SidebarNavigation({ currentPath, children }: SidebarNavigationProps) {
   const { signOut: authSignOut } = useAuth();
-  const currentUser = useQuery(api.users.getCurrentUser, {});
+  const [mounted, setMounted] = useState(false);
+  const currentUser = useQuery(api.users.getCurrentUser, mounted ? {} : "skip");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [sponsorTier, setSponsorTier] = useState<string | null>(null);
   const [isLoadingRole, setIsLoadingRole] = useState(false);

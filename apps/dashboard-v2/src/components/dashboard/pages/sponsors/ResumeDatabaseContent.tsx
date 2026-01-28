@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../../../hooks/useConvexAuth';
 import { useQuery } from 'convex/react';
 import { api } from "#convex/_generated/api";
@@ -48,8 +48,10 @@ interface UserWithResume {
 
 export default function ResumeDatabaseContent() {
   const { authUserId } = useAuth();
-  const currentUser = useQuery(api.users.getUserByAuthId, authUserId ? { authUserId } : 'skip');
-  const users = useQuery(api.users.getAllUsers) || [];
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const currentUser = useQuery(api.users.getUserByAuthId, mounted && authUserId ? { authUserId } : "skip");
+  const users = useQuery(api.users.getAllUsers, mounted ? {} : "skip") || [];
 
   const [filteredUsers, setFilteredUsers] = useState<UserWithResume[]>([]);
   const [searchTerm, setSearchTerm] = useState('');

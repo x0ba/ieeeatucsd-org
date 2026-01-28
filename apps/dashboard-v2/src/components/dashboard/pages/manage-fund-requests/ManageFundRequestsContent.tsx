@@ -83,10 +83,11 @@ type FilterTab = 'all' | 'pending' | 'needs_info' | 'processed';
 
 export default function ManageFundRequestsContent() {
     const { user } = useConvexAuth();
-    const currentUser = useQuery(api.users.getUserByAuthId,
-        user ? { authUserId: user._id } : "skip");
-    const requests = useQuery(api.fundRequests.getAllFundRequests) || [];
-    const budgetConfigs = useQuery(api.fundRequests.getBudgetConfigs) || {};
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    const currentUser = useQuery(api.users.getUserByAuthId, mounted && user ? { authUserId: user._id } : "skip");
+    const requests = useQuery(api.fundRequests.getAllFundRequests, mounted ? {} : "skip") || [];
+    const budgetConfigs = useQuery(api.fundRequests.getBudgetConfigs, mounted ? {} : "skip") || {};
     const loading = requests === undefined;
     const isAdmin = currentUser?.role === 'Administrator' || currentUser?.role === 'Executive Officer';
 

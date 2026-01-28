@@ -24,7 +24,7 @@ export default defineSchema({
     navigationLayout: v.optional(
       v.union(v.literal("horizontal"), v.literal("sidebar")),
     ),
-    resume: v.optional(v.string()),
+    resume: v.optional(v.id("_storage")),
     signedUp: v.boolean(),
     requestedEmail: v.boolean(),
     role: v.union(
@@ -498,7 +498,7 @@ export default defineSchema({
 
   // Public Profiles collection
   publicProfiles: defineTable({
-    userId: v.string(),
+    userId: v.id("users"),
     name: v.string(),
     major: v.string(),
     points: v.number(),
@@ -569,7 +569,7 @@ export default defineSchema({
   constitutionAuditLogs: defineTable({
     constitutionId: v.string(),
     action: v.union(v.literal("create"), v.literal("update"), v.literal("delete")),
-    sectionId: v.string(),
+    sectionId: v.id("sections"),
     beforeState: v.optional(v.any()),
     afterState: v.optional(v.any()),
     performedBy: v.string(),
@@ -699,4 +699,14 @@ export default defineSchema({
     createdByName: v.optional(v.string()),
   })
     .index("by_department", ["department", "createdAt"]),
+
+  // Organization Settings collection
+  organizationSettings: defineTable({
+    id: v.string(), // Custom ID (e.g., "onboarding")
+    googleSheetsContactListUrl: v.optional(v.string()),
+    createdAt: v.optional(v.number()), // Timestamp
+    updatedAt: v.number(), // Timestamp
+    updatedBy: v.string(),
+  })
+    .index("by_id", ["id"]),
 });

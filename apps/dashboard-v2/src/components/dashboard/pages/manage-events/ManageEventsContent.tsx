@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, List, CalendarDays, Search } from 'lucide-react';
 import { Card, CardHeader, CardBody, Button, Tabs, Tab, Switch } from '@heroui/react';
 import { useQuery, useMutation } from 'convex/react';
@@ -50,7 +50,9 @@ const mapConvexEventToEventRequest = (convexEvent: any): EventRequest => ({
 
 export default function ManageEventsContent() {
     const { user, authUserId } = useAuth();
-    const allEvents = useQuery(api.eventManagement.getAllEventRequests);
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    const allEvents = useQuery(api.eventManagement.getAllEventRequests, mounted ? {} : "skip");
 
     // Transform events for display
     const eventRequests = useMemo(() => {

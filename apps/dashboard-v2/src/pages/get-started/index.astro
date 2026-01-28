@@ -1,0 +1,47 @@
+---
+import createDashboardPage from '../../components/dashboard/shared/wrappers/createDashboardPage.tsx';
+import DashboardHead from '../../components/dashboard/shared/DashboardHead.astro';
+import GetStartedContent from '../../components/dashboard/pages/get-started/GetStartedContent.tsx';
+import getSession from '../../lib/auth.ts';
+import NAVIGATION_PATHS from '../../components/dashboard/shared/types/navigation.ts';
+
+const title = "Get Started - Dashboard";
+const currentPath = NAVIGATION_PATHS.GET_STARTED;
+const GetStartedPage = createDashboardPage(GetStartedContent, currentPath);
+
+// Check authentication and onboarding status
+const session = await getSession(Astro.request);
+
+if (!session) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: '/signin',
+    },
+  });
+}
+
+// Redirect if already onboarded
+if (session.user.signedUp) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: '/overview',
+    },
+  });
+}
+
+const authUserId = session.user.id;
+const email = session.user.email;
+const name = session.user.name;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <DashboardHead title={title} />
+  </head>
+  <body>
+    <GetStartedPage client:only="react" />
+  </body>
+</html>

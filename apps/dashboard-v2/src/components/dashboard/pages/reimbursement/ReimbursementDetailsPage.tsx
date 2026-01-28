@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Save, ChevronLeft, ChevronRight, CheckCircle, FileText, ExternalLink, Calendar } from 'lucide-react';
 import { Button, Input, Chip, Tabs, Tab } from '@heroui/react';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation } from 'convex/react';
 import { api } from "#convex/_generated/api";
 import type { Id } from "#convex/_generated/dataModel";
-import { useQuery as useStorageQuery } from 'convex/react';
 import { showToast } from '../../shared/utils/toast';
 import ReceiptViewer from './components/ReceiptViewer';
 
@@ -24,6 +23,7 @@ export default function ReimbursementDetailsPage({
     const [isSaving, setIsSaving] = useState(false);
     const [editedReimbursement, setEditedReimbursement] = useState(reimbursement);
     const [hasChanges, setHasChanges] = useState(false);
+    const updateReceipts = useMutation(api.reimbursements.updateReceipts);
 
     useEffect(() => {
         setEditedReimbursement(reimbursement);
@@ -64,6 +64,26 @@ export default function ReimbursementDetailsPage({
         });
         setHasChanges(true);
     };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            await updateReceipts({
+                reimbursementId: reimbursement._id as Id<"reimbursements">,
+                receipts: editedReimbursement.receipts,
+                totalAmount: editedReimbursement.totalAmount,
+            });
+            showToast.success('Changes Saved', 'Reimbursement details updated successfully.');
+            setHasChanges(false);
+            if (onUpdate) onUpdate(reimbursement._id, reimbursement.status);
+        } catch (error) {
+            console.error("Error saving reimbursement:", error);
+            showToast.error('Save Failed', 'Could not update reimbursement details.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     // Format date for input field (YYYY-MM-DD)
     const formatDateForInput = (dateVal: any) => {
         if (!dateVal) return '';
@@ -102,7 +122,7 @@ export default function ReimbursementDetailsPage({
                             </Chip>
                         </div>
                         <p className="text-xs text-gray-500 leading-tight">
-                            ID: {editedReimbursement.id.slice(0, 8)} • {editedReimbursement.department}
+                            ID: {editedReimbursement._id.slice(0, 8)} • {editedReimbursement.department}
                         </p>
                     </div>
                 </div>
@@ -118,7 +138,7 @@ export default function ReimbursementDetailsPage({
                         className="font-semibold bg-[#0078D4]"
                         isDisabled={!hasChanges}
                         isLoading={isSaving}
-                        onPress={() => {}}
+                        onPress={handleSave}
                         startContent={!isSaving && <Save className="w-4 h-4" />}
                         size="sm"
                     >
@@ -186,7 +206,7 @@ export default function ReimbursementDetailsPage({
                                                 <Calendar className="w-4 h-4 text-green-500" />
                                                 <span>
                                                     {editedReimbursement.paymentDetails.paymentDate?.toDate
-                                                        ? editedReimbursement.paymentDetails.paymentDate.toDate().toLocaleDateString()
+                                                        ? new Date(editedReimbursement.paymentDetails.paymentDate).toLocaleDateString()
                                                         : new Date(editedReimbursement.paymentDetails.paymentDate).toLocaleDateString()}
                                                 </span>
                                             </div>
@@ -251,7 +271,7 @@ export default function ReimbursementDetailsPage({
                                         <Input
                                             type="date"
                                             value={formatDateForInput(currentReceipt.dateOfPurchase)}
-                                            onChange={(e) => handleReceiptUpdate('dateOfPurchase', new Date(e.target.value))}
+                                            onChange={(e) => handleReceiptUpdate('dateOfPurchase', new Date(e.target.value).getTime())}
                                             variant="bordered"
                                             radius="md"
                                             classNames={{

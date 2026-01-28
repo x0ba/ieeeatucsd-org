@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, User, Clock, DollarSign, Receipt, AlertCircle, FileText, MessageCircle, Eye, CreditCard, Check, X, Plus, Trash2, XCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from "#convex/_generated/api";
@@ -91,22 +91,25 @@ const getStatusLabel = (status: string) => {
 };
 
 const FundDepositsContent: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { user } = useAuth();
   const authUserId = user?._id || '';
 
   // Query based on user role
-  const userData = useQuery(api.users.getUserByAuthId, { authUserId });
+  const userData = useQuery(api.users.getUserByAuthId, mounted && authUserId ? { authUserId } : "skip");
   const userRole: UserRole = userData?.role || 'Member';
 
-  const allDeposits = useQuery(api.fundDeposits.getAllFundDeposits);
-  const userDeposits = useQuery(api.fundDeposits.getUserFundDeposits, { depositedBy: authUserId });
+  const allDeposits = useQuery(api.fundDeposits.getAllFundDeposits, mounted ? {} : "skip");
+  const userDeposits = useQuery(api.fundDeposits.getUserFundDeposits, mounted && authUserId ? { depositedBy: authUserId } : "skip");
   
   const deposits = useMemo(() => {
     if (userRole === 'Administrator') {
       return allDeposits || [];
     }
     return userDeposits || [];
-  }, [userRole, allDeposits, userDeposits]);
+  }, [userRole, allDeposits, userDeposits, mounted]);
 
   const createDeposit = useMutation(api.fundDeposits.createFundDeposit);
   const updateStatus = useMutation(api.fundDeposits.updateFundDepositStatus);
@@ -280,7 +283,7 @@ const FundDepositsContent: React.FC = () => {
   }, [filteredDeposits, sortField, sortDirection]);
 
   useMemo(() => {
-    let filtered = deposits;
+    let filtered = deposits || [];
 
     if (searchTerm) {
       filtered = filtered.filter(deposit =>
@@ -295,7 +298,7 @@ const FundDepositsContent: React.FC = () => {
     }
 
     setFilteredDeposits(filtered);
-  }, [deposits, searchTerm, statusFilter]);
+  }, [deposits, searchTerm, statusFilter, mounted]);
 
   const handleSubmitDeposit = async () => {
     setValidationErrors({});
@@ -531,11 +534,11 @@ const FundDepositsContent: React.FC = () => {
   };
 
   const stats = {
-    total: deposits.length,
-    pending: deposits.filter(d => d.status === 'pending').length,
-    verified: deposits.filter(d => d.status === 'verified').length,
-    rejected: deposits.filter(d => d.status === 'rejected').length,
-    totalAmount: deposits
+    total: deposits?.length || 0,
+    pending: deposits?.filter(d => d.status === 'pending').length || 0,
+    verified: deposits?.filter(d => d.status === 'verified').length || 0,
+    rejected: deposits?.filter(d => d.status === 'rejected').length || 0,
+    totalAmount: (deposits || [])
       .filter(d => d.status === 'verified')
       .reduce((sum, d) => sum + d.amount, 0)
   };
@@ -563,7 +566,7 @@ const FundDepositsContent: React.FC = () => {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-4 md:mb-6">
-            {!deposits ? (
+            {!mounted || !deposits ? (
               <>
                 <MetricCardSkeleton />
                 <MetricCardSkeleton />
@@ -700,20 +703,20 @@ const FundDepositsContent: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {!deposits ? (
+                  {!mounted || !deposits ? (
                     <tr>
                       <td colSpan={6} className="p-0">
                         <TableSkeleton rows={6} />
                       </td>
                     </tr>
-                  ) : filteredDeposits.length === 0 ? (
+                  ) : !mounted || filteredDeposits.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                         No deposits found
                       </td>
                     </tr>
                   ) : (
-                    sortedDeposits.map((deposit) => (
+                    mounted && sortedDeposits.map((deposit) => (
                       <tr key={deposit._id} className="hover:bg-gray-50/80 transition-colors group">
                         <td className="px-6 py-4">
                           <div>
@@ -795,7 +798,7 @@ const FundDepositsContent: React.FC = () => {
                           </div>
                         </td>
                       </tr>
-                    ))
+                    )) || null
                   )}
                 </tbody>
               </table>

@@ -12,6 +12,9 @@ import { useOnboarding } from './hooks/useOnboarding';
 import { Spinner } from '@heroui/react';
 
 export default function OnboardingContent() {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
     const { user: currentUser } = useAuth();
     const [activeTab, setActiveTab] = useState<OnboardingTab>('invitation');
     const [checkingPermissions, setCheckingPermissions] = useState(true);
@@ -27,21 +30,21 @@ export default function OnboardingContent() {
     } = useOnboarding();
 
     // Get current user from Convex
-    const currentUserData = useQuery(api.users.getCurrentUser, {});
+    const currentUserData = useQuery(api.users.getCurrentUser, mounted ? {} : "skip");
 
     // Check user permissions
     useEffect(() => {
-        if (currentUserData !== undefined) {
+        if (currentUserData !== undefined || !mounted) {
             setCheckingPermissions(false);
         }
-    }, [currentUserData]);
+    }, [currentUserData, mounted]);
 
     const userRole = currentUserData?.role as UserRole | null;
 
     // Check if user has permission to access onboarding
     const hasPermission = userRole === 'Executive Officer' || userRole === 'Administrator';
 
-    if (checkingPermissions) {
+    if (checkingPermissions || !mounted) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">

@@ -2,19 +2,22 @@ import { useState, useEffect } from 'react';
 import { Save, Shield, UserCircle, Upload, FileText, AlertCircle, CheckCircle, LayoutDashboard, Sidebar, PanelTop } from 'lucide-react';
 import { useMutation, useQuery, useAction } from 'convex/react';
 import { api } from "#convex/_generated/api";
-import { useAuth } from '../../../../hooks/useConvexAuth';
+import { useConvexAuth } from '../../../../hooks/useConvexAuth';
 import { Skeleton } from '@heroui/react';
 import { useNavigationPreference } from '../../shared/hooks/useNavigationPreference';
 import type { NavigationLayout } from '../../shared/types/navigation';
 
 export default function SettingsContent() {
-  const { authUserId } = useAuth();
-  const userData = useQuery(api.users.getUserByAuthId, authUserId ? { authUserId } : 'skip');
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  
+  const { authUserId } = useConvexAuth();
+  const userData = useQuery(api.users.getUserByAuthId, mounted && authUserId ? { authUserId } : "skip");
   
   const updateProfile = useMutation(api.users.updateProfile);
   const updateResume = useMutation(api.users.updateResume);
   const uploadFiles = useAction(api.storage.uploadFile);
-  const getFileUrl = useQuery(api.storage.getFileUrl, userData?.resume ? { storageId: userData.resume as any } : 'skip');
+  const getFileUrl = useQuery(api.storage.getFileUrl, mounted && userData?.resume ? { storageId: userData.resume as any } : "skip");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

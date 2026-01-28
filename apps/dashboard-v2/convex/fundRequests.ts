@@ -51,6 +51,26 @@ export const getFundRequestById = query({
   },
 });
 
+export const getSubmittedRequests = query({
+  args: {
+    department: v.optional(
+      v.union(v.literal('events'), v.literal('projects'), v.literal('internal'), v.literal('other'))
+    ),
+  },
+  handler: async (ctx, args) => {
+    // Query for non-draft requests (submitted, needs_info, approved, denied, completed)
+    const requests = await (args.department
+      ? ctx.db.query('fundRequests').withIndex('by_department', (q) =>
+          q.eq('department', args.department)
+        )
+      : ctx.db.query('fundRequests')
+    ).filter((q) => q.neq(q.field('status'), 'draft'))
+    .order('desc').collect();
+    
+    return requests;
+  },
+});
+
 export const getBudgetConfig = query({
   args: { department: v.union(v.literal('events'), v.literal('projects'), v.literal('internal'), v.literal('other')) },
   handler: async (ctx, args) => {

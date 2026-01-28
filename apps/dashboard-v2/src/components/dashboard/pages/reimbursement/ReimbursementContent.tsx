@@ -75,11 +75,12 @@ const getStatusDisplayName = (status: string) => {
 };
 
 export default function ReimbursementContent() {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    
     const { user } = useAuth();
-    const reimbursements = useQuery(api.reimbursements.getUserReimbursements,
-        user ? { authUserId: user._id } : "skip");
-    const currentUser = useQuery(api.users.getUserByAuthId,
-        user ? { authUserId: user._id } : "skip");
+    const reimbursements = useQuery(api.reimbursements.getUserReimbursements, mounted && user ? { authUserId: user._id } : "skip");
+    const currentUser = useQuery(api.users.getUserByAuthId, mounted && user ? { authUserId: user._id } : "skip");
     const [isCreating, setIsCreating] = useState(false);
     const [viewReimbursement, setViewReimbursement] = useState<Reimbursement | null>(null);
     const [editReimbursement, setEditReimbursement] = useState<Reimbursement | null>(null);

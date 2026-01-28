@@ -1,3 +1,9 @@
 {
-  "functions": "convex"
+  "functions": "convex",
+  "project": {
+    "team": "ieeeatucsd",
+    "product": "dashboard-v2"
+  },
+  "node": "20",
+  "version": 1
 }

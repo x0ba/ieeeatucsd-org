@@ -30,7 +30,9 @@ import type {
 
 export default function ManageUsersContent() {
   const { user, authUserId } = useAuth();
-  const allUsers = useQuery(api.userManagement.getAllUsers);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const allUsers = useQuery(api.userManagement.getAllUsers, mounted ? {} : "skip");
   const updateUserMutation = useMutation(api.userManagement.updateUser);
   const updateIEEEEmailStatusMutation = useMutation(
     api.userManagement.updateIEEEEmailStatus,
@@ -43,7 +45,7 @@ export default function ManageUsersContent() {
 
   const currentUserData = useQuery(
     api.userManagement.getUserByAuthId,
-    authUserId ? { authUserId } : "skip",
+    mounted && authUserId ? { authUserId } : "skip",
   );
 
   // Transform users to match expected type

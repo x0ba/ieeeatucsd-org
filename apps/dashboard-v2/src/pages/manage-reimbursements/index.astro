@@ -1,0 +1,23 @@
+---
+import createDashboardPage from "../../components/dashboard/shared/wrappers/createDashboardPage.tsx";
+import DashboardHead from "../../components/dashboard/shared/DashboardHead.astro";
+import ManageReimbursementsContent from "../../components/dashboard/pages/manage-reimbursements/ManageReimbursementsContent.tsx";
+import NAVIGATION_PATHS from "../../components/dashboard/shared/types/navigation.ts";
+
+const title = "Manage Reimbursements - Dashboard";
+const currentPath = NAVIGATION_PATHS.MANAGE_REIMBURSEMENTS;
+const ManageReimbursementsPage = createDashboardPage(
+  ManageReimbursementsContent,
+  currentPath,
+);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <DashboardHead title={title} />
+  </head>
+  <body>
+    <ManageReimbursementsPage client:only="react" />
+  </body>
+</html>

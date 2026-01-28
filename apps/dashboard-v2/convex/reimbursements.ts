@@ -513,3 +513,72 @@ export const deleteReimbursement = mutation({
     return { success: true };
   },
 });
+
+// Update reimbursement receipts (for editing receipt details)
+export const updateReceipts = mutation({
+  args: {
+    reimbursementId: v.id("reimbursements"),
+    receipts: v.array(
+      v.object({
+        id: v.string(),
+        vendorName: v.string(),
+        location: v.string(),
+        dateOfPurchase: v.number(),
+        lineItems: v.array(
+          v.object({
+            id: v.string(),
+            description: v.string(),
+            category: v.string(),
+            amount: v.number(),
+          }),
+        ),
+        receiptFile: v.optional(v.string()),
+        notes: v.optional(v.string()),
+        subtotal: v.number(),
+        tax: v.optional(v.number()),
+        tip: v.optional(v.number()),
+        shipping: v.optional(v.number()),
+        otherCharges: v.optional(v.number()),
+        total: v.number(),
+      }),
+    ),
+    totalAmount: v.number(),
+  },
+  handler: async (ctx, { reimbursementId, receipts, totalAmount }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity || !identity.subject) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check if user has officer/admin role
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_authUserId", (q) => q.eq("authUserId", identity.subject))
+      .first();
+
+    if (!user || (!user.role.includes("Officer") && user.role !== "Administrator")) {
+      throw new Error("Not authorized to update reimbursement receipts");
+    }
+
+    const reimbursement = await ctx.db.get(reimbursementId);
+    if (!reimbursement) {
+      throw new Error("Reimbursement not found");
+    }
+
+    // Add audit log entry
+    const currentAuditLogs = reimbursement.auditLogs || [];
+    const newAuditLog = {
+      action: "Receipt details updated",
+      createdBy: identity.subject,
+      timestamp: Date.now(),
+    };
+
+    await ctx.db.patch(reimbursementId, {
+      receipts,
+      totalAmount,
+      auditLogs: [...currentAuditLogs, newAuditLog],
+    });
+
+    return await ctx.db.get(reimbursementId);
+  },
+});

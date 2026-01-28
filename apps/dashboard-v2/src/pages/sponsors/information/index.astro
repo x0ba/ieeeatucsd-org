@@ -1,0 +1,22 @@
+---
+import createDashboardPage from "../../../components/dashboard/shared/wrappers/createDashboardPage.tsx";
+import SponsorInformation from "../../../components/dashboard/pages/sponsors/SponsorInformation.tsx";
+import NAVIGATION_PATHS from "../../components/dashboard/shared/types/navigation.ts";
+
+const title = "Sponsor Information - Dashboard";
+const currentPath = NAVIGATION_PATHS.SPONSOR_INFORMATION;
+const SponsorInformationPage = createDashboardPage(SponsorInformation, currentPath);
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+</head>
+<body>
+    <SponsorInformationPage client:only="react" />
+</body>
+</html>
+

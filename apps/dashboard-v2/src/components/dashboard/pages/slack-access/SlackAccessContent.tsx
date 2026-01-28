@@ -10,7 +10,9 @@ import type { EmailMessage, EmailInboxState, EmailGenerationState } from './type
 
 export default function SlackAccessContent() {
     const { authUserId } = useAuth();
-    const userData = useQuery(api.users.getUserByAuthId, authUserId ? { authUserId } : 'skip');
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    const userData = useQuery(api.users.getUserByAuthId, mounted && authUserId ? { authUserId } : "skip");
     const updateUser = useMutation(api.users.updateIEEEEmail);
 
     const [showPassword, setShowPassword] = useState(false);

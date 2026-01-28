@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { useAuth } from '../../../lib/auth-client';
+import { useConvexAuth } from '../../../hooks/useConvexAuth';
 import { useQuery } from "convex/react";
 import { api } from "#convex/_generated/api";
 import { SidebarNavigation } from './SidebarNavigation';
@@ -20,17 +20,22 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, currentPath }: DashboardLayoutProps) {
-    const { user, isLoading } = useAuth();
-    const currentUser = useQuery(api.users.getCurrentUser, {});
+    const { user, isLoading, isAuthenticated } = useConvexAuth();
+    const [mounted, setMounted] = useState(false);
+    const currentUser = useQuery(api.users.getCurrentUser, mounted ? {} : "skip");
     const { navigationLayout, loading: prefLoading } = useNavigationPreference();
     const [showPolicyModal, setShowPolicyModal] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    useEffect(() => {
         // Only redirect if auth is not loading and user is definitely not authenticated
-        if (!isLoading && !user) {
+        if (!isLoading && !isAuthenticated) {
             window.location.href = '/signin';
         }
-    }, [user, isLoading]);
+    }, [isAuthenticated, isLoading]);
 
     // Check user data and policy versions when currentUser loads
     useEffect(() => {
@@ -47,7 +52,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
     }, [currentUser]);
 
     // Show loading state while user or preference is being loaded
-    if (isLoading || !user || prefLoading) {
+    if (isLoading || !isAuthenticated || prefLoading) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-50">
                 <div className="text-center">

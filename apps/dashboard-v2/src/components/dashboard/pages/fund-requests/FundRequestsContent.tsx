@@ -84,11 +84,14 @@ const formatDate = (timestamp: number): string => {
 type FilterTab = 'all' | FundRequestStatus;
 
 export default function FundRequestsContent() {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
     const currentUser = useCurrentUser();
     const authUserId = currentUser?.authUserId || '';
     
-    const requests = useUserFundRequests(authUserId) || [];
-    const allRequests = useAllFundRequests() || [];
+    const requests = mounted && authUserId ? useUserFundRequests(authUserId) || [] : [];
+    const allRequests = mounted ? useAllFundRequests() || [] : [];
     
     const [filteredRequests, setFilteredRequests] = useState<FundRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -126,10 +129,10 @@ export default function FundRequestsContent() {
     const deleteFundRequest = useMutation(api.fundRequests.deleteFundRequest);
 
     // Budget adjustments hooks for each department
-    const eventsAdjustments = useBudgetAdjustments('events');
-    const projectsAdjustments = useBudgetAdjustments('projects');  
-    const internalAdjustments = useBudgetAdjustments('internal');
-    const otherAdjustments = useBudgetAdjustments('other');
+    const eventsAdjustments = mounted ? useBudgetAdjustments('events') : [];
+    const projectsAdjustments = mounted ? useBudgetAdjustments('projects') : [];
+    const internalAdjustments = mounted ? useBudgetAdjustments('internal') : [];
+    const otherAdjustments = mounted ? useBudgetAdjustments('other') : [];
 
     // Fetch budget configurations and all requests for budget tracking
     useEffect(() => {
@@ -258,13 +261,13 @@ export default function FundRequestsContent() {
 
     const getStats = () => {
         return {
-            total: requests.length,
-            draft: requests.filter((r) => r.status === 'draft').length,
-            submitted: requests.filter((r) => r.status === 'submitted').length,
-            needsInfo: requests.filter((r) => r.status === 'needs_info').length,
-            approved: requests.filter((r) => r.status === 'approved').length,
-            denied: requests.filter((r) => r.status === 'denied').length,
-            totalAmount: requests
+            total: requests?.length || 0,
+            draft: requests?.filter((r) => r.status === 'draft').length || 0,
+            submitted: requests?.filter((r) => r.status === 'submitted').length || 0,
+            needsInfo: requests?.filter((r) => r.status === 'needs_info').length || 0,
+            approved: requests?.filter((r) => r.status === 'approved').length || 0,
+            denied: requests?.filter((r) => r.status === 'denied').length || 0,
+            totalAmount: (requests || [])
                 .filter((r) => r.status === 'approved' || r.status === 'completed')
                 .reduce((sum, r) => sum + r.amount, 0),
         };
@@ -277,7 +280,7 @@ export default function FundRequestsContent() {
         const startDate = config?.startDate || null;
 
         // Filter requests by department and start date
-        let deptRequests = allRequests.filter((r) => r.department === department);
+        let deptRequests = (allRequests || []).filter((r) => r.department === department);
         if (startDate) {
             deptRequests = deptRequests.filter((r) => {
                 const requestDate = r.createdAt || 0;
@@ -319,7 +322,7 @@ export default function FundRequestsContent() {
 
     const stats = getStats();
 
-    if (isLoading || !currentUser) {
+    if (isLoading || !currentUser || !mounted) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
                 <Spinner size="lg" color="primary" />
@@ -511,7 +514,7 @@ export default function FundRequestsContent() {
             </div>
 
             {/* Request List */}
-            {filteredRequests.length === 0 ? (
+            {!mounted || filteredRequests.length === 0 ? (
                 <Card className="border-dashed border-2 border-default-200 bg-transparent shadow-none">
                     <CardBody className="py-12 text-center">
                         <div className="w-16 h-16 rounded-full bg-default-100 flex items-center justify-center mx-auto mb-4 text-default-400">
@@ -538,7 +541,7 @@ export default function FundRequestsContent() {
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
-                    {filteredRequests.map((request) => (
+                    {mounted && filteredRequests.map((request) => (
                         <Card
                             key={request._id}
                             isPressable
@@ -646,7 +649,7 @@ export default function FundRequestsContent() {
                                 </div>
                             </CardBody>
                         </Card>
-                    ))}
+                    )) || null}
                 </div>
             )}
 

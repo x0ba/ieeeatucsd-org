@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlayCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from "../../../../hooks/useConvexAuth";
 import { useQuery, useMutation } from "convex/react";
@@ -6,8 +6,14 @@ import { api } from "#convex/_generated/api";
 
 export default function TestPublicProfilesContent() {
   const { authUserId } = useAuth();
-  const userData = useQuery(api.users.getUserByAuthId, authUserId ? { authUserId } : 'skip');
-  const publicProfiles = useQuery(api.users.getPublicProfiles, {});
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  const userData = useQuery(api.users.getUserByAuthId, mounted && authUserId ? { authUserId } : 'skip');
+  const publicProfiles = useQuery(api.users.getPublicProfiles, mounted ? {} : 'skip');
   const updateUserStats = useMutation(api.users.updateUserStats);
   
   const [testResults, setTestResults] = useState<string[]>([]);

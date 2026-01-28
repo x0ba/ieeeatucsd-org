@@ -1,0 +1,20 @@
+---
+import createDashboardPage from "../../components/dashboard/shared/wrappers/createDashboardPage.tsx";
+import DashboardHead from "../../components/dashboard/shared/DashboardHead.astro";
+import FundRequestsContent from "../../components/dashboard/pages/fund-requests/FundRequestsContent.tsx";
+import NAVIGATION_PATHS from "../../components/dashboard/shared/types/navigation.ts";
+
+const title = "Fund Requests - Dashboard";
+const currentPath = NAVIGATION_PATHS.FUND_REQUESTS;
+const FundRequestsPage = createDashboardPage(FundRequestsContent, currentPath);
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <DashboardHead title={title} />
+    </head>
+    <body>
+        <FundRequestsPage client:only="react" />
+    </body>
+</html>

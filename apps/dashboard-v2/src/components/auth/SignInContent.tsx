@@ -4,6 +4,8 @@ import CircuitBackground from "./CircuitBackground";
 import BlueIEEELogo from "./BlueIEEELogo";
 import { toast } from "sonner";
 import { authClient } from "../../lib/auth-client";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 const SignInButtonSkeleton = () => (
   <div className="w-full">
@@ -15,6 +17,7 @@ export default function SignInContent() {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const [loading, setLoading] = useState(false);
   const [storageWarning, setStorageWarning] = useState(false);
+  const syncUserFromSession = useMutation(api.users.syncUserFromSession);
 
   // Check sessionStorage accessibility on mount
   useEffect(() => {
@@ -43,12 +46,32 @@ export default function SignInContent() {
     }
   }, [session, sessionLoading]);
 
+  // Process invite after successful sign-in
+  useEffect(() => {
+    const processInvite = async () => {
+      if (session && !sessionLoading) {
+        const inviteId = new URLSearchParams(window.location.search).get("invite");
+        if (inviteId) {
+          try {
+            await syncUserFromSession({
+              inviteId,
+              signInMethod: "google",
+            });
+            console.log("Invite processed successfully");
+          } catch (error) {
+            console.error("Error processing invite:", error);
+          }
+        }
+      }
+    };
+
+    processInvite();
+  }, [session, sessionLoading, syncUserFromSession]);
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const inviteId = new URLSearchParams(window.location.search).get(
-        "invite",
-      );
+      const inviteId = new URLSearchParams(window.location.search).get("invite");
       const callbackURL = inviteId
         ? `/overview?invite=${inviteId}`
         : "/overview";

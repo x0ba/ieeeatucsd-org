@@ -1,6 +1,21 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+// Get invitation by email
+export const getByEmail = query({
+  args: {
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const invitation = await ctx.db
+      .query("officerInvitations")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    return invitation;
+  },
+});
+
 // List recent invitations
 export const listRecent = query({
   args: {

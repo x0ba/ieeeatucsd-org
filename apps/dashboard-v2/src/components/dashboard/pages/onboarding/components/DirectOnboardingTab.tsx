@@ -86,6 +86,7 @@ export default function DirectOnboardingTab({
   loading,
 }: DirectOnboardingTabProps) {
   const { user: currentUser } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState<DirectOnboardingFormData>({
     name: "",
     email: "",
@@ -105,8 +106,12 @@ export default function DirectOnboardingTab({
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Convex queries and mutations
-  const orgSettings = useQuery(api.onboarding.getOrganizationSettings, {});
+  const orgSettings = useQuery(api.onboarding.getOrganizationSettings, mounted ? {} : "skip");
   const updateOrgSettings = useMutation(api.onboarding.updateOrganizationSettings);
 
   // Load Google Sheets URL from Convex

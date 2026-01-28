@@ -221,7 +221,7 @@ export default function GetStartedContent() {
 
       setCurrentStep(questions.length);
       setTimeout(() => {
-        window.location.href = '/overview';
+        window.location.href = '/dashboard-v2/overview';
       }, 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to complete onboarding. Please try again.');

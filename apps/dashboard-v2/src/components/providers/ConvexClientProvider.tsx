@@ -20,7 +20,7 @@ const initializeConvex = () => {
   if (convex || convexInitError) return;
 
   try {
-    const convexUrl = import.meta.env.PUBLIC_CONVEX_URL || "http://localhost:3210";
+    const convexUrl = import.meta.env.PUBLIC_CONVEX_URL || "https://backend-dashboard.ieeeatucsd.org";
     console.log("Initializing Convex client with URL:", convexUrl);
     
     convex = new ConvexReactClient(convexUrl);
@@ -37,13 +37,43 @@ initializeConvex();
 const UserContext = createContext<{
   convexUser: any;
   syncStatus: "loading" | "synced" | "error" | "already_synced";
+  sessionToken: string | null;
 }>({
   convexUser: null,
   syncStatus: "loading",
+  sessionToken: null,
 });
 
 function UserSyncInternal({ children }: { children: ReactNode }) {
   const { data: session, isPending: sessionLoading } = authClient.useSession();
+  const [sessionToken, setSessionToken] = React.useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function applyAuth() {
+      if (!convex) return;
+      try {
+        if (session?.user) {
+          const { data } = await (authClient as any)?.convex?.token?.();
+          const token = data?.token ?? null;
+          if (!isMounted) return;
+          setSessionToken(token);
+          convex.setAuth(async () => token);
+        } else {
+          setSessionToken(null);
+          convex.setAuth(async () => null);
+        }
+      } catch (error) {
+        console.error("Failed to set Convex auth token", error);
+        setSessionToken(null);
+        convex.setAuth(async () => null);
+      }
+    }
+    applyAuth();
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.user]);
 
   // @ts-ignore - Types will be generated after convex dev runs
   const convexUser = useQuery(
@@ -82,7 +112,7 @@ function UserSyncInternal({ children }: { children: ReactNode }) {
   }, [session, convexUser, sessionLoading, syncUser]);
 
   return (
-    <UserContext.Provider value={{ convexUser, syncStatus }}>
+    <UserContext.Provider value={{ convexUser, syncStatus, sessionToken }}>
       {children}
     </UserContext.Provider>
   );
@@ -98,7 +128,7 @@ function UserSyncWrapper({ children }: { children: ReactNode }) {
   if (!mounted) {
     return (
       <UserContext.Provider
-        value={{ convexUser: null, syncStatus: "loading" }}
+        value={{ convexUser: null, syncStatus: "loading", sessionToken: null }}
       >
         <div className="flex h-screen overflow-hidden bg-gray-50">
           <div className="flex-1 flex items-center justify-center">

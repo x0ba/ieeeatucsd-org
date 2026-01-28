@@ -2,6 +2,20 @@ import React from 'react';
 import { Card, CardBody, CardHeader } from '@heroui/react';
 import { TrendingUp } from 'lucide-react';
 
+/**
+ * PointsChart Component
+ *
+ * This component displays a line chart showing points growth over time.
+ *
+ * NOTE: This component requires chart.js and react-chartjs-2 dependencies to render the actual chart.
+ * To enable the chart, install the dependencies:
+ *   npm install chart.js react-chartjs-2
+ *
+ * Then uncomment the chart implementation below and remove the placeholder.
+ *
+ * The data format from Convex uses number timestamps (milliseconds since epoch) instead of Date objects.
+ */
+
 interface PointsChartProps {
   data: {
     date: number;
@@ -11,7 +25,6 @@ interface PointsChartProps {
 }
 
 export default function PointsChart({ data }: PointsChartProps) {
-
   if (data.length < 2) {
     return null;
   }
@@ -33,6 +46,9 @@ export default function PointsChart({ data }: PointsChartProps) {
             <TrendingUp className="w-12 h-12 mx-auto mb-4 text-gray-300" />
             <p>Chart dependencies not installed</p>
             <p className="text-sm mt-2">Install chart.js and react-chartjs-2 to enable chart</p>
+            <p className="text-xs text-gray-400 mt-4">
+              Data available: {data.length} data points from {new Date(data[0].date).toLocaleDateString()} to {new Date(data[data.length - 1].date).toLocaleDateString()}
+            </p>
           </div>
         </div>
       </CardBody>

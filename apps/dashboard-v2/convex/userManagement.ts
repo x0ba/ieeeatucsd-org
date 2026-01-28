@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 
 type UserRole =
   | "Member"
@@ -115,7 +116,7 @@ export const updateUser = mutation({
     // Sync to public profile
     const publicProfile = await ctx.db
       .query("publicProfiles")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId", (q) => q.eq("userId", user._id as Id<"users">))
       .first();
 
     const publicProfileData: any = {
@@ -130,7 +131,7 @@ export const updateUser = mutation({
       await ctx.db.patch(publicProfile._id, publicProfileData);
     } else {
       await ctx.db.insert("publicProfiles", {
-        userId: user._id,
+        userId: user._id as Id<"users">,
         name: args.name,
         major: args.major || "",
         points: args.points || 0,
@@ -190,7 +191,7 @@ export const deleteUser = mutation({
     // Delete public profile
     const publicProfile = await ctx.db
       .query("publicProfiles")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId", (q) => q.eq("userId", user._id as Id<"users">))
       .first();
     if (publicProfile) {
       await ctx.db.delete(publicProfile._id);
@@ -273,7 +274,7 @@ export const addExistingMember = mutation({
     // Sync to public profile
     const publicProfile = await ctx.db
       .query("publicProfiles")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId", (q) => q.eq("userId", user._id as Id<"users">))
       .first();
 
     if (publicProfile) {
@@ -282,7 +283,7 @@ export const addExistingMember = mutation({
       });
     } else {
       await ctx.db.insert("publicProfiles", {
-        userId: user._id,
+        userId: user._id as Id<"users">,
         name: userData.name,
         major: userData.major || "",
         points: userData.points || 0,

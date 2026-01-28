@@ -1,49 +1,20 @@
 ---
-import "../../styles/global.css";
-import OnboardingApp from "../../components/onboarding/OnboardingApp";
+import createDashboardPage from "../../components/dashboard/shared/wrappers/createDashboardPage.tsx";
+import DashboardHead from "../../components/dashboard/shared/DashboardHead.astro";
+import OnboardingContent from "../../components/dashboard/pages/onboarding/OnboardingContent.tsx";
+import NAVIGATION_PATHS from "../../components/dashboard/shared/types/navigation.ts";
 
 const title = "Onboarding - Dashboard";
-const description =
-  "Manage officer invitations and onboarding for the IEEE UCSD dashboard.";
+const currentPath = NAVIGATION_PATHS.ONBOARDING;
+const OnboardingPage = createDashboardPage(OnboardingContent, currentPath);
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
-
-    <!-- Favicons -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-
-    <!-- Open Graph / Social Media -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:site_name" content="IEEE UCSD" />
-
-    <style>
-      body {
-        font-family:
-          system-ui,
-          -apple-system,
-          sans-serif;
-        background: #f8fafc;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-      }
-      html {
-        overflow: hidden;
-      }
-    </style>
+    <DashboardHead title={title} />
   </head>
   <body>
-    <OnboardingApp client:load />
+    <OnboardingPage client:only="react" />
   </body>
 </html>

@@ -58,8 +58,9 @@ const {
 <meta name="robots" content="noindex, nofollow" />
 
 <!-- Service Worker Registration -->
-<script is:inline>
-  if ("serviceWorker" in navigator) {
+<script>
+  // Only register service worker in production
+  if ("serviceWorker" in navigator && import.meta.env.PROD) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
         .register("/sw.js", { scope: "/" })
@@ -69,21 +70,28 @@ const {
           // Check for updates
           registration.addEventListener("updatefound", () => {
             const newWorker = registration.installing;
-            newWorker.addEventListener("statechange", () => {
-              if (
-                newWorker.state === "installed" &&
-                navigator.serviceWorker.controller
-              ) {
-                console.log("[PWA] New service worker available");
-                // Optionally notify user about update
-              }
-            });
+            if (newWorker) {
+              newWorker.addEventListener("statechange", () => {
+                if (
+                  newWorker.state === "installed" &&
+                  navigator.serviceWorker.controller
+                ) {
+                  console.log("[PWA] New service worker available");
+                  // Optionally notify user about update
+                }
+              });
+            }
           });
         })
         .catch((error) => {
-          console.error("[PWA] Service Worker registration failed:", error);
+          // Don't log errors in development for missing service worker
+          if (import.meta.env.PROD) {
+            console.error("[PWA] Service Worker registration failed:", error);
+          }
         });
     });
+  } else if ("serviceWorker" in navigator && !import.meta.env.PROD) {
+    console.log("[PWA] Service Worker registration disabled in development");
   }
 </script>
 

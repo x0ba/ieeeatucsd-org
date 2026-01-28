@@ -264,7 +264,7 @@ export const createAuditLog = mutation({
   args: {
     constitutionId: v.string(),
     action: v.union(v.literal("create"), v.literal("update"), v.literal("delete")),
-    sectionId: v.string(),
+    sectionId: v.id("sections"),
     beforeState: v.optional(v.any()),
     afterState: v.optional(v.any()),
     performedBy: v.string(),

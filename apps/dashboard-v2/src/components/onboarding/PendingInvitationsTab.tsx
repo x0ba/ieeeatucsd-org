@@ -4,8 +4,10 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Mail,
+  Send,
 } from "lucide-react";
-import { Button, Badge } from "@heroui/react";
+import { Button, Badge, Card, CardBody, Tooltip } from "@heroui/react";
 // @ts-ignore - Types will be generated after convex dev runs
 import type { Id } from "#convex/_generated/dataModel";
 import type { InvitationStatus } from "../../lib/types";
@@ -89,18 +91,78 @@ export default function PendingInvitationsTab({
     <div className="space-y-4">
       {/* Header with refresh button */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">
-          All Invitations ({invitations.length})
-        </h3>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">All Invitations</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            View and track all officer invitations sent through the system
+          </p>
+        </div>
         <Button
           color="primary"
-          variant="light"
-          size="sm"
+          variant="bordered"
           onPress={onRefresh}
           startContent={<RefreshCw className="h-4 w-4" />}
+          className="rounded-lg"
         >
           Refresh
         </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardBody className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total</p>
+                <p className="text-2xl font-bold text-gray-900">{invitations.length}</p>
+              </div>
+              <Mail className="w-8 h-8 text-gray-400" />
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Pending</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {invitations.filter((i) => i.status === "pending").length}
+                </p>
+              </div>
+              <Clock className="w-8 h-8 text-yellow-400" />
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Accepted</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {invitations.filter((i) => i.status === "accepted").length}
+                </p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-green-400" />
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Declined</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {invitations.filter((i) => i.status === "declined").length}
+                </p>
+              </div>
+              <XCircle className="w-8 h-8 text-red-400" />
+            </div>
+          </CardBody>
+        </Card>
       </div>
 
       {loading ? (
@@ -173,14 +235,18 @@ export default function PendingInvitationsTab({
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     {invitation.status === "pending" &&
                       !isExpired(invitation) && (
-                        <Button
-                          color="primary"
-                          variant="light"
-                          size="sm"
-                          onPress={() => onResend(invitation._id)}
-                        >
-                          Resend
-                        </Button>
+                        <Tooltip content="Resend invitation email">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            color="primary"
+                            onPress={() => onResend(invitation._id)}
+                            className="rounded-lg"
+                          >
+                            <Send className="w-4 h-4" />
+                          </Button>
+                        </Tooltip>
                       )}
                     {isExpired(invitation) && (
                       <span className="text-xs text-gray-400">Expired</span>

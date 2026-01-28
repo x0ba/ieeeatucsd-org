@@ -48,11 +48,14 @@ interface UserStats {
 }
 
 export default function EventsContent() {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    
     const currentUser = useCurrentUser();
     const authUserId = currentUser?.authUserId || '';
     
-    const events = usePublishedEvents() || [];
-    const attendedEvents = useUserAttendedEvents(authUserId) || [];
+    const events = mounted ? usePublishedEvents() || [] : [];
+    const attendedEvents = mounted && authUserId ? useUserAttendedEvents(authUserId) || [] : [];
     
     const [userStats, setUserStats] = useState<UserStats>({
         lastEventAttended: 'None',

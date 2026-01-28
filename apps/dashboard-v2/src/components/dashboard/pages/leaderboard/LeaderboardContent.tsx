@@ -40,10 +40,23 @@ function getAcademicYearBounds(): { start: Date; end: Date; yearKey: number } {
 }
 
 export default function LeaderboardContent() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  
   const { authUser } = useAuth();
-  const leaderboardData = useQuery(api.leaderboard.getLeaderboard, { limit: 1000 }) || [];
-  const totalUsersCount = useQuery(api.leaderboard.getLeaderboardCount) || 0;
-  const currentUserRank = useQuery(api.leaderboard.getUserRank, authUser ? { userId: authUser._id } : 'skip') || 0;
+  // Always call useQuery unconditionally - use "skip" when not ready
+  const leaderboardData = useQuery(
+    api.leaderboard.getLeaderboard,
+    mounted ? { limit: 1000 } : "skip"
+  ) || [];
+  const totalUsersCount = useQuery(
+    api.leaderboard.getLeaderboardCount,
+    mounted ? {} : "skip"
+  ) || 0;
+  const currentUserRank = useQuery(
+    api.leaderboard.getUserRank,
+    mounted && authUser ? { userId: authUser._id } : "skip"
+  ) || 0;
   
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);

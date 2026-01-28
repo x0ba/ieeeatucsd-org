@@ -37,6 +37,8 @@ interface TeamMetrics {
 
 export default function OfficerLeaderboardContent() {
   const currentUser = useCurrentUser();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [leaderboardData, setLeaderboardData] = useState<TeamMetrics[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
@@ -46,7 +48,7 @@ export default function OfficerLeaderboardContent() {
   const currentUserRole = currentUser?.role || null;
 
   // Fetch leaderboard data from Convex
-  const leaderboardDataRaw = useQuery(api.leaderboard.getData, {});
+  const leaderboardDataRaw = useQuery(api.leaderboard.getData, mounted ? {} : "skip");
 
   useEffect(() => {
     if (!currentUser) return;
