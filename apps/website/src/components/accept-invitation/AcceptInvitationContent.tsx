@@ -4,6 +4,26 @@ import { Card, CardBody, Button, Spacer, Chip } from '@heroui/react';
 import { db } from '../../firebase/client';
 import { doc, getDoc } from 'firebase/firestore';
 
+const DASHBOARD_API_PATH = '/api/onboarding/accept-invitation';
+
+const getDashboardApiBaseUrl = () => {
+    const envBaseUrl = import.meta.env.PUBLIC_DASHBOARD_URL?.trim();
+    if (envBaseUrl) {
+        return envBaseUrl.replace(/\/$/, '');
+    }
+
+    if (typeof window !== 'undefined') {
+        return window.location.origin.replace(/\/$/, '');
+    }
+
+    return '';
+};
+
+const getAcceptInvitationEndpoint = () => {
+    const baseUrl = getDashboardApiBaseUrl();
+    return baseUrl ? `${baseUrl}${DASHBOARD_API_PATH}` : DASHBOARD_API_PATH;
+};
+
 interface AcceptInvitationContentProps {
     inviteId: string;
 }
@@ -61,7 +81,7 @@ export default function AcceptInvitationContent({ inviteId }: AcceptInvitationCo
             setProcessing(true);
             setError(null);
 
-            const response = await fetch('/api/onboarding/accept-invitation', {
+            const response = await fetch(getAcceptInvitationEndpoint(), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -94,7 +114,7 @@ export default function AcceptInvitationContent({ inviteId }: AcceptInvitationCo
             setProcessing(true);
             setError(null);
 
-            const response = await fetch('/api/onboarding/accept-invitation', {
+            const response = await fetch(getAcceptInvitationEndpoint(), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
