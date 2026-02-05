@@ -34,8 +34,12 @@
     "path": "/board"
   },
   {
-    "name": "Find Us",
+    "name": "Contact",
     "path": "/find"
+  },
+  {
+    "name": "Sponsor Us",
+    "path": "/sponsors"
   },
   {
     "name": "Dashboard",
