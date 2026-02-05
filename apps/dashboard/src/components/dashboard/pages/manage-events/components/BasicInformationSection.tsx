@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Calendar, MapPin, FileText, DollarSign } from "lucide-react";
 import { Input, Textarea, Select, SelectItem, Button } from "@heroui/react";
 import type { EventFormData, FieldError } from "../types/EventRequestTypes";
@@ -36,11 +36,11 @@ export default function BasicInformationSection({
   const [hasUserEditedTime, setHasUserEditedTime] = useState(false);
 
   // State for real-time validation feedback
-  const [dateValidation, setDateValidation] = useState<{ isValid: boolean; message: string }>({
+  const [dateValidation, setDateValidation] = useState<{ isValid: boolean; message: ReactNode }>({
     isValid: false,
     message: "Enter date as MM/DD/YYYY or MMDDYYYY"
   });
-  const [timeValidation, setTimeValidation] = useState<{ isValid: boolean; message: string }>({
+  const [timeValidation, setTimeValidation] = useState<{ isValid: boolean; message: ReactNode }>({
     isValid: false,
     message: "Enter time range (e.g., 9am-10pm or 10:00 AM - 2:00 PM)"
   });

@@ -230,13 +230,15 @@ export default function FundRequestActionModal({
                         </div>
 
                         {/* Title & Purpose */}
-                        <div>
-                            <h3 className="text-lg font-bold mb-1">{request.title}</h3>
-                            <div className="flex gap-2 mb-3">
-                                <Chip size="sm" variant="flat" color="default">{DEPARTMENT_LABELS[request.department]}</Chip>
-                                <Chip size="sm" variant="flat" color="primary">{CATEGORY_LABELS[request.category]}</Chip>
-                            </div>
-                            <div className="space-y-2">
+	                        <div>
+	                            <h3 className="text-lg font-bold mb-1">{request.title}</h3>
+	                            <div className="flex gap-2 mb-3">
+	                                <Chip size="sm" variant="flat" color="default">
+	                                    {request.department ? DEPARTMENT_LABELS[request.department] : "Unspecified"}
+	                                </Chip>
+	                                <Chip size="sm" variant="flat" color="primary">{CATEGORY_LABELS[request.category]}</Chip>
+	                            </div>
+	                            <div className="space-y-2">
                                 <h4 className="text-xs font-bold text-default-500 uppercase flex items-center gap-1">
                                     <FileText className="w-3 h-3" /> Justification
                                 </h4>

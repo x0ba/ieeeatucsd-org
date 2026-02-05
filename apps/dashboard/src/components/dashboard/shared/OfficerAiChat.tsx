@@ -235,23 +235,37 @@ export function OfficerAiChat() {
                                     )}
                                 >
                                     <div className="prose dark:prose-invert prose-sm max-w-none break-words [&>p]:m-0 [&>p]:leading-normal">
-                                        <ReactMarkdown
-                                            remarkPlugins={[remarkGfm]}
-                                            components={{
-                                                a: ({ node, ...props }) => <a {...props} className="text-blue-500 underline" target="_blank" rel="noopener noreferrer" />,
-                                                ul: ({ node, ...props }) => <ul {...props} className="list-disc pl-4" />,
-                                                ol: ({ node, ...props }) => <ol {...props} className="list-decimal pl-4" />,
-                                                code: ({ inline, className, children }) => (
-                                                    <CodeBlock inline={inline} className={className}>
-                                                        {children}
-                                                    </CodeBlock>
-                                                ),
-                                                table: ({ node, ...props }) => (
-                                                    <div className="my-2 w-full max-w-full overflow-x-auto">
-                                                        <table {...props} className="w-full border-collapse text-left" />
-                                                    </div>
-                                                )
-                                            }}
+	                                        <ReactMarkdown
+	                                            remarkPlugins={[remarkGfm]}
+	                                            components={{
+	                                                a: ({ node, ...props }) => <a {...props} className="text-blue-500 underline" target="_blank" rel="noopener noreferrer" />,
+	                                                ul: ({ node, ...props }) => <ul {...props} className="list-disc pl-4" />,
+	                                                ol: ({ node, ...props }) => <ol {...props} className="list-decimal pl-4" />,
+	                                                pre: ({ children }) => {
+	                                                    const codeChild = Array.isArray(children) ? children[0] : children;
+	
+	                                                    if (React.isValidElement(codeChild)) {
+	                                                        const codeProps = codeChild.props as { className?: string; children?: React.ReactNode };
+	                                                        return (
+	                                                            <CodeBlock inline={false} className={codeProps.className}>
+	                                                                {codeProps.children}
+	                                                            </CodeBlock>
+	                                                        );
+	                                                    }
+	
+	                                                    return <pre>{children}</pre>;
+	                                                },
+	                                                code: ({ className, children }) => (
+	                                                    <CodeBlock inline className={className}>
+	                                                        {children}
+	                                                    </CodeBlock>
+	                                                ),
+	                                                table: ({ node, ...props }) => (
+	                                                    <div className="my-2 w-full max-w-full overflow-x-auto">
+	                                                        <table {...props} className="w-full border-collapse text-left" />
+	                                                    </div>
+	                                                )
+	                                            }}
                                         >
                                             {msg.content}
                                         </ReactMarkdown>

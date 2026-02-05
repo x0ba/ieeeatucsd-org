@@ -43,20 +43,22 @@ export default function UserFilters({
                         {/* Role Filter */}
                         <div className="flex items-center gap-2">
                             <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                            <Select
-                                selectedKeys={[filters.roleFilter]}
-                                onChange={(e) => onFiltersChange({ roleFilter: e.target.value as any })}
-                                classNames={{
-                                    trigger: "rounded-lg min-w-[150px]"
-                                }}
-                                aria-label="Filter by role"
-                            >
-                                <SelectItem key="all">All Roles</SelectItem>
-                                {USER_ROLES.map(role => (
-                                    <SelectItem key={role}>{role}</SelectItem>
-                                ))}
-                            </Select>
-                        </div>
+	                            <Select
+	                                selectedKeys={[filters.roleFilter]}
+	                                onChange={(e) => onFiltersChange({ roleFilter: e.target.value as any })}
+	                                classNames={{
+	                                    trigger: "rounded-lg min-w-[150px]"
+	                                }}
+	                                aria-label="Filter by role"
+	                            >
+	                                <>
+	                                    <SelectItem key="all">All Roles</SelectItem>
+	                                    {USER_ROLES.map((role) => (
+	                                        <SelectItem key={role}>{role}</SelectItem>
+	                                    ))}
+	                                </>
+	                            </Select>
+	                        </div>
 
                         {/* Status Filter */}
                         <div>

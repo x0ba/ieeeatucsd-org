@@ -15,6 +15,13 @@ export type SponsorTier = "Bronze" | "Silver" | "Gold" | "Platinum" | "Diamond";
 
 export type NavigationLayout = "horizontal" | "sidebar";
 
+export interface OrganizationSettings {
+  googleSheetsContactListUrl?: string;
+  createdAt?: Timestamp;
+  updatedAt: Timestamp;
+  updatedBy?: string;
+}
+
 export interface User {
   email: string;
   emailVisibility: boolean;
