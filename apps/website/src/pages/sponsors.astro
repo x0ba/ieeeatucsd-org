@@ -6,6 +6,7 @@ import Title from "@/components/core/Title.astro";
 import { LiaDotCircle } from "react-icons/lia";
 import Link from "next/link";
 import sponsors from "../data/sponsors.json";
+---
 
 <Layout>
     <Image
@@ -69,14 +70,9 @@ import sponsors from "../data/sponsors.json";
 
         <div class="grid grid-cols-3 mb-[10vw]">
             {sponsors.map((sponsor) => (
-                <div class="flex object-center items-center p-[1vw] aspect-square w-[18vw] " >
-                        <img
-                        src={sponsor}
-                        alt={sponsor}
-                        class="object-contain"
-                    />
-                </div>
-                
+            <div class="flex items-center justify-center p-[1vw] aspect-square w-[18vw]">
+                <img src={sponsor} alt={sponsor} class="object-contain" />
+            </div>
             ))}
         </div>
 
