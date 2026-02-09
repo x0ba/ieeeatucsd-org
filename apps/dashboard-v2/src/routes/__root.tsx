@@ -1,0 +1,127 @@
+import {
+  HeadContent,
+  Outlet,
+  Scripts,
+  createRootRouteWithContext,
+} from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { TanStackDevtools } from "@tanstack/react-devtools";
+
+import AppLogtoProvider from "../integrations/logto/provider";
+import ConvexProvider from "../integrations/convex/provider";
+
+import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+
+import { Toaster } from "sonner";
+
+import appCss from "../styles.css?url";
+
+import type { QueryClient } from "@tanstack/react-query";
+
+interface MyRouterContext {
+  queryClient: QueryClient;
+}
+
+export const Route = createRootRouteWithContext<MyRouterContext>()({
+  head: () => ({
+    meta: [
+      {
+        charSet: "utf-8",
+      },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
+      },
+      {
+        title: "IEEE UCSD Dashboard",
+      },
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
+    ],
+  }),
+
+  component: RootComponent,
+  shellComponent: RootDocument,
+  notFoundComponent: NotFoundComponent,
+});
+
+function NotFoundComponent() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-bold">404</h1>
+        <p className="text-muted-foreground">Page not found</p>
+        <a href="/overview" className="text-primary hover:underline">
+          Go to Dashboard
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function HydrationCleanupScript() {
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: [
+          // Runs in <head> before React hydrates the <body>.
+          // 1. Strips browser-extension-injected data-* attrs (e.g. data-qb-installed)
+          // 2. Strips the serialized suppresshydrationwarning HTML attribute
+          //    (React adds it during SSR but treats it as a React-internal prop during hydration)
+          // 3. Uses MutationObserver to catch extensions that inject after initial parse
+          `(function(){`,
+          `var h=document.documentElement;`,
+          `function c(){var a=h.getAttributeNames(),i=a.length;while(i--){var n=a[i];`,
+          `if((n.startsWith("data-")&&!n.startsWith("data-tsd-"))||n==="suppresshydrationwarning")h.removeAttribute(n)}}`,
+          `c();`,
+          `var o=new MutationObserver(function(){c()});`,
+          `o.observe(h,{attributes:true});`,
+          `setTimeout(function(){o.disconnect()},5000);`,
+          `})()`,
+        ].join(""),
+      }}
+    />
+  );
+}
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <HeadContent />
+        <HydrationCleanupScript />
+      </head>
+      <body suppressHydrationWarning>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
+function RootComponent() {
+  return (
+    <AppLogtoProvider>
+      <ConvexProvider>
+        <Outlet />
+        <Toaster richColors position="bottom-right" />
+        <TanStackDevtools
+          config={{
+            position: "bottom-right",
+          }}
+          plugins={[
+            {
+              name: "Tanstack Router",
+              render: <TanStackRouterDevtoolsPanel />,
+            },
+            TanStackQueryDevtools,
+          ]}
+        />
+      </ConvexProvider>
+    </AppLogtoProvider>
+  );
+}

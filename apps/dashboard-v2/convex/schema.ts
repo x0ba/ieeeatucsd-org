@@ -1,0 +1,520 @@
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+const userRole = v.union(
+  v.literal("Member"),
+  v.literal("General Officer"),
+  v.literal("Executive Officer"),
+  v.literal("Member at Large"),
+  v.literal("Past Officer"),
+  v.literal("Sponsor"),
+  v.literal("Administrator"),
+);
+
+const sponsorTier = v.union(
+  v.literal("Bronze"),
+  v.literal("Silver"),
+  v.literal("Gold"),
+  v.literal("Platinum"),
+  v.literal("Diamond"),
+);
+
+const officerTeam = v.union(
+  v.literal("Internal"),
+  v.literal("Events"),
+  v.literal("Projects"),
+);
+
+const lineItem = v.object({
+  id: v.string(),
+  description: v.string(),
+  category: v.string(),
+  amount: v.number(),
+});
+
+const receipt = v.object({
+  id: v.string(),
+  vendorName: v.string(),
+  location: v.string(),
+  dateOfPurchase: v.number(),
+  lineItems: v.array(lineItem),
+  receiptFile: v.optional(v.string()),
+  notes: v.optional(v.string()),
+  subtotal: v.number(),
+  tax: v.optional(v.number()),
+  tip: v.optional(v.number()),
+  shipping: v.optional(v.number()),
+  total: v.number(),
+});
+
+const invoiceItem = v.object({
+  description: v.string(),
+  quantity: v.number(),
+  unitPrice: v.number(),
+  total: v.number(),
+});
+
+const invoice = v.object({
+  id: v.string(),
+  vendor: v.string(),
+  items: v.array(invoiceItem),
+  tax: v.number(),
+  tip: v.number(),
+  invoiceFile: v.optional(v.string()),
+  additionalFiles: v.array(v.string()),
+  subtotal: v.number(),
+  total: v.number(),
+});
+
+const eventFieldChange = v.object({
+  field: v.string(),
+  fieldDisplayName: v.string(),
+  oldValue: v.any(),
+  newValue: v.any(),
+  changeType: v.union(
+    v.literal("added"),
+    v.literal("updated"),
+    v.literal("removed"),
+  ),
+});
+
+const eventFileChange = v.object({
+  action: v.union(v.literal("added"), v.literal("removed")),
+  fileName: v.string(),
+  fileUrl: v.optional(v.string()),
+  fileType: v.union(
+    v.literal("room_booking"),
+    v.literal("invoice"),
+    v.literal("logo"),
+    v.literal("graphics"),
+    v.literal("other"),
+  ),
+});
+
+const eventAuditLog = v.object({
+  id: v.string(),
+  eventRequestId: v.string(),
+  action: v.union(
+    v.literal("created"),
+    v.literal("updated"),
+    v.literal("status_changed"),
+    v.literal("file_uploaded"),
+    v.literal("file_deleted"),
+    v.literal("graphics_updated"),
+    v.literal("published"),
+    v.literal("unpublished"),
+  ),
+  performedBy: v.string(),
+  performedByName: v.optional(v.string()),
+  timestamp: v.number(),
+  changes: v.optional(v.array(eventFieldChange)),
+  oldStatus: v.optional(v.string()),
+  newStatus: v.optional(v.string()),
+  statusReason: v.optional(v.string()),
+  fileChanges: v.optional(v.array(eventFileChange)),
+  metadata: v.optional(v.any()),
+});
+
+const constitutionSectionType = v.union(
+  v.literal("preamble"),
+  v.literal("article"),
+  v.literal("section"),
+  v.literal("subsection"),
+  v.literal("amendment"),
+);
+
+const constitutionSection = v.object({
+  id: v.string(),
+  type: constitutionSectionType,
+  title: v.string(),
+  content: v.string(),
+  order: v.number(),
+  parentId: v.optional(v.string()),
+  articleNumber: v.optional(v.number()),
+  sectionNumber: v.optional(v.number()),
+  subsectionLetter: v.optional(v.string()),
+  amendmentNumber: v.optional(v.number()),
+  createdAt: v.number(),
+  lastModified: v.number(),
+  lastModifiedBy: v.string(),
+});
+
+export default defineSchema({
+  users: defineTable({
+    logtoId: v.optional(v.string()),
+    authUserId: v.optional(v.string()),
+    email: v.string(),
+    emailVisibility: v.boolean(),
+    verified: v.boolean(),
+    name: v.string(),
+    username: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+    pid: v.optional(v.string()),
+    memberId: v.optional(v.string()),
+    graduationYear: v.optional(v.number()),
+    major: v.optional(v.string()),
+    zelleInformation: v.optional(v.string()),
+    lastLogin: v.optional(v.number()),
+    notificationPreferences: v.optional(v.any()),
+    displayPreferences: v.optional(v.any()),
+    accessibilitySettings: v.optional(v.any()),
+    resume: v.optional(v.string()),
+    signedUp: v.boolean(),
+    requestedEmail: v.boolean(),
+    role: userRole,
+    position: v.optional(v.string()),
+    status: v.union(
+      v.literal("active"),
+      v.literal("inactive"),
+      v.literal("suspended"),
+    ),
+    joinDate: v.number(),
+    eventsAttended: v.optional(v.number()),
+    points: v.optional(v.number()),
+    team: v.optional(officerTeam),
+    invitedBy: v.optional(v.string()),
+    inviteAccepted: v.optional(v.number()),
+    lastUpdated: v.optional(v.number()),
+    lastUpdatedBy: v.optional(v.string()),
+    signInMethod: v.optional(v.string()),
+    hasIEEEEmail: v.optional(v.boolean()),
+    ieeeEmail: v.optional(v.string()),
+    ieeeEmailCreatedAt: v.optional(v.number()),
+    sponsorTier: v.optional(sponsorTier),
+    sponsorOrganization: v.optional(v.string()),
+    autoAssignedSponsor: v.optional(v.boolean()),
+    tosAcceptedAt: v.optional(v.number()),
+    tosVersion: v.optional(v.string()),
+    privacyPolicyAcceptedAt: v.optional(v.number()),
+    privacyPolicyVersion: v.optional(v.string()),
+  })
+    .index("by_logtoId", ["logtoId"])
+    .index("by_email", ["email"])
+    .index("by_role", ["role"])
+    .index("by_points", ["points"]),
+
+  publicProfiles: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    major: v.optional(v.string()),
+    points: v.number(),
+    eventsAttended: v.number(),
+    position: v.optional(v.string()),
+    graduationYear: v.optional(v.number()),
+    joinDate: v.optional(v.number()),
+  }).index("by_userId", ["userId"]),
+
+  events: defineTable({
+    eventName: v.string(),
+    eventDescription: v.string(),
+    eventCode: v.string(),
+    location: v.string(),
+    files: v.array(v.string()),
+    pointsToReward: v.number(),
+    startDate: v.number(),
+    endDate: v.number(),
+    published: v.boolean(),
+    eventType: v.union(
+      v.literal("social"),
+      v.literal("technical"),
+      v.literal("outreach"),
+      v.literal("professional"),
+      v.literal("projects"),
+      v.literal("other"),
+    ),
+    hasFood: v.boolean(),
+  })
+    .index("by_eventCode", ["eventCode"])
+    .index("by_startDate", ["startDate"])
+    .index("by_published", ["published"]),
+
+  attendees: defineTable({
+    eventId: v.id("events"),
+    userId: v.string(),
+    timeCheckedIn: v.number(),
+    food: v.string(),
+    pointsEarned: v.number(),
+  })
+    .index("by_eventId", ["eventId"])
+    .index("by_userId", ["userId"]),
+
+  eventRequests: defineTable({
+    name: v.string(),
+    location: v.string(),
+    startDateTime: v.number(),
+    endDateTime: v.number(),
+    eventDescription: v.string(),
+    flyersNeeded: v.boolean(),
+    flyerType: v.array(v.string()),
+    otherFlyerType: v.optional(v.string()),
+    flyerAdvertisingStartDate: v.optional(v.number()),
+    flyerAdditionalRequests: v.optional(v.string()),
+    flyersCompleted: v.boolean(),
+    photographyNeeded: v.boolean(),
+    requiredLogos: v.array(v.string()),
+    otherLogos: v.optional(v.array(v.string())),
+    advertisingFormat: v.optional(v.string()),
+    willOrHaveRoomBooking: v.boolean(),
+    expectedAttendance: v.optional(v.number()),
+    roomBookingFiles: v.array(v.string()),
+    asFundingRequired: v.boolean(),
+    foodDrinksBeingServed: v.boolean(),
+    invoices: v.array(invoice),
+    needsGraphics: v.boolean(),
+    needsAsFunding: v.boolean(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("submitted"),
+      v.literal("pending"),
+      v.literal("completed"),
+      v.literal("approved"),
+      v.literal("declined"),
+      v.literal("needs_review"),
+    ),
+    declinedReason: v.optional(v.string()),
+    reviewFeedback: v.optional(v.string()),
+    requestedUser: v.string(),
+    auditLogs: v.optional(v.array(eventAuditLog)),
+    isDraft: v.optional(v.boolean()),
+  })
+    .index("by_status", ["status"])
+    .index("by_requestedUser", ["requestedUser"]),
+
+  reimbursements: defineTable({
+    title: v.string(),
+    totalAmount: v.number(),
+    paymentMethod: v.string(),
+    status: v.union(
+      v.literal("submitted"),
+      v.literal("declined"),
+      v.literal("approved"),
+      v.literal("paid"),
+    ),
+    submittedBy: v.string(),
+    additionalInfo: v.string(),
+    department: v.union(
+      v.literal("internal"),
+      v.literal("external"),
+      v.literal("projects"),
+      v.literal("events"),
+      v.literal("other"),
+    ),
+    auditNotes: v.optional(
+      v.array(
+        v.object({
+          note: v.string(),
+          createdBy: v.string(),
+          timestamp: v.number(),
+        }),
+      ),
+    ),
+    auditLogs: v.optional(
+      v.array(
+        v.object({
+          action: v.string(),
+          createdBy: v.string(),
+          timestamp: v.number(),
+        }),
+      ),
+    ),
+    auditRequests: v.optional(
+      v.array(
+        v.object({
+          auditorId: v.string(),
+          requestedBy: v.string(),
+          requestedAt: v.number(),
+          status: v.union(
+            v.literal("pending"),
+            v.literal("completed"),
+            v.literal("declined"),
+          ),
+          auditResult: v.optional(
+            v.union(v.literal("approved"), v.literal("needs_changes")),
+          ),
+          auditNotes: v.optional(v.string()),
+          completedAt: v.optional(v.number()),
+        }),
+      ),
+    ),
+    requiresExecutiveOverride: v.optional(v.boolean()),
+    paymentDetails: v.optional(
+      v.object({
+        confirmationNumber: v.string(),
+        paymentDate: v.number(),
+        amountPaid: v.number(),
+        proofFileUrl: v.optional(v.string()),
+        memo: v.optional(v.string()),
+      }),
+    ),
+    receipts: v.optional(v.array(receipt)),
+    dateOfPurchase: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])
+    .index("by_submittedBy", ["submittedBy"]),
+
+  links: defineTable({
+    url: v.string(),
+    title: v.string(),
+    category: v.string(),
+    description: v.optional(v.string()),
+    iconUrl: v.optional(v.string()),
+    shortUrl: v.optional(v.string()),
+    publishDate: v.optional(v.number()),
+    expireDate: v.optional(v.number()),
+    createdBy: v.string(),
+    lastModified: v.optional(v.number()),
+    lastModifiedBy: v.optional(v.string()),
+    order: v.optional(v.number()),
+  })
+    .index("by_category", ["category"])
+    .index("by_shortUrl", ["shortUrl"]),
+
+  constitutions: defineTable({
+    title: v.string(),
+    organizationName: v.string(),
+    sections: v.array(constitutionSection),
+    version: v.number(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("archived"),
+    ),
+    lastModifiedBy: v.string(),
+    collaborators: v.array(v.string()),
+    isTemplate: v.optional(v.boolean()),
+  }).index("by_status", ["status"]),
+
+  constitutionAuditLogs: defineTable({
+    constitutionId: v.id("constitutions"),
+    entries: v.array(
+      v.object({
+        id: v.string(),
+        constitutionId: v.string(),
+        sectionId: v.optional(v.string()),
+        changeType: v.union(
+          v.literal("create"),
+          v.literal("update"),
+          v.literal("delete"),
+          v.literal("reorder"),
+        ),
+        changeDescription: v.string(),
+        beforeValue: v.optional(v.any()),
+        afterValue: v.optional(v.any()),
+        userId: v.string(),
+        userName: v.string(),
+        timestamp: v.number(),
+      }),
+    ),
+    totalEntries: v.number(),
+  }).index("by_constitutionId", ["constitutionId"]),
+
+  officerInvitations: defineTable({
+    name: v.string(),
+    email: v.string(),
+    role: userRole,
+    position: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+      v.literal("expired"),
+    ),
+    invitedBy: v.string(),
+    invitedAt: v.number(),
+    acceptedAt: v.optional(v.number()),
+    declinedAt: v.optional(v.number()),
+    expiresAt: v.number(),
+    message: v.optional(v.string()),
+    acceptanceDeadline: v.optional(v.string()),
+    leaderName: v.optional(v.string()),
+    googleGroupAssigned: v.optional(v.boolean()),
+    googleGroup: v.optional(v.string()),
+    permissionsGranted: v.optional(v.boolean()),
+    onboardingEmailSent: v.optional(v.boolean()),
+    resentAt: v.optional(v.number()),
+    lastSentAt: v.optional(v.number()),
+    roleGranted: v.optional(v.boolean()),
+    roleGrantedAt: v.optional(v.number()),
+    userCreatedOrUpdated: v.optional(v.boolean()),
+  })
+    .index("by_email", ["email"])
+    .index("by_status", ["status"]),
+
+  sponsorDomains: defineTable({
+    domain: v.string(),
+    organizationName: v.string(),
+    sponsorTier: sponsorTier,
+    createdBy: v.string(),
+    lastModifiedBy: v.optional(v.string()),
+  }).index("by_domain", ["domain"]),
+
+  fundRequests: defineTable({
+    title: v.string(),
+    description: v.string(),
+    amount: v.number(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("submitted"),
+      v.literal("approved"),
+      v.literal("declined"),
+      v.literal("completed"),
+    ),
+    requestedBy: v.string(),
+    department: v.optional(v.string()),
+    eventId: v.optional(v.id("events")),
+    notes: v.optional(v.string()),
+    reviewedBy: v.optional(v.string()),
+    reviewedAt: v.optional(v.number()),
+    reviewNotes: v.optional(v.string()),
+  })
+    .index("by_status", ["status"])
+    .index("by_requestedBy", ["requestedBy"]),
+
+  fundDeposits: defineTable({
+    title: v.string(),
+    amount: v.number(),
+    source: v.string(),
+    depositDate: v.number(),
+    description: v.optional(v.string()),
+    receiptUrl: v.optional(v.string()),
+    depositedBy: v.string(),
+    verifiedBy: v.optional(v.string()),
+    verifiedAt: v.optional(v.number()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("verified"),
+      v.literal("rejected"),
+    ),
+  })
+    .index("by_status", ["status"])
+    .index("by_depositedBy", ["depositedBy"]),
+
+  logs: defineTable({
+    userId: v.string(),
+    type: v.union(
+      v.literal("error"),
+      v.literal("update"),
+      v.literal("delete"),
+      v.literal("create"),
+      v.literal("login"),
+      v.literal("logout"),
+    ),
+    part: v.string(),
+    message: v.string(),
+  }),
+
+  organizationSettings: defineTable({
+    googleSheetsContactListUrl: v.optional(v.string()),
+    updatedBy: v.optional(v.string()),
+  }),
+
+  emailTemplates: defineTable({
+    templateId: v.string(),
+    templateName: v.string(),
+    subject: v.string(),
+    body: v.string(),
+    variables: v.array(v.string()),
+    updatedBy: v.string(),
+    isDefault: v.boolean(),
+  }).index("by_templateId", ["templateId"]),
+});

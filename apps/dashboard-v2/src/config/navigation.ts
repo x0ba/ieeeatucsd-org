@@ -1,0 +1,170 @@
+import {
+  Home,
+  Calendar,
+  CreditCard,
+  Users,
+  DollarSign,
+  Trophy,
+  Banknote,
+  FileText,
+  MessageSquare,
+  Link as LinkIcon,
+  Briefcase,
+  Building2,
+  UserPlus,
+  ClipboardList,
+  type LucideIcon,
+} from "lucide-react";
+import type { UserRole } from "../hooks/useAuth";
+
+export interface NavigationItem {
+  icon: LucideIcon;
+  label: string;
+  href: string;
+}
+
+export interface NavigationCategory {
+  title: string;
+  items: NavigationItem[];
+  requiresRole?: UserRole[];
+}
+
+export const NAVIGATION_PATHS = {
+  OVERVIEW: "/overview",
+  EVENTS: "/events",
+  REIMBURSEMENT: "/reimbursement",
+  LEADERBOARD: "/leaderboard",
+  LINKS: "/links",
+  MANAGE_EVENTS: "/manage-events",
+  MANAGE_REIMBURSEMENTS: "/manage-reimbursements",
+  FUND_DEPOSITS: "/fund-deposits",
+  FUND_REQUESTS: "/fund-requests",
+  MANAGE_FUND_REQUESTS: "/manage-fund-requests",
+  SLACK_ACCESS: "/slack-access",
+  MANAGE_USERS: "/manage-users",
+  MANAGE_SPONSORS: "/manage-sponsors",
+  ONBOARDING: "/onboarding",
+  CONSTITUTION_BUILDER: "/constitution-builder",
+  RESUME_DATABASE: "/sponsors/resume-database",
+  SPONSOR_INFORMATION: "/sponsors/information",
+  SETTINGS: "/settings",
+  SIGNOUT: "/signout",
+  GET_STARTED: "/get-started",
+  OFFICER_LEADERBOARD: "/officer-leaderboard",
+} as const;
+
+export type NavigationPath =
+  (typeof NAVIGATION_PATHS)[keyof typeof NAVIGATION_PATHS];
+
+export const navigationCategories: NavigationCategory[] = [
+  {
+    title: "Member Actions",
+    items: [
+      { icon: Home, label: "Overview", href: NAVIGATION_PATHS.OVERVIEW },
+      { icon: LinkIcon, label: "Links", href: NAVIGATION_PATHS.LINKS },
+      { icon: Calendar, label: "Events", href: NAVIGATION_PATHS.EVENTS },
+      {
+        icon: CreditCard,
+        label: "Reimbursement",
+        href: NAVIGATION_PATHS.REIMBURSEMENT,
+      },
+      {
+        icon: Trophy,
+        label: "Leaderboard",
+        href: NAVIGATION_PATHS.LEADERBOARD,
+      },
+    ],
+  },
+  {
+    title: "General Officers",
+    requiresRole: ["General Officer", "Executive Officer", "Administrator"],
+    items: [
+      {
+        icon: Calendar,
+        label: "Manage Events",
+        href: NAVIGATION_PATHS.MANAGE_EVENTS,
+      },
+      {
+        icon: Banknote,
+        label: "Fund Deposits",
+        href: NAVIGATION_PATHS.FUND_DEPOSITS,
+      },
+      {
+        icon: ClipboardList,
+        label: "Fund Requests",
+        href: NAVIGATION_PATHS.FUND_REQUESTS,
+      },
+      {
+        icon: MessageSquare,
+        label: "Slack Access",
+        href: NAVIGATION_PATHS.SLACK_ACCESS,
+      },
+      {
+        icon: Trophy,
+        label: "Officer Leaderboard",
+        href: NAVIGATION_PATHS.OFFICER_LEADERBOARD,
+      },
+    ],
+  },
+  {
+    title: "Executive Officers",
+    requiresRole: ["Executive Officer", "Administrator"],
+    items: [
+      {
+        icon: DollarSign,
+        label: "Manage Reimbursements",
+        href: NAVIGATION_PATHS.MANAGE_REIMBURSEMENTS,
+      },
+      {
+        icon: ClipboardList,
+        label: "Manage Fund Requests",
+        href: NAVIGATION_PATHS.MANAGE_FUND_REQUESTS,
+      },
+      {
+        icon: Users,
+        label: "Manage Users",
+        href: NAVIGATION_PATHS.MANAGE_USERS,
+      },
+      {
+        icon: Building2,
+        label: "Manage Sponsors",
+        href: NAVIGATION_PATHS.MANAGE_SPONSORS,
+      },
+      {
+        icon: UserPlus,
+        label: "Onboarding",
+        href: NAVIGATION_PATHS.ONBOARDING,
+      },
+      {
+        icon: FileText,
+        label: "Constitution Builder",
+        href: NAVIGATION_PATHS.CONSTITUTION_BUILDER,
+      },
+    ],
+  },
+  {
+    title: "Sponsors",
+    requiresRole: ["Sponsor", "Administrator"],
+    items: [
+      {
+        icon: Briefcase,
+        label: "Resume Database",
+        href: NAVIGATION_PATHS.RESUME_DATABASE,
+      },
+      {
+        icon: Building2,
+        label: "Sponsor Information",
+        href: NAVIGATION_PATHS.SPONSOR_INFORMATION,
+      },
+    ],
+  },
+];
+
+export const LEGAL_VERSIONS = {
+  TOS_VERSION: "1.2",
+  TOS_EFFECTIVE_DATE: "2024-12-29",
+  TOS_URL: "/terms-of-service",
+  PRIVACY_POLICY_VERSION: "1.2",
+  PRIVACY_POLICY_EFFECTIVE_DATE: "2024-12-29",
+  PRIVACY_POLICY_URL: "/privacy-policy",
+};
