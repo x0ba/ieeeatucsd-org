@@ -99,3 +99,37 @@ export const updateStatus = mutation({
     return args.id;
   },
 });
+
+export const updatePaymentDetails = mutation({
+  args: {
+    logtoId: v.string(),
+    id: v.id("reimbursements"),
+    paymentDetails: v.object({
+      confirmationNumber: v.string(),
+      paymentDate: v.number(),
+      amountPaid: v.number(),
+      proofFileUrl: v.optional(v.string()),
+      memo: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const adminId = admin.logtoId ?? admin.authUserId ?? "";
+    const reimbursement = await ctx.db.get(args.id);
+    if (!reimbursement) throw new Error("Reimbursement not found");
+
+    const auditLogs = reimbursement.auditLogs || [];
+    auditLogs.push({
+      action: "payment_details_added",
+      createdBy: adminId,
+      timestamp: Date.now(),
+    });
+
+    await ctx.db.patch(args.id, {
+      status: "paid",
+      paymentDetails: args.paymentDetails,
+      auditLogs,
+    });
+    return args.id;
+  },
+});

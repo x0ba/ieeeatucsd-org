@@ -33,6 +33,129 @@ export const get = query({
   },
 });
 
+export const create = mutation({
+  args: {
+    logtoId: v.string(),
+    name: v.string(),
+    location: v.string(),
+    startDateTime: v.number(),
+    endDateTime: v.number(),
+    eventDescription: v.string(),
+    flyersNeeded: v.boolean(),
+    flyerType: v.array(v.string()),
+    otherFlyerType: v.optional(v.string()),
+    flyerAdvertisingStartDate: v.optional(v.number()),
+    flyerAdditionalRequests: v.optional(v.string()),
+    flyersCompleted: v.boolean(),
+    photographyNeeded: v.boolean(),
+    requiredLogos: v.array(v.string()),
+    otherLogos: v.optional(v.array(v.string())),
+    advertisingFormat: v.optional(v.string()),
+    willOrHaveRoomBooking: v.boolean(),
+    expectedAttendance: v.optional(v.number()),
+    roomBookingFiles: v.array(v.string()),
+    asFundingRequired: v.boolean(),
+    foodDrinksBeingServed: v.boolean(),
+    invoices: v.array(
+      v.object({
+        id: v.string(),
+        vendor: v.string(),
+        items: v.array(
+          v.object({
+            description: v.string(),
+            quantity: v.number(),
+            unitPrice: v.number(),
+            total: v.number(),
+          }),
+        ),
+        tax: v.number(),
+        tip: v.number(),
+        invoiceFile: v.optional(v.string()),
+        additionalFiles: v.array(v.string()),
+        subtotal: v.number(),
+        total: v.number(),
+      }),
+    ),
+    needsGraphics: v.boolean(),
+    needsAsFunding: v.boolean(),
+    isDraft: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const userId = user.logtoId ?? user.authUserId ?? "";
+    const { logtoId, isDraft, ...data } = args;
+    return await ctx.db.insert("eventRequests", {
+      ...data,
+      status: isDraft ? "draft" : "submitted",
+      requestedUser: userId,
+      flyersCompleted: false,
+      isDraft: isDraft ?? false,
+    });
+  },
+});
+
+export const update = mutation({
+  args: {
+    logtoId: v.string(),
+    id: v.id("eventRequests"),
+    name: v.optional(v.string()),
+    location: v.optional(v.string()),
+    startDateTime: v.optional(v.number()),
+    endDateTime: v.optional(v.number()),
+    eventDescription: v.optional(v.string()),
+    flyersNeeded: v.optional(v.boolean()),
+    flyerType: v.optional(v.array(v.string())),
+    otherFlyerType: v.optional(v.string()),
+    flyerAdvertisingStartDate: v.optional(v.number()),
+    flyerAdditionalRequests: v.optional(v.string()),
+    photographyNeeded: v.optional(v.boolean()),
+    requiredLogos: v.optional(v.array(v.string())),
+    otherLogos: v.optional(v.array(v.string())),
+    advertisingFormat: v.optional(v.string()),
+    willOrHaveRoomBooking: v.optional(v.boolean()),
+    expectedAttendance: v.optional(v.number()),
+    roomBookingFiles: v.optional(v.array(v.string())),
+    asFundingRequired: v.optional(v.boolean()),
+    foodDrinksBeingServed: v.optional(v.boolean()),
+    invoices: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          vendor: v.string(),
+          items: v.array(
+            v.object({
+              description: v.string(),
+              quantity: v.number(),
+              unitPrice: v.number(),
+              total: v.number(),
+            }),
+          ),
+          tax: v.number(),
+          tip: v.number(),
+          invoiceFile: v.optional(v.string()),
+          additionalFiles: v.array(v.string()),
+          subtotal: v.number(),
+          total: v.number(),
+        }),
+      ),
+    ),
+    needsGraphics: v.optional(v.boolean()),
+    needsAsFunding: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const { logtoId, id, ...updates } = args;
+    const cleanUpdates: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) {
+        cleanUpdates[key] = value;
+      }
+    }
+    await ctx.db.patch(id, cleanUpdates);
+    return id;
+  },
+});
+
 export const updateStatus = mutation({
   args: {
     logtoId: v.string(),

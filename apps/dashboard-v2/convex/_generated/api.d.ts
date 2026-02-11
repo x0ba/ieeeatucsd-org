@@ -19,6 +19,7 @@ import type * as events from "../events.js";
 import type * as fundDeposits from "../fundDeposits.js";
 import type * as fundRequests from "../fundRequests.js";
 import type * as links from "../links.js";
+import type * as migrations from "../migrations.js";
 import type * as officerInvitations from "../officerInvitations.js";
 import type * as permissions from "../permissions.js";
 import type * as reimbursements from "../reimbursements.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   fundDeposits: typeof fundDeposits;
   fundRequests: typeof fundRequests;
   links: typeof links;
+  migrations: typeof migrations;
   officerInvitations: typeof officerInvitations;
   permissions: typeof permissions;
   reimbursements: typeof reimbursements;

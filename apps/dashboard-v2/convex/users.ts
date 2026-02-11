@@ -19,7 +19,7 @@ export const getByLogtoId = query({
     return await ctx.db
       .query("users")
       .withIndex("by_logtoId", (q) => q.eq("logtoId", args.logtoId))
-      .unique();
+      .first();
   },
 });
 
@@ -32,10 +32,11 @@ export const upsertFromAuth = mutation({
     signInMethod: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // 1. Check if user already exists by logtoId
     const existing = await ctx.db
       .query("users")
       .withIndex("by_logtoId", (q) => q.eq("logtoId", args.logtoId))
-      .unique();
+      .first();
 
     if (existing) {
       await ctx.db.patch(existing._id, {
@@ -46,7 +47,30 @@ export const upsertFromAuth = mutation({
       return existing._id;
     }
 
-    // Check for sponsor domain auto-assignment
+    // 2. Check if a Firebase-migrated user exists by email (no logtoId yet)
+    const migratedUser = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    if (migratedUser && !migratedUser.logtoId) {
+      // Link the migrated user to their Logto account
+      await ctx.db.patch(migratedUser._id, {
+        logtoId: args.logtoId,
+        lastLogin: Date.now(),
+        ...(args.signInMethod && { signInMethod: args.signInMethod }),
+        ...(args.avatar && !migratedUser.avatar && { avatar: args.avatar }),
+        ...(args.name && !migratedUser.name && { name: args.name }),
+      });
+
+      // The role field stays in the DB — it will be synced to Logto
+      // by the manage-users page or a background job later.
+      // For now, the DB role continues to drive permissions.
+
+      return migratedUser._id;
+    }
+
+    // 3. Brand new user — check for sponsor domain auto-assignment
     let role: string = "Member";
     let sponsorTier: string | undefined;
     let sponsorOrganization: string | undefined;
@@ -57,7 +81,7 @@ export const upsertFromAuth = mutation({
       const domainMatch = await ctx.db
         .query("sponsorDomains")
         .withIndex("by_domain", (q) => q.eq("domain", emailDomain))
-        .unique();
+        .first();
 
       if (domainMatch) {
         role = "Sponsor";
@@ -148,7 +172,7 @@ export const completeOnboarding = mutation({
     const existingProfile = await ctx.db
       .query("publicProfiles")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .unique();
+      .first();
 
     const profileData = {
       userId: user._id,

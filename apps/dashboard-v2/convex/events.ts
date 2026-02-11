@@ -30,7 +30,7 @@ export const getByCode = query({
     return await ctx.db
       .query("events")
       .withIndex("by_eventCode", (q) => q.eq("eventCode", args.eventCode))
-      .unique();
+      .first();
   },
 });
 
@@ -130,7 +130,7 @@ export const checkIn = mutation({
     const event = await ctx.db
       .query("events")
       .withIndex("by_eventCode", (q) => q.eq("eventCode", args.eventCode))
-      .unique();
+      .first();
 
     if (!event) {
       throw new Error("Event not found");

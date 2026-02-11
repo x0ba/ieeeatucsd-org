@@ -485,6 +485,22 @@ export default defineSchema({
       v.literal("verified"),
       v.literal("rejected"),
     ),
+    submittedAt: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    receiptFiles: v.optional(v.array(v.string())),
+    approvedAt: v.optional(v.number()),
+    approvedBy: v.optional(v.string()),
+    auditLogs: v.optional(
+      v.array(
+        v.object({
+          action: v.string(),
+          createdBy: v.string(),
+          createdByName: v.optional(v.string()),
+          timestamp: v.number(),
+          note: v.optional(v.string()),
+        }),
+      ),
+    ),
   })
     .index("by_status", ["status"])
     .index("by_depositedBy", ["depositedBy"]),
@@ -517,4 +533,55 @@ export default defineSchema({
     updatedBy: v.string(),
     isDefault: v.boolean(),
   }).index("by_templateId", ["templateId"]),
+
+  notifications: defineTable({
+    userId: v.string(),
+    type: v.string(),
+    title: v.string(),
+    message: v.string(),
+    data: v.optional(v.any()),
+    read: v.boolean(),
+    expiresAt: v.optional(v.number()),
+  }).index("by_userId", ["userId"]),
+
+  googleGroupAssignments: defineTable({
+    email: v.string(),
+    googleGroup: v.string(),
+    role: v.optional(v.string()),
+    assignedAt: v.number(),
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }).index("by_email", ["email"]),
+
+  directOnboardings: defineTable({
+    name: v.string(),
+    email: v.string(),
+    role: v.string(),
+    position: v.string(),
+    team: v.optional(v.string()),
+    onboardedBy: v.string(),
+    onboardedAt: v.number(),
+    emailSent: v.boolean(),
+    googleGroupAssigned: v.boolean(),
+    googleGroup: v.optional(v.string()),
+  }).index("by_email", ["email"]),
+
+  invites: defineTable({
+    name: v.string(),
+    email: v.string(),
+    role: v.string(),
+    position: v.optional(v.string()),
+    message: v.optional(v.string()),
+    invitedBy: v.string(),
+    invitedAt: v.number(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+    ),
+    acceptedAt: v.optional(v.number()),
+    acceptedBy: v.optional(v.string()),
+  })
+    .index("by_email", ["email"])
+    .index("by_status", ["status"]),
 });

@@ -22,7 +22,7 @@ export async function getCurrentUser(ctx: QueryCtx | MutationCtx, logtoId?: stri
   const user = await ctx.db
     .query("users")
     .withIndex("by_logtoId", (q) => q.eq("logtoId", logtoId))
-    .unique();
+    .first();
 
   return user;
 }
