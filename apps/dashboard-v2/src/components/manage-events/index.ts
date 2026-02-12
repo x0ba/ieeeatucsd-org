@@ -3,6 +3,7 @@ export type {
   EventRequest,
   EventStatus,
   Invoice,
+  InvoiceItem,
   EventFile,
   EventStats,
   EventFilters,

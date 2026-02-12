@@ -20,22 +20,21 @@ interface BasicInfoSectionProps {
 }
 
 const eventTypes = [
-  "Workshop",
   "Social",
-  "Networking",
-  "Speaker Event",
-  "Project Showcase",
-  "General Meeting",
+  "Technical",
+  "Outreach",
+  "Professional",
+  "Projects",
   "Other",
 ];
 
 const departments = [
-  "RoboCup",
-  "RAS",
   "General",
-  "Marketing",
-  "Finance",
   "Technical",
+  "Social",
+  "Outreach",
+  "Professional",
+  "Projects",
 ];
 
 export function BasicInfoSection({ data, onChange }: BasicInfoSectionProps) {

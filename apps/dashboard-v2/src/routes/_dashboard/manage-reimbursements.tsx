@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { Pagination } from "@/components/ui/pagination";
 import ReceiptViewer from "@/components/reimbursement/ReceiptViewer";
 import {
@@ -74,12 +73,10 @@ interface SortConfig {
 }
 
 const statusColors: Record<ReimbursementStatus, string> = {
-  submitted:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  approved:
-    "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  declined: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  paid: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  submitted: "bg-amber-100 text-amber-800",
+  approved: "bg-green-100 text-green-800",
+  declined: "bg-red-100 text-red-800",
+  paid: "bg-purple-100 text-purple-800",
 };
 
 const statusLabels: Record<ReimbursementStatus, string> = {
@@ -442,9 +439,9 @@ function ManageReimbursementsPage() {
   // Detail View - Split Pane Layout
   if (viewMode === "detail" && selectedReimbursement) {
     return (
-      <div className="h-[calc(100vh-3rem)] flex flex-col -m-6">
+      <div className="flex flex-col h-full bg-muted/50 absolute inset-0 z-10 overflow-hidden">
         {/* Header */}
-        <div className="bg-muted/30 border-b px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0 h-16 box-border">
           <div className="flex items-center gap-4 min-w-0">
             <Button
               variant="ghost"
@@ -488,17 +485,15 @@ function ManageReimbursementsPage() {
         </div>
 
         {/* Split Pane Content */}
-        <div className="flex-1 flex overflow-hidden min-h-0">
+        <div className="flex-1 flex overflow-hidden">
           {/* Left Panel (5/12) */}
-          <div className="w-5/12 flex flex-col border-r overflow-y-auto">
-            <div className="p-5 space-y-5">
+          <div className="w-5/12 flex flex-col border-r border-gray-200 bg-white overflow-y-auto">
+            <div className="p-6 space-y-8">
               {/* Actions Section */}
               {(selectedReimbursement.status === "submitted" ||
-                selectedReimbursement.status === "approved") && (
-                  <section className="space-y-3">
-                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide border-b pb-2">
-                      Actions
-                    </h3>
+            selectedReimbursement.status === "approved") && (
+              <section className="border-b border-gray-100 pb-6 space-y-3">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Actions</h3>
                     <div className="flex flex-wrap gap-2">
                       {selectedReimbursement.status === "submitted" && (
                         <>
@@ -549,33 +544,31 @@ function ManageReimbursementsPage() {
                 )}
 
               {/* Request Details */}
-              <section className="space-y-3">
-                <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
-                  Request Details
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] font-medium text-muted-foreground uppercase">Department</p>
-                    <p className="text-sm capitalize">{selectedReimbursement.department}</p>
+              <section className="space-y-4">
+                <h3 className="text-sm font-bold text-gray-900">Request Details</h3>
+                <div className="space-y-4 text-sm">
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-gray-500 font-medium">Department</span>
+                    <span className="col-span-2 text-gray-900 capitalize">{selectedReimbursement.department}</span>
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] font-medium text-muted-foreground uppercase">Payment Method</p>
-                    <p className="text-sm">{selectedReimbursement.paymentMethod}</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-gray-500 font-medium">Payment Method</span>
+                    <span className="col-span-2 text-gray-900">{selectedReimbursement.paymentMethod}</span>
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] font-medium text-muted-foreground uppercase">Total Amount</p>
-                    <p className="text-sm tabular-nums font-medium">${calculateTotalAmount(selectedReimbursement).toFixed(2)}</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-gray-500 font-medium">Total Amount</span>
+                    <span className="col-span-2 text-gray-900 tabular-nums font-medium">${calculateTotalAmount(selectedReimbursement).toFixed(2)}</span>
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] font-medium text-muted-foreground uppercase">Submitted By</p>
-                    <p className="text-sm">{selectedReimbursement.submittedBy}</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-gray-500 font-medium">Submitted By</span>
+                    <span className="col-span-2 text-gray-900">{selectedReimbursement.submittedBy}</span>
                   </div>
                   {selectedReimbursement.additionalInfo && (
-                    <div className="space-y-0.5 col-span-2">
-                      <p className="text-[11px] font-medium text-muted-foreground uppercase">Payment Info</p>
-                      <p className="text-sm bg-blue-50 dark:bg-blue-950/40 px-2 py-1 rounded text-blue-800 dark:text-blue-300">
+                    <div className="grid grid-cols-3 gap-2">
+                      <span className="text-gray-500 font-medium">Payment Info</span>
+                      <span className="col-span-2 text-gray-900 font-medium bg-blue-50 px-2 py-0.5 rounded text-blue-800">
                         {selectedReimbursement.additionalInfo}
-                      </p>
+                      </span>
                     </div>
                   )}
                 </div>
@@ -584,33 +577,31 @@ function ManageReimbursementsPage() {
               {/* Receipts List */}
               {selectedReimbursement.receipts &&
                 selectedReimbursement.receipts.length > 0 && (
-                  <section className="space-y-3">
-                    <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground flex justify-between items-center">
+                  <section className="space-y-4">
+                    <h3 className="text-sm font-bold text-gray-900 flex justify-between">
                       <span>Receipts</span>
-                      <span className="text-[10px] font-normal text-muted-foreground/70 normal-case">
-                        {selectedReimbursement.receipts.length} items
-                      </span>
+                      <span className="text-gray-500 font-medium text-xs">{selectedReimbursement.receipts.length} items</span>
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {selectedReimbursement.receipts.map(
                         (receipt: any, idx: number) => (
                           <div
                             key={idx}
                             onClick={() => setActiveReceiptIndex(idx)}
-                            className={`p-3 rounded-lg border cursor-pointer transition-all ${activeReceiptIndex === idx
-                              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 ring-1 ring-blue-500/20"
-                              : "border-border hover:border-muted-foreground/50 hover:bg-muted/50"
+                            className={`p-3 rounded-xl border cursor-pointer transition-all ${activeReceiptIndex === idx
+                              ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500/20"
+                              : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                               }`}
                           >
                             <div className="flex justify-between items-start mb-1">
-                              <span className="font-medium text-sm">
+                              <span className="font-semibold text-gray-900">
                                 {receipt.vendorName || "Unknown Vendor"}
                               </span>
-                              <span className="font-bold text-sm tabular-nums">
-                                ${calculateReceiptTotal(receipt).toFixed(2)}
+                              <span className="font-bold text-gray-900 tabular-nums">
+                                ${(receipt.total || 0).toFixed(2)}
                               </span>
                             </div>
-                            <div className="text-xs text-muted-foreground flex justify-between">
+                            <div className="text-xs text-gray-500 flex justify-between">
                               <span>
                                 {receipt.dateOfPurchase
                                   ? format(receipt.dateOfPurchase, "MMM d, yyyy")
@@ -632,11 +623,9 @@ function ManageReimbursementsPage() {
               {/* Audit History */}
               {selectedReimbursement.auditLogs &&
                 selectedReimbursement.auditLogs.length > 0 && (
-                  <section className="space-y-3">
-                    <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
-                      Audit History
-                    </h3>
-                    <div className="space-y-4 relative pl-4 border-l-2 border-muted">
+                  <section className="border-t border-gray-100 pt-6 space-y-4">
+                    <h3 className="text-sm font-bold text-gray-900">Audit History</h3>
+                    <div className="space-y-4 relative pl-4 border-l-2 border-gray-100">
                       {selectedReimbursement.auditLogs.map(
                         (log: any, i: number) => (
                           <div key={i} className="relative">
@@ -655,16 +644,16 @@ function ManageReimbursementsPage() {
 
               {/* Payment Details */}
               {selectedReimbursement.paymentDetails && (
-                <section className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 border-b border-green-100 dark:border-green-800 pb-2">
+                <section className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 border-b border-green-100 pb-2">
                     <CheckCircle className="w-4 h-4 text-green-600" />
-                    <h3 className="text-xs font-bold text-green-900 dark:text-green-200 uppercase tracking-wide">
+                    <h3 className="text-xs font-bold text-green-900 uppercase tracking-wide">
                       Payment Confirmed
                     </h3>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-0.5">
-                      <p className="text-[11px] font-medium text-green-700 dark:text-green-400 uppercase">
+                      <p className="text-[11px] font-medium text-green-700 uppercase">
                         Confirmation #
                       </p>
                       <p className="text-sm font-mono font-medium">
@@ -672,7 +661,7 @@ function ManageReimbursementsPage() {
                       </p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-[11px] font-medium text-green-700 dark:text-green-400 uppercase">
+                      <p className="text-[11px] font-medium text-green-700 uppercase">
                         Amount Paid
                       </p>
                       <p className="text-sm tabular-nums font-medium">
@@ -681,7 +670,7 @@ function ManageReimbursementsPage() {
                     </div>
                     {selectedReimbursement.paymentDetails.paymentDate && (
                       <div className="space-y-0.5">
-                        <p className="text-[11px] font-medium text-green-700 dark:text-green-400 uppercase">
+                        <p className="text-[11px] font-medium text-green-700 uppercase">
                           Payment Date
                         </p>
                         <p className="text-sm">
@@ -691,7 +680,7 @@ function ManageReimbursementsPage() {
                     )}
                     {selectedReimbursement.paymentDetails.memo && (
                       <div className="space-y-0.5 col-span-2">
-                        <p className="text-[11px] font-medium text-green-700 dark:text-green-400 uppercase">
+                        <p className="text-[11px] font-medium text-green-700 uppercase">
                           Memo
                         </p>
                         <p className="text-sm">
@@ -706,7 +695,7 @@ function ManageReimbursementsPage() {
           </div>
 
           {/* Right Panel (7/12) - Receipt Viewer */}
-          <div className="w-7/12 flex flex-col bg-muted/20 overflow-hidden">
+          <div className="w-7/12 bg-gray-100 flex flex-col border-l border-gray-200 overflow-hidden">
             {currentReceipt ? (
               <Tabs defaultValue="image" className="h-full flex flex-col">
                 <TabsList className="mx-4 mt-4 justify-start shrink-0">
@@ -734,110 +723,133 @@ function ManageReimbursementsPage() {
                   value="invoice"
                   className="flex-1 p-4 m-0 overflow-auto"
                 >
-                  <Card>
-                    <CardHeader className="border-b bg-muted/50">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <CardTitle className="text-base">
-                            {currentReceipt.vendorName || "Unknown Vendor"}
-                          </CardTitle>
-                          <CardDescription>
-                            {currentReceipt.dateOfPurchase
-                              ? format(currentReceipt.dateOfPurchase, "MMM d, yyyy")
-                              : "No date"}
-                          </CardDescription>
+                  <div className="h-full flex flex-col">
+                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col h-full">
+                      {/* Header */}
+                      <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-white">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h3 className="text-base font-semibold text-gray-900">
+                              {currentReceipt.vendorName || "Unknown Vendor"}
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-0.5">
+                              {currentReceipt.dateOfPurchase
+                                ? format(currentReceipt.dateOfPurchase, "MMM d, yyyy")
+                                : "No date"}
+                            </p>
+                          </div>
+                          <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100 border-indigo-200">
+                            AI Extracted
+                          </Badge>
                         </div>
-                        <Badge variant="secondary">AI Extracted</Badge>
                       </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      {/* Line Items Table */}
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-muted/30">
-                            <TableHead className="text-left">Description</TableHead>
-                            <TableHead className="text-left">Category</TableHead>
-                            <TableHead className="text-right">Qty</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {currentReceipt.lineItems?.map(
-                            (item: any, i: number) => (
-                              <TableRow key={i}>
-                                <TableCell className="font-medium">
-                                  {item.description}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant="outline" className="text-xs">
+
+                      {/* Line Items */}
+                      <div className="flex-1 overflow-auto">
+                        <table className="w-full">
+                          <thead className="sticky top-0 bg-slate-50 border-b border-gray-200 z-10">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Description
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-32">
+                                Category
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider w-16">
+                                Qty
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider w-28">
+                                Amount
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {currentReceipt.lineItems?.map((item: any, i: number) => (
+                              <tr
+                                key={i}
+                                className="hover:bg-slate-50/50 transition-colors group"
+                              >
+                                <td className="px-4 py-3">
+                                  <span
+                                    className="block text-sm font-medium text-gray-900 truncate max-w-[220px]"
+                                    title={item.description}
+                                  >
+                                    {item.description}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
                                     {item.category}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right text-muted-foreground">
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm text-gray-500 tabular-nums">
                                   {item.quantity || 1}
-                                </TableCell>
-                                <TableCell className="text-right font-mono tabular-nums">
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm font-mono font-medium text-gray-900 tabular-nums">
                                   ${(item.amount || 0).toFixed(2)}
-                                </TableCell>
-                              </TableRow>
-                            )
-                          )}
-                          {(!currentReceipt.lineItems ||
-                            currentReceipt.lineItems.length === 0) && (
-                              <TableRow>
-                                <TableCell
-                                  colSpan={4}
-                                  className="text-center text-muted-foreground py-8"
-                                >
-                                  No line items found
-                                </TableCell>
-                              </TableRow>
+                                </td>
+                              </tr>
+                            ))}
+                            {(!currentReceipt.lineItems ||
+                              currentReceipt.lineItems.length === 0) && (
+                              <tr>
+                                <td colSpan={4} className="px-4 py-12 text-center text-gray-400">
+                                  <div className="flex flex-col items-center gap-2">
+                                    <Receipt className="w-8 h-8 opacity-50" />
+                                    <span className="text-sm">No line items found</span>
+                                  </div>
+                                </td>
+                              </tr>
                             )}
-                        </TableBody>
-                      </Table>
+                          </tbody>
+                        </table>
+                      </div>
 
                       {/* Totals */}
-                      <div className="border-t p-4 space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Subtotal</span>
-                          <span className="font-mono tabular-nums">
-                            ${(currentReceipt.subtotal || 0).toFixed(2)}
-                          </span>
-                        </div>
-                        {currentReceipt.tax && currentReceipt.tax > 0 && (
+                      <div className="border-t border-gray-200 bg-slate-50/50">
+                        <div className="px-5 py-4 space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Tax</span>
-                            <span className="font-mono tabular-nums">
-                              ${currentReceipt.tax.toFixed(2)}
+                            <span className="text-gray-500">Subtotal</span>
+                            <span className="font-mono tabular-nums text-gray-700">
+                              ${(currentReceipt.subtotal || 0).toFixed(2)}
                             </span>
                           </div>
-                        )}
-                        {currentReceipt.tip && currentReceipt.tip > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Tip</span>
-                            <span className="font-mono tabular-nums">
-                              ${currentReceipt.tip.toFixed(2)}
-                            </span>
+                          {currentReceipt.tax && currentReceipt.tax > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Tax</span>
+                              <span className="font-mono tabular-nums text-gray-700">
+                                ${(currentReceipt.tax).toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                          {currentReceipt.tip && currentReceipt.tip > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Tip</span>
+                              <span className="font-mono tabular-nums text-gray-700">
+                                ${(currentReceipt.tip).toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                          {currentReceipt.shipping && currentReceipt.shipping > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Shipping</span>
+                              <span className="font-mono tabular-nums text-gray-700">
+                                ${(currentReceipt.shipping).toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                          <div className="pt-3 mt-2 border-t border-gray-200">
+                            <div className="flex justify-between">
+                              <span className="text-sm font-semibold text-gray-900">Total</span>
+                              <span className="text-base font-bold font-mono tabular-nums text-gray-900">
+                                ${calculateReceiptTotal(currentReceipt).toFixed(2)}
+                              </span>
+                            </div>
                           </div>
-                        )}
-                        {currentReceipt.shipping && currentReceipt.shipping > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Shipping</span>
-                            <span className="font-mono tabular-nums">
-                              ${currentReceipt.shipping.toFixed(2)}
-                            </span>
-                          </div>
-                        )}
-                        <Separator />
-                        <div className="flex justify-between font-semibold">
-                          <span>Total</span>
-                          <span className="font-mono tabular-nums">
-                            ${calculateReceiptTotal(currentReceipt).toFixed(2)}
-                          </span>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </TabsContent>
               </Tabs>
             ) : (
@@ -872,9 +884,9 @@ function ManageReimbursementsPage() {
                 <div className="flex gap-6">
                   {/* Left: Inputs */}
                   <div className="flex-1 space-y-4">
-                    <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 p-3 rounded-lg flex items-start gap-3">
+                    <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-start gap-3">
                       <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
-                      <div className="text-sm text-blue-800 dark:text-blue-300">
+                      <div className="text-sm text-blue-800">
                         <p className="font-semibold">AI Extraction Complete</p>
                         <p className="opacity-80">
                           Please verify the details below match the proof.
@@ -962,8 +974,8 @@ function ManageReimbursementsPage() {
                 <div className="py-6">
                   <div
                     className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${paidProofFile
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40"
-                      : "border-muted-foreground/25 hover:border-muted-foreground/50 bg-muted/50"
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-300 hover:border-gray-400 bg-gray-50"
                       }`}
                   >
                     <input
@@ -1090,12 +1102,12 @@ function ManageReimbursementsPage() {
                   <p className="text-sm font-medium text-muted-foreground">
                     Total Requests
                   </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <p className="text-2xl font-bold text-gray-900">
                     {stats.total}
                   </p>
                 </div>
-                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/40 rounded-xl flex items-center justify-center">
-                  <Receipt className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <Receipt className="w-5 h-5 text-blue-600" />
                 </div>
               </div>
             </CardContent>
@@ -1113,7 +1125,7 @@ function ManageReimbursementsPage() {
                     {stats.submitted}
                   </p>
                 </div>
-                <div className="w-10 h-10 bg-amber-50 dark:bg-amber-950/40 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
                   <Clock className="w-5 h-5 text-amber-600" />
                 </div>
               </div>
@@ -1132,7 +1144,7 @@ function ManageReimbursementsPage() {
                     {stats.approved}
                   </p>
                 </div>
-                <div className="w-10 h-10 bg-green-50 dark:bg-green-950/40 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
                   <CheckCircle2 className="w-5 h-5 text-green-600" />
                 </div>
               </div>
@@ -1151,7 +1163,7 @@ function ManageReimbursementsPage() {
                     ${stats.totalAmount.toFixed(2)}
                   </p>
                 </div>
-                <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
                   <DollarSign className="w-5 h-5 text-emerald-600" />
                 </div>
               </div>
@@ -1271,7 +1283,7 @@ function ManageReimbursementsPage() {
                       onClick={() => handleViewDetails(r)}
                     >
                       <TableCell className="min-w-[200px]">
-                        <div className="font-medium text-gray-900 dark:text-gray-100 truncate max-w-[250px]">
+                        <div className="font-medium text-gray-900 truncate max-w-[250px]">
                           {r.title}
                         </div>
                         <div className="text-xs text-muted-foreground">
@@ -1303,7 +1315,7 @@ function ManageReimbursementsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                           {r.department}
                         </span>
                       </TableCell>

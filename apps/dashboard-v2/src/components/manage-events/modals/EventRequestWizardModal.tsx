@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle } from "lucide-react";
 import {
   Dialog,
@@ -50,7 +50,46 @@ const defaultFormData: EventFormData = {
   estimatedAttendance: 0,
   files: [],
   invoices: [],
+  willOrHaveRoomBooking: false,
+  roomBookingFiles: [],
+  foodDrinksBeingServed: false,
+  asFundingRequired: false,
+  flyerType: [],
+  otherFlyerType: "",
+  flyerAdvertisingStartDate: 0,
+  flyerAdditionalRequests: "",
+  photographyNeeded: false,
+  requiredLogos: [],
+  otherLogos: [],
+  advertisingFormat: "",
+  additionalSpecifications: "",
+  flyersCompleted: false,
 };
+
+function buildFormDataFromInitial(initialData?: Partial<EventRequest>): EventFormData {
+  return {
+    ...defaultFormData,
+    ...initialData,
+    startDate: initialData?.startDate || Date.now(),
+    endDate: initialData?.endDate || Date.now() + 3600000,
+    invoices: initialData?.invoices || [],
+    files: initialData?.files || [],
+    willOrHaveRoomBooking: initialData?.willOrHaveRoomBooking ?? false,
+    roomBookingFiles: initialData?.roomBookingFiles || [],
+    foodDrinksBeingServed: initialData?.foodDrinksBeingServed ?? false,
+    asFundingRequired: initialData?.asFundingRequired ?? false,
+    flyerType: initialData?.flyerType || [],
+    otherFlyerType: initialData?.otherFlyerType || "",
+    flyerAdvertisingStartDate: initialData?.flyerAdvertisingStartDate || 0,
+    flyerAdditionalRequests: initialData?.flyerAdditionalRequests || "",
+    photographyNeeded: initialData?.photographyNeeded ?? false,
+    requiredLogos: initialData?.requiredLogos || [],
+    otherLogos: initialData?.otherLogos || [],
+    advertisingFormat: initialData?.advertisingFormat || "",
+    additionalSpecifications: initialData?.additionalSpecifications || "",
+    flyersCompleted: initialData?.flyersCompleted ?? false,
+  };
+}
 
 export function EventRequestWizardModal({
   isOpen,
@@ -58,16 +97,21 @@ export function EventRequestWizardModal({
   onSubmit,
   initialData,
 }: EventRequestWizardModalProps) {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
-  const [formData, setFormData] = useState<EventFormData>({
-    ...defaultFormData,
-    ...initialData,
-    startDate: initialData?.startDate || Date.now(),
-    endDate: initialData?.endDate || Date.now() + 3600000,
-    invoices: initialData?.invoices || [],
-    files: initialData?.files || [],
-  });
+  const isEditing = !!initialData;
+  const [currentStep, setCurrentStep] = useState(isEditing ? 2 : 1);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(isEditing);
+  const [formData, setFormData] = useState<EventFormData>(
+    buildFormDataFromInitial(initialData)
+  );
+
+  // Sync form data when initialData changes (e.g., opening edit for a different event)
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(buildFormDataFromInitial(initialData));
+      setCurrentStep(initialData ? 2 : 1);
+      setDisclaimerAccepted(!!initialData);
+    }
+  }, [isOpen, initialData]);
 
   const progress = ((currentStep - 1) / (steps.length - 1)) * 100;
 
@@ -150,6 +194,9 @@ export function EventRequestWizardModal({
               capacity: formData.capacity,
               eventCode: formData.eventCode,
               hasFood: formData.hasFood,
+              willOrHaveRoomBooking: formData.willOrHaveRoomBooking,
+              roomBookingFiles: formData.roomBookingFiles,
+              foodDrinksBeingServed: formData.foodDrinksBeingServed,
             }}
             onChange={(data) => updateFormData(data)}
           />
@@ -161,6 +208,15 @@ export function EventRequestWizardModal({
               needsFlyers: formData.needsFlyers,
               needsGraphics: formData.needsGraphics,
               estimatedAttendance: formData.estimatedAttendance,
+              flyerType: formData.flyerType,
+              otherFlyerType: formData.otherFlyerType,
+              flyerAdvertisingStartDate: formData.flyerAdvertisingStartDate,
+              flyerAdditionalRequests: formData.flyerAdditionalRequests,
+              photographyNeeded: formData.photographyNeeded,
+              requiredLogos: formData.requiredLogos,
+              otherLogos: formData.otherLogos,
+              advertisingFormat: formData.advertisingFormat,
+              additionalSpecifications: formData.additionalSpecifications,
             }}
             onChange={(data) => updateFormData(data)}
           />
@@ -170,6 +226,7 @@ export function EventRequestWizardModal({
           <FundingSection
             data={{
               needsASFunding: formData.needsASFunding,
+              asFundingRequired: formData.asFundingRequired,
               invoices: formData.invoices,
             }}
             onChange={(data) => updateFormData(data)}
@@ -186,7 +243,7 @@ export function EventRequestWizardModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Event Request</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Event Request" : "Create Event Request"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -238,7 +295,7 @@ export function EventRequestWizardModal({
             ) : (
               <Button onClick={handleSubmit}>
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Submit Request
+                {isEditing ? "Update Request" : "Submit Request"}
               </Button>
             )}
           </div>

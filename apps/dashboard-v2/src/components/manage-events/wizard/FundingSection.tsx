@@ -4,11 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { Invoice } from "../types";
+import type { Invoice, InvoiceItem } from "../types";
 
 interface FundingSectionProps {
   data: {
     needsASFunding: boolean;
+    asFundingRequired: boolean;
     invoices: Invoice[];
   };
   onChange: (data: Partial<FundingSectionProps["data"]>) => void;
@@ -18,11 +19,50 @@ export function FundingSection({ data, onChange }: FundingSectionProps) {
   const addInvoice = () => {
     const newInvoice: Invoice = {
       _id: crypto.randomUUID(),
-      amount: 0,
       vendor: "",
+      items: [],
+      tax: 0,
+      tip: 0,
+      additionalFiles: [],
+      subtotal: 0,
+      total: 0,
+      amount: 0,
       description: "",
     };
     onChange({ invoices: [...data.invoices, newInvoice] });
+  };
+
+  const addLineItem = (invoiceId: string) => {
+    const invoice = data.invoices.find((inv) => inv._id === invoiceId);
+    if (!invoice) return;
+    const newItem: InvoiceItem = { description: "", quantity: 1, unitPrice: 0, total: 0 };
+    const updatedItems = [...invoice.items, newItem];
+    updateInvoice(invoiceId, { items: updatedItems });
+  };
+
+  const updateLineItem = (invoiceId: string, itemIndex: number, updates: Partial<InvoiceItem>) => {
+    const invoice = data.invoices.find((inv) => inv._id === invoiceId);
+    if (!invoice) return;
+    const updatedItems = invoice.items.map((item, idx) => {
+      if (idx !== itemIndex) return item;
+      const updated = { ...item, ...updates };
+      if (updates.quantity !== undefined || updates.unitPrice !== undefined) {
+        updated.total = updated.quantity * updated.unitPrice;
+      }
+      return updated;
+    });
+    const subtotal = updatedItems.reduce((sum, item) => sum + item.total, 0);
+    const total = subtotal + (invoice.tax || 0) + (invoice.tip || 0);
+    updateInvoice(invoiceId, { items: updatedItems, subtotal, total, amount: total });
+  };
+
+  const removeLineItem = (invoiceId: string, itemIndex: number) => {
+    const invoice = data.invoices.find((inv) => inv._id === invoiceId);
+    if (!invoice) return;
+    const updatedItems = invoice.items.filter((_, idx) => idx !== itemIndex);
+    const subtotal = updatedItems.reduce((sum, item) => sum + item.total, 0);
+    const total = subtotal + (invoice.tax || 0) + (invoice.tip || 0);
+    updateInvoice(invoiceId, { items: updatedItems, subtotal, total, amount: total });
   };
 
   const removeInvoice = (id: string) => {
@@ -37,7 +77,17 @@ export function FundingSection({ data, onChange }: FundingSectionProps) {
     });
   };
 
-  const totalAmount = data.invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+  const recalcInvoiceTotal = (invoiceId: string, field: "tax" | "tip", value: number) => {
+    const invoice = data.invoices.find((inv) => inv._id === invoiceId);
+    if (!invoice) return;
+    const subtotal = invoice.items.reduce((sum, item) => sum + item.total, 0);
+    const tax = field === "tax" ? value : (invoice.tax || 0);
+    const tip = field === "tip" ? value : (invoice.tip || 0);
+    const total = subtotal + tax + tip;
+    updateInvoice(invoiceId, { [field]: value, subtotal, total, amount: total });
+  };
+
+  const totalAmount = data.invoices.reduce((sum, inv) => sum + (inv.total || inv.amount || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -47,7 +97,7 @@ export function FundingSection({ data, onChange }: FundingSectionProps) {
             id="needsASFunding"
             checked={data.needsASFunding}
             onCheckedChange={(checked) =>
-              onChange({ needsASFunding: checked as boolean })
+              onChange({ needsASFunding: checked as boolean, asFundingRequired: checked as boolean })
             }
           />
           <div className="space-y-1 flex-1">
@@ -63,6 +113,18 @@ export function FundingSection({ data, onChange }: FundingSectionProps) {
             </p>
           </div>
         </div>
+
+        {data.needsASFunding && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+            <p className="text-xs text-amber-700 dark:text-amber-300 font-medium mb-1">AS Funding Guidelines</p>
+            <ul className="text-xs text-amber-600 dark:text-amber-400 list-disc list-inside space-y-0.5">
+              <li>Maximum $5,000 per event</li>
+              <li>Itemized receipts required</li>
+              <li>Food/drinks must follow university guidelines</li>
+              <li>AS logo required on all funded materials</li>
+            </ul>
+          </div>
+        )}
 
         <div className="space-y-4 pt-4 border-t">
           <div className="flex items-center justify-between">
@@ -105,40 +167,127 @@ export function FundingSection({ data, onChange }: FundingSectionProps) {
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor={`vendor-${invoice._id}`}>Vendor</Label>
-                      <Input
-                        id={`vendor-${invoice._id}`}
-                        value={invoice.vendor}
-                        onChange={(e) =>
-                          updateInvoice(invoice._id, { vendor: e.target.value })
-                        }
-                        placeholder="e.g., Costco"
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`vendor-${invoice._id}`}>Vendor</Label>
+                    <Input
+                      id={`vendor-${invoice._id}`}
+                      value={invoice.vendor}
+                      onChange={(e) =>
+                        updateInvoice(invoice._id, { vendor: e.target.value })
+                      }
+                      placeholder="e.g., Costco"
+                    />
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor={`amount-${invoice._id}`}>Amount ($)</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium">Line Items</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => addLineItem(invoice._id)}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Item
+                      </Button>
+                    </div>
+                    {invoice.items.length === 0 ? (
+                      <p className="text-xs text-gray-400 italic">No line items yet. Add items or enter a total amount below.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {invoice.items.map((item, idx) => (
+                          <div key={idx} className="grid grid-cols-12 gap-2 items-end">
+                            <div className="col-span-5">
+                              {idx === 0 && <Label className="text-[10px] text-gray-500">Description</Label>}
+                              <Input
+                                value={item.description}
+                                onChange={(e) => updateLineItem(invoice._id, idx, { description: e.target.value })}
+                                placeholder="Item description"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              {idx === 0 && <Label className="text-[10px] text-gray-500">Qty</Label>}
+                              <Input
+                                type="number"
+                                min={1}
+                                value={item.quantity}
+                                onChange={(e) => updateLineItem(invoice._id, idx, { quantity: parseInt(e.target.value) || 1 })}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              {idx === 0 && <Label className="text-[10px] text-gray-500">Price</Label>}
+                              <Input
+                                type="number"
+                                min={0}
+                                step={0.01}
+                                value={item.unitPrice || ""}
+                                onChange={(e) => updateLineItem(invoice._id, idx, { unitPrice: parseFloat(e.target.value) || 0 })}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="col-span-2 text-xs font-medium text-right pt-1">
+                              {idx === 0 && <Label className="text-[10px] text-gray-500 block">Total</Label>}
+                              ${item.total.toFixed(2)}
+                            </div>
+                            <div className="col-span-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-destructive"
+                                onClick={() => removeLineItem(invoice._id, idx)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t">
+                    <div className="space-y-1">
+                      <Label htmlFor={`tax-${invoice._id}`} className="text-xs">Tax ($)</Label>
                       <Input
-                        id={`amount-${invoice._id}`}
+                        id={`tax-${invoice._id}`}
                         type="number"
                         min={0}
                         step={0.01}
-                        value={invoice.amount || ""}
-                        onChange={(e) =>
-                          updateInvoice(invoice._id, {
-                            amount: parseFloat(e.target.value) || 0,
-                          })
-                        }
+                        value={invoice.tax || ""}
+                        onChange={(e) => recalcInvoiceTotal(invoice._id, "tax", parseFloat(e.target.value) || 0)}
                         placeholder="0.00"
+                        className="h-8 text-xs"
                       />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`tip-${invoice._id}`} className="text-xs">Tip ($)</Label>
+                      <Input
+                        id={`tip-${invoice._id}`}
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={invoice.tip || ""}
+                        onChange={(e) => recalcInvoiceTotal(invoice._id, "tip", parseFloat(e.target.value) || 0)}
+                        placeholder="0.00"
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Invoice Total</Label>
+                      <div className="h-8 flex items-center text-sm font-bold">
+                        ${(invoice.total || invoice.amount || 0).toFixed(2)}
+                      </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor={`description-${invoice._id}`}>
-                      Description
+                      Notes / Description
                     </Label>
                     <Textarea
                       id={`description-${invoice._id}`}
@@ -146,14 +295,14 @@ export function FundingSection({ data, onChange }: FundingSectionProps) {
                       onChange={(e) =>
                         updateInvoice(invoice._id, { description: e.target.value })
                       }
-                      placeholder="Describe the purchase..."
+                      placeholder="Additional notes about this invoice..."
                       rows={2}
                     />
                   </div>
 
-                  {invoice.fileUrl && (
+                  {invoice.invoiceFile && (
                     <div className="text-sm text-green-600 dark:text-green-400">
-                      Receipt attached
+                      Invoice file attached
                     </div>
                   )}
                 </div>

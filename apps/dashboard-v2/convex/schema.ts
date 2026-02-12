@@ -254,6 +254,7 @@ export default defineSchema({
     requiredLogos: v.array(v.string()),
     otherLogos: v.optional(v.array(v.string())),
     advertisingFormat: v.optional(v.string()),
+    additionalSpecifications: v.optional(v.string()),
     willOrHaveRoomBooking: v.boolean(),
     expectedAttendance: v.optional(v.number()),
     roomBookingFiles: v.array(v.string()),

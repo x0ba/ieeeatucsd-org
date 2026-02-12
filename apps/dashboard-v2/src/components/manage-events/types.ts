@@ -2,10 +2,25 @@ import type { Id } from "@convex/_generated/dataModel";
 
 export type EventStatus = "draft" | "pending" | "approved" | "declined" | "published";
 
+export interface InvoiceItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
 export interface Invoice {
   _id: string;
-  amount: number;
   vendor: string;
+  items: InvoiceItem[];
+  tax: number;
+  tip: number;
+  invoiceFile?: string;
+  additionalFiles: string[];
+  subtotal: number;
+  total: number;
+  // Convenience fields for simple display
+  amount: number;
   description: string;
   fileUrl?: string;
 }
@@ -41,6 +56,21 @@ export interface EventRequest {
   invoices: Invoice[];
   createdBy: string;
   _updatedAt?: number;
+  // Additional Convex fields for full edit support
+  willOrHaveRoomBooking?: boolean;
+  roomBookingFiles?: string[];
+  foodDrinksBeingServed?: boolean;
+  asFundingRequired?: boolean;
+  flyerType?: string[];
+  otherFlyerType?: string;
+  flyerAdvertisingStartDate?: number;
+  flyerAdditionalRequests?: string;
+  photographyNeeded?: boolean;
+  requiredLogos?: string[];
+  otherLogos?: string[];
+  advertisingFormat?: string;
+  additionalSpecifications?: string;
+  flyersCompleted?: boolean;
 }
 
 export interface EventStats {
@@ -84,6 +114,21 @@ export interface EventFormData {
   estimatedAttendance: number;
   files: string[];
   invoices: Invoice[];
+  // Additional Convex fields
+  willOrHaveRoomBooking: boolean;
+  roomBookingFiles: string[];
+  foodDrinksBeingServed: boolean;
+  asFundingRequired: boolean;
+  flyerType: string[];
+  otherFlyerType: string;
+  flyerAdvertisingStartDate: number;
+  flyerAdditionalRequests: string;
+  photographyNeeded: boolean;
+  requiredLogos: string[];
+  otherLogos: string[];
+  advertisingFormat: string;
+  additionalSpecifications: string;
+  flyersCompleted: boolean;
 }
 
 export interface CalendarEvent {

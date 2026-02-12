@@ -10,6 +10,9 @@ interface LogisticsSectionProps {
     capacity?: number;
     eventCode: string;
     hasFood: boolean;
+    willOrHaveRoomBooking: boolean;
+    roomBookingFiles: string[];
+    foodDrinksBeingServed: boolean;
   };
   onChange: (data: Partial<LogisticsSectionProps["data"]>) => void;
 }
@@ -101,19 +104,37 @@ export function LogisticsSection({ data, onChange }: LogisticsSectionProps) {
           </div>
         </div>
 
-        <div className="flex items-start space-x-3 pt-4 border-t">
-          <Checkbox
-            id="hasFood"
-            checked={data.hasFood}
-            onCheckedChange={(checked) => onChange({ hasFood: checked as boolean })}
-          />
-          <div className="space-y-1">
-            <Label htmlFor="hasFood" className="cursor-pointer">
-              Food will be served at this event
-            </Label>
-            <p className="text-xs text-gray-500">
-              Check this if food will be provided. Additional food safety requirements may apply.
-            </p>
+        <div className="space-y-4 pt-4 border-t">
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="willOrHaveRoomBooking"
+              checked={data.willOrHaveRoomBooking}
+              onCheckedChange={(checked) => onChange({ willOrHaveRoomBooking: checked as boolean })}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="willOrHaveRoomBooking" className="cursor-pointer">
+                Room booking secured or in progress
+              </Label>
+              <p className="text-xs text-gray-500">
+                Check this if you have or will have a room booking for this event. Room bookings should be secured before submitting.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="foodDrinksBeingServed"
+              checked={data.foodDrinksBeingServed}
+              onCheckedChange={(checked) => onChange({ foodDrinksBeingServed: checked as boolean, hasFood: checked as boolean })}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="foodDrinksBeingServed" className="cursor-pointer">
+                Food / drinks will be served
+              </Label>
+              <p className="text-xs text-gray-500">
+                All food must be from approved AS vendors and follow university food safety guidelines. Home-cooked food is not permitted unless approved by VC Operations.
+              </p>
+            </div>
           </div>
         </div>
       </div>
