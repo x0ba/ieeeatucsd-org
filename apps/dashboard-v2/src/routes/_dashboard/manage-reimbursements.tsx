@@ -32,7 +32,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Pagination } from "@/components/ui/pagination";
 import ReceiptViewer from "@/components/reimbursement/ReceiptViewer";
 import {
@@ -443,60 +442,61 @@ function ManageReimbursementsPage() {
   // Detail View - Split Pane Layout
   if (viewMode === "detail" && selectedReimbursement) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex flex-col -m-6">
+      <div className="h-[calc(100vh-3rem)] flex flex-col -m-6">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-white dark:bg-gray-950 shrink-0">
-          <div className="flex items-center gap-4">
+        <div className="bg-muted/30 border-b px-6 py-4 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4 min-w-0">
             <Button
               variant="ghost"
               size="icon"
               onClick={handleBackToList}
-              className="-ml-2"
+              className="-ml-2 shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <h2 className="text-lg font-bold">
+                <h2 className="text-lg font-bold truncate" title={selectedReimbursement.title}>
                   {selectedReimbursement.title}
                 </h2>
                 <Badge
-                  className={
-                    statusColors[selectedReimbursement.status as ReimbursementStatus]
-                  }
+                  className={`shrink-0 ${statusColors[selectedReimbursement.status as ReimbursementStatus]}`}
                   variant="secondary"
                 >
                   {statusLabels[selectedReimbursement.status as ReimbursementStatus]}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Submitted on{" "}
-                {format(selectedReimbursement._creationTime, "MMM d, yyyy")}{" "}
-                by {selectedReimbursement.submittedBy}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
+                <span>{selectedReimbursement.submittedBy}</span>
+                <span className="text-muted-foreground/40">·</span>
+                <span className="capitalize">{selectedReimbursement.department}</span>
+                <span className="text-muted-foreground/40">·</span>
+                <span>{selectedReimbursement.paymentMethod}</span>
+                <span className="text-muted-foreground/40">·</span>
+                <span>{format(selectedReimbursement._creationTime, "MMM d, yyyy")}</span>
+              </div>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-right shrink-0 ml-4">
             <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
               Total Amount
             </p>
-            <p className="text-xl font-bold">
+            <p className="text-xl font-bold tabular-nums">
               ${calculateTotalAmount(selectedReimbursement).toFixed(2)}
             </p>
           </div>
         </div>
 
         {/* Split Pane Content */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left Panel (5/12) */}
-          <div className="w-5/12 flex flex-col border-r overflow-hidden">
-            <ScrollArea className="flex-1">
-              <div className="p-6 space-y-6">
-                {/* Actions Section */}
-                {(selectedReimbursement.status === "submitted" ||
-                  selectedReimbursement.status === "approved") && (
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+          <div className="w-5/12 flex flex-col border-r overflow-y-auto">
+            <div className="p-5 space-y-5">
+              {/* Actions Section */}
+              {(selectedReimbursement.status === "submitted" ||
+                selectedReimbursement.status === "approved") && (
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide border-b pb-2">
                       Actions
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -545,184 +545,171 @@ function ManageReimbursementsPage() {
                           </Button>
                         )}
                     </div>
-                  </div>
+                  </section>
                 )}
 
-                {/* Request Details */}
-                <div>
-                  <h3 className="text-sm font-bold mb-4">Request Details</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="grid grid-cols-3 gap-2">
-                      <span className="text-muted-foreground">Department</span>
-                      <span className="col-span-2 font-medium">
-                        {selectedReimbursement.department}
-                      </span>
+              {/* Request Details */}
+              <section className="space-y-3">
+                <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
+                  Request Details
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase">Department</p>
+                    <p className="text-sm capitalize">{selectedReimbursement.department}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase">Payment Method</p>
+                    <p className="text-sm">{selectedReimbursement.paymentMethod}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase">Total Amount</p>
+                    <p className="text-sm tabular-nums font-medium">${calculateTotalAmount(selectedReimbursement).toFixed(2)}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase">Submitted By</p>
+                    <p className="text-sm">{selectedReimbursement.submittedBy}</p>
+                  </div>
+                  {selectedReimbursement.additionalInfo && (
+                    <div className="space-y-0.5 col-span-2">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase">Payment Info</p>
+                      <p className="text-sm bg-blue-50 dark:bg-blue-950/40 px-2 py-1 rounded text-blue-800 dark:text-blue-300">
+                        {selectedReimbursement.additionalInfo}
+                      </p>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <span className="text-muted-foreground">
-                        Payment Method
+                  )}
+                </div>
+              </section>
+
+              {/* Receipts List */}
+              {selectedReimbursement.receipts &&
+                selectedReimbursement.receipts.length > 0 && (
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground flex justify-between items-center">
+                      <span>Receipts</span>
+                      <span className="text-[10px] font-normal text-muted-foreground/70 normal-case">
+                        {selectedReimbursement.receipts.length} items
                       </span>
-                      <span className="col-span-2 font-medium">
-                        {selectedReimbursement.paymentMethod}
-                      </span>
+                    </h3>
+                    <div className="space-y-2">
+                      {selectedReimbursement.receipts.map(
+                        (receipt: any, idx: number) => (
+                          <div
+                            key={idx}
+                            onClick={() => setActiveReceiptIndex(idx)}
+                            className={`p-3 rounded-lg border cursor-pointer transition-all ${activeReceiptIndex === idx
+                              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 ring-1 ring-blue-500/20"
+                              : "border-border hover:border-muted-foreground/50 hover:bg-muted/50"
+                              }`}
+                          >
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="font-medium text-sm">
+                                {receipt.vendorName || "Unknown Vendor"}
+                              </span>
+                              <span className="font-bold text-sm tabular-nums">
+                                ${calculateReceiptTotal(receipt).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground flex justify-between">
+                              <span>
+                                {receipt.dateOfPurchase
+                                  ? format(receipt.dateOfPurchase, "MMM d, yyyy")
+                                  : "No date"}
+                              </span>
+                              <span>
+                                {receipt.receiptFile
+                                  ? "View File"
+                                  : "No File"}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      )}
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <span className="text-muted-foreground">
-                        Total Amount
-                      </span>
-                      <span className="col-span-2 font-medium font-mono">
-                        ${calculateTotalAmount(selectedReimbursement).toFixed(2)}
-                      </span>
+                  </section>
+                )}
+
+              {/* Audit History */}
+              {selectedReimbursement.auditLogs &&
+                selectedReimbursement.auditLogs.length > 0 && (
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
+                      Audit History
+                    </h3>
+                    <div className="space-y-4 relative pl-4 border-l-2 border-muted">
+                      {selectedReimbursement.auditLogs.map(
+                        (log: any, i: number) => (
+                          <div key={i} className="relative">
+                            <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-muted-foreground/30 border-2 border-background" />
+                            <p className="text-sm">{log.action}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {format(log.timestamp, "MMM d, yyyy h:mm a")}
+                              {log.createdBy && ` • ${log.createdBy}`}
+                            </p>
+                          </div>
+                        )
+                      )}
                     </div>
-                    {selectedReimbursement.additionalInfo && (
-                      <div className="grid grid-cols-3 gap-2">
-                        <span className="text-muted-foreground">
-                          Payment Details
-                        </span>
-                        <span className="col-span-2 font-medium bg-blue-50 dark:bg-blue-950/40 px-2 py-1 rounded text-blue-800 dark:text-blue-300">
-                          {selectedReimbursement.additionalInfo}
-                        </span>
+                  </section>
+                )}
+
+              {/* Payment Details */}
+              {selectedReimbursement.paymentDetails && (
+                <section className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 border-b border-green-100 dark:border-green-800 pb-2">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <h3 className="text-xs font-bold text-green-900 dark:text-green-200 uppercase tracking-wide">
+                      Payment Confirmed
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] font-medium text-green-700 dark:text-green-400 uppercase">
+                        Confirmation #
+                      </p>
+                      <p className="text-sm font-mono font-medium">
+                        {selectedReimbursement.paymentDetails.confirmationNumber}
+                      </p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] font-medium text-green-700 dark:text-green-400 uppercase">
+                        Amount Paid
+                      </p>
+                      <p className="text-sm tabular-nums font-medium">
+                        ${selectedReimbursement.paymentDetails.amountPaid.toFixed(2)}
+                      </p>
+                    </div>
+                    {selectedReimbursement.paymentDetails.paymentDate && (
+                      <div className="space-y-0.5">
+                        <p className="text-[11px] font-medium text-green-700 dark:text-green-400 uppercase">
+                          Payment Date
+                        </p>
+                        <p className="text-sm">
+                          {format(selectedReimbursement.paymentDetails.paymentDate, "MMM d, yyyy")}
+                        </p>
+                      </div>
+                    )}
+                    {selectedReimbursement.paymentDetails.memo && (
+                      <div className="space-y-0.5 col-span-2">
+                        <p className="text-[11px] font-medium text-green-700 dark:text-green-400 uppercase">
+                          Memo
+                        </p>
+                        <p className="text-sm">
+                          {selectedReimbursement.paymentDetails.memo}
+                        </p>
                       </div>
                     )}
                   </div>
-                </div>
-
-
-
-                {/* Receipts List */}
-                {selectedReimbursement.receipts &&
-                  selectedReimbursement.receipts.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-bold mb-4 flex justify-between">
-                        <span>Receipts</span>
-                        <span className="text-muted-foreground font-normal text-xs">
-                          {selectedReimbursement.receipts.length} items
-                        </span>
-                      </h3>
-                      <div className="space-y-2">
-                        {selectedReimbursement.receipts.map(
-                          (receipt: any, idx: number) => (
-                            <div
-                              key={idx}
-                              onClick={() => setActiveReceiptIndex(idx)}
-                              className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                                activeReceiptIndex === idx
-                                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 ring-1 ring-blue-500/20"
-                                  : "border-border hover:border-muted-foreground/50 hover:bg-muted/50"
-                              }`}
-                            >
-                              <div className="flex justify-between items-start mb-1">
-                                <span className="font-semibold text-sm">
-                                  {receipt.vendorName || "Unknown Vendor"}
-                                </span>
-                                <span className="font-bold text-sm font-mono">
-                                  ${calculateReceiptTotal(receipt).toFixed(2)}
-                                </span>
-                              </div>
-                              <div className="text-xs text-muted-foreground flex justify-between">
-                                <span>
-                                  {receipt.dateOfPurchase
-                                    ? format(receipt.dateOfPurchase, "MMM d, yyyy")
-                                    : "No date"}
-                                </span>
-                                <span>
-                                  {receipt.receiptFile
-                                    ? "View File"
-                                    : "No File"}
-                                </span>
-                              </div>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                {/* Audit History */}
-                {selectedReimbursement.auditLogs &&
-                  selectedReimbursement.auditLogs.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-bold mb-4">
-                        Audit History
-                      </h3>
-                      <div className="space-y-4 relative pl-4 border-l-2 border-muted">
-                        {selectedReimbursement.auditLogs.map(
-                          (log: any, i: number) => (
-                            <div key={i} className="relative">
-                              <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-muted-foreground/30 border-2 border-background" />
-                              <p className="text-sm">{log.action}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                {format(log.timestamp, "MMM d, yyyy h:mm a")}
-                                {log.createdBy && ` • ${log.createdBy}`}
-                              </p>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                {/* Payment Details */}
-                {selectedReimbursement.paymentDetails && (
-                  <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                    <h4 className="text-sm font-bold text-green-800 dark:text-green-300 mb-2 flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4" /> Payment Confirmed
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="grid grid-cols-2 gap-2">
-                        <span className="text-green-600 dark:text-green-400">
-                          Confirmation #
-                        </span>
-                        <span className="font-medium text-green-800 dark:text-green-300">
-                          {selectedReimbursement.paymentDetails.confirmationNumber}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <span className="text-green-600 dark:text-green-400">
-                          Amount Paid
-                        </span>
-                        <span className="font-medium font-mono text-green-800 dark:text-green-300">
-                          $
-                          {selectedReimbursement.paymentDetails.amountPaid.toFixed(
-                            2
-                          )}
-                        </span>
-                      </div>
-                      {selectedReimbursement.paymentDetails.paymentDate && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <span className="text-green-600 dark:text-green-400">
-                            Payment Date
-                          </span>
-                          <span className="font-medium text-green-800 dark:text-green-300">
-                            {format(
-                              selectedReimbursement.paymentDetails.paymentDate,
-                              "MMM d, yyyy"
-                            )}
-                          </span>
-                        </div>
-                      )}
-                      {selectedReimbursement.paymentDetails.memo && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <span className="text-green-600 dark:text-green-400">
-                            Memo
-                          </span>
-                          <span className="font-medium text-green-800 dark:text-green-300">
-                            {selectedReimbursement.paymentDetails.memo}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
+                </section>
+              )}
+            </div>
           </div>
 
           {/* Right Panel (7/12) - Receipt Viewer */}
-          <div className="w-7/12 flex flex-col bg-muted/30 overflow-hidden">
+          <div className="w-7/12 flex flex-col bg-muted/20 overflow-hidden">
             {currentReceipt ? (
               <Tabs defaultValue="image" className="h-full flex flex-col">
-                <TabsList className="mx-4 mt-4 justify-start">
+                <TabsList className="mx-4 mt-4 justify-start shrink-0">
                   <TabsTrigger value="image">Receipt Image</TabsTrigger>
                   <TabsTrigger value="invoice">Itemized Invoice</TabsTrigger>
                 </TabsList>
@@ -768,18 +755,10 @@ function ManageReimbursementsPage() {
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/30">
-                            <TableHead className="text-left">
-                              Description
-                            </TableHead>
-                            <TableHead className="text-left">
-                              Category
-                            </TableHead>
-                            <TableHead className="text-right">
-                              Qty
-                            </TableHead>
-                            <TableHead className="text-right">
-                              Amount
-                            </TableHead>
+                            <TableHead className="text-left">Description</TableHead>
+                            <TableHead className="text-left">Category</TableHead>
+                            <TableHead className="text-right">Qty</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -797,7 +776,7 @@ function ManageReimbursementsPage() {
                                 <TableCell className="text-right text-muted-foreground">
                                   {item.quantity || 1}
                                 </TableCell>
-                                <TableCell className="text-right font-mono">
+                                <TableCell className="text-right font-mono tabular-nums">
                                   ${(item.amount || 0).toFixed(2)}
                                 </TableCell>
                               </TableRow>
@@ -805,32 +784,30 @@ function ManageReimbursementsPage() {
                           )}
                           {(!currentReceipt.lineItems ||
                             currentReceipt.lineItems.length === 0) && (
-                            <TableRow>
-                              <TableCell
-                                colSpan={4}
-                                className="text-center text-muted-foreground py-8"
-                              >
-                                No line items found
-                              </TableCell>
-                            </TableRow>
-                          )}
+                              <TableRow>
+                                <TableCell
+                                  colSpan={4}
+                                  className="text-center text-muted-foreground py-8"
+                                >
+                                  No line items found
+                                </TableCell>
+                              </TableRow>
+                            )}
                         </TableBody>
                       </Table>
 
                       {/* Totals */}
                       <div className="border-t p-4 space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            Subtotal
-                          </span>
-                          <span className="font-mono">
+                          <span className="text-muted-foreground">Subtotal</span>
+                          <span className="font-mono tabular-nums">
                             ${(currentReceipt.subtotal || 0).toFixed(2)}
                           </span>
                         </div>
                         {currentReceipt.tax && currentReceipt.tax > 0 && (
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Tax</span>
-                            <span className="font-mono">
+                            <span className="font-mono tabular-nums">
                               ${currentReceipt.tax.toFixed(2)}
                             </span>
                           </div>
@@ -838,17 +815,15 @@ function ManageReimbursementsPage() {
                         {currentReceipt.tip && currentReceipt.tip > 0 && (
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Tip</span>
-                            <span className="font-mono">
+                            <span className="font-mono tabular-nums">
                               ${currentReceipt.tip.toFixed(2)}
                             </span>
                           </div>
                         )}
                         {currentReceipt.shipping && currentReceipt.shipping > 0 && (
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              Shipping
-                            </span>
-                            <span className="font-mono">
+                            <span className="text-muted-foreground">Shipping</span>
+                            <span className="font-mono tabular-nums">
                               ${currentReceipt.shipping.toFixed(2)}
                             </span>
                           </div>
@@ -856,7 +831,7 @@ function ManageReimbursementsPage() {
                         <Separator />
                         <div className="flex justify-between font-semibold">
                           <span>Total</span>
-                          <span className="font-mono">
+                          <span className="font-mono tabular-nums">
                             ${calculateReceiptTotal(currentReceipt).toFixed(2)}
                           </span>
                         </div>
@@ -869,7 +844,7 @@ function ManageReimbursementsPage() {
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <div className="text-center">
                   <Receipt className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No receipt selected</p>
+                  <p className="text-sm">No receipt selected</p>
                 </div>
               </div>
             )}
@@ -986,11 +961,10 @@ function ManageReimbursementsPage() {
               ) : (
                 <div className="py-6">
                   <div
-                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
-                      paidProofFile
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40"
-                        : "border-muted-foreground/25 hover:border-muted-foreground/50 bg-muted/50"
-                    }`}
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${paidProofFile
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40"
+                      : "border-muted-foreground/25 hover:border-muted-foreground/50 bg-muted/50"
+                      }`}
                   >
                     <input
                       type="file"
@@ -1335,9 +1309,8 @@ function ManageReimbursementsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div
-                          className={`flex items-center justify-end gap-1 transition-opacity duration-200 ${
-                            isHovered ? "opacity-100" : "opacity-0"
-                          }`}
+                          className={`flex items-center justify-end gap-1 transition-opacity duration-200 ${isHovered ? "opacity-100" : "opacity-0"
+                            }`}
                           onClick={(e) => e.stopPropagation()}
                         >
                           {r.status === "submitted" && (

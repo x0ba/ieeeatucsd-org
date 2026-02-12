@@ -3,7 +3,6 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  CreditCard,
   Plus,
   ArrowLeft,
   Trash2,
@@ -24,6 +23,7 @@ import {
   RefreshCw,
   AlertTriangle,
   ArrowRight,
+  Search,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -231,11 +231,11 @@ function StepIndicator({
           );
         })}
       </div>
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-xs text-muted-foreground">
         Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1]?.description}
       </p>
       {/* Progress bar */}
-      <div className="mt-4 w-full bg-muted rounded-full h-2 overflow-hidden">
+      <div className="mt-3 w-full bg-muted rounded-full h-1 overflow-hidden">
         <div
           className="bg-primary h-full transition-all duration-300 ease-out"
           style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
@@ -292,9 +292,11 @@ function StepNavigation({
 function ReimbursementDetailView({
   reimbursement,
   onBack,
+  userName,
 }: {
   reimbursement: ReimbursementData;
   onBack: () => void;
+  userName?: string;
 }) {
   const [activeReceiptIndex, setActiveReceiptIndex] = useState(0);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -331,42 +333,52 @@ function ReimbursementDetailView({
   };
 
   return (
-    <div className="mt-6 border rounded-xl overflow-hidden bg-white dark:bg-gray-900">
+    <div className="h-[calc(100vh-3rem)] flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-gray-50 dark:bg-gray-800/50 border-b px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2">
+      <div className="bg-muted/30 border-b px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4 min-w-0">
+          <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2 shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-bold" title={reimbursement.title}>
+              <h2 className="text-lg font-bold truncate" title={reimbursement.title}>
                 {reimbursement.title}
               </h2>
               <Badge
-                className={statusColors[reimbursement.status] || ""}
+                className={cn("shrink-0", statusColors[reimbursement.status] || "")}
                 variant="secondary"
               >
                 {reimbursement.status}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">
-              ID: {reimbursement._id.slice(0, 8)} • {reimbursement.department}
-            </p>
+            <div className="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
+              {userName && (
+                <>
+                  <span className="font-medium text-foreground">{userName}</span>
+                  <span className="text-muted-foreground/40">·</span>
+                </>
+              )}
+              <span className="capitalize">{reimbursement.department}</span>
+              <span className="text-muted-foreground/40">·</span>
+              <span>{reimbursement.paymentMethod}</span>
+              <span className="text-muted-foreground/40">·</span>
+              <span>{formatDateTime(reimbursement._creationTime)}</span>
+            </div>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right shrink-0 ml-4">
           <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
             Total Amount
           </p>
-          <p className="text-xl font-bold">${reimbursement.totalAmount?.toFixed(2)}</p>
+          <p className="text-xl font-bold tabular-nums">${reimbursement.totalAmount?.toFixed(2)}</p>
         </div>
       </div>
 
       {/* Content - Split Pane */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 flex-1 min-h-0 overflow-hidden">
         {/* Left Panel: Info (5/12) */}
-        <div className="lg:col-span-5 border-r border-gray-200 dark:border-gray-800">
+        <div className="lg:col-span-5 border-r border-gray-200 dark:border-gray-800 overflow-y-auto">
           {/* Receipt Navigation */}
           {hasReceipts && (
             <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
@@ -396,7 +408,7 @@ function ReimbursementDetailView({
             </div>
           )}
 
-          <div className="p-6 space-y-6 max-h-[800px] overflow-y-auto">
+          <div className="p-5 space-y-5">
             {/* Payment Details Section */}
             {reimbursement.status === "paid" && reimbursement.paymentDetails && (
               <section className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl p-5 space-y-4">
@@ -467,97 +479,97 @@ function ReimbursementDetailView({
             )}
 
             {/* Receipt Details */}
-            <section className="space-y-4">
-              <h3 className="text-sm font-bold border-b border-gray-100 dark:border-gray-800 pb-2 uppercase tracking-wide">
+            <section className="space-y-3">
+              <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
                 Receipt Details
               </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Vendor Name</p>
-                  <p className="text-sm font-medium">{currentReceipt.vendorName || "N/A"}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase">Vendor</p>
+                  <p className="text-sm">{currentReceipt.vendorName || "N/A"}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Date of Purchase</p>
-                  <p className="text-sm font-medium">
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase">Date of Purchase</p>
+                  <p className="text-sm">
                     {currentReceipt.dateOfPurchase
                       ? new Date(currentReceipt.dateOfPurchase).toLocaleDateString()
                       : "N/A"}
                   </p>
                 </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Location</p>
-                <p className="text-sm font-medium">{currentReceipt.location || "N/A"}</p>
+                <div className="space-y-0.5 col-span-2">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase">Location</p>
+                  <p className="text-sm">{currentReceipt.location || "N/A"}</p>
+                </div>
               </div>
             </section>
 
             {/* Report Details */}
-            <section className="space-y-4">
-              <h3 className="text-sm font-bold border-b border-gray-100 dark:border-gray-800 pb-2 uppercase tracking-wide">
+            <section className="space-y-3">
+              <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
                 Report Details
               </h3>
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Payment Method</p>
-                  <p className="text-sm font-medium">{reimbursement.paymentMethod}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase">Payment Method</p>
+                  <p className="text-sm">{reimbursement.paymentMethod}</p>
                 </div>
-                {reimbursement.additionalInfo && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">
-                      Additional Info
-                    </p>
-                    <p className="text-sm font-medium">{reimbursement.additionalInfo}</p>
-                  </div>
-                )}
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase">Submitted On</p>
+                  <p className="text-sm">{formatDateTime(reimbursement._creationTime)}</p>
+                </div>
                 {reimbursement.businessPurpose && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">
+                  <div className="space-y-0.5 col-span-2">
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase">
                       Business Purpose
                     </p>
-                    <p className="text-sm font-medium">{reimbursement.businessPurpose}</p>
+                    <p className="text-sm">{reimbursement.businessPurpose}</p>
                   </div>
                 )}
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Submitted On</p>
-                  <p className="text-sm font-medium">{formatDateTime(reimbursement._creationTime)}</p>
-                </div>
+                {reimbursement.additionalInfo && (
+                  <div className="space-y-0.5 col-span-2">
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase">
+                      Additional Info
+                    </p>
+                    <p className="text-sm">{reimbursement.additionalInfo}</p>
+                  </div>
+                )}
               </div>
             </section>
 
             {/* Financials */}
-            <section className="space-y-4">
-              <h3 className="text-sm font-bold border-b border-gray-100 dark:border-gray-800 pb-2 uppercase tracking-wide">
+            <section className="space-y-3">
+              <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
                 Financials
               </h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Subtotal</p>
-                  <p className="text-sm font-medium">${(currentReceipt.subtotal || 0).toFixed(2)}</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase">Subtotal</p>
+                  <p className="text-sm tabular-nums">${(currentReceipt.subtotal || 0).toFixed(2)}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Tax</p>
-                  <p className="text-sm font-medium">${(currentReceipt.tax || 0).toFixed(2)}</p>
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase">Tax</p>
+                  <p className="text-sm tabular-nums">${(currentReceipt.tax || 0).toFixed(2)}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Tip</p>
-                  <p className="text-sm font-medium">${(currentReceipt.tip || 0).toFixed(2)}</p>
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase">Tip</p>
+                  <p className="text-sm tabular-nums">${(currentReceipt.tip || 0).toFixed(2)}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Shipping</p>
-                  <p className="text-sm font-medium">${(currentReceipt.shipping || 0).toFixed(2)}</p>
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase">Shipping</p>
+                  <p className="text-sm tabular-nums">${(currentReceipt.shipping || 0).toFixed(2)}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-green-700 dark:text-green-400 uppercase">Total</p>
-                  <p className="text-lg font-bold text-green-600">${(currentReceipt.total || 0).toFixed(2)}</p>
+                <div className="space-y-0.5">
+                  <p className="text-[11px] font-bold text-green-700 dark:text-green-400 uppercase">Total</p>
+                  <p className="text-base font-bold tabular-nums text-green-600">${(currentReceipt.total || 0).toFixed(2)}</p>
                 </div>
               </div>
             </section>
 
             {/* Line Items */}
-            <section className="space-y-4">
-              <h3 className="text-sm font-bold border-b border-gray-100 dark:border-gray-800 pb-2 uppercase tracking-wide flex justify-between items-center">
+            <section className="space-y-3">
+              <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground flex justify-between items-center">
                 <span>Line Items</span>
-                <span className="text-xs font-normal text-muted-foreground normal-case">
+                <span className="text-[10px] font-normal text-muted-foreground/70 normal-case">
                   {currentLineItems.length} items
                 </span>
               </h3>
@@ -597,7 +609,7 @@ function ReimbursementDetailView({
             {/* Audit Log */}
             {reimbursement.auditLog && reimbursement.auditLog.length > 0 && (
               <section className="space-y-4">
-                <h3 className="text-sm font-bold border-b border-gray-100 dark:border-gray-800 pb-2 uppercase tracking-wide">
+                <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
                   Audit Log
                 </h3>
                 <div className="space-y-2">
@@ -627,7 +639,7 @@ function ReimbursementDetailView({
         </div>
 
         {/* Right Panel: Receipt Viewer (7/12) */}
-        <div className="lg:col-span-7 bg-gray-100 dark:bg-gray-900/50 min-h-[500px] lg:min-h-0">
+        <div className="lg:col-span-7 bg-muted/20 min-h-[500px] lg:min-h-0 overflow-hidden flex flex-col">
           {receiptFileUrl ? (
             <div className="flex flex-col h-full">
               {/* Toolbar */}
@@ -845,23 +857,23 @@ function BasicInfoStep({
             {(formData.paymentMethod === "Zelle" ||
               formData.paymentMethod === "Venmo" ||
               formData.paymentMethod === "Other") && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                <Label htmlFor="additionalInfo">
-                  {formData.paymentMethod} Details
-                  <span className="text-muted-foreground font-normal ml-1">
-                    (Email, Phone, or Username)
-                  </span>
-                </Label>
-                <Input
-                  id="additionalInfo"
-                  placeholder={`Enter your ${formData.paymentMethod} details...`}
-                  value={formData.additionalInfo}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, additionalInfo: e.target.value }))
-                  }
-                />
-              </div>
-            )}
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                  <Label htmlFor="additionalInfo">
+                    {formData.paymentMethod} Details
+                    <span className="text-muted-foreground font-normal ml-1">
+                      (Email, Phone, or Username)
+                    </span>
+                  </Label>
+                  <Input
+                    id="additionalInfo"
+                    placeholder={`Enter your ${formData.paymentMethod} details...`}
+                    value={formData.additionalInfo}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, additionalInfo: e.target.value }))
+                    }
+                  />
+                </div>
+              )}
 
             <div className="space-y-2">
               <Label htmlFor="businessPurpose">Business Purpose *</Label>
@@ -1396,7 +1408,7 @@ function ReviewStep({
 }
 
 function ReimbursementPage() {
-  const { logtoId } = useAuth();
+  const { logtoId, user } = useAuth();
   const reimbursements = useQuery(
     api.reimbursements.listMine,
     logtoId ? { logtoId } : "skip",
@@ -1421,6 +1433,11 @@ function ReimbursementPage() {
   });
 
   const [receipts, setReceipts] = useState<ReceiptEntry[]>([emptyReceipt()]);
+
+  // Search + filter state (must be before any early returns)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
   const resetForm = () => {
     setFormData({
       title: "",
@@ -1528,10 +1545,11 @@ function ReimbursementPage() {
   // Detail view
   if (view === "detail" && selectedReimbursement) {
     return (
-      <div className="p-6 w-full">
+      <div className="w-full h-full">
         <ReimbursementDetailView
           reimbursement={selectedReimbursement}
           onBack={handleBackToList}
+          userName={user?.name}
         />
       </div>
     );
@@ -1539,7 +1557,7 @@ function ReimbursementPage() {
 
   if (view === "create") {
     return (
-      <div className="p-6 space-y-6 max-w-5xl">
+      <div className="p-6 space-y-6 w-full">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -1601,8 +1619,25 @@ function ReimbursementPage() {
     );
   }
 
+  // Compute stats
+  const allReimbursements = (reimbursements as ReimbursementData[] | undefined) || [];
+  const statsTotal = allReimbursements.reduce((s, r) => s + (r.totalAmount || 0), 0);
+  const statsPendingAmt = allReimbursements.filter((r) => r.status === "submitted").reduce((s, r) => s + (r.totalAmount || 0), 0);
+  const statsApprovedAmt = allReimbursements.filter((r) => r.status === "approved").reduce((s, r) => s + (r.totalAmount || 0), 0);
+  const statsPaidAmt = allReimbursements.filter((r) => r.status === "paid").reduce((s, r) => s + (r.totalAmount || 0), 0);
+
+  const filteredReimbursements = allReimbursements.filter((r) => {
+    const matchesSearch =
+      !searchTerm ||
+      r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.department.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || r.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 w-full">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Reimbursements</h1>
@@ -1616,52 +1651,131 @@ function ReimbursementPage() {
         </Button>
       </div>
 
-      {!reimbursements ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-xl" />
-          ))}
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Submitted</p>
+          <p className="text-xl font-bold tabular-nums mt-0.5">${statsTotal.toFixed(2)}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{allReimbursements.length} requests</p>
         </div>
-      ) : reimbursements.length > 0 ? (
-        <div className="space-y-3">
-          {reimbursements.map((r) => (
-            <div
-              key={r._id}
-              className="rounded-xl border bg-card overflow-hidden hover:bg-accent/50 transition-colors cursor-pointer"
-              onClick={() => handleViewDetail(r as ReimbursementData)}
-            >
-              <div className="flex items-center justify-between p-4">
+        <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Pending</p>
+          <p className="text-xl font-bold tabular-nums mt-0.5">${statsPendingAmt.toFixed(2)}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{allReimbursements.filter((r) => r.status === "submitted").length} requests</p>
+        </div>
+        <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Approved</p>
+          <p className="text-xl font-bold tabular-nums mt-0.5">${statsApprovedAmt.toFixed(2)}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{allReimbursements.filter((r) => r.status === "approved").length} requests</p>
+        </div>
+        <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Paid</p>
+          <p className="text-xl font-bold tabular-nums mt-0.5">${statsPaidAmt.toFixed(2)}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{allReimbursements.filter((r) => r.status === "paid").length} requests</p>
+        </div>
+      </div>
+
+      {/* List Container */}
+      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+        {/* Search + Filter Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 px-5 py-3 border-b bg-muted/30">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by title or department..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-9 bg-background"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[150px] h-9 bg-background">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="submitted">Submitted</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
+              <SelectItem value="declined">Declined</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* List */}
+        {!reimbursements ? (
+          <div className="p-5 space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : filteredReimbursements.length > 0 ? (
+          <div className="divide-y divide-border">
+            {filteredReimbursements.map((r) => (
+              <div
+                key={r._id}
+                className="flex items-center gap-4 px-5 py-3.5 hover:bg-accent/40 transition-colors cursor-pointer group"
+                onClick={() => handleViewDetail(r as ReimbursementData)}
+              >
+                {/* Left: Title + Meta */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{r.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {r.department} &middot; {r.paymentMethod}
-                  </p>
+                  <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{r.title}</p>
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
+                      {r.department}
+                    </span>
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <span className="text-xs text-muted-foreground">{r.paymentMethod}</span>
+                    {r.businessPurpose && (
+                      <>
+                        <span className="text-muted-foreground/40 text-xs">·</span>
+                        <span className="text-xs text-muted-foreground/70 truncate max-w-[200px]">{r.businessPurpose}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-semibold">
-                    ${r.totalAmount.toFixed(2)}
-                  </span>
-                  <Badge
-                    className={statusColors[r.status] || ""}
-                    variant="secondary"
-                  >
+
+                {/* Right: Amount + Date + Status */}
+                <div className="flex items-center gap-5 shrink-0">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-sm font-bold tabular-nums">${r.totalAmount.toFixed(2)}</p>
+                    <p className="text-[10px] text-muted-foreground tabular-nums">
+                      {new Date(r._creationTime).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold tabular-nums sm:hidden">${r.totalAmount.toFixed(2)}</span>
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 text-xs font-medium capitalize px-2.5 py-1 rounded-full whitespace-nowrap",
+                    statusColors[r.status] || "bg-muted text-muted-foreground"
+                  )}>
+                    <span className={cn(
+                      "w-1.5 h-1.5 rounded-full shrink-0",
+                      r.status === "submitted" && "bg-blue-500",
+                      r.status === "approved" && "bg-green-500",
+                      r.status === "declined" && "bg-red-500",
+                      r.status === "paid" && "bg-purple-500",
+                    )} />
                     {r.status}
-                  </Badge>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          <CreditCard className="mx-auto h-12 w-12 mb-4 opacity-50" />
-          <p className="text-lg font-medium">No reimbursements</p>
-          <p className="text-sm">
-            Submit a reimbursement request to get started.
-          </p>
-        </div>
-      )}
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground/60">
+            <Receipt className="h-10 w-10 mb-3" />
+            <p className="text-sm font-medium text-muted-foreground">
+              {searchTerm || statusFilter !== "all" ? "No matching requests" : "No reimbursements yet"}
+            </p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              {searchTerm || statusFilter !== "all"
+                ? "Try adjusting your search or filter."
+                : "Submit a request to get started."}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
