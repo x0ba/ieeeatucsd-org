@@ -8,17 +8,16 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
-  UserStatsCards,
   EventCard,
   EventDetailModal,
   CheckInModal,
   HappeningToday,
+  getEventStatus,
   type Event as EventType,
 } from "@/components/events";
 
@@ -31,7 +30,6 @@ const PAST_EVENTS_PER_PAGE = 9;
 function EventsPage() {
   const { logtoId } = useAuth();
   const events = useQuery(api.events.listPublished);
-  const user = useQuery(api.users.getMe, logtoId ? { logtoId } : "skip");
   const attendedEventIdsData = useQuery(
     api.events.getAttendedEventIds,
     logtoId ? { logtoId } : "skip"
@@ -82,15 +80,6 @@ function EventsPage() {
   const todayEvents = useMemo(() => {
     return upcomingEvents.filter((e) => e.startDate <= now && e.endDate >= now);
   }, [upcomingEvents, now]);
-
-  // Get latest attended event for stats
-  const latestAttendedEvent = useMemo(() => {
-    if (!events || attendedEventIds.size === 0) return undefined;
-    const attended = events
-      .filter((e) => attendedEventIds.has(e._id))
-      .sort((a, b) => b.startDate - a.startDate)[0];
-    return attended ? { eventName: attended.eventName, eventDate: attended.startDate } : undefined;
-  }, [events, attendedEventIds]);
 
   const handleEventClick = (event: EventType) => {
     setSelectedEvent(event);
@@ -149,20 +138,13 @@ function EventsPage() {
 
   return (
     <div className="p-6 space-y-6 w-full">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Events</h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground mt-1">
           Browse and check in to IEEE UCSD events.
         </p>
       </div>
-
-      {/* User Stats Cards */}
-      <UserStatsCards
-        latestEvent={latestAttendedEvent}
-        totalPoints={user?.points || 0}
-        eventsAttended={user?.eventsAttended || 0}
-        loading={!user}
-      />
 
       {/* Happening Today */}
       {todayEvents.length > 0 && (
@@ -175,47 +157,49 @@ function EventsPage() {
         />
       )}
 
-
       {/* Search + Tabs */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Search events..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 h-9 text-sm"
           />
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant={activeTab === "upcoming" ? "default" : "outline"}
-            size="sm"
+        <div className="flex rounded-lg border bg-card p-0.5">
+          <button
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${activeTab === "upcoming"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
             onClick={() => setActiveTab("upcoming")}
           >
-            <Calendar className="h-3.5 w-3.5 mr-1.5" />
             Upcoming ({upcomingEvents.length})
-          </Button>
-          <Button
-            variant={activeTab === "past" ? "default" : "outline"}
-            size="sm"
+          </button>
+          <button
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${activeTab === "past"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
             onClick={() => { setActiveTab("past"); setPastPage(1); }}
           >
-            <Clock className="h-3.5 w-3.5 mr-1.5" />
             Past ({pastEvents.length})
-          </Button>
+          </button>
         </div>
       </div>
 
+      {/* Events grid */}
       {!events ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="h-48 w-full rounded-xl" />
+            <Skeleton key={i} className="h-44 w-full rounded-xl" />
           ))}
         </div>
       ) : activeTab === "upcoming" ? (
         upcomingEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {upcomingEvents.map((event) => (
               <EventCard
                 key={event._id}
@@ -229,16 +213,16 @@ function EventsPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 text-muted-foreground">
-            <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
-            <p className="text-lg font-medium">No upcoming events</p>
-            <p className="text-sm">Check back later for upcoming events.</p>
+          <div className="text-center py-16 text-muted-foreground">
+            <Calendar className="mx-auto h-10 w-10 mb-3 opacity-30" />
+            <p className="text-sm font-medium">No upcoming events</p>
+            <p className="text-xs mt-1">Check back later for upcoming events.</p>
           </div>
         )
       ) : (
         paginatedPast.length > 0 ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {paginatedPast.map((event) => (
                 <EventCard
                   key={event._id}
@@ -252,10 +236,10 @@ function EventsPage() {
             <Pagination currentPage={pastPage} totalPages={pastTotalPages} onPageChange={setPastPage} />
           </div>
         ) : (
-          <div className="text-center py-12 text-muted-foreground">
-            <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
-            <p className="text-lg font-medium">No past events</p>
-            <p className="text-sm">Events you've missed will appear here.</p>
+          <div className="text-center py-16 text-muted-foreground">
+            <Clock className="mx-auto h-10 w-10 mb-3 opacity-30" />
+            <p className="text-sm font-medium">No past events</p>
+            <p className="text-xs mt-1">Events you've missed will appear here.</p>
           </div>
         )
       )}
@@ -265,7 +249,7 @@ function EventsPage() {
         event={selectedEvent}
         isOpen={isEventDetailOpen}
         onClose={() => setIsEventDetailOpen(false)}
-        onCheckIn={handleCheckInFromDetail}
+        onCheckIn={selectedEvent && getEventStatus(selectedEvent) === "live" ? handleCheckInFromDetail : undefined}
         userHasAttended={selectedEvent ? attendedEventIds.has(selectedEvent._id) : false}
       />
 

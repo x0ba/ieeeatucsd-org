@@ -1,5 +1,4 @@
-import { Calendar, Clock, MapPin, Award, UserCheck, Utensils } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Calendar, Clock, MapPin, Award, UserCheck, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Event, getEventStatus, formatEventDate, formatEventTime } from "./types";
@@ -28,7 +27,7 @@ export function EventCard({
   const statusBadge = () => {
     if (isAttended) {
       return (
-        <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
+        <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800">
           <UserCheck className="w-3 h-3 mr-1" />
           Attended
         </Badge>
@@ -36,37 +35,36 @@ export function EventCard({
     }
     if (isLive) {
       return (
-        <Badge className="bg-green-500 text-white animate-pulse hover:bg-green-500">
-          Happening Now
+        <Badge className="bg-emerald-600 text-white border-emerald-600">
+          <span className="relative flex h-1.5 w-1.5 mr-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
+          </span>
+          Live
         </Badge>
       );
     }
     if (isUpcoming) {
       return (
-        <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+        <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800">
           Upcoming
         </Badge>
       );
     }
     return (
-      <Badge variant="secondary" className="bg-gray-100 text-gray-600 hover:bg-gray-100">
+      <Badge variant="secondary" className="text-muted-foreground">
         Ended
       </Badge>
     );
   };
 
   const actionButton = () => {
-    if (isPast) {
-      return (
-        <Button variant="outline" size="sm" disabled className="w-full">
-          Event Ended
-        </Button>
-      );
-    }
+    if (isPast) return null;
+
     if (isAttended) {
       return (
-        <Button variant="secondary" size="sm" disabled className="w-full">
-          <UserCheck className="w-4 h-4 mr-2" />
+        <Button variant="secondary" size="sm" disabled className="w-full text-xs">
+          <UserCheck className="w-3.5 h-3.5 mr-1.5" />
           Checked In
         </Button>
       );
@@ -75,7 +73,7 @@ export function EventCard({
       return (
         <Button
           size="sm"
-          className="w-full shadow-md"
+          className="w-full text-xs"
           onClick={(e) => {
             e.stopPropagation();
             onCheckIn?.();
@@ -84,76 +82,78 @@ export function EventCard({
         >
           {checkingIn ? (
             <>
-              <span className="animate-spin mr-2">⟳</span>
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
               Checking In...
             </>
           ) : (
             <>
-              <UserCheck className="w-4 h-4 mr-2" />
-              Check In Now
+              <UserCheck className="w-3.5 h-3.5 mr-1.5" />
+              Check In
             </>
           )}
         </Button>
       );
     }
     return (
-      <Button variant="outline" size="sm" disabled className="w-full">
+      <Button variant="outline" size="sm" disabled className="w-full text-xs">
         Check-in Not Open
       </Button>
     );
   };
 
+  const action = actionButton();
+
   return (
-    <Card
-      className={`w-full h-full border-none shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
-        isPast ? "opacity-80 hover:opacity-100" : ""
-      }`}
+    <div
+      className={`group rounded-xl border bg-card shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${isPast ? "opacity-70 hover:opacity-100" : ""
+        }`}
       onClick={onClick}
     >
-      <CardContent className="p-5 flex flex-col gap-4 justify-between h-full">
-        <div className="space-y-4">
-          <div className="flex justify-between items-start gap-3">
-            <h3 className="font-bold text-xl leading-tight line-clamp-2 text-foreground">
-              {event.eventName}
-            </h3>
-            <div className="flex flex-col items-end gap-1 shrink-0">
-              {event.hasFood && (
-                <Badge variant="secondary" className="bg-orange-100 text-orange-700 hover:bg-orange-100">
-                  <Utensils className="w-3 h-3 mr-1" />
-                  Food
-                </Badge>
-              )}
-              {statusBadge()}
-            </div>
+      <div className="p-4 flex flex-col gap-3 h-full">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="font-semibold text-base leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors">
+            {event.eventName}
+          </h3>
+          <div className="shrink-0">{statusBadge()}</div>
+        </div>
+
+        {/* Meta */}
+        <div className="space-y-1.5 flex-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Calendar className="w-3.5 h-3.5 shrink-0" />
+            <span>{formatEventDate(event.startDate)}</span>
+            <span className="text-border">·</span>
+            <Clock className="w-3.5 h-3.5 shrink-0" />
+            <span>{formatEventTime(event.startDate)}</span>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <span>{formatEventDate(event.startDate)}</span>
-              <span className="text-muted-foreground/50">•</span>
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <span>{formatEventTime(event.startDate)}</span>
-            </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{event.location}</span>
+          </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="w-4 h-4 text-muted-foreground" />
-              <span className="truncate">{event.location}</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-sm">
-              <Award className="w-4 h-4 text-amber-500" />
-              <span className="font-medium text-foreground">
-                {event.pointsToReward} Points
-              </span>
-            </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Award className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-medium text-foreground">
+              {event.pointsToReward} pts
+            </span>
+            {event.hasFood && (
+              <>
+                <span className="text-border">·</span>
+                <span className="text-foreground font-medium">Food provided</span>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="pt-2 mt-auto" onClick={(e) => e.stopPropagation()}>
-          {actionButton()}
-        </div>
-      </CardContent>
-    </Card>
+        {/* Action */}
+        {action && (
+          <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+            {action}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

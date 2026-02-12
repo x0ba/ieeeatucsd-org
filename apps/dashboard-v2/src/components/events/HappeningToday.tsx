@@ -1,4 +1,3 @@
-import { UserCheck } from "lucide-react";
 import { EventCard } from "./EventCard";
 import { Event } from "./types";
 
@@ -22,14 +21,17 @@ export function HappeningToday({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
-          <UserCheck className="w-5 h-5" />
-        </div>
-        <h2 className="text-lg font-bold">Happening Today</h2>
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+        </span>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Happening Now
+        </h2>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {events.map((event) => (
           <EventCard
             key={event._id}
