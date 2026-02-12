@@ -3,16 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import {
-  Calendar,
-  Trophy,
-  Users,
-  TrendingUp,
-  CreditCard,
-  Award,
-  Clock,
-  DollarSign,
-} from "lucide-react";
+import { Calendar, CreditCard, DollarSign } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AreaChart,
@@ -23,58 +14,85 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useRef, useEffect } from "react";
 
 export const Route = createFileRoute("/_dashboard/overview")({
   component: OverviewPage,
 });
 
-const statCardColors: Record<string, { icon: string }> = {
-  points: { icon: "text-amber-600 dark:text-amber-400" },
-  events: { icon: "text-blue-600 dark:text-blue-400" },
-  role: { icon: "text-purple-600 dark:text-purple-400" },
-  member: { icon: "text-emerald-600 dark:text-emerald-400" },
-};
+/* ─── Smooth Animated Active Dot ─── */
+function AnimatedActiveDot(props: Record<string, unknown>) {
+  const { cx, cy, fill } = props as { cx: number; cy: number; fill: string };
+  const prevPos = useRef({ x: cx, y: cy });
 
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  description,
-  colorKey,
-}: {
-  title: string;
-  value: string | number;
-  icon: React.ComponentType<{ className?: string }>;
-  description?: string;
-  colorKey: string;
-}) {
-  const colors = statCardColors[colorKey] || statCardColors.points;
+  // On mount, snap to position; on subsequent updates, animate
+  useEffect(() => {
+    prevPos.current = { x: cx, y: cy };
+  }, [cx, cy]);
+
   return (
-    <div className={`rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md`}>
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">{title}</p>
-          <div className="flex items-baseline gap-1">
-            <p className="text-2xl font-bold">{value}</p>
-          </div>
-          {description && (
-            <p className="text-xs text-muted-foreground line-clamp-1">{description}</p>
-          )}
-        </div>
-        <div className={`p-2.5 rounded-lg bg-secondary/50 ${colors.icon}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
+    <g
+      style={{
+        transform: `translate(${cx}px, ${cy}px)`,
+        transition: "transform 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+      }}
+    >
+      {/* Subtle outer ring */}
+      <circle
+        cx={0}
+        cy={0}
+        r={10}
+        fill={fill}
+        fillOpacity={0.12}
+        style={{
+          transition: "r 200ms ease, fill-opacity 200ms ease",
+        }}
+      />
+      {/* Main dot */}
+      <circle
+        cx={0}
+        cy={0}
+        r={4.5}
+        fill={fill}
+        stroke="hsl(var(--card))"
+        strokeWidth={2}
+      />
+    </g>
+  );
+}
+
+/* ─── Custom Tooltip ─── */
+function ChartTooltip({ active, payload, label }: Record<string, unknown>) {
+  if (!active || !(payload as Array<Record<string, unknown>>)?.length) return null;
+  const data = (payload as Array<Record<string, unknown>>)[0];
+  return (
+    <div
+      style={{
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
+        borderRadius: "8px",
+        padding: "10px 14px",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+      }}
+    >
+      <p style={{ fontSize: "11px", fontWeight: 500, color: "hsl(var(--muted-foreground))", marginBottom: "2px" }}>
+        {label as string}
+      </p>
+      <p style={{ fontSize: "16px", fontWeight: 700, color: "hsl(var(--foreground))", margin: 0 }}>
+        {(data.value as number)?.toLocaleString()} pts
+      </p>
     </div>
   );
 }
 
-const activityIcons: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
+/* ─── Activity Icon Map ─── */
+const activityConfig: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
   event: { icon: Calendar, color: "text-blue-600 dark:text-blue-400" },
   reimbursement: { icon: CreditCard, color: "text-emerald-600 dark:text-emerald-400" },
-  fund_deposit: { icon: DollarSign, color: "text-purple-600 dark:text-purple-400" },
+  fund_deposit: { icon: DollarSign, color: "text-violet-600 dark:text-violet-400" },
 };
 
+/* ─── Main Page ─── */
 function OverviewPage() {
   const { user, isLoading } = useAuth();
   const { logtoId } = usePermissions();
@@ -85,20 +103,17 @@ function OverviewPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="p-6 space-y-8 w-full">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-8">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
-          </div>
-          <Skeleton className="h-10 w-40 rounded-full" />
+      <div className="p-6 md:p-8 space-y-8 w-full max-w-5xl mx-auto">
+        <div className="flex flex-col items-center text-center py-8">
+          <Skeleton className="h-9 w-72 mb-3" />
+          <Skeleton className="h-4 w-48" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            <Skeleton key={i} className="h-20 w-full rounded-lg" />
           ))}
         </div>
-        <Skeleton className="h-64 w-full rounded-xl" />
+        <Skeleton className="h-72 w-full rounded-xl" />
       </div>
     );
   }
@@ -108,143 +123,150 @@ function OverviewPage() {
     points: p.cumulative,
   })) || [];
 
+  const firstName = user.name?.split(" ")[0] || "Member";
+  const currentHour = new Date().getHours();
+  const greeting =
+    currentHour < 12 ? "Good morning" : currentHour < 17 ? "Good afternoon" : "Good evening";
+
   return (
-    <div className="p-6 space-y-8 w-full">
-      {/* Welcome Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-8">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Welcome back, {user.name?.split(" ")[0] || "Member"}
-          </h1>
-          <p className="text-muted-foreground text-sm max-w-md">
-            You've earned <span className="font-semibold text-foreground">{user.points || 0} points</span> across <span className="font-semibold text-foreground">{user.eventsAttended || 0} events</span> this year.
+    <div className="p-6 md:p-8 space-y-8 w-full max-w-5xl mx-auto">
+      {/* ─── Welcome Section ─── */}
+      <div className="flex flex-col items-center text-center py-6">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+          {greeting}, {firstName}
+        </h1>
+        <p className="text-muted-foreground text-sm mt-2 max-w-sm">
+          Here's a snapshot of your activity and progress.
+        </p>
+      </div>
+
+      {/* ─── Compact Stats Row ─── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Points</p>
+          <p className="text-xl font-bold tabular-nums mt-0.5">{user.points || 0}</p>
+        </div>
+        <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Events</p>
+          <p className="text-xl font-bold tabular-nums mt-0.5">{user.eventsAttended || 0}</p>
+        </div>
+        <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Rank</p>
+          <p className="text-xl font-bold tabular-nums mt-0.5">
+            {overviewData?.rank ? `#${overviewData.rank}` : "--"}
+            {overviewData?.totalMembers && (
+              <span className="text-xs font-normal text-muted-foreground ml-1">/ {overviewData.totalMembers}</span>
+            )}
           </p>
         </div>
-        <div className="flex items-center gap-3 bg-secondary/50 px-4 py-2 rounded-full border border-border/50 transition-colors hover:bg-secondary">
-          <Award className="h-4 w-4 text-muted-foreground" />
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Global Rank</span>
-            <span className="text-sm font-bold tabular-nums">#{overviewData?.rank || "-"}</span>
-            <span className="text-[10px] font-medium text-muted-foreground/60">/ {overviewData?.totalMembers || "-"}</span>
-          </div>
+        <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Member Since</p>
+          <p className="text-xl font-bold mt-0.5">
+            {user.joinDate
+              ? new Date(user.joinDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+              : "--"}
+          </p>
         </div>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Points" value={user.points || 0} icon={Trophy} description="Total points earned" colorKey="points" />
-        <StatCard title="Events Attended" value={user.eventsAttended || 0} icon={Calendar} description="Events you've checked into" colorKey="events" />
-        <StatCard title="Role" value={user.role} icon={Users} description={user.position || "Active member"} colorKey="role" />
-        <StatCard
-          title="Member Since"
-          value={user.joinDate ? new Date(user.joinDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "N/A"}
-          icon={TrendingUp}
-          description={user.major || ""}
-          colorKey="member"
-        />
-      </div>
-
-      {/* Main Content Grid */}
+      {/* ─── Main Content Grid ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Points Chart */}
-        <div className="lg:col-span-2 rounded-xl border bg-card p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-secondary rounded-lg">
-              <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
+        <div className="lg:col-span-2 rounded-xl border bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <p className="font-bold">Points Growth</p>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Activity performance</p>
+              <p className="font-semibold text-sm">Points over time</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Cumulative points earned</p>
             </div>
+            {chartData.length >= 2 && (
+              <span className="text-xs font-medium text-muted-foreground tabular-nums">
+                {chartData.length} data points
+              </span>
+            )}
           </div>
           {chartData.length >= 2 ? (
-            <div className="h-64">
+            <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted/50" />
-                  <XAxis 
-                    dataKey="date" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 11, fill: 'currentColor' }} 
-                    className="text-muted-foreground/70"
-                    dy={10}
+                <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="pointsFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.08} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    className="stroke-border"
+                    strokeOpacity={0.5}
                   />
-                  <YAxis 
+                  <XAxis
+                    dataKey="date"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 11, fill: 'currentColor' }} 
-                    className="text-muted-foreground/70" 
+                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    dy={8}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    width={40}
                   />
                   <Tooltip
-                    cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '4 4' }}
-                    contentStyle={{ 
-                      borderRadius: "12px", 
-                      border: "1px solid hsl(var(--border))", 
-                      background: "hsl(var(--card))",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
-                    }}
-                    labelStyle={{ fontWeight: 700, marginBottom: '4px', fontSize: '12px' }}
-                    itemStyle={{ fontSize: '12px', padding: 0 }}
+                    content={<ChartTooltip />}
+                    cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="points" 
-                    stroke="hsl(var(--primary))" 
-                    fill="hsl(var(--primary))" 
-                    fillOpacity={0.05} 
-                    strokeWidth={2.5} 
-                    activeDot={{ r: 6, strokeWidth: 0 }}
+                  <Area
+                    type="monotone"
+                    dataKey="points"
+                    stroke="hsl(var(--primary))"
+                    fill="url(#pointsFill)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={<AnimatedActiveDot fill="hsl(var(--primary))" />}
+                    animationDuration={600}
+                    animationEasing="ease-out"
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-muted-foreground space-y-2">
-              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
-                <Calendar className="h-6 w-6 opacity-20" />
-              </div>
+            <div className="h-56 flex flex-col items-center justify-center text-muted-foreground/60 space-y-2">
               <p className="text-sm">Attend events to see your growth chart</p>
             </div>
           )}
         </div>
 
         {/* Recent Activity */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm flex flex-col">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-secondary rounded-lg">
-              <Clock className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div>
-              <p className="font-bold">Recent Activity</p>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Latest updates</p>
-            </div>
+        <div className="rounded-xl border bg-card p-5 shadow-sm flex flex-col">
+          <div className="mb-4">
+            <p className="font-semibold text-sm">Recent Activity</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Your latest updates</p>
           </div>
           <div className="flex-1 overflow-hidden">
             {overviewData?.recentActivity && overviewData.recentActivity.length > 0 ? (
-              <div className="space-y-4 pr-1 max-h-72 overflow-y-auto custom-scrollbar">
+              <div className="space-y-0 divide-y divide-border max-h-72 overflow-y-auto">
                 {overviewData.recentActivity.map((activity, idx) => {
-                  const config = activityIcons[activity.type] || activityIcons.event;
-                  const Icon = config.icon;
+                  const config = activityConfig[activity.type] || activityConfig.event;
+                  const ActivityIcon = config.icon;
                   return (
-                    <div key={idx} className="flex items-start gap-3 group">
-                      <div className={`p-2 rounded-lg bg-secondary/50 shrink-0 transition-colors group-hover:bg-secondary ${config.color}`}>
-                        <Icon className="h-4 w-4" />
+                    <div key={idx} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                      <div className={`mt-0.5 ${config.color}`}>
+                        <ActivityIcon className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
-                            {activity.title}
-                          </p>
-                          {activity.points && activity.points > 0 && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
+                          <p className="text-sm font-medium truncate">{activity.title}</p>
+                          {typeof activity.points === "number" && activity.points > 0 ? (
+                            <span className="text-[10px] font-bold text-primary tabular-nums shrink-0">
                               +{activity.points}
                             </span>
-                          )}
+                          ) : null}
                         </div>
                         <div className="flex items-center justify-between mt-0.5">
                           <p className="text-xs text-muted-foreground truncate">{activity.description}</p>
-                          <p className="text-[10px] font-medium text-muted-foreground/60 uppercase shrink-0 ml-2">
+                          <p className="text-[10px] text-muted-foreground/60 shrink-0 ml-2 tabular-nums">
                             {new Date(activity.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                           </p>
                         </div>
@@ -254,30 +276,28 @@ function OverviewPage() {
                 })}
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-2 py-12">
-                <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
-                  <Clock className="h-6 w-6 opacity-20" />
-                </div>
-                <p className="text-sm">No recent activity found</p>
+              <div className="h-full flex items-center justify-center text-muted-foreground/60 py-12">
+                <p className="text-sm">No recent activity</p>
               </div>
             )}
           </div>
         </div>
       </div>
 
+      {/* ─── Profile CTA ─── */}
       {!user.signedUp && (
-        <div className="rounded-xl border border-amber-200/50 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-900/30 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h3 className="text-lg font-bold text-amber-900 dark:text-amber-200">
+        <div className="rounded-xl border border-amber-200/50 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-900/30 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
               Complete Your Profile
             </h3>
-            <p className="text-sm text-amber-800/80 dark:text-amber-300/80 max-w-2xl">
-              You haven't completed your profile setup yet. Finish setting up your account to access all features and start earning points.
+            <p className="text-xs text-amber-800/80 dark:text-amber-300/80 max-w-2xl">
+              Finish setting up your account to access all features and start earning points.
             </p>
           </div>
           <Link
             to="/get-started"
-            className="inline-flex items-center justify-center px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-bold shadow-sm shadow-amber-900/20 shrink-0"
+            className="inline-flex items-center justify-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-xs font-semibold shadow-sm shrink-0"
           >
             Finish Setup
           </Link>

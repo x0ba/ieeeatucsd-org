@@ -88,12 +88,12 @@ export default function PointsChart({ data }: PointsChartProps) {
           color: '#f3f4f6',
         },
         border: {
-            display: false
+          display: false
         },
         ticks: {
-            font: {
-                size: 10
-            }
+          font: {
+            size: 10
+          }
         }
       },
     },
@@ -112,11 +112,11 @@ export default function PointsChart({ data }: PointsChartProps) {
     <Card className="w-full h-full" shadow="sm">
       <CardHeader className="flex gap-3 px-6 pt-6 pb-0">
         <div className="p-2 bg-blue-100 rounded-lg">
-            <TrendingUp className="w-5 h-5 text-blue-600" />
+          <TrendingUp className="w-5 h-5 text-blue-600" />
         </div>
         <div className="flex flex-col">
-            <p className="text-md font-bold text-gray-900">Points Growth</p>
-            <p className="text-small text-default-500">Your activity over time</p>
+          <p className="text-md font-bold text-gray-900">Points Growth</p>
+          <p className="text-small text-default-500">Your activity over time</p>
         </div>
       </CardHeader>
       <CardBody className="px-4 pb-4 h-[250px]">
