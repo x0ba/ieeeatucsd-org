@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useHandleSignInCallback, useLogto } from "@logto/react";
 import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { Loader2 } from "lucide-react";
 import { useRef } from "react";
 

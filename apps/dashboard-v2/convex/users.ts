@@ -210,6 +210,7 @@ export const updateProfile = mutation({
     notificationPreferences: v.optional(v.any()),
     displayPreferences: v.optional(v.any()),
     accessibilitySettings: v.optional(v.any()),
+    syncPublicProfile: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx, args.logtoId);
@@ -217,13 +218,51 @@ export const updateProfile = mutation({
       lastUpdated: Date.now(),
     };
 
-    for (const [key, value] of Object.entries(args)) {
+    const { syncPublicProfile = true, ...profileArgs } = args;
+
+    for (const [key, value] of Object.entries(profileArgs)) {
       if (key !== "logtoId" && value !== undefined) {
         updateData[key] = value;
       }
     }
 
     await ctx.db.patch(user._id, updateData);
+
+    // Sync public profile if requested and name/major/graduationYear changed
+    if (syncPublicProfile) {
+      const existingProfile = await ctx.db
+        .query("publicProfiles")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .first();
+
+      const newName = typeof updateData.name === "string" ? updateData.name : user.name;
+      const newMajor =
+        typeof updateData.major === "string" ? updateData.major : user.major;
+      const newGraduationYear =
+        typeof updateData.graduationYear === "number"
+          ? updateData.graduationYear
+          : user.graduationYear;
+
+      const profileData = {
+        name: newName,
+        major: newMajor,
+        points: user.points || 0,
+        eventsAttended: user.eventsAttended || 0,
+        position: user.position || user.role,
+        graduationYear: newGraduationYear,
+        joinDate: user.joinDate || user._creationTime,
+      };
+
+      if (existingProfile) {
+        await ctx.db.patch(existingProfile._id, profileData);
+      } else {
+        await ctx.db.insert("publicProfiles", {
+          ...profileData,
+          userId: user._id,
+        });
+      }
+    }
+
     return user._id;
   },
 });
@@ -294,6 +333,142 @@ export const updateRole = mutation({
   },
 });
 
+export const updateStatus = mutation({
+  args: {
+    logtoId: v.string(),
+    userId: v.id("users"),
+    status: v.union(
+      v.literal("active"),
+      v.literal("inactive"),
+      v.literal("suspended"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const admin = await requireAdminAccess(ctx, args.logtoId);
+
+    await ctx.db.patch(args.userId, {
+      status: args.status,
+      lastUpdated: Date.now(),
+      lastUpdatedBy: admin.logtoId,
+    });
+
+    return args.userId;
+  },
+});
+
+export const deleteUser = mutation({
+  args: {
+    logtoId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    await requireAdminAccess(ctx, args.logtoId);
+
+    // Delete the user's public profile if it exists
+    const publicProfile = await ctx.db
+      .query("publicProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first();
+    
+    if (publicProfile) {
+      await ctx.db.delete(publicProfile._id);
+    }
+
+    // Delete the user
+    await ctx.db.delete(args.userId);
+
+    return { success: true, deletedUserId: args.userId };
+  },
+});
+
+export const getOverviewData = query({
+  args: { logtoId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const userId = user.logtoId ?? user.authUserId ?? "";
+
+    // Get user's attended events
+    const attendees = await ctx.db
+      .query("attendees")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Get event details for attended events
+    const eventDetails = await Promise.all(
+      attendees.map(async (a) => {
+        const event = await ctx.db.get(a.eventId);
+        return event ? { ...event, timeCheckedIn: a.timeCheckedIn, pointsEarned: a.pointsEarned } : null;
+      })
+    );
+    eventDetails.filter(Boolean);
+
+    // Build points history
+    const sortedAttendees = [...attendees].sort((a, b) => a.timeCheckedIn - b.timeCheckedIn);
+    let cumulative = 0;
+    const pointsHistory = sortedAttendees.map((a) => {
+      cumulative += a.pointsEarned;
+      return { date: a.timeCheckedIn, points: a.pointsEarned, cumulative };
+    });
+
+    // Get user's reimbursements
+    const reimbursements = await ctx.db
+      .query("reimbursements")
+      .withIndex("by_submittedBy", (q) => q.eq("submittedBy", userId))
+      .collect();
+
+    // Build recent activity
+    const activities: { type: string; title: string; description: string; date: number; points?: number }[] = [];
+
+    for (const a of attendees) {
+      const event = await ctx.db.get(a.eventId);
+      activities.push({
+        type: "event",
+        title: "Attended Event",
+        description: event?.eventName || "Event",
+        date: a.timeCheckedIn,
+        points: a.pointsEarned,
+      });
+    }
+
+    for (const r of reimbursements) {
+      activities.push({
+        type: "reimbursement",
+        title: `Reimbursement ${r.status === "approved" ? "Approved" : r.status === "paid" ? "Paid" : "Submitted"}`,
+        description: r.title,
+        date: r._creationTime,
+      });
+    }
+
+    activities.sort((a, b) => b.date - a.date);
+
+    // Get rank
+    const allUsers = await ctx.db.query("users").collect();
+    const activeUsers = allUsers
+      .filter((u) => u.signedUp && u.status === "active")
+      .sort((a, b) => (b.points || 0) - (a.points || 0));
+    const rank = activeUsers.findIndex((u) => u._id === user._id) + 1;
+
+    return {
+      user: {
+        name: user.name,
+        points: user.points || 0,
+        eventsAttended: user.eventsAttended || 0,
+        role: user.role,
+        joinDate: user.joinDate,
+        signedUp: user.signedUp,
+      },
+      rank,
+      totalMembers: activeUsers.length,
+      pointsHistory,
+      recentActivity: activities.slice(0, 10),
+      reimbursementStats: {
+        submitted: reimbursements.length,
+        approved: reimbursements.filter((r) => r.status === "approved" || r.status === "paid").length,
+      },
+    };
+  },
+});
+
 export const getLeaderboard = query({
   args: {},
   handler: async (ctx) => {
@@ -306,8 +481,81 @@ export const getLeaderboard = query({
         points: u.points || 0,
         eventsAttended: u.eventsAttended || 0,
         major: u.major,
+        graduationYear: u.graduationYear,
         avatar: u.avatar,
       }))
       .sort((a, b) => b.points - a.points);
+  },
+});
+
+export const getOfficerLeaderboard = query({
+  args: { logtoId: v.string() },
+  handler: async (ctx, args) => {
+    await requireCurrentUser(ctx, args.logtoId);
+    const users = await ctx.db.query("users").collect();
+
+    const officers = users.filter(
+      (u) =>
+        u.status === "active" &&
+        (u.role === "General Officer" ||
+          u.role === "Executive Officer" ||
+          u.role === "Administrator"),
+    );
+
+    // Group by team
+    const teams: Record<string, typeof officers> = {
+      Internal: [],
+      Events: [],
+      Projects: [],
+      Unassigned: [],
+    };
+
+    for (const officer of officers) {
+      const team = officer.team || "Unassigned";
+      if (!teams[team]) teams[team] = [];
+      teams[team].push(officer);
+    }
+
+    // Get attendance data for each officer
+    const officerData = await Promise.all(
+      officers.map(async (officer) => {
+        const userId = officer.logtoId ?? officer.authUserId ?? "";
+        const attendees = await ctx.db
+          .query("attendees")
+          .withIndex("by_userId", (q) => q.eq("userId", userId))
+          .collect();
+        return {
+          _id: officer._id,
+          name: officer.name,
+          avatar: officer.avatar,
+          role: officer.role,
+          position: officer.position,
+          team: officer.team || "Unassigned",
+          points: officer.points || 0,
+          eventsAttended: officer.eventsAttended || 0,
+          totalAttendances: attendees.length,
+        };
+      }),
+    );
+
+    // Calculate team metrics
+    const teamMetrics = Object.entries(teams)
+      .filter(([_, members]) => members.length > 0)
+      .map(([teamName, members]) => {
+        const teamOfficerData = officerData.filter((o) => o.team === teamName);
+        const totalAttendances = teamOfficerData.reduce((sum, o) => sum + o.totalAttendances, 0);
+        const totalPoints = teamOfficerData.reduce((sum, o) => sum + o.points, 0);
+        return {
+          team: teamName,
+          memberCount: members.length,
+          totalAttendances,
+          totalPoints,
+          attendanceRate: members.length > 0 ? totalAttendances / members.length : 0,
+          members: teamOfficerData.sort((a, b) => b.totalAttendances - a.totalAttendances),
+        };
+      })
+      .sort((a, b) => b.attendanceRate - a.attendanceRate);
+
+    return { teamMetrics, officers: officerData };
   },
 });

@@ -12,7 +12,11 @@
     "build:dashboard": "bun run --cwd apps/dashboard build"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.2.0",
     "prettier": "^3.4.2",
     "prettier-plugin-astro": "^0.14.1"
+  },
+  "dependencies": {
+    "dompurify": "^3.3.1"
   }
 }

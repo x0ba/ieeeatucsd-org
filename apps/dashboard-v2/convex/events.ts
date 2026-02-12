@@ -118,6 +118,21 @@ export const remove = mutation({
   },
 });
 
+export const getAttendedEventIds = query({
+  args: { logtoId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const userId = user.logtoId ?? user.authUserId ?? "";
+
+    const attendees = await ctx.db
+      .query("attendees")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+
+    return attendees.map((a) => a.eventId);
+  },
+});
+
 export const checkIn = mutation({
   args: {
     logtoId: v.string(),
@@ -127,10 +142,12 @@ export const checkIn = mutation({
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx, args.logtoId);
 
-    const event = await ctx.db
+    // Case-insensitive event code lookup
+    const normalizedCode = args.eventCode.toUpperCase().trim();
+    const events = await ctx.db
       .query("events")
-      .withIndex("by_eventCode", (q) => q.eq("eventCode", args.eventCode))
-      .first();
+      .collect();
+    const event = events.find(e => e.eventCode.toUpperCase() === normalizedCode);
 
     if (!event) {
       throw new Error("Event not found");

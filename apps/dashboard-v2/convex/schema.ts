@@ -446,50 +446,138 @@ export default defineSchema({
     sponsorTier: sponsorTier,
     createdBy: v.string(),
     lastModifiedBy: v.optional(v.string()),
+    _updatedAt: v.optional(v.number()),
   }).index("by_domain", ["domain"]),
 
   fundRequests: defineTable({
     title: v.string(),
-    description: v.string(),
+    purpose: v.string(),
     amount: v.number(),
+    category: v.union(
+      v.literal("event"),
+      v.literal("travel"),
+      v.literal("equipment"),
+      v.literal("software"),
+      v.literal("other"),
+      v.literal("general"),
+      v.literal("projects"),
+    ),
+    department: v.union(
+      v.literal("events"),
+      v.literal("projects"),
+      v.literal("internal"),
+      v.literal("other"),
+    ),
     status: v.union(
       v.literal("draft"),
       v.literal("submitted"),
+      v.literal("needs_info"),
       v.literal("approved"),
-      v.literal("declined"),
+      v.literal("denied"),
       v.literal("completed"),
     ),
     requestedBy: v.string(),
-    department: v.optional(v.string()),
+    submittedBy: v.string(),
+    submittedByName: v.optional(v.string()),
+    submittedByEmail: v.optional(v.string()),
+    submittedAt: v.optional(v.number()),
     eventId: v.optional(v.id("events")),
     notes: v.optional(v.string()),
-    reviewedBy: v.optional(v.string()),
-    reviewedAt: v.optional(v.number()),
     reviewNotes: v.optional(v.string()),
+    infoRequestNotes: v.optional(v.string()),
+    infoResponseNotes: v.optional(v.string()),
+    vendorLinks: v.optional(v.array(v.object({
+      id: v.string(),
+      url: v.string(),
+      itemName: v.optional(v.string()),
+      quantity: v.optional(v.number()),
+    }))),
+    attachments: v.optional(v.array(v.object({
+      id: v.string(),
+      url: v.string(),
+      name: v.string(),
+      size: v.number(),
+      type: v.string(),
+      uploadedAt: v.number(),
+    }))),
+    auditLogs: v.optional(v.array(v.object({
+      id: v.string(),
+      action: v.union(
+        v.literal("created"),
+        v.literal("updated"),
+        v.literal("submitted"),
+        v.literal("approved"),
+        v.literal("denied"),
+        v.literal("info_requested"),
+        v.literal("info_provided"),
+        v.literal("completed"),
+      ),
+      performedBy: v.string(),
+      performedByName: v.optional(v.string()),
+      timestamp: v.number(),
+      notes: v.optional(v.string()),
+      previousStatus: v.optional(v.string()),
+      newStatus: v.optional(v.string()),
+    }))),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   })
     .index("by_status", ["status"])
-    .index("by_requestedBy", ["requestedBy"]),
+    .index("by_requestedBy", ["requestedBy"])
+    .index("by_department", ["department"]),
 
   fundDeposits: defineTable({
     title: v.string(),
     amount: v.number(),
-    source: v.string(),
+    purpose: v.optional(v.string()),
     depositDate: v.number(),
+    depositMethod: v.optional(
+      v.union(
+        v.literal("cash"),
+        v.literal("check"),
+        v.literal("bank_transfer"),
+        v.literal("other"),
+      ),
+    ),
+    otherDepositMethod: v.optional(v.string()),
     description: v.optional(v.string()),
-    receiptUrl: v.optional(v.string()),
+    referenceNumber: v.optional(v.string()),
+    receiptFiles: v.optional(v.array(v.string())),
     depositedBy: v.string(),
-    verifiedBy: v.optional(v.string()),
-    verifiedAt: v.optional(v.number()),
+    depositedByName: v.optional(v.string()),
+    depositedByEmail: v.optional(v.string()),
     status: v.union(
       v.literal("pending"),
       v.literal("verified"),
       v.literal("rejected"),
     ),
     submittedAt: v.optional(v.number()),
+    verifiedBy: v.optional(v.string()),
+    verifiedByName: v.optional(v.string()),
+    verifiedAt: v.optional(v.number()),
+    rejectionReason: v.optional(v.string()),
     notes: v.optional(v.string()),
-    receiptFiles: v.optional(v.array(v.string())),
-    approvedAt: v.optional(v.number()),
-    approvedBy: v.optional(v.string()),
+    source: v.optional(v.string()),
+    // IEEE deposit fields
+    isIeeeDeposit: v.optional(v.boolean()),
+    ieeeDepositSource: v.optional(
+      v.union(
+        v.literal("upp"),
+        v.literal("section"),
+        v.literal("region"),
+        v.literal("global"),
+        v.literal("society"),
+        v.literal("other"),
+      ),
+    ),
+    needsBankTransfer: v.optional(v.boolean()),
+    bankTransferInstructions: v.optional(v.string()),
+    bankTransferFiles: v.optional(v.array(v.string())),
+    // Edit tracking
+    editedBy: v.optional(v.string()),
+    editedByName: v.optional(v.string()),
+    editedAt: v.optional(v.number()),
+    // Audit logs
     auditLogs: v.optional(
       v.array(
         v.object({
@@ -498,12 +586,15 @@ export default defineSchema({
           createdByName: v.optional(v.string()),
           timestamp: v.number(),
           note: v.optional(v.string()),
+          previousData: v.optional(v.any()),
+          newData: v.optional(v.any()),
         }),
       ),
     ),
   })
     .index("by_status", ["status"])
-    .index("by_depositedBy", ["depositedBy"]),
+    .index("by_depositedBy", ["depositedBy"])
+    .index("by_submittedAt", ["submittedAt"]),
 
   logs: defineTable({
     userId: v.string(),
@@ -584,4 +675,36 @@ export default defineSchema({
   })
     .index("by_email", ["email"])
     .index("by_status", ["status"]),
+
+  // Budget configuration per department
+  budgetConfigs: defineTable({
+    department: v.union(
+      v.literal("events"),
+      v.literal("projects"),
+      v.literal("internal"),
+      v.literal("other"),
+    ),
+    totalBudget: v.number(),
+    startDate: v.number(),
+    updatedAt: v.number(),
+    updatedBy: v.string(),
+    updatedByName: v.optional(v.string()),
+  })
+    .index("by_department", ["department"]),
+
+  // Manual budget adjustments
+  budgetAdjustments: defineTable({
+    department: v.union(
+      v.literal("events"),
+      v.literal("projects"),
+      v.literal("internal"),
+      v.literal("other"),
+    ),
+    amount: v.number(),
+    description: v.string(),
+    createdAt: v.number(),
+    createdBy: v.string(),
+    createdByName: v.optional(v.string()),
+  })
+    .index("by_department", ["department"]),
 });

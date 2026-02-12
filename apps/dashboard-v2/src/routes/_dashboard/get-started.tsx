@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
 import {
   User,
@@ -256,8 +256,9 @@ function GetStartedPage() {
               onChange={(e) => handleInputChange(e.target.files?.[0] || null)}
             />
             {value && (
-              <p className="text-green-600 font-medium">
-                ✓ {value.name} selected
+              <p className="text-green-600 font-medium flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                {value.name} selected
               </p>
             )}
           </div>

@@ -3,10 +3,12 @@ import { Link } from "@tanstack/react-router";
 import {
   Settings,
   LogOut,
-  User,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { OfficerAiChat } from "@/components/dashboard/shared/OfficerAiChat";
+import { UserAvatarFallback } from "@/components/dashboard/UserAvatarFallback";
 import {
   Sidebar,
   SidebarContent,
@@ -158,47 +160,70 @@ export function AppSidebar({ currentPath = "" }: AppSidebarProps) {
       </SidebarContent>
 
       <SidebarFooter className="border-t p-2">
-        <div className="flex items-center gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="flex-1 justify-start gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2"
-              >
-                <User className="h-4 w-4 shrink-0" />
-                <span className="group-data-[collapsible=icon]:hidden truncate">
-                  {user?.name || "User"}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div>
-                  <p className="font-semibold">{user?.name || "User"}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {user?.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link
-                  to="/settings"
+        <div className="flex flex-col group-data-[collapsible=icon]:flex-col gap-1">
+          {/* AI Chat - Only for officers */}
+          {["General Officer", "Executive Officer", "Administrator"].includes(
+            userRole || "",
+          ) && (
+            <div className="group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+              <OfficerAiChat />
+            </div>
+          )}
+          <div className="flex items-center gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="flex-1 justify-start gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2"
+                >
+                  <Avatar size="sm">
+                    <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
+                    <AvatarFallback>
+                      <UserAvatarFallback name={user?.name || "User"} size="sm" className="h-6 w-6 text-xs" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="group-data-[collapsible=icon]:hidden truncate">
+                    {user?.name || "User"}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex items-center gap-2">
+                    <Avatar size="sm">
+                      <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
+                      <AvatarFallback>
+                        <UserAvatarFallback name={user?.name || "User"} size="sm" className="h-6 w-6 text-xs" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold">{user?.name || "User"}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/settings"
+                    className="flex items-center gap-2"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => signOut()}
                   className="flex items-center gap-2"
                 >
-                  <Settings className="h-4 w-4" />
-                  Settings
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => signOut()}
-                className="flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>

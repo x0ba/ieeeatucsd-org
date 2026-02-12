@@ -143,7 +143,7 @@ export const update = mutation({
     needsAsFunding: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    await requireCurrentUser(ctx, args.logtoId);
     const { logtoId, id, ...updates } = args;
     const cleanUpdates: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(updates)) {
@@ -173,7 +173,7 @@ export const updateStatus = mutation({
     reviewFeedback: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId);
     await ctx.db.patch(args.id, {
       status: args.status,
       ...(args.declinedReason && { declinedReason: args.declinedReason }),
