@@ -68,18 +68,21 @@ function ChartTooltip({ active, payload, label }: Record<string, unknown>) {
   return (
     <div
       style={{
-        background: "hsl(var(--card))",
+        background: "hsl(var(--popover))",
         border: "1px solid hsl(var(--border))",
-        borderRadius: "8px",
-        padding: "10px 14px",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+        borderRadius: "10px",
+        padding: "12px 16px",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1)",
+        backdropFilter: "blur(8px)",
+        zIndex: 50,
+        pointerEvents: "none" as const,
       }}
     >
-      <p style={{ fontSize: "11px", fontWeight: 500, color: "hsl(var(--muted-foreground))", marginBottom: "2px" }}>
+      <p style={{ fontSize: "12px", fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: "4px", letterSpacing: "0.01em" }}>
         {label as string}
       </p>
-      <p style={{ fontSize: "16px", fontWeight: 700, color: "hsl(var(--foreground))", margin: 0 }}>
-        {(data.value as number)?.toLocaleString()} pts
+      <p style={{ fontSize: "18px", fontWeight: 800, color: "hsl(var(--popover-foreground))", margin: 0 }}>
+        {(data.value as number)?.toLocaleString()} <span style={{ fontSize: "13px", fontWeight: 600, color: "#1e3a8a" }}>pts</span>
       </p>
     </div>
   );
@@ -190,8 +193,8 @@ function OverviewPage() {
                 <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
                   <defs>
                     <linearGradient id="pointsFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.08} />
-                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#1e40af" stopOpacity={0.25} />
+                      <stop offset="100%" stopColor="#1e40af" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
@@ -220,11 +223,11 @@ function OverviewPage() {
                   <Area
                     type="monotone"
                     dataKey="points"
-                    stroke="hsl(var(--primary))"
+                    stroke="#1e3a8a"
                     fill="url(#pointsFill)"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={<AnimatedActiveDot fill="hsl(var(--primary))" />}
+                    strokeWidth={2.5}
+                    dot={{ r: 3.5, fill: "#1e3a8a", stroke: "hsl(var(--card))", strokeWidth: 2 }}
+                    activeDot={<AnimatedActiveDot fill="#1e3a8a" />}
                     animationDuration={600}
                     animationEasing="ease-out"
                   />

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
-import { Crown, Search, Users, Star } from "lucide-react";
+import { Crown, Search, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/ui/pagination";
 import { useState } from "react";

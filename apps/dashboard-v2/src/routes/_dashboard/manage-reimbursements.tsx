@@ -10,9 +10,6 @@ import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -109,6 +106,8 @@ function ManageReimbursementsPage() {
   );
   const updateStatus = useMutation(api.reimbursements.updateStatus);
   const updatePaymentDetails = useMutation(api.reimbursements.updatePaymentDetails);
+  const generateUploadUrl = useMutation(api.reimbursements.generateUploadUrl);
+  const getStorageUrl = useMutation(api.reimbursements.getStorageUrl);
 
   // Table state
   type Reimbursement = typeof reimbursements extends infer R ? R extends Array<infer T> ? T : never : never;
@@ -383,24 +382,75 @@ function ManageReimbursementsPage() {
 
     setProcessingId(selectedReimbursement._id);
     setAiProcessing(true);
-
-    // Simulate AI extraction (replace with actual implementation)
-    setTimeout(() => {
-      setPaymentReviewData({
-        confirmationNumber: "TXN-" + Math.random().toString(36).substr(2, 8).toUpperCase(),
-        paymentDate: new Date().toISOString().split("T")[0],
-        amountPaid: calculateTotalAmount(selectedReimbursement).toFixed(2),
-        memo: "",
+    try {
+      const uploadUrl = await generateUploadUrl({});
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": paidProofFile.type || "application/octet-stream" },
+        body: paidProofFile,
       });
-      setPaidConfirmationNumber("TXN-" + Math.random().toString(36).substr(2, 8).toUpperCase());
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload proof file");
+      }
+
+      const { storageId } = await uploadResponse.json();
+      const proofUrl = await getStorageUrl({ storageId });
+      if (!proofUrl) {
+        throw new Error("Could not resolve uploaded proof file URL");
+      }
+      setUploadedProofUrl(proofUrl);
+
+      const response = await fetch("/api/extract-payment-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: proofUrl }),
+      });
+
+      if (!response.ok) {
+        throw new Error("AI extraction failed");
+      }
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        const data = result.data;
+        setPaymentReviewData(data);
+        if (data.confirmationNumber) {
+          setPaidConfirmationNumber(data.confirmationNumber);
+        }
+        if (data.paymentDate) {
+          setPaymentDate(data.paymentDate);
+        } else {
+          setPaymentDate(new Date().toISOString().split("T")[0]);
+        }
+        if (typeof data.amountPaid === "number" && data.amountPaid > 0) {
+          setPaymentAmount(data.amountPaid.toString());
+        } else {
+          setPaymentAmount(calculateTotalAmount(selectedReimbursement).toFixed(2));
+        }
+        if (data.memo) {
+          setPaymentMemo(data.memo);
+        }
+
+        toast.success("Details extracted", {
+          description: "Please review the payment details.",
+        });
+      } else {
+        throw new Error(result.error || "No data returned");
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not process payment proof.";
+      toast.error("AI Extraction Failed", {
+        description: `${message} Please enter details manually.`,
+      });
+      setPaymentReviewData({ manual: true });
       setPaymentDate(new Date().toISOString().split("T")[0]);
       setPaymentAmount(calculateTotalAmount(selectedReimbursement).toFixed(2));
+    } finally {
       setAiProcessing(false);
       setProcessingId(null);
-      toast.success("Details extracted", {
-        description: "Please review the payment details.",
-      });
-    }, 1500);
+    }
   };
 
   const resetPaidModal = () => {
@@ -491,8 +541,8 @@ function ManageReimbursementsPage() {
             <div className="p-6 space-y-8">
               {/* Actions Section */}
               {(selectedReimbursement.status === "submitted" ||
-            selectedReimbursement.status === "approved") && (
-              <section className="border-b border-gray-100 pb-6 space-y-3">
+                selectedReimbursement.status === "approved") && (
+                  <section className="border-b border-gray-100 pb-6 space-y-3">
                     <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Actions</h3>
                     <div className="flex flex-wrap gap-2">
                       {selectedReimbursement.status === "submitted" && (
@@ -792,15 +842,15 @@ function ManageReimbursementsPage() {
                             ))}
                             {(!currentReceipt.lineItems ||
                               currentReceipt.lineItems.length === 0) && (
-                              <tr>
-                                <td colSpan={4} className="px-4 py-12 text-center text-gray-400">
-                                  <div className="flex flex-col items-center gap-2">
-                                    <Receipt className="w-8 h-8 opacity-50" />
-                                    <span className="text-sm">No line items found</span>
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
+                                <tr>
+                                  <td colSpan={4} className="px-4 py-12 text-center text-gray-400">
+                                    <div className="flex flex-col items-center gap-2">
+                                      <Receipt className="w-8 h-8 opacity-50" />
+                                      <span className="text-sm">No line items found</span>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
                           </tbody>
                         </table>
                       </div>
@@ -1095,76 +1145,76 @@ function ManageReimbursementsPage() {
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Total Requests */}
-          <Card className="border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+          <Card className="border shadow-none">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                  <Receipt className="w-5 h-5" />
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground">
                     Total Requests
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-xl font-bold text-gray-900 leading-tight">
                     {stats.total}
                   </p>
-                </div>
-                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                  <Receipt className="w-5 h-5 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Pending Review */}
-          <Card className="border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+          <Card className="border shadow-none">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
+                  <Clock className="w-5 h-5" />
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground">
                     Pending Review
                   </p>
-                  <p className="text-2xl font-bold text-amber-600">
+                  <p className="text-xl font-bold text-amber-600 leading-tight">
                     {stats.submitted}
                   </p>
-                </div>
-                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-amber-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Approved (Pending Payment) */}
-          <Card className="border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+          <Card className="border shadow-none">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-50 rounded-lg text-green-600">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground">
                     Approved (Pending)
                   </p>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-xl font-bold text-green-600 leading-tight">
                     {stats.approved}
                   </p>
-                </div>
-                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Total Amount */}
-          <Card className="border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+          <Card className="border shadow-none">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                  <DollarSign className="w-5 h-5" />
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground">
                     Total Amount
                   </p>
-                  <p className="text-2xl font-bold text-emerald-600">
+                  <p className="text-xl font-bold text-emerald-600 leading-tight">
                     ${stats.totalAmount.toFixed(2)}
                   </p>
-                </div>
-                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-emerald-600" />
                 </div>
               </div>
             </CardContent>

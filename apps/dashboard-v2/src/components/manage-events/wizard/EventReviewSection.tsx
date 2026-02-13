@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { MapPin, Calendar, Users, Utensils, Printer, Image, Camera, DoorOpen, ArrowRight } from "lucide-react";
 import type { EventFormData, EventRequest } from "../types";
 import { BudgetCalculation } from "./BudgetCalculation";
+import { formatDepartmentLabel, formatEventTypeLabel } from "../constants";
 
 interface EventReviewSectionProps {
   data: EventFormData;
@@ -39,9 +40,17 @@ export function EventReviewSection({ data, originalData }: EventReviewSectionPro
     if (o.eventDescription !== undefined && o.eventDescription !== data.eventDescription)
       changes.push({ label: "Description", before: o.eventDescription || "(empty)", after: data.eventDescription || "(empty)" });
     if (o.eventType && o.eventType !== data.eventType)
-      changes.push({ label: "Event Type", before: o.eventType, after: data.eventType });
+      changes.push({
+        label: "Event Type",
+        before: formatEventTypeLabel(o.eventType),
+        after: formatEventTypeLabel(data.eventType),
+      });
     if (o.department !== data.department)
-      changes.push({ label: "Department", before: o.department || "(none)", after: data.department || "(none)" });
+      changes.push({
+        label: "Department",
+        before: o.department ? formatDepartmentLabel(o.department) : "(none)",
+        after: data.department ? formatDepartmentLabel(data.department) : "(none)",
+      });
     if (o.location && o.location !== data.location)
       changes.push({ label: "Location", before: o.location, after: data.location });
     if (o.startDate && o.startDate !== data.startDate)
@@ -119,9 +128,9 @@ export function EventReviewSection({ data, originalData }: EventReviewSectionPro
             value={data.eventDescription}
             multiline
           />
-          <ReviewItem label="Event Type" value={data.eventType} />
+          <ReviewItem label="Event Type" value={formatEventTypeLabel(data.eventType)} />
           {data.department && (
-            <ReviewItem label="Department" value={data.department} />
+            <ReviewItem label="Department" value={formatDepartmentLabel(data.department)} />
           )}
         </ReviewSection>
 
@@ -192,6 +201,9 @@ export function EventReviewSection({ data, originalData }: EventReviewSectionPro
           )}
           {(data.needsFlyers || data.needsGraphics) && data.additionalSpecifications && (
             <ReviewItem label="Additional Specifications" value={data.additionalSpecifications} multiline />
+          )}
+          {data.needsGraphics && data.graphicsUploadNote && (
+            <ReviewItem label="Graphics Delivery Note" value={data.graphicsUploadNote} />
           )}
           {data.requiredLogos.length > 0 && (
             <ReviewItem label="Required Logos" value={data.requiredLogos.join(", ")} />

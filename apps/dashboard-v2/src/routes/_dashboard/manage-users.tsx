@@ -19,9 +19,8 @@ import {
 import { UserTable } from "@/components/dashboard/manage-users/UserTable";
 import { EditUserModal } from "@/components/dashboard/manage-users/EditUserModal";
 import { AddMemberModal } from "@/components/dashboard/manage-users/AddMemberModal";
-import { UserStatsCards } from "@/components/dashboard/manage-users/UserStatsCards";
 import type { Id } from "@convex/_generated/dataModel";
-import { UserModalData, UserFilters, SortConfig, UserStats, UserRole, OfficerTeam, USER_ROLES, TEAMS } from "@/components/dashboard/manage-users/types";
+import { UserModalData, UserFilters, SortConfig, UserRole, OfficerTeam, USER_ROLES, TEAMS } from "@/components/dashboard/manage-users/types";
 
 export const Route = createFileRoute("/_dashboard/manage-users")({
   component: ManageUsersPage,
@@ -32,7 +31,7 @@ const ITEMS_PER_PAGE = 10;
 function ManageUsersPage() {
   const { hasAdminAccess, logtoId, user: currentUser } = usePermissions();
   const users = useQuery(api.users.list, logtoId ? { logtoId } : "skip");
-  
+
   // Mutations
   const updateUserMutation = useMutation(api.users.updateRole);
   const updateStatusMutation = useMutation(api.users.updateStatus);
@@ -60,32 +59,11 @@ function ManageUsersPage() {
     setCurrentPage(1);
   }, [filters, sortConfig]);
 
-  // Calculate stats
-  const stats: UserStats | null = users
-    ? {
-        totalMembers: users.length,
-        activeMembers: users.filter((u) => u.status === "active").length,
-        officers: users.filter(
-          (u) =>
-            u.role === "General Officer" ||
-            u.role === "Executive Officer" ||
-            u.role === "Member at Large" ||
-            u.role === "Administrator",
-        ).length,
-        newThisMonth: users.filter((u) => {
-          if (!u.joinDate) return false;
-          const joinDate = new Date(u.joinDate);
-          const now = new Date();
-          const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-          return joinDate >= oneMonthAgo;
-        }).length,
-      }
-    : null;
 
   // Filter and sort users
   const filteredUsers = useMemo(() => {
     if (!users) return [];
-    
+
     return users
       .filter((user) => {
         // Search filter
@@ -290,8 +268,7 @@ function ManageUsersPage() {
           </p>
         </div>
 
-        {/* Stats Cards */}
-        {stats && <UserStatsCards stats={stats} loading={!users} />}
+
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border p-6">
@@ -399,76 +376,76 @@ function ManageUsersPage() {
             filters.roleFilter !== "all" ||
             filters.statusFilter !== "all" ||
             filters.teamFilter !== "all") && (
-            <div className="mt-4 pt-4 border-t">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-muted-foreground">Active filters:</span>
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Active filters:</span>
 
-                {filters.searchTerm && (
-                  <Badge variant="secondary" className="rounded-full">
-                    Search: "{filters.searchTerm}"
-                    <button
-                      onClick={() => setFilters({ ...filters, searchTerm: "" })}
-                      className="ml-2 hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )}
+                  {filters.searchTerm && (
+                    <Badge variant="secondary" className="rounded-full">
+                      Search: "{filters.searchTerm}"
+                      <button
+                        onClick={() => setFilters({ ...filters, searchTerm: "" })}
+                        className="ml-2 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )}
 
-                {filters.roleFilter !== "all" && (
-                  <Badge variant="secondary" className="rounded-full">
-                    Role: {filters.roleFilter}
-                    <button
-                      onClick={() => setFilters({ ...filters, roleFilter: "all" })}
-                      className="ml-2 hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )}
+                  {filters.roleFilter !== "all" && (
+                    <Badge variant="secondary" className="rounded-full">
+                      Role: {filters.roleFilter}
+                      <button
+                        onClick={() => setFilters({ ...filters, roleFilter: "all" })}
+                        className="ml-2 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )}
 
-                {filters.statusFilter !== "all" && (
-                  <Badge variant="secondary" className="rounded-full">
-                    Status: {filters.statusFilter}
-                    <button
-                      onClick={() => setFilters({ ...filters, statusFilter: "all" })}
-                      className="ml-2 hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )}
+                  {filters.statusFilter !== "all" && (
+                    <Badge variant="secondary" className="rounded-full">
+                      Status: {filters.statusFilter}
+                      <button
+                        onClick={() => setFilters({ ...filters, statusFilter: "all" })}
+                        className="ml-2 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )}
 
-                {filters.teamFilter !== "all" && (
-                  <Badge variant="secondary" className="rounded-full">
-                    Team: {filters.teamFilter}
-                    <button
-                      onClick={() => setFilters({ ...filters, teamFilter: "all" })}
-                      className="ml-2 hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )}
+                  {filters.teamFilter !== "all" && (
+                    <Badge variant="secondary" className="rounded-full">
+                      Team: {filters.teamFilter}
+                      <button
+                        onClick={() => setFilters({ ...filters, teamFilter: "all" })}
+                        className="ml-2 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )}
 
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() =>
-                    setFilters({
-                      searchTerm: "",
-                      roleFilter: "all",
-                      statusFilter: "all",
-                      teamFilter: "all",
-                    })
-                  }
-                  className="text-xs"
-                >
-                  Clear all
-                </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      setFilters({
+                        searchTerm: "",
+                        roleFilter: "all",
+                        statusFilter: "all",
+                        teamFilter: "all",
+                      })
+                    }
+                    className="text-xs"
+                  >
+                    Clear all
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
 
         {/* User Table */}
@@ -478,11 +455,7 @@ function ManageUsersPage() {
               users={paginatedUsers}
               sortConfig={sortConfig}
               onSort={handleSort}
-              onEditUser={handleEditUser}
-              onDeleteUser={handleDeleteUser}
               currentUserId={currentUser?._id}
-              canEditUser={() => true}
-              canDeleteUser={() => true}
               onRowClick={handleEditUser}
             />
 
@@ -530,6 +503,7 @@ function ManageUsersPage() {
           canEditPoints={currentUser?.role === "Administrator"}
           loading={saving}
           currentUserId={currentUser?._id}
+          onDelete={handleDeleteUser}
         />
 
         {/* Add Member Modal */}

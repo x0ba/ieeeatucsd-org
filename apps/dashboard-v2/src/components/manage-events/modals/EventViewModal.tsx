@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
 import { format } from "date-fns";
 import {
   MapPin,
@@ -14,8 +16,13 @@ import {
   History,
   Pencil,
   Trash2,
-  Send,
   Globe,
+  Check,
+  Copy,
+  ExternalLink,
+  Upload,
+  Loader2,
+  Link as LinkIcon,
 } from "lucide-react";
 import {
   Dialog,
@@ -28,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -36,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "../filters/StatusBadge";
+import { formatDepartmentLabel, formatEventTypeLabel } from "../constants";
 import type { EventRequest, EventStatus } from "../types";
 
 interface EventViewModalProps {
@@ -44,10 +53,13 @@ interface EventViewModalProps {
   event: EventRequest | null;
   onEdit?: (event: EventRequest) => void;
   onDelete?: (event: EventRequest) => void;
-  onPublish?: (event: EventRequest) => void;
   onDecline?: (event: EventRequest) => void;
   onStatusChange?: (event: EventRequest, status: EventStatus) => void;
   onTogglePublish?: (event: EventRequest, canPublish: boolean) => void;
+  onUpdateGraphics?: (
+    event: EventRequest,
+    updates: { flyersCompleted: boolean; graphicsUploadNote?: string }
+  ) => Promise<void> | void;
   canManageStatus?: boolean;
 }
 
@@ -56,8 +68,73 @@ const editableStatuses: { value: EventStatus; label: string }[] = [
   { value: "pending", label: "Pending" },
   { value: "needs_review", label: "Needs Review" },
   { value: "approved", label: "Approved" },
+  { value: "published", label: "Published" },
   { value: "declined", label: "Declined" },
 ];
+
+function isResolvableStorageId(value: string) {
+  if (!value) return false;
+  if (value.startsWith("http://") || value.startsWith("https://")) return false;
+  if (value.startsWith("data:")) return false;
+  return true;
+}
+
+function getDisplayFileName(fileRef: string, fallback: string) {
+  try {
+    const url = new URL(fileRef);
+    const fromUrl = url.pathname.split("/").pop();
+    return fromUrl || fallback;
+  } catch {
+    return fileRef.length > 48 ? `${fileRef.slice(0, 24)}...${fileRef.slice(-12)}` : fileRef || fallback;
+  }
+}
+
+function formatInvoiceData(event: EventRequest, invoiceIndex?: number): string {
+  if (!event.invoices || event.invoices.length === 0) {
+    return "No invoice data available";
+  }
+
+  if (
+    invoiceIndex !== undefined &&
+    invoiceIndex >= 0 &&
+    invoiceIndex < event.invoices.length
+  ) {
+    const invoice = event.invoices[invoiceIndex];
+    const itemStrings = invoice.items.map(
+      (item) =>
+        `${item.quantity || 1} ${item.description || "Item"} x${(item.unitPrice || 0).toFixed(2)} each`
+    );
+    const subtotal = invoice.items.reduce(
+      (sum, item) => sum + (item.quantity || 1) * (item.unitPrice || 0),
+      0
+    );
+    const total = subtotal + (invoice.tax || 0) + (invoice.tip || 0);
+    let line = itemStrings.join(" | ");
+    if (invoice.tax > 0) line += ` | Tax = ${invoice.tax.toFixed(2)}`;
+    if (invoice.tip > 0) line += ` | Tip = ${invoice.tip.toFixed(2)}`;
+    line += ` | Total = ${total.toFixed(2)} from ${invoice.vendor || "Unknown Vendor"}`;
+    return line;
+  }
+
+  return event.invoices
+    .map((invoice, idx) => {
+      const itemStrings = invoice.items.map(
+        (item) =>
+          `${item.quantity || 1} ${item.description || "Item"} x${(item.unitPrice || 0).toFixed(2)} each`
+      );
+      const subtotal = invoice.items.reduce(
+        (sum, item) => sum + (item.quantity || 1) * (item.unitPrice || 0),
+        0
+      );
+      const total = subtotal + (invoice.tax || 0) + (invoice.tip || 0);
+      let line = `Invoice ${idx + 1}: ${itemStrings.join(" | ")}`;
+      if (invoice.tax > 0) line += ` | Tax = ${invoice.tax.toFixed(2)}`;
+      if (invoice.tip > 0) line += ` | Tip = ${invoice.tip.toFixed(2)}`;
+      line += ` | Total = ${total.toFixed(2)} from ${invoice.vendor || "Unknown Vendor"}`;
+      return line;
+    })
+    .join("\n\n");
+}
 
 export function EventViewModal({
   isOpen,
@@ -65,12 +142,74 @@ export function EventViewModal({
   event,
   onEdit,
   onDelete,
-  onPublish,
   onStatusChange,
   onTogglePublish,
+  onUpdateGraphics,
   canManageStatus,
 }: EventViewModalProps) {
+  const getStorageUrl = useMutation(api.eventRequests.getStorageUrl);
+  const generateUploadUrl = useMutation(api.eventRequests.generateUploadUrl);
   const [activeTab, setActiveTab] = useState("details");
+  const [copiedInvoice, setCopiedInvoice] = useState(false);
+  const [graphicsCompleted, setGraphicsCompleted] = useState(false);
+  const [graphicsUploadNote, setGraphicsUploadNote] = useState("");
+  const [isSavingGraphics, setIsSavingGraphics] = useState(false);
+  const [isUploadingGraphics, setIsUploadingGraphics] = useState(false);
+  const [resolvedStorageUrls, setResolvedStorageUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!event) return;
+    setGraphicsCompleted(Boolean(event.flyersCompleted));
+    setGraphicsUploadNote(event.graphicsUploadNote || "");
+  }, [event]);
+
+  const allFileRefs = useMemo(() => {
+    if (!event) return [];
+    const invoiceRefs = event.invoices.flatMap((invoice) => [
+      ...(invoice.invoiceFile ? [invoice.invoiceFile] : []),
+      ...(invoice.additionalFiles || []),
+    ]);
+    return Array.from(new Set([
+      ...(event.files || []),
+      ...(event.roomBookingFiles || []),
+      ...invoiceRefs,
+    ]));
+  }, [event]);
+
+  useEffect(() => {
+    if (!event) return;
+    let cancelled = false;
+
+    const resolveRefs = async () => {
+      const refsToResolve = allFileRefs.filter(isResolvableStorageId);
+      if (refsToResolve.length === 0) {
+        setResolvedStorageUrls({});
+        return;
+      }
+
+      const resolvedEntries = await Promise.all(
+        refsToResolve.map(async (ref) => {
+          try {
+            const url = await getStorageUrl({ storageId: ref });
+            return [ref, url || ""] as const;
+          } catch {
+            return [ref, ""] as const;
+          }
+        })
+      );
+
+      if (cancelled) return;
+      const nextMap = Object.fromEntries(
+        resolvedEntries.filter(([, value]) => Boolean(value))
+      ) as Record<string, string>;
+      setResolvedStorageUrls(nextMap);
+    };
+
+    resolveRefs();
+    return () => {
+      cancelled = true;
+    };
+  }, [allFileRefs, event, getStorageUrl]);
 
   if (!event) return null;
 
@@ -80,6 +219,12 @@ export function EventViewModal({
 
   const formatTime = (timestamp: number) => {
     return format(new Date(timestamp), "h:mm a");
+  };
+
+  const resolveFileUrl = (fileRef: string) => {
+    if (!fileRef) return null;
+    if (!isResolvableStorageId(fileRef)) return fileRef;
+    return resolvedStorageUrls[fileRef] || null;
   };
 
   const getRequirements = () => {
@@ -92,34 +237,152 @@ export function EventViewModal({
 
   const requirements = getRequirements();
   const totalInvoices = event.invoices.reduce(
-    (sum, inv) => sum + (inv.amount || 0),
+    (sum, inv) => sum + (inv.total || inv.amount || 0),
     0
   );
 
+  const invoiceFileRefs = event.invoices.flatMap((invoice) => [
+    ...(invoice.invoiceFile ? [invoice.invoiceFile] : []),
+    ...(invoice.additionalFiles || []),
+  ]);
+
+  const graphicsNeeds = event.flyerType && event.flyerType.length > 0
+    ? event.flyerType
+    : [
+        ...(event.needsFlyers ? ["Flyers"] : []),
+        ...(event.needsGraphics ? ["Marketing Graphics"] : []),
+      ];
+
+  const copyInvoiceData = async () => {
+    try {
+      await navigator.clipboard.writeText(formatInvoiceData(event));
+      setCopiedInvoice(true);
+      setTimeout(() => setCopiedInvoice(false), 2000);
+    } catch {
+      // no-op: avoid throwing on restricted clipboard contexts
+    }
+  };
+
+  const saveGraphicsUpdate = async () => {
+    if (!onUpdateGraphics) return;
+    setIsSavingGraphics(true);
+    try {
+      await onUpdateGraphics(event, {
+        flyersCompleted: graphicsCompleted,
+        graphicsUploadNote: graphicsUploadNote.trim() || undefined,
+      });
+    } finally {
+      setIsSavingGraphics(false);
+    }
+  };
+
+  const handleGraphicsFileUpload = async (file: File) => {
+    if (!file) return;
+    const maxSize = 25 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return;
+    }
+    setIsUploadingGraphics(true);
+    try {
+      const uploadUrl = await generateUploadUrl({});
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      if (!uploadResponse.ok) throw new Error("Upload failed");
+      const { storageId } = await uploadResponse.json();
+      const fileUrl = await getStorageUrl({ storageId });
+      if (fileUrl) {
+        const newNote = graphicsUploadNote
+          ? `${graphicsUploadNote}\n${fileUrl}`
+          : fileUrl;
+        setGraphicsUploadNote(newNote);
+      }
+    } catch (error) {
+      console.error("Graphics file upload failed:", error);
+    } finally {
+      setIsUploadingGraphics(false);
+    }
+  };
+
+  const isUrl = (text: string) => {
+    try {
+      const url = new URL(text.trim());
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+
+  const renderFileCards = (files: string[], sectionName: string) => {
+    if (files.length === 0) {
+      return (
+        <div className="text-center py-8 bg-muted/20 rounded-xl border border-dashed">
+          <p className="text-sm text-muted-foreground">No {sectionName.toLowerCase()} attached</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid sm:grid-cols-2 gap-3">
+        {files.map((fileRef, idx) => {
+          const fileUrl = resolveFileUrl(fileRef);
+          return (
+            <div
+              key={`${sectionName}-${idx}`}
+              className="flex items-center justify-between p-3 border rounded-lg bg-card"
+            >
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                  <FileText className="h-5 w-5 text-blue-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {getDisplayFileName(fileRef, `${sectionName} ${idx + 1}`)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {fileUrl ? "Ready" : "Resolving secure file..."}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={!fileUrl}
+                onClick={() => {
+                  if (fileUrl) window.open(fileUrl, "_blank", "noopener,noreferrer");
+                }}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0 overflow-hidden flex flex-col">
+        <DialogHeader className="p-6 pb-2 space-y-4">
           <div className="flex items-start justify-between">
             <div>
-              <DialogTitle className="text-xl">{event.eventName}</DialogTitle>
+              <DialogTitle className="text-2xl font-bold tracking-tight">{event.eventName}</DialogTitle>
               <div className="flex items-center gap-2 mt-2">
                 <StatusBadge status={event.status} />
-                <span className="text-sm text-gray-500">
-                  {event.eventType}
+                <span className="text-sm text-muted-foreground border-l pl-2 ml-1">
+                  {formatEventTypeLabel(event.eventType)}
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {/* No submit button for drafts - drafts should only be edited */}
-            </div>
           </div>
 
-          {/* Status management for non-draft events */}
           {event.status !== "draft" && canManageStatus && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-3 pt-3 border-t">
-              <div className="flex items-center gap-2 flex-1">
-                <Label htmlFor="event-status" className="text-sm font-medium whitespace-nowrap">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 py-3 border-y bg-muted/20 -mx-6 px-6">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="event-status" className="text-sm font-medium whitespace-nowrap text-muted-foreground">
                   Status:
                 </Label>
                 <Select
@@ -128,12 +391,12 @@ export function EventViewModal({
                     if (onStatusChange) onStatusChange(event, value as EventStatus);
                   }}
                 >
-                  <SelectTrigger id="event-status" className="w-44 h-8 text-sm">
+                  <SelectTrigger id="event-status" className="w-[140px] h-8 text-xs bg-background">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {editableStatuses.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
+                      <SelectItem key={s.value} value={s.value} className="text-xs">
                         {s.label}
                       </SelectItem>
                     ))}
@@ -148,8 +411,8 @@ export function EventViewModal({
                     if (onTogglePublish) onTogglePublish(event, checked as boolean);
                   }}
                 />
-                <Label htmlFor="can-publish" className="text-sm cursor-pointer flex items-center gap-1.5">
-                  <Globe className="h-3.5 w-3.5" />
+                <Label htmlFor="can-publish" className="text-sm cursor-pointer flex items-center gap-1.5 font-medium">
+                  <Globe className="h-3.5 w-3.5 text-blue-500" />
                   Published
                 </Label>
               </div>
@@ -157,262 +420,428 @@ export function EventViewModal({
           )}
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="files">Files/Graphics</TabsTrigger>
-            <TabsTrigger value="funding">Funding</TabsTrigger>
-            <TabsTrigger value="attendees">Attendees</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-          </TabsList>
+        <div className="flex-1 overflow-y-auto p-6 pt-2">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-6 mb-4">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="files">Files</TabsTrigger>
+              <TabsTrigger value="graphics">Graphics</TabsTrigger>
+              <TabsTrigger value="funding">Funding</TabsTrigger>
+              <TabsTrigger value="attendees">Attendees</TabsTrigger>
+              <TabsTrigger value="history">History</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="details" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      Date & Time
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {formatDate(event.startDate)}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {formatTime(event.startDate)} - {formatTime(event.endDate)}
-                    </p>
+            <TabsContent value="details" className="space-y-6 animate-in fade-in-50 duration-300">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Date & Time</span>
                   </div>
+                  <p className="font-medium">{formatDate(event.startDate)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatTime(event.startDate)} - {formatTime(event.endDate)}
+                  </p>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      Location
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {event.location}
-                    </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <MapPin className="h-4 w-4" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Location</span>
                   </div>
+                  <p className="font-medium">{event.location}</p>
                 </div>
 
-                {event.capacity && (
-                  <div className="flex items-start gap-3">
-                    <Users className="h-5 w-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        Capacity
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {event.capacity} attendees
-                      </p>
-                    </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Users className="h-4 w-4" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Capacity</span>
                   </div>
-                )}
+                  <p className="font-medium">{event.capacity || "Unlimited"} attendees</p>
+                </div>
 
-                <div className="flex items-start gap-3">
-                  <User className="h-5 w-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      Created By
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {event.createdBy}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {formatDate(event._creationTime)}
-                    </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <User className="h-4 w-4" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Organizer</span>
                   </div>
+                  <p className="font-medium truncate" title={event.createdBy}>{event.createdBy}</p>
+                  <p className="text-xs text-muted-foreground">
+                    on {formatDate(event._creationTime)}
+                  </p>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      Event Code
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">
-                      {event.eventCode}
-                    </p>
+              <div className="grid grid-cols-2 gap-6 pt-4 border-t">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <FileText className="h-4 w-4" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Event Code</span>
                   </div>
+                  <p className="font-mono bg-muted/50 px-2 py-0.5 rounded text-sm w-fit">{event.eventCode}</p>
                 </div>
 
                 {event.department && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      Department
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {event.department}
-                    </p>
+                  <div className="space-y-1">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">Department</span>
+                    <p className="font-medium">{formatDepartmentLabel(event.department)}</p>
                   </div>
                 )}
+              </div>
 
-                {requirements.length > 0 && (
+              {requirements.length > 0 && (
+                <div className="pt-4 border-t">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-3">Requirements</span>
+                  <div className="flex flex-wrap gap-2">
+                    {requirements.map((req) => (
+                      <span
+                        key={req.label}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground border border-border"
+                      >
+                        <req.icon className="h-3.5 w-3.5" />
+                        {req.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 border-t">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-2">Description</span>
+                <div className="bg-muted/30 p-4 rounded-lg text-sm text-foreground whitespace-pre-wrap leading-relaxed border">
+                  {event.eventDescription}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="files" className="space-y-6 animate-in fade-in-50 duration-300">
+              <div>
+                <h4 className="text-sm font-semibold mb-3">Room Booking Files</h4>
+                {renderFileCards(event.roomBookingFiles || [], "Room Booking")}
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold mb-3">Invoice Files</h4>
+                {renderFileCards(invoiceFileRefs, "Invoice")}
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold mb-3">General Event Files</h4>
+                {renderFileCards(event.files || [], "Event File")}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="graphics" className="space-y-6 animate-in fade-in-50 duration-300">
+              <div className="border rounded-xl p-4 bg-card">
+                <h4 className="text-sm font-semibold mb-3">Graphics Needed</h4>
+                {graphicsNeeds.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {graphicsNeeds.map((need) => (
+                      <span
+                        key={need}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                      >
+                        <ImageIcon className="h-3 w-3" />
+                        {need}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No graphics requirements listed.</p>
+                )}
+              </div>
+
+              <div className="border rounded-xl p-4 bg-card space-y-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      Requirements
+                    <h4 className="text-sm font-semibold">Graphics Delivery</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Upload a file directly or paste a link to where graphics were delivered.
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {requirements.map((req) => (
-                        <span
-                          key={req.label}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-100 dark:bg-gray-700"
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="graphics-upload-note">Link or File URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="graphics-upload-note"
+                      value={graphicsUploadNote}
+                      onChange={(e) => setGraphicsUploadNote(e.target.value)}
+                      placeholder="Paste a drive folder link, URL, or upload a file below"
+                      disabled={!onUpdateGraphics || event.status === "published"}
+                      className="flex-1"
+                    />
+                    {graphicsUploadNote && isUrl(graphicsUploadNote.split("\n")[0]) && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => window.open(graphicsUploadNote.split("\n")[0], "_blank", "noopener,noreferrer")}
+                        title="Open link"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Render all URLs in the note as clickable links */}
+                  {graphicsUploadNote && graphicsUploadNote.split("\n").filter(isUrl).length > 0 && (
+                    <div className="space-y-2 p-3 bg-muted/30 rounded-lg border">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Linked Files</p>
+                      {graphicsUploadNote.split("\n").filter(isUrl).map((url, idx) => (
+                        <a
+                          key={idx}
+                          href={url.trim()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline truncate"
                         >
-                          <req.icon className="h-3 w-3" />
-                          {req.label}
-                        </span>
+                          <LinkIcon className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{url.trim()}</span>
+                          <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
+                        </a>
                       ))}
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
+                  )}
 
-            <div className="border-t pt-4">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                Description
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                {event.eventDescription}
-              </p>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="files" className="space-y-4">
-            {event.files.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No files attached</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {event.files.map((file, fileIndex) => (
-                  <div
-                    key={fileIndex}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
+                  {/* File Upload */}
+                  {onUpdateGraphics && event.status !== "published" && (
                     <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-gray-400" />
-                      <span className="text-sm">{file}</span>
+                      <label>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*,application/pdf,.ai,.psd,.svg,.eps,.fig"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) void handleGraphicsFileUpload(file);
+                            e.target.value = "";
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          disabled={isUploadingGraphics}
+                        >
+                          <span>
+                            {isUploadingGraphics ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                            ) : (
+                              <Upload className="h-3.5 w-3.5 mr-1.5" />
+                            )}
+                            {isUploadingGraphics ? "Uploading..." : "Upload Graphics File"}
+                          </span>
+                        </Button>
+                      </label>
+                      <span className="text-xs text-muted-foreground">
+                        Images, PDFs, SVGs, or design files (max 25MB)
+                      </span>
                     </div>
-                    <Button variant="ghost" size="sm">
-                      Download
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="graphics-completed"
+                      checked={graphicsCompleted}
+                      onCheckedChange={(checked) => setGraphicsCompleted(Boolean(checked))}
+                      disabled={!onUpdateGraphics || event.status === "published"}
+                    />
+                    <Label htmlFor="graphics-completed" className="cursor-pointer">
+                      Mark graphics as completed
+                    </Label>
+                  </div>
+                  {onUpdateGraphics && event.status !== "published" && (
+                    <Button
+                      size="sm"
+                      onClick={saveGraphicsUpdate}
+                      disabled={isSavingGraphics || isUploadingGraphics}
+                    >
+                      {isSavingGraphics ? "Saving..." : "Save Graphics Update"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="funding" className="space-y-6 animate-in fade-in-50 duration-300">
+              <div className="flex items-center justify-between p-4 border rounded-xl bg-gradient-to-r from-background to-muted/20">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                    <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">AS Funding Requested</p>
+                    <p className="text-sm text-muted-foreground">
+                      Status: <span className={event.needsASFunding ? "text-green-600 font-medium" : "text-muted-foreground"}>{event.needsASFunding ? "Yes" : "No"}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {event.invoices.length > 0 && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-green-900 dark:text-green-100">
+                      Formatted Invoice Data (Copyable)
+                    </h4>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={copyInvoiceData}
+                      className="gap-1.5"
+                    >
+                      {copiedInvoice ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copiedInvoice ? "Copied!" : "Copy"}
                     </Button>
                   </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="funding" className="space-y-4">
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center gap-3">
-                <DollarSign className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="text-sm font-medium">AS Funding Requested</p>
-                  <p className="text-xs text-gray-500">
-                    {event.needsASFunding ? "Yes" : "No"}
+                  <p className="text-xs font-mono text-green-900 dark:text-green-100 bg-white/80 dark:bg-black/20 border rounded-md p-3 whitespace-pre-wrap break-words">
+                    {formatInvoiceData(event)}
                   </p>
                 </div>
-              </div>
-            </div>
+              )}
 
-            {event.invoices.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium mb-2">Invoices</h4>
-                <div className="space-y-3">
-                  {event.invoices.map((invoice) => {
-                    const itemsSummary = invoice.items
-                      .map((item) => {
-                        const qty = item.quantity || 1;
-                        const price = item.unitPrice || (item.total / qty);
-                        return `${qty} ${item.description} x$${price.toFixed(2)} each`;
-                      })
-                      .join(" | ");
-                    const taxPart = invoice.tax > 0 ? ` | Tax = $${invoice.tax.toFixed(2)}` : "";
-                    const tipPart = invoice.tip > 0 ? ` | Tip = $${invoice.tip.toFixed(2)}` : "";
-                    const totalPart = ` | Total = $${(invoice.total || invoice.amount || 0).toFixed(2)}`;
-                    const vendorPart = invoice.vendor ? ` from ${invoice.vendor}` : "";
-
-                    return (
-                      <div
-                        key={invoice._id}
-                        className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-800/50"
-                      >
-                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                          {invoice.items.length > 0
-                            ? `${itemsSummary}${taxPart}${tipPart}${totalPart}${vendorPart}`
-                            : `${invoice.description || "Invoice"}${totalPart}${vendorPart}`}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                  <span className="font-medium">Total</span>
-                  <span className="text-lg font-bold">
-                    ${totalInvoices.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="attendees" className="space-y-4">
-            <div className="text-center py-8 text-gray-500">
-              <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Attendee management coming soon</p>
-              <p className="text-xs text-gray-400 mt-1">
-                Estimated attendance: {event.estimatedAttendance}
-              </p>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="history" className="space-y-4">
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Clock className="h-5 w-5 text-gray-400 mt-0.5" />
+              {event.invoices.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium">Event Created</p>
-                  <p className="text-xs text-gray-500">
-                    {formatDate(event._creationTime)} at{" "}
-                    {formatTime(event._creationTime)}
+                  <h4 className="text-sm font-semibold mb-3 flex items-center justify-between">
+                    <span>Invoices</span>
+                    <span className="text-xs font-normal text-muted-foreground">{event.invoices.length} items</span>
+                  </h4>
+                  <div className="space-y-3">
+                    {event.invoices.map((invoice, index) => {
+                      const totalAmount = invoice.total || invoice.amount || 0;
+                      const invoiceFiles = [
+                        ...(invoice.invoiceFile ? [invoice.invoiceFile] : []),
+                        ...(invoice.additionalFiles || []),
+                      ];
+                      return (
+                        <div
+                          key={invoice._id}
+                          className="border rounded-xl bg-card overflow-hidden shadow-sm"
+                        >
+                          <div className="p-3 bg-muted/30 border-b flex justify-between items-center">
+                            <span className="font-medium text-sm">
+                              {invoice.vendor || `Invoice ${index + 1}`}
+                            </span>
+                            <span className="font-bold text-sm text-foreground">${totalAmount.toFixed(2)}</span>
+                          </div>
+                          <div className="p-3 space-y-2">
+                            {invoice.items.length > 0 ? (
+                              <ul className="space-y-1">
+                                {invoice.items.map((item, idx) => (
+                                  <li key={idx} className="text-sm flex justify-between text-muted-foreground">
+                                    <span>
+                                      {item.quantity || 1}x {item.description}
+                                    </span>
+                                    <span>${(item.unitPrice || (item.total / (item.quantity || 1))).toFixed(2)}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-sm text-muted-foreground italic">
+                                {invoice.description || "No item details"}
+                              </p>
+                            )}
+
+                            {invoiceFiles.length > 0 && (
+                              <div className="pt-2 border-t">
+                                <p className="text-xs font-medium mb-2">Attached Files</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {invoiceFiles.map((fileRef, fileIdx) => {
+                                    const fileUrl = resolveFileUrl(fileRef);
+                                    return (
+                                      <Button
+                                        key={`${invoice._id}-file-${fileIdx}`}
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 text-xs"
+                                        disabled={!fileUrl}
+                                        onClick={() => {
+                                          if (fileUrl) window.open(fileUrl, "_blank", "noopener,noreferrer");
+                                        }}
+                                      >
+                                        <FileText className="h-3 w-3 mr-1" />
+                                        {getDisplayFileName(fileRef, `Invoice File ${fileIdx + 1}`)}
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {(invoice.tax > 0 || invoice.tip > 0) && (
+                              <div className="pt-2 mt-2 border-t border-dashed text-xs text-muted-foreground flex justify-end gap-3">
+                                {invoice.tax > 0 && <span>Tax: ${invoice.tax.toFixed(2)}</span>}
+                                {invoice.tip > 0 && <span>Tip: ${invoice.tip.toFixed(2)}</span>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-between items-center mt-6 pt-4 border-t border-dashed">
+                    <span className="font-medium text-lg">Total Invoiced</span>
+                    <span className="text-2xl font-bold tracking-tight text-primary">
+                      ${totalInvoices.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="attendees" className="h-full">
+              <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-muted/10 rounded-xl border border-dashed">
+                <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
+                <h3 className="font-medium text-foreground">Attendee Management</h3>
+                <p className="text-sm text-muted-foreground mt-1 mb-4">Tracking features coming soon</p>
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium">
+                  Estimated: {event.estimatedAttendance}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="history" className="space-y-4">
+              <div className="space-y-0 relative pl-4 border-l-2 border-muted ml-2">
+                <div className="relative pb-6 pl-6">
+                  <div className="absolute -left-[25px] top-0 p-1 bg-background rounded-full border border-muted">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="font-medium text-sm">Event Created</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatDate(event._creationTime)} at {formatTime(event._creationTime)}
                   </p>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <History className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium">Last Updated</p>
-                  <p className="text-xs text-gray-500">
+
+                <div className="relative pl-6">
+                  <div className="absolute -left-[25px] top-0 p-1 bg-background rounded-full border border-muted">
+                    <History className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="font-medium text-sm">Last Updated</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {event._updatedAt
-                      ? `${formatDate(event._updatedAt)} at ${formatTime(
-                          event._updatedAt
-                        )}`
+                      ? `${formatDate(event._updatedAt)} at ${formatTime(event._updatedAt)}`
                       : "Never"}
                   </p>
                 </div>
               </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </div>
 
-        <DialogFooter className="flex justify-between">
+        <DialogFooter className="p-6 border-t bg-muted/10 flex justify-between items-center mt-auto">
           <div className="flex gap-2">
             {onEdit && (
               <Button variant="outline" size="sm" onClick={() => onEdit(event)}>
                 <Pencil className="h-4 w-4 mr-2" />
-                Edit
+                Edit Event
               </Button>
             )}
             {onDelete && (
               <Button
                 variant="outline"
                 size="sm"
-                className="text-destructive"
+                className="text-destructive hover:bg-destructive/10 border-destructive/20"
                 onClick={() => onDelete(event)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -420,7 +849,7 @@ export function EventViewModal({
               </Button>
             )}
           </div>
-          <Button variant="outline" onClick={onClose}>
+          <Button onClick={onClose} size="sm" className="px-6">
             Close
           </Button>
         </DialogFooter>

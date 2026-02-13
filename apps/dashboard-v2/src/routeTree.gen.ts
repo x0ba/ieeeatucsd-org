@@ -14,7 +14,9 @@ import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiResetEmailPasswordRouteImport } from './routes/api/reset-email-password'
+import { Route as ApiParseReceiptRouteImport } from './routes/api/parse-receipt'
 import { Route as ApiParseInvoiceRouteImport } from './routes/api/parse-invoice'
+import { Route as ApiExtractPaymentDetailsRouteImport } from './routes/api/extract-payment-details'
 import { Route as ApiCreateIeeeEmailRouteImport } from './routes/api/create-ieee-email'
 import { Route as ApiCheckEmailExistsRouteImport } from './routes/api/check-email-exists'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
@@ -32,7 +34,7 @@ import { Route as DashboardLinksRouteImport } from './routes/_dashboard/links'
 import { Route as DashboardLeaderboardRouteImport } from './routes/_dashboard/leaderboard'
 import { Route as DashboardGetStartedRouteImport } from './routes/_dashboard/get-started'
 import { Route as DashboardFundRequestsRouteImport } from './routes/_dashboard/fund-requests'
-import { Route as DashboardFundDepositsRouteImport } from './routes/_dashboard/fund-deposits'
+import { Route as DashboardExecutiveAnalyticsRouteImport } from './routes/_dashboard/executive-analytics'
 import { Route as DashboardEventsRouteImport } from './routes/_dashboard/events'
 import { Route as DashboardConstitutionBuilderRouteImport } from './routes/_dashboard/constitution-builder'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
@@ -65,11 +67,22 @@ const ApiResetEmailPasswordRoute = ApiResetEmailPasswordRouteImport.update({
   path: '/api/reset-email-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiParseReceiptRoute = ApiParseReceiptRouteImport.update({
+  id: '/api/parse-receipt',
+  path: '/api/parse-receipt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiParseInvoiceRoute = ApiParseInvoiceRouteImport.update({
   id: '/api/parse-invoice',
   path: '/api/parse-invoice',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiExtractPaymentDetailsRoute =
+  ApiExtractPaymentDetailsRouteImport.update({
+    id: '/api/extract-payment-details',
+    path: '/api/extract-payment-details',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiCreateIeeeEmailRoute = ApiCreateIeeeEmailRouteImport.update({
   id: '/api/create-ieee-email',
   path: '/api/create-ieee-email',
@@ -157,11 +170,12 @@ const DashboardFundRequestsRoute = DashboardFundRequestsRouteImport.update({
   path: '/fund-requests',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardFundDepositsRoute = DashboardFundDepositsRouteImport.update({
-  id: '/fund-deposits',
-  path: '/fund-deposits',
-  getParentRoute: () => DashboardRoute,
-} as any)
+const DashboardExecutiveAnalyticsRoute =
+  DashboardExecutiveAnalyticsRouteImport.update({
+    id: '/executive-analytics',
+    path: '/executive-analytics',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardEventsRoute = DashboardEventsRouteImport.update({
   id: '/events',
   path: '/events',
@@ -207,7 +221,7 @@ export interface FileRoutesByFullPath {
   '/signin': typeof SigninRoute
   '/constitution-builder': typeof DashboardConstitutionBuilderRoute
   '/events': typeof DashboardEventsRoute
-  '/fund-deposits': typeof DashboardFundDepositsRoute
+  '/executive-analytics': typeof DashboardExecutiveAnalyticsRoute
   '/fund-requests': typeof DashboardFundRequestsRoute
   '/get-started': typeof DashboardGetStartedRoute
   '/leaderboard': typeof DashboardLeaderboardRoute
@@ -225,7 +239,9 @@ export interface FileRoutesByFullPath {
   '/api/$': typeof ApiSplatRoute
   '/api/check-email-exists': typeof ApiCheckEmailExistsRoute
   '/api/create-ieee-email': typeof ApiCreateIeeeEmailRoute
+  '/api/extract-payment-details': typeof ApiExtractPaymentDetailsRoute
   '/api/parse-invoice': typeof ApiParseInvoiceRoute
+  '/api/parse-receipt': typeof ApiParseReceiptRoute
   '/api/reset-email-password': typeof ApiResetEmailPasswordRoute
   '/sponsors/information': typeof DashboardSponsorsInformationRoute
   '/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
@@ -239,7 +255,7 @@ export interface FileRoutesByTo {
   '/signin': typeof SigninRoute
   '/constitution-builder': typeof DashboardConstitutionBuilderRoute
   '/events': typeof DashboardEventsRoute
-  '/fund-deposits': typeof DashboardFundDepositsRoute
+  '/executive-analytics': typeof DashboardExecutiveAnalyticsRoute
   '/fund-requests': typeof DashboardFundRequestsRoute
   '/get-started': typeof DashboardGetStartedRoute
   '/leaderboard': typeof DashboardLeaderboardRoute
@@ -257,7 +273,9 @@ export interface FileRoutesByTo {
   '/api/$': typeof ApiSplatRoute
   '/api/check-email-exists': typeof ApiCheckEmailExistsRoute
   '/api/create-ieee-email': typeof ApiCreateIeeeEmailRoute
+  '/api/extract-payment-details': typeof ApiExtractPaymentDetailsRoute
   '/api/parse-invoice': typeof ApiParseInvoiceRoute
+  '/api/parse-receipt': typeof ApiParseReceiptRoute
   '/api/reset-email-password': typeof ApiResetEmailPasswordRoute
   '/sponsors/information': typeof DashboardSponsorsInformationRoute
   '/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
@@ -273,7 +291,7 @@ export interface FileRoutesById {
   '/signin': typeof SigninRoute
   '/_dashboard/constitution-builder': typeof DashboardConstitutionBuilderRoute
   '/_dashboard/events': typeof DashboardEventsRoute
-  '/_dashboard/fund-deposits': typeof DashboardFundDepositsRoute
+  '/_dashboard/executive-analytics': typeof DashboardExecutiveAnalyticsRoute
   '/_dashboard/fund-requests': typeof DashboardFundRequestsRoute
   '/_dashboard/get-started': typeof DashboardGetStartedRoute
   '/_dashboard/leaderboard': typeof DashboardLeaderboardRoute
@@ -291,7 +309,9 @@ export interface FileRoutesById {
   '/api/$': typeof ApiSplatRoute
   '/api/check-email-exists': typeof ApiCheckEmailExistsRoute
   '/api/create-ieee-email': typeof ApiCreateIeeeEmailRoute
+  '/api/extract-payment-details': typeof ApiExtractPaymentDetailsRoute
   '/api/parse-invoice': typeof ApiParseInvoiceRoute
+  '/api/parse-receipt': typeof ApiParseReceiptRoute
   '/api/reset-email-password': typeof ApiResetEmailPasswordRoute
   '/_dashboard/sponsors/information': typeof DashboardSponsorsInformationRoute
   '/_dashboard/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
@@ -307,7 +327,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/constitution-builder'
     | '/events'
-    | '/fund-deposits'
+    | '/executive-analytics'
     | '/fund-requests'
     | '/get-started'
     | '/leaderboard'
@@ -325,7 +345,9 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/check-email-exists'
     | '/api/create-ieee-email'
+    | '/api/extract-payment-details'
     | '/api/parse-invoice'
+    | '/api/parse-receipt'
     | '/api/reset-email-password'
     | '/sponsors/information'
     | '/sponsors/resume-database'
@@ -339,7 +361,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/constitution-builder'
     | '/events'
-    | '/fund-deposits'
+    | '/executive-analytics'
     | '/fund-requests'
     | '/get-started'
     | '/leaderboard'
@@ -357,7 +379,9 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/check-email-exists'
     | '/api/create-ieee-email'
+    | '/api/extract-payment-details'
     | '/api/parse-invoice'
+    | '/api/parse-receipt'
     | '/api/reset-email-password'
     | '/sponsors/information'
     | '/sponsors/resume-database'
@@ -372,7 +396,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/_dashboard/constitution-builder'
     | '/_dashboard/events'
-    | '/_dashboard/fund-deposits'
+    | '/_dashboard/executive-analytics'
     | '/_dashboard/fund-requests'
     | '/_dashboard/get-started'
     | '/_dashboard/leaderboard'
@@ -390,7 +414,9 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/check-email-exists'
     | '/api/create-ieee-email'
+    | '/api/extract-payment-details'
     | '/api/parse-invoice'
+    | '/api/parse-receipt'
     | '/api/reset-email-password'
     | '/_dashboard/sponsors/information'
     | '/_dashboard/sponsors/resume-database'
@@ -407,7 +433,9 @@ export interface RootRouteChildren {
   ApiSplatRoute: typeof ApiSplatRoute
   ApiCheckEmailExistsRoute: typeof ApiCheckEmailExistsRoute
   ApiCreateIeeeEmailRoute: typeof ApiCreateIeeeEmailRoute
+  ApiExtractPaymentDetailsRoute: typeof ApiExtractPaymentDetailsRoute
   ApiParseInvoiceRoute: typeof ApiParseInvoiceRoute
+  ApiParseReceiptRoute: typeof ApiParseReceiptRoute
   ApiResetEmailPasswordRoute: typeof ApiResetEmailPasswordRoute
   ApiAiQueryRoute: typeof ApiAiQueryRoute
   ApiEmailSendRoute: typeof ApiEmailSendRoute
@@ -451,11 +479,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiResetEmailPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/parse-receipt': {
+      id: '/api/parse-receipt'
+      path: '/api/parse-receipt'
+      fullPath: '/api/parse-receipt'
+      preLoaderRoute: typeof ApiParseReceiptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/parse-invoice': {
       id: '/api/parse-invoice'
       path: '/api/parse-invoice'
       fullPath: '/api/parse-invoice'
       preLoaderRoute: typeof ApiParseInvoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/extract-payment-details': {
+      id: '/api/extract-payment-details'
+      path: '/api/extract-payment-details'
+      fullPath: '/api/extract-payment-details'
+      preLoaderRoute: typeof ApiExtractPaymentDetailsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/create-ieee-email': {
@@ -577,11 +619,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardFundRequestsRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/_dashboard/fund-deposits': {
-      id: '/_dashboard/fund-deposits'
-      path: '/fund-deposits'
-      fullPath: '/fund-deposits'
-      preLoaderRoute: typeof DashboardFundDepositsRouteImport
+    '/_dashboard/executive-analytics': {
+      id: '/_dashboard/executive-analytics'
+      path: '/executive-analytics'
+      fullPath: '/executive-analytics'
+      preLoaderRoute: typeof DashboardExecutiveAnalyticsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/_dashboard/events': {
@@ -639,7 +681,7 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteChildren {
   DashboardConstitutionBuilderRoute: typeof DashboardConstitutionBuilderRoute
   DashboardEventsRoute: typeof DashboardEventsRoute
-  DashboardFundDepositsRoute: typeof DashboardFundDepositsRoute
+  DashboardExecutiveAnalyticsRoute: typeof DashboardExecutiveAnalyticsRoute
   DashboardFundRequestsRoute: typeof DashboardFundRequestsRoute
   DashboardGetStartedRoute: typeof DashboardGetStartedRoute
   DashboardLeaderboardRoute: typeof DashboardLeaderboardRoute
@@ -661,7 +703,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardConstitutionBuilderRoute: DashboardConstitutionBuilderRoute,
   DashboardEventsRoute: DashboardEventsRoute,
-  DashboardFundDepositsRoute: DashboardFundDepositsRoute,
+  DashboardExecutiveAnalyticsRoute: DashboardExecutiveAnalyticsRoute,
   DashboardFundRequestsRoute: DashboardFundRequestsRoute,
   DashboardGetStartedRoute: DashboardGetStartedRoute,
   DashboardLeaderboardRoute: DashboardLeaderboardRoute,
@@ -692,7 +734,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSplatRoute: ApiSplatRoute,
   ApiCheckEmailExistsRoute: ApiCheckEmailExistsRoute,
   ApiCreateIeeeEmailRoute: ApiCreateIeeeEmailRoute,
+  ApiExtractPaymentDetailsRoute: ApiExtractPaymentDetailsRoute,
   ApiParseInvoiceRoute: ApiParseInvoiceRoute,
+  ApiParseReceiptRoute: ApiParseReceiptRoute,
   ApiResetEmailPasswordRoute: ApiResetEmailPasswordRoute,
   ApiAiQueryRoute: ApiAiQueryRoute,
   ApiEmailSendRoute: ApiEmailSendRoute,

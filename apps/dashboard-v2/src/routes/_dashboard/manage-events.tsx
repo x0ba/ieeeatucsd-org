@@ -26,6 +26,10 @@ import {
   type EventFormData,
   type EventStatus,
 } from "@/components/manage-events";
+import {
+  normalizeDepartment,
+  normalizeEventType,
+} from "@/components/manage-events/constants";
 
 export const Route = createFileRoute("/_dashboard/manage-events")({
   component: ManageEventsPage,
@@ -38,8 +42,8 @@ function mapEventRequestToType(er: any): EventRequest {
     _creationTime: er._creationTime,
     eventName: er.name || "Untitled Event",
     eventDescription: er.eventDescription || "",
-    eventType: er.eventType || "General",
-    department: er.department,
+    eventType: normalizeEventType(er.eventType),
+    department: normalizeDepartment(er.department),
     location: er.location || "TBD",
     startDate: er.startDateTime || Date.now(),
     endDate: er.endDateTime || Date.now() + 3600000,
@@ -66,7 +70,8 @@ function mapEventRequestToType(er: any): EventRequest {
       description: inv.items?.map((i: any) => i.description).join(", ") || "",
       fileUrl: inv.invoiceFile,
     })),
-    createdBy: er.createdBy || "Unknown",
+    createdBy: er.submitterName || er.requestedUser || er.createdBy || "Unknown",
+    requestedUser: er.requestedUser,
     _updatedAt: er._updatedAt,
     // Preserve all Convex fields for editing
     willOrHaveRoomBooking: er.willOrHaveRoomBooking || false,
@@ -83,6 +88,7 @@ function mapEventRequestToType(er: any): EventRequest {
     advertisingFormat: er.advertisingFormat || "",
     additionalSpecifications: er.additionalSpecifications || "",
     flyersCompleted: er.flyersCompleted || false,
+    graphicsUploadNote: er.graphicsUploadNote || "",
   };
 }
 
@@ -93,8 +99,8 @@ function mapEventToType(event: any): EventRequest {
     _creationTime: event._creationTime,
     eventName: event.eventName || "Untitled Event",
     eventDescription: event.eventDescription || "",
-    eventType: event.eventType || "General",
-    department: event.department,
+    eventType: normalizeEventType(event.eventType),
+    department: normalizeDepartment(event.department),
     location: event.location || "TBD",
     startDate: event.startDate || Date.now(),
     endDate: event.endDate || Date.now() + 3600000,
@@ -272,6 +278,8 @@ function ManageEventsPage() {
         startDateTime: data.startDate,
         endDateTime: data.endDate,
         eventDescription: data.eventDescription,
+        eventType: normalizeEventType(data.eventType),
+        department: data.department,
         expectedAttendance: data.estimatedAttendance,
         flyersNeeded: data.needsFlyers,
         needsGraphics: data.needsGraphics,
@@ -302,6 +310,7 @@ function ManageEventsPage() {
         roomBookingFiles: data.roomBookingFiles,
         foodDrinksBeingServed: data.foodDrinksBeingServed,
         additionalSpecifications: data.additionalSpecifications,
+        graphicsUploadNote: data.graphicsUploadNote || undefined,
       });
       toast.success("Event request submitted successfully!");
       setIsWizardOpen(false);
@@ -325,6 +334,8 @@ function ManageEventsPage() {
         startDateTime: data.startDate,
         endDateTime: data.endDate,
         eventDescription: data.eventDescription,
+        eventType: normalizeEventType(data.eventType),
+        department: data.department,
         expectedAttendance: data.estimatedAttendance,
         flyersNeeded: data.needsFlyers,
         needsGraphics: data.needsGraphics,
@@ -353,6 +364,8 @@ function ManageEventsPage() {
         asFundingRequired: data.asFundingRequired,
         foodDrinksBeingServed: data.foodDrinksBeingServed,
         additionalSpecifications: data.additionalSpecifications,
+        flyersCompleted: data.flyersCompleted,
+        graphicsUploadNote: data.graphicsUploadNote || undefined,
       });
       toast.success("Event request updated successfully!");
       setIsWizardOpen(false);
@@ -399,25 +412,6 @@ function ManageEventsPage() {
       toast.success("Event converted to draft!");
     } catch (error: any) {
       toast.error(error.message || "Failed to convert to draft");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Publish handler
-  const handlePublish = async (event: EventRequest) => {
-    if (!logtoId) return;
-    setIsProcessing(true);
-    try {
-      await updateEventRequestStatus({
-        logtoId,
-        id: event._id,
-        status: "approved",
-      });
-      toast.success("Event approved successfully!");
-      setIsViewModalOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to approve event");
     } finally {
       setIsProcessing(false);
     }
@@ -494,6 +488,35 @@ function ManageEventsPage() {
     }
   };
 
+  const handleUpdateGraphics = async (
+    event: EventRequest,
+    updates: { flyersCompleted: boolean; graphicsUploadNote?: string }
+  ) => {
+    if (!logtoId) return;
+    if (event.status === "published") {
+      toast.error("Graphics updates are only available for event requests.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await updateEventRequest({
+        logtoId,
+        id: event._id,
+        flyersCompleted: updates.flyersCompleted,
+        graphicsUploadNote: updates.graphicsUploadNote,
+      });
+      setSelectedRequest((prev) =>
+        prev && prev._id === event._id ? { ...prev, ...updates } : prev
+      );
+      toast.success("Graphics status updated");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update graphics status");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Create draft handler
   const handleCreateDraft = async (data: Partial<EventRequest>) => {
     if (!logtoId) return;
@@ -506,6 +529,8 @@ function ManageEventsPage() {
         startDateTime: data.startDate || Date.now(),
         endDateTime: data.endDate || Date.now() + 3600000,
         eventDescription: data.eventDescription || "",
+        eventType: normalizeEventType((data.eventType as string | undefined) || "other"),
+        department: normalizeDepartment(data.department),
         expectedAttendance: data.estimatedAttendance,
         isDraft: true,
         flyersNeeded: false,
@@ -525,6 +550,7 @@ function ManageEventsPage() {
         invoices: [] as any[],
         needsGraphics: false,
         needsAsFunding: false,
+        graphicsUploadNote: "",
       });
       toast.success("Draft event created!");
       setIsDraftModalOpen(false);
@@ -571,6 +597,8 @@ function ManageEventsPage() {
         startDateTime: data.startDate || editingDraft.startDate,
         endDateTime: data.endDate || editingDraft.endDate,
         eventDescription: data.eventDescription || editingDraft.eventDescription,
+        eventType: normalizeEventType((data.eventType as string | undefined) || editingDraft.eventType),
+        department: normalizeDepartment(data.department || editingDraft.department),
         expectedAttendance: data.estimatedAttendance,
         flyersNeeded: data.needsFlyers ?? false,
         needsGraphics: data.needsGraphics ?? false,
@@ -582,6 +610,7 @@ function ManageEventsPage() {
         foodDrinksBeingServed: data.foodDrinksBeingServed ?? false,
         photographyNeeded: data.photographyNeeded ?? false,
         requiredLogos: data.requiredLogos || [],
+        graphicsUploadNote: data.graphicsUploadNote || editingDraft.graphicsUploadNote || "",
       });
       toast.success("Draft updated successfully!");
       setIsDraftModalOpen(false);
@@ -726,11 +755,11 @@ function ManageEventsPage() {
         event={selectedRequest}
         onEdit={handleEditFromView}
         onDelete={handleDelete}
-        onPublish={hasAdminAccess ? handlePublish : undefined}
         onDecline={hasAdminAccess ? handleDecline : undefined}
         onStatusChange={hasAdminAccess ? handleStatusChange : undefined}
         onTogglePublish={hasAdminAccess ? handleTogglePublish : undefined}
         canManageStatus={hasAdminAccess}
+        onUpdateGraphics={handleUpdateGraphics}
       />
 
       {/* Draft Event Modal */}

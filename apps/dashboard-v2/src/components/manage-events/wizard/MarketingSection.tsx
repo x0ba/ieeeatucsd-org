@@ -49,6 +49,7 @@ interface MarketingSectionProps {
     otherLogos: string[];
     advertisingFormat: string;
     additionalSpecifications: string;
+    graphicsUploadNote: string;
   };
   onChange: (data: Partial<MarketingSectionProps["data"]>) => void;
 }
@@ -92,10 +93,12 @@ export function MarketingSection({ data, onChange }: MarketingSectionProps) {
             </div>
           </div>
 
-          {data.needsFlyers && (
+          {(data.needsFlyers || data.needsGraphics) && (
             <div className="ml-7 space-y-4 p-4 border rounded-lg bg-gray-50/50 dark:bg-gray-800/30">
               <div className="space-y-2">
-                <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">Flyer Type</Label>
+                <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Graphics Needed
+                </Label>
                 <div className="flex flex-col space-y-2">
                   {FLYER_TYPE_OPTIONS.map((type) => (
                     <div key={type} className="flex items-center space-x-2">
@@ -124,16 +127,18 @@ export function MarketingSection({ data, onChange }: MarketingSectionProps) {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="flyerAdvertisingStartDate">Advertising Start Date</Label>
-                <Input
-                  id="flyerAdvertisingStartDate"
-                  type="datetime-local"
-                  value={formatDateForInput(data.flyerAdvertisingStartDate)}
-                  onChange={(e) => onChange({ flyerAdvertisingStartDate: e.target.value ? new Date(e.target.value).getTime() : 0 })}
-                />
-                <p className="text-xs text-gray-500">When should flyer distribution begin?</p>
-              </div>
+              {data.needsFlyers && (
+                <div className="space-y-2">
+                  <Label htmlFor="flyerAdvertisingStartDate">Advertising Start Date</Label>
+                  <Input
+                    id="flyerAdvertisingStartDate"
+                    type="datetime-local"
+                    value={formatDateForInput(data.flyerAdvertisingStartDate)}
+                    onChange={(e) => onChange({ flyerAdvertisingStartDate: e.target.value ? new Date(e.target.value).getTime() : 0 })}
+                  />
+                  <p className="text-xs text-gray-500">When should flyer distribution begin?</p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="flyerAdditionalRequests">Additional Flyer Requests</Label>
@@ -200,6 +205,18 @@ export function MarketingSection({ data, onChange }: MarketingSectionProps) {
                   rows={3}
                 />
               </div>
+
+              {data.needsGraphics && (
+                <div className="space-y-2">
+                  <Label htmlFor="graphicsUploadNote">Graphics delivery note (optional)</Label>
+                  <Input
+                    id="graphicsUploadNote"
+                    value={data.graphicsUploadNote}
+                    onChange={(e) => onChange({ graphicsUploadNote: e.target.value })}
+                    placeholder="Paste delivery link or note where graphics were uploaded"
+                  />
+                </div>
+              )}
             </div>
           )}
 

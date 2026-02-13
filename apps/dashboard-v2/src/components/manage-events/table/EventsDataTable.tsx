@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "../filters/StatusBadge";
+import { formatEventTypeLabel } from "../constants";
 import type { EventRequest, SortConfig } from "../types";
 import { format } from "date-fns";
 
@@ -139,7 +140,7 @@ export function EventsDataTable({
                       {event.eventName}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {event.eventType}
+                      {formatEventTypeLabel(event.eventType)}
                     </div>
                   </TableCell>
                   <TableCell className="py-3 px-4">

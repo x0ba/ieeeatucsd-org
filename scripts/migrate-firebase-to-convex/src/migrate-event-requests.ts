@@ -1,5 +1,6 @@
 import { firebase, convex } from "./config.js";
 import { toEpochMs, createEmptyResult } from "./utils.js";
+import { migrateFileUrl, migrateFileUrls } from "./storage.js";
 import type { MigrationResult, MigrationContext } from "./types.js";
 
 export async function migrateEventRequests(ctx: MigrationContext): Promise<MigrationResult> {
@@ -21,9 +22,17 @@ export async function migrateEventRequests(ctx: MigrationContext): Promise<Migra
       const validStatuses = ["draft", "submitted", "pending", "completed", "approved", "declined", "needs_review"];
       const status = validStatuses.includes(data.status) ? data.status : "submitted";
 
-      // Map invoices
-      const invoices = Array.isArray(data.invoices)
-        ? data.invoices.map((inv: any) => ({
+      // Map invoices (with inline file migration)
+      const invoices: any[] = [];
+      if (Array.isArray(data.invoices)) {
+        for (const inv of data.invoices) {
+          const invoiceFile = inv.invoiceFile
+            ? await migrateFileUrl(inv.invoiceFile, ctx.dryRun)
+            : undefined;
+          const additionalFiles = Array.isArray(inv.additionalFiles)
+            ? await migrateFileUrls(inv.additionalFiles, ctx.dryRun)
+            : [];
+          invoices.push({
             id: inv.id || crypto.randomUUID(),
             vendor: inv.vendor || "",
             items: Array.isArray(inv.items)
@@ -36,12 +45,24 @@ export async function migrateEventRequests(ctx: MigrationContext): Promise<Migra
               : [],
             tax: inv.tax || 0,
             tip: inv.tip || 0,
-            invoiceFile: inv.invoiceFile || undefined,
-            additionalFiles: Array.isArray(inv.additionalFiles) ? inv.additionalFiles : [],
+            invoiceFile: invoiceFile || undefined,
+            additionalFiles,
             subtotal: inv.subtotal || 0,
             total: inv.total || 0,
-          }))
+          });
+        }
+      }
+
+      // Inline-migrate file arrays from Firebase Storage to Convex
+      const roomBookingFiles = Array.isArray(data.roomBookingFiles)
+        ? await migrateFileUrls(data.roomBookingFiles, ctx.dryRun)
         : [];
+      const graphicsFiles = Array.isArray(data.graphicsFiles)
+        ? await migrateFileUrls(data.graphicsFiles, ctx.dryRun)
+        : undefined;
+
+      const validEventTypes = ["social", "technical", "outreach", "professional", "projects", "other"];
+      const validDepts = ["events", "projects", "internal", "other"];
 
       const convexData: Record<string, unknown> = {
         name: data.name || "Untitled Request",
@@ -61,7 +82,7 @@ export async function migrateEventRequests(ctx: MigrationContext): Promise<Migra
         advertisingFormat: data.advertisingFormat || undefined,
         willOrHaveRoomBooking: data.willOrHaveRoomBooking ?? false,
         expectedAttendance: data.expectedAttendance || undefined,
-        roomBookingFiles: Array.isArray(data.roomBookingFiles) ? data.roomBookingFiles : [],
+        roomBookingFiles,
         asFundingRequired: data.asFundingRequired ?? false,
         foodDrinksBeingServed: data.foodDrinksBeingServed ?? false,
         invoices,
@@ -72,6 +93,11 @@ export async function migrateEventRequests(ctx: MigrationContext): Promise<Migra
         reviewFeedback: data.reviewFeedback || undefined,
         requestedUser,
         isDraft: data.isDraft || undefined,
+        eventType: validEventTypes.includes(data.eventType) ? data.eventType : undefined,
+        department: validDepts.includes(data.department) ? data.department : undefined,
+        graphicsCompleted: data.graphicsCompleted ?? undefined,
+        graphicsFiles,
+        published: data.published ?? undefined,
       };
 
       // Map audit logs — Firebase stores "undefined" as a literal string in many fields

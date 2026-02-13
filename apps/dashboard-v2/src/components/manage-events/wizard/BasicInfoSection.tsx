@@ -8,34 +8,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DEPARTMENT_OPTIONS,
+  EVENT_TYPE_OPTIONS,
+  type EventDepartmentValue,
+  type EventTypeValue,
+} from "../constants";
 
 interface BasicInfoSectionProps {
   data: {
     eventName: string;
     eventDescription: string;
-    eventType: string;
-    department?: string;
+    eventType: EventTypeValue | "";
+    department?: EventDepartmentValue;
   };
   onChange: (data: Partial<BasicInfoSectionProps["data"]>) => void;
 }
-
-const eventTypes = [
-  "Social",
-  "Technical",
-  "Outreach",
-  "Professional",
-  "Projects",
-  "Other",
-];
-
-const departments = [
-  "General",
-  "Technical",
-  "Social",
-  "Outreach",
-  "Professional",
-  "Projects",
-];
 
 export function BasicInfoSection({ data, onChange }: BasicInfoSectionProps) {
   return (
@@ -77,16 +65,16 @@ export function BasicInfoSection({ data, onChange }: BasicInfoSectionProps) {
               Event Type <span className="text-red-500">*</span>
             </Label>
             <Select
-              value={data.eventType}
-              onValueChange={(value) => onChange({ eventType: value })}
+              value={data.eventType || undefined}
+              onValueChange={(value) => onChange({ eventType: value as EventTypeValue })}
             >
               <SelectTrigger id="eventType">
                 <SelectValue placeholder="Select event type" />
               </SelectTrigger>
               <SelectContent>
-                {eventTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
+                {EVENT_TYPE_OPTIONS.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -96,16 +84,24 @@ export function BasicInfoSection({ data, onChange }: BasicInfoSectionProps) {
           <div className="space-y-2">
             <Label htmlFor="department">Department</Label>
             <Select
-              value={data.department || ""}
-              onValueChange={(value) => onChange({ department: value || undefined })}
+              value={data.department ?? "none"}
+              onValueChange={(value) =>
+                onChange({
+                  department:
+                    value === "none"
+                      ? undefined
+                      : (value as EventDepartmentValue),
+                })
+              }
             >
               <SelectTrigger id="department">
                 <SelectValue placeholder="Select department (optional)" />
               </SelectTrigger>
               <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>
-                    {dept}
+                <SelectItem value="none">Unspecified</SelectItem>
+                {DEPARTMENT_OPTIONS.map((dept) => (
+                  <SelectItem key={dept.value} value={dept.value}>
+                    {dept.label}
                   </SelectItem>
                 ))}
               </SelectContent>

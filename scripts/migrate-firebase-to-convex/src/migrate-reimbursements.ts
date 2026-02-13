@@ -1,5 +1,6 @@
 import { firebase, convex } from "./config.js";
 import { toEpochMs, createEmptyResult } from "./utils.js";
+import { migrateFileUrl } from "./storage.js";
 import type { MigrationResult, MigrationContext } from "./types.js";
 
 export async function migrateReimbursements(ctx: MigrationContext): Promise<MigrationResult> {
@@ -63,39 +64,50 @@ export async function migrateReimbursements(ctx: MigrationContext): Promise<Migr
       }
 
       if (data.paymentDetails) {
+        const proofFileUrl = data.paymentDetails.proofFileUrl
+          ? await migrateFileUrl(data.paymentDetails.proofFileUrl, ctx.dryRun)
+          : undefined;
         convexData.paymentDetails = {
           confirmationNumber: data.paymentDetails.confirmationNumber || "",
           paymentDate: data.paymentDetails.paymentDate ? toEpochMs(data.paymentDetails.paymentDate) : Date.now(),
           amountPaid: data.paymentDetails.amountPaid || 0,
-          proofFileUrl: data.paymentDetails.proofFileUrl || undefined,
+          proofFileUrl: proofFileUrl || undefined,
           memo: data.paymentDetails.memo || undefined,
         };
       }
 
       if (Array.isArray(data.receipts)) {
-        convexData.receipts = data.receipts.map((r: any) => ({
-          id: r.id || crypto.randomUUID(),
-          vendorName: r.vendorName || "",
-          location: r.location || "",
-          dateOfPurchase: r.dateOfPurchase ? toEpochMs(r.dateOfPurchase) : Date.now(),
-          lineItems: Array.isArray(r.lineItems)
-            ? r.lineItems.map((li: any) => ({
-                id: li.id || crypto.randomUUID(),
-                description: li.description || "",
-                category: li.category || "",
-                amount: li.amount || 0,
-              }))
-            : [],
-          receiptFile: typeof r.receiptFile === "string"
+        const migratedReceipts: any[] = [];
+        for (const r of data.receipts) {
+          const rawUrl = typeof r.receiptFile === "string"
             ? r.receiptFile
-            : r.receiptFile?.url || undefined,
-          notes: r.notes || undefined,
-          subtotal: r.subtotal || 0,
-          tax: r.tax || undefined,
-          tip: r.tip || undefined,
-          shipping: r.shipping || undefined,
-          total: r.total || 0,
-        }));
+            : r.receiptFile?.url || undefined;
+          const receiptFile = rawUrl
+            ? await migrateFileUrl(rawUrl, ctx.dryRun)
+            : undefined;
+          migratedReceipts.push({
+            id: r.id || crypto.randomUUID(),
+            vendorName: r.vendorName || "",
+            location: r.location || "",
+            dateOfPurchase: r.dateOfPurchase ? toEpochMs(r.dateOfPurchase) : Date.now(),
+            lineItems: Array.isArray(r.lineItems)
+              ? r.lineItems.map((li: any) => ({
+                  id: li.id || crypto.randomUUID(),
+                  description: li.description || "",
+                  category: li.category || "",
+                  amount: li.amount || 0,
+                }))
+              : [],
+            receiptFile: receiptFile || undefined,
+            notes: r.notes || undefined,
+            subtotal: r.subtotal || 0,
+            tax: r.tax || undefined,
+            tip: r.tip || undefined,
+            shipping: r.shipping || undefined,
+            total: r.total || 0,
+          });
+        }
+        convexData.receipts = migratedReceipts;
       }
 
       // Remove undefined values

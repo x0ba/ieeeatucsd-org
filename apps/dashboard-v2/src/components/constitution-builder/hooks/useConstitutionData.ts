@@ -1,25 +1,28 @@
-import { useQuery, useMutation, useConvexAuth } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import {
   ConstitutionSection,
   SaveStatus,
 } from "../types";
-
-const CONSTITUTION_ID = "ieee-ucsd-constitution";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
 
 export function useConstitutionData() {
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, logtoId } = useAuth();
+  const [initialized, setInitialized] = useState(false);
 
   // Get or ensure constitution exists
-  const constitution = useQuery(api.constitutions.getDefault, {
-    logtoId: "",
-  });
+  const constitution = useQuery(
+    api.constitutions.getDefault,
+    logtoId ? { logtoId } : "skip",
+  );
   const ensureConstitution = useMutation(api.constitutions.ensureDefaultConstitution);
 
-  // Get sections
-  const sections = useQuery(api.constitutions.getSections, {
-    constitutionId: CONSTITUTION_ID as any,
-  });
+  // Get sections - only when we have a valid constitution ID
+  const sections = useQuery(
+    api.constitutions.getSections,
+    constitution ? { constitutionId: constitution._id } : "skip",
+  );
 
   // Mutations
   const addSection = useMutation(api.constitutions.addSection);
@@ -27,8 +30,15 @@ export function useConstitutionData() {
   const deleteSection = useMutation(api.constitutions.deleteSection);
   const reorderSection = useMutation(api.constitutions.reorderSection);
 
-  const isLoading = constitution === undefined;
+  const isLoading = constitution === undefined || (!initialized && isAuthenticated && logtoId);
   const saveStatus: SaveStatus = isLoading ? "idle" : "saved";
+
+  // Auto-initialize constitution when authenticated
+  useEffect(() => {
+    if (isAuthenticated && logtoId && !initialized && constitution === undefined) {
+      ensureConstitution({ logtoId }).then(() => setInitialized(true));
+    }
+  }, [isAuthenticated, logtoId, initialized, constitution, ensureConstitution]);
 
   const handleAddSection = async (
     type: ConstitutionSection["type"],
@@ -36,7 +46,7 @@ export function useConstitutionData() {
     title?: string,
     content?: string,
   ) => {
-    if (!constitution) return;
+    if (!constitution || !logtoId) return;
 
     const existingSections = sections || [];
     const newOrder =
@@ -71,7 +81,7 @@ export function useConstitutionData() {
     }
 
     await addSection({
-      logtoId: "",
+      logtoId,
       constitutionId: constitution._id,
       type,
       title,
@@ -88,10 +98,10 @@ export function useConstitutionData() {
     sectionId: string,
     updates: Partial<ConstitutionSection>,
   ) => {
-    if (!constitution) return;
+    if (!constitution || !logtoId) return;
 
     await updateSection({
-      logtoId: "",
+      logtoId,
       constitutionId: constitution._id,
       sectionId,
       title: updates.title,
@@ -102,10 +112,10 @@ export function useConstitutionData() {
   };
 
   const handleDeleteSection = async (sectionId: string) => {
-    if (!constitution) return;
+    if (!constitution || !logtoId) return;
 
     await deleteSection({
-      logtoId: "",
+      logtoId,
       constitutionId: constitution._id,
       sectionId,
     });
@@ -115,10 +125,10 @@ export function useConstitutionData() {
     sectionId: string,
     newOrder: number,
   ) => {
-    if (!constitution) return;
+    if (!constitution || !logtoId) return;
 
     await reorderSection({
-      logtoId: "",
+      logtoId,
       constitutionId: constitution._id,
       sectionId,
       newOrder,
@@ -126,8 +136,9 @@ export function useConstitutionData() {
   };
 
   const initializeConstitution = async () => {
-    if (!isAuthenticated) return;
-    await ensureConstitution({ logtoId: "" });
+    if (!isAuthenticated || !logtoId) return;
+    await ensureConstitution({ logtoId });
+    setInitialized(true);
   };
 
   return {
@@ -140,6 +151,6 @@ export function useConstitutionData() {
     deleteSection: handleDeleteSection,
     reorderSection: handleReorderSection,
     initializeConstitution,
-    constitutionId: CONSTITUTION_ID,
+    constitutionId: constitution?._id,
   };
 }

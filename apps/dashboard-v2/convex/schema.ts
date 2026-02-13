@@ -240,6 +240,24 @@ export default defineSchema({
 
   eventRequests: defineTable({
     name: v.string(),
+    eventType: v.optional(
+      v.union(
+        v.literal("social"),
+        v.literal("technical"),
+        v.literal("outreach"),
+        v.literal("professional"),
+        v.literal("projects"),
+        v.literal("other"),
+      ),
+    ),
+    department: v.optional(
+      v.union(
+        v.literal("events"),
+        v.literal("projects"),
+        v.literal("internal"),
+        v.literal("other"),
+      ),
+    ),
     location: v.string(),
     startDateTime: v.number(),
     endDateTime: v.number(),
@@ -255,6 +273,7 @@ export default defineSchema({
     otherLogos: v.optional(v.array(v.string())),
     advertisingFormat: v.optional(v.string()),
     additionalSpecifications: v.optional(v.string()),
+    graphicsUploadNote: v.optional(v.string()),
     willOrHaveRoomBooking: v.boolean(),
     expectedAttendance: v.optional(v.number()),
     roomBookingFiles: v.array(v.string()),
@@ -277,6 +296,9 @@ export default defineSchema({
     requestedUser: v.string(),
     auditLogs: v.optional(v.array(eventAuditLog)),
     isDraft: v.optional(v.boolean()),
+    graphicsCompleted: v.optional(v.boolean()),
+    graphicsFiles: v.optional(v.array(v.string())),
+    published: v.optional(v.boolean()),
   })
     .index("by_status", ["status"])
     .index("by_requestedUser", ["requestedUser"]),

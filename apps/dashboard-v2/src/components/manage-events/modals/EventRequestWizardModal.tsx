@@ -18,6 +18,10 @@ import { MarketingSection } from "../wizard/MarketingSection";
 import { FundingSection } from "../wizard/FundingSection";
 import { EventReviewSection } from "../wizard/EventReviewSection";
 import type { EventRequest, EventFormData } from "../types";
+import {
+  normalizeDepartment,
+  normalizeEventType,
+} from "../constants";
 
 interface EventRequestWizardModalProps {
   isOpen: boolean;
@@ -66,6 +70,7 @@ const defaultFormData: EventFormData = {
   advertisingFormat: "",
   additionalSpecifications: "",
   flyersCompleted: false,
+  graphicsUploadNote: "",
 };
 
 function buildFormDataFromInitial(initialData?: Partial<EventRequest>): EventFormData {
@@ -73,8 +78,8 @@ function buildFormDataFromInitial(initialData?: Partial<EventRequest>): EventFor
   return {
     eventName: initialData.eventName || defaultFormData.eventName,
     eventDescription: initialData.eventDescription || defaultFormData.eventDescription,
-    eventType: initialData.eventType || defaultFormData.eventType,
-    department: initialData.department ?? defaultFormData.department,
+    eventType: initialData.eventType ? normalizeEventType(initialData.eventType) : defaultFormData.eventType,
+    department: normalizeDepartment(initialData.department),
     location: initialData.location || defaultFormData.location,
     startDate: initialData.startDate || Date.now(),
     endDate: initialData.endDate || Date.now() + 3600000,
@@ -101,6 +106,7 @@ function buildFormDataFromInitial(initialData?: Partial<EventRequest>): EventFor
     advertisingFormat: initialData.advertisingFormat || "",
     additionalSpecifications: initialData.additionalSpecifications || "",
     flyersCompleted: initialData.flyersCompleted ?? defaultFormData.flyersCompleted,
+    graphicsUploadNote: initialData.graphicsUploadNote || defaultFormData.graphicsUploadNote,
   };
 }
 
@@ -255,6 +261,7 @@ export function EventRequestWizardModal({
               otherLogos: formData.otherLogos,
               advertisingFormat: formData.advertisingFormat,
               additionalSpecifications: formData.additionalSpecifications,
+              graphicsUploadNote: formData.graphicsUploadNote,
             }}
             onChange={(data) => updateFormData(data)}
           />

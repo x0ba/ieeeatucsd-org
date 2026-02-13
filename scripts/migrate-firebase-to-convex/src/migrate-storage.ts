@@ -22,18 +22,9 @@ export async function migrateStorageFiles(ctx: MigrationContext): Promise<Migrat
   console.log("  Migrating event files...");
   await migrateCollectionArrayField(ctx, "events", "files", result);
 
-  // 4. Event Requests — roomBookingFiles array
-  console.log("  Migrating event request room booking files...");
-  await migrateCollectionArrayField(ctx, "eventRequests", "roomBookingFiles", result);
-
-  // 5. Reimbursements — receipts[].receiptFile and paymentDetails.proofFileUrl
-  console.log("  Migrating reimbursement files...");
-  await migrateReimbursementFiles(ctx, result);
-
-  // 6. Fund Deposits — receiptUrl and receiptFiles
-  console.log("  Migrating fund deposit files...");
-  await migrateCollectionField(ctx, "fundDeposits", "receiptUrl", result);
-  await migrateCollectionArrayField(ctx, "fundDeposits", "receiptFiles", result);
+  // 4–5: Event request files and reimbursement files are now migrated inline
+  // during their respective document migration passes (migrate-event-requests.ts,
+  // migrate-reimbursements.ts), so no post-pass is needed here.
 
   return result;
 }
@@ -125,29 +116,6 @@ async function migrateCollectionField(
     return;
   }
 
-  // For other tables, read from Firebase and use the field-level update
-  const fbCollection = table === "eventRequests" ? "event_requests" : table;
-  const snapshot = await firebase.db.collection(fbCollection).get();
-
-  for (const doc of snapshot.docs) {
-    try {
-      const data = doc.data();
-      if (!data || !data[field]) continue;
-
-      const url = data[field];
-      if (typeof url !== "string" || !url.includes("firebasestorage")) continue;
-
-      // We need to find the corresponding Convex doc — for now, skip if we can't map
-      console.log(`    ⚠️  Skipping ${table}/${doc.id}/${field} — no direct mapping available`);
-      result.skipped++;
-    } catch (error) {
-      result.failed++;
-      result.errors.push({
-        id: `${table}/${doc.id}/${field}`,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
 }
 
 async function migrateCollectionArrayField(
@@ -195,52 +163,4 @@ async function migrateCollectionArrayField(
     return;
   }
 
-  // Generic fallback — log skipped
-  const fbCollection = table === "eventRequests" ? "event_requests" : table;
-  const snapshot = await firebase.db.collection(fbCollection).get();
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-    if (data && Array.isArray(data[field]) && data[field].length > 0) {
-      const hasFirebaseUrls = data[field].some((u: string) => typeof u === "string" && u.includes("firebasestorage"));
-      if (hasFirebaseUrls) {
-        console.log(`    ⚠️  Skipping ${table}/${doc.id}/${field} array — no direct mapping`);
-        result.skipped++;
-      }
-    }
-  }
-}
-
-async function migrateReimbursementFiles(
-  ctx: MigrationContext,
-  result: MigrationResult,
-): Promise<void> {
-  // Reimbursement files are nested in receipts[].receiptFile and paymentDetails.proofFileUrl
-  // Since we don't have a direct Firebase→Convex ID mapping for reimbursements,
-  // we log what needs manual attention
-  const snapshot = await firebase.db.collection("reimbursements").get();
-
-  let fileCount = 0;
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-
-    // Check receipts
-    if (Array.isArray(data.receipts)) {
-      for (const r of data.receipts) {
-        if (r.receiptFile && typeof r.receiptFile === "string" && r.receiptFile.includes("firebasestorage")) {
-          fileCount++;
-        }
-      }
-    }
-
-    // Check payment proof
-    if (data.paymentDetails?.proofFileUrl && data.paymentDetails.proofFileUrl.includes("firebasestorage")) {
-      fileCount++;
-    }
-  }
-
-  if (fileCount > 0) {
-    console.log(`    ℹ️  Found ${fileCount} reimbursement files that reference Firebase Storage`);
-    console.log(`    ℹ️  These are embedded in receipt/payment objects and will be migrated with the documents`);
-    result.skipped += fileCount;
-  }
 }

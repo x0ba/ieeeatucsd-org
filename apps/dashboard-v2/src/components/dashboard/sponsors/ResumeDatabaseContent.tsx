@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
 	normalizeMajorName,
 	getUniqueNormalizedMajors,
@@ -19,7 +18,7 @@ import {
 import type { UserWithResume } from "./types";
 
 export default function ResumeDatabaseContent() {
-	const { user, userRole, logtoId } = useAuth();
+	const { logtoId } = useAuth();
 	const [users, setUsers] = useState<UserWithResume[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);

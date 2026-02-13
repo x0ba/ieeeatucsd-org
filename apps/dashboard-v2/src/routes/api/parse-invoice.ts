@@ -119,8 +119,7 @@ Rules:
         ...(plugins ? { plugins } : {}),
         response_format: { type: "json_object" },
         temperature: 0.0,
-        max_tokens: 2000,
-        reasoning: { effort: "medium", exclude: true },
+        reasoning: { effort: "high", exclude: true },
       }),
     });
 
@@ -166,18 +165,18 @@ Rules:
       vendor: parsedData.vendor || parsedData.vendorName || "Unknown Vendor",
       items: Array.isArray(parsedData.items)
         ? parsedData.items.map((item: any, index: number) => ({
-            description: item.description || `Item ${index + 1}`,
-            quantity: parseInt(item.quantity) || 1,
-            unitPrice: roundToTwo(item.unitPrice || item.amount || 0),
-            total: roundToTwo(item.total || item.amount || 0),
-          }))
+          description: item.description || `Item ${index + 1}`,
+          quantity: parseInt(item.quantity) || 1,
+          unitPrice: roundToTwo(item.unitPrice || item.amount || 0),
+          total: roundToTwo(item.total || item.amount || 0),
+        }))
         : Array.isArray(parsedData.lineItems)
           ? parsedData.lineItems.map((item: any, index: number) => ({
-              description: item.description || `Item ${index + 1}`,
-              quantity: parseInt(item.quantity) || 1,
-              unitPrice: roundToTwo(item.unitPrice || (item.amount / (parseInt(item.quantity) || 1)) || 0),
-              total: roundToTwo(item.amount || item.total || 0),
-            }))
+            description: item.description || `Item ${index + 1}`,
+            quantity: parseInt(item.quantity) || 1,
+            unitPrice: roundToTwo(item.unitPrice || (item.amount / (parseInt(item.quantity) || 1)) || 0),
+            total: roundToTwo(item.amount || item.total || 0),
+          }))
           : [],
       subtotal: roundToTwo(parsedData.subtotal),
       tax: roundToTwo(parsedData.tax),

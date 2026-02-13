@@ -1,4 +1,5 @@
 import type { Id } from "@convex/_generated/dataModel";
+import type { EventDepartmentValue, EventTypeValue } from "./constants";
 
 export type EventStatus = "draft" | "submitted" | "pending" | "needs_review" | "approved" | "declined" | "published";
 
@@ -39,8 +40,8 @@ export interface EventRequest {
   _creationTime: number;
   eventName: string;
   eventDescription: string;
-  eventType: string;
-  department?: string;
+  eventType: EventTypeValue;
+  department?: EventDepartmentValue;
   location: string;
   startDate: number;
   endDate: number;
@@ -55,6 +56,7 @@ export interface EventRequest {
   files: string[];
   invoices: Invoice[];
   createdBy: string;
+  requestedUser?: string;
   _updatedAt?: number;
   // Additional Convex fields for full edit support
   willOrHaveRoomBooking?: boolean;
@@ -71,6 +73,7 @@ export interface EventRequest {
   advertisingFormat?: string;
   additionalSpecifications?: string;
   flyersCompleted?: boolean;
+  graphicsUploadNote?: string;
 }
 
 export interface EventStats {
@@ -100,8 +103,8 @@ export interface WizardStep {
 export interface EventFormData {
   eventName: string;
   eventDescription: string;
-  eventType: string;
-  department?: string;
+  eventType: EventTypeValue | "";
+  department?: EventDepartmentValue;
   location: string;
   startDate: number;
   endDate: number;
@@ -129,6 +132,7 @@ export interface EventFormData {
   advertisingFormat: string;
   additionalSpecifications: string;
   flyersCompleted: boolean;
+  graphicsUploadNote: string;
 }
 
 export interface CalendarEvent {

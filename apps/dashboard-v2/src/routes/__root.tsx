@@ -4,13 +4,8 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { TanStackDevtools } from "@tanstack/react-devtools";
-
 import AppLogtoProvider from "../integrations/logto/provider";
 import ConvexProvider from "../integrations/convex/provider";
-
-import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 
 import { Toaster } from "sonner";
 
@@ -135,18 +130,6 @@ function RootComponent() {
       <ConvexProvider>
         <Outlet />
         <Toaster richColors position="bottom-right" />
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            TanStackQueryDevtools,
-          ]}
-        />
       </ConvexProvider>
     </AppLogtoProvider>
   );

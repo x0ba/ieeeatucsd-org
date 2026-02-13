@@ -12,13 +12,7 @@ export async function migrateEvents(ctx: MigrationContext): Promise<MigrationRes
     try {
       const data = doc.data();
       const firebaseId = doc.id;
-      const eventCode = data.eventCode;
-
-      if (!eventCode) {
-        console.log(`    ⚠️  Skipping event ${firebaseId} (${data.eventName || "unnamed"}): no eventCode`);
-        result.skipped++;
-        continue;
-      }
+      const eventCode = data.eventCode || `migrated_${firebaseId}`;
 
       const validEventTypes = ["social", "technical", "outreach", "professional", "projects", "other"];
       const eventType = validEventTypes.includes(data.eventType) ? data.eventType : "other";

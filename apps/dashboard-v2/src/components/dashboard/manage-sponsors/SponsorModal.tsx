@@ -9,6 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Trash2 } from "lucide-react";
+import type { Id } from "@convex/_generated/dataModel";
 import {
   Select,
   SelectContent,
@@ -24,6 +26,7 @@ interface SponsorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: SponsorFormData) => void;
+  onDelete?: (id: Id<"sponsorDomains">) => void;
   editingSponsor: SponsorDomain | null;
   loading?: boolean;
 }
@@ -32,6 +35,7 @@ export function SponsorModal({
   isOpen,
   onClose,
   onSave,
+  onDelete,
   editingSponsor,
   loading = false,
 }: SponsorModalProps) {
@@ -166,13 +170,27 @@ export function SponsorModal({
             </Select>
           </div>
 
-          <DialogFooter className="mt-6">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading || !!domainError}>
-              {editingSponsor ? "Update" : "Add"}
-            </Button>
+          <DialogFooter className="mt-6 flex justify-between sm:justify-between">
+            {editingSponsor && onDelete && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => onDelete(editingSponsor._id)}
+                disabled={loading}
+                className="mr-auto"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            )}
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading || !!domainError}>
+                {editingSponsor ? "Update" : "Add"}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,15 +1,12 @@
-import { Pencil, Trash2, ChevronUp, ChevronDown, Building2 } from "lucide-react";
+import { ChevronUp, ChevronDown, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import type { Id } from "@convex/_generated/dataModel";
 import type { SponsorDomain, SortConfig, SponsorTier } from "./types";
 
 interface SponsorTableProps {
   sponsors: SponsorDomain[];
   sortConfig: SortConfig;
   onSort: (field: string) => void;
-  onEditSponsor: (sponsor: SponsorDomain) => void;
-  onDeleteSponsor: (sponsorId: Id<"sponsorDomains">) => void;
+  onRowClick?: (sponsor: SponsorDomain) => void;
 }
 
 const tierColors: Record<SponsorTier, string> = {
@@ -24,8 +21,7 @@ export function SponsorTable({
   sponsors,
   sortConfig,
   onSort,
-  onEditSponsor,
-  onDeleteSponsor,
+  onRowClick,
 }: SponsorTableProps) {
   const getSortIcon = (field: string) => {
     if (sortConfig.field === field) {
@@ -67,12 +63,15 @@ export function SponsorTable({
               <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => onSort("sponsorTier")}>
                 <span className="flex items-center gap-1">Tier {getSortIcon("sponsorTier")}</span>
               </th>
-              <th className="text-right p-4 font-medium text-gray-500 dark:text-gray-400">Actions</th>
             </tr>
           </thead>
           <tbody>
             {sponsors.map((sponsor, idx) => (
-              <tr key={sponsor._id} className={`border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${idx % 2 === 1 ? "bg-gray-50/30 dark:bg-gray-800/20" : ""}`}>
+              <tr
+                key={sponsor._id}
+                className={`border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer ${idx % 2 === 1 ? "bg-gray-50/30 dark:bg-gray-800/20" : ""}`}
+                onClick={() => onRowClick?.(sponsor)}
+              >
                 <td className="p-4">
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {sponsor.organizationName}
@@ -87,26 +86,6 @@ export function SponsorTable({
                   <Badge className={`text-xs ${tierColors[sponsor.sponsorTier]}`}>
                     {sponsor.sponsorTier}
                   </Badge>
-                </td>
-                <td className="p-4 text-right">
-                  <div className="flex items-center gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => onEditSponsor(sponsor)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => onDeleteSponsor(sponsor._id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
                 </td>
               </tr>
             ))}

@@ -18,6 +18,13 @@ const ConstitutionPreview: React.FC<ConstitutionPreviewProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [showTableOfContents] = useState(true);
 
+  const generateTableOfContentsSections = (sections: ConstitutionSection[]) => {
+    return sections.filter(s => s.type !== "subsection").map((section, index) => ({
+      section,
+      pageNum: index + 1,
+    }));
+  };
+
   const totalPages = useMemo(() => {
     const calculateTotalPages = (sections: ConstitutionSection[], showTOC: boolean) => {
     let pageCount = 1; // Cover page
@@ -33,13 +40,6 @@ const ConstitutionPreview: React.FC<ConstitutionPreviewProps> = ({
     };
     return calculateTotalPages(sections, showTableOfContents);
   }, [sections, showTableOfContents]);
-
-  const generateTableOfContentsSections = (sections: ConstitutionSection[]) => {
-    return sections.filter(s => s.type !== "subsection").map((section, index) => ({
-      section,
-      pageNum: index + 1,
-    }));
-  };
 
   const renderCurrentPage = () => {
     if (currentPage === 1) {

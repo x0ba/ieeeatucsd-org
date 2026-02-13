@@ -20,7 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserAvatarFallback } from "@/components/dashboard/UserAvatarFallback";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import type { Id } from "@convex/_generated/dataModel";
 import { UserModalData, UserRole, OfficerTeam, UserStatus } from "./types";
 
@@ -37,6 +37,7 @@ interface EditUserModalProps {
   canEditPoints?: boolean;
   loading?: boolean;
   currentUserId?: Id<"users">;
+  onDelete?: (userId: Id<"users">) => void;
 }
 
 const OFFICER_ROLES: UserRole[] = ["General Officer", "Executive Officer", "Administrator"];
@@ -54,6 +55,7 @@ export function EditUserModal({
   canEditPoints = false,
   loading = false,
   currentUserId,
+  onDelete,
 }: EditUserModalProps) {
   const [formData, setFormData] = useState<UserModalData>({
     name: "",
@@ -332,20 +334,34 @@ export function EditUserModal({
           </form>
         </div>
 
-        <DialogFooter className="pt-4 border-t">
-          <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button type="submit" form="user-form" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              editingUser ? "Update User" : "Add User"
-            )}
-          </Button>
+        <DialogFooter className="pt-4 border-t flex justify-between sm:justify-between">
+          {editingUser && onDelete && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => onDelete(editingUser.id as Id<"users">)}
+              disabled={loading}
+              className="mr-auto"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete User
+            </Button>
+          )}
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+              Cancel
+            </Button>
+            <Button type="submit" form="user-form" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                editingUser ? "Update User" : "Add User"
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -22,7 +22,26 @@ export const listAll = query({
   args: { logtoId: v.string() },
   handler: async (ctx, args) => {
     await requireOfficerAccess(ctx, args.logtoId);
-    return await ctx.db.query("eventRequests").collect();
+    const requests = await ctx.db.query("eventRequests").collect();
+    const uniqueUserIds = [...new Set(requests.map((request) => request.requestedUser).filter(Boolean))];
+    const userNameMap = new Map<string, string>();
+
+    await Promise.all(
+      uniqueUserIds.map(async (userId) => {
+        const user = await ctx.db
+          .query("users")
+          .withIndex("by_logtoId", (q) => q.eq("logtoId", userId))
+          .first();
+        if (user) {
+          userNameMap.set(userId, user.name || user.email || userId);
+        }
+      }),
+    );
+
+    return requests.map((request) => ({
+      ...request,
+      submitterName: userNameMap.get(request.requestedUser) || request.requestedUser,
+    }));
   },
 });
 
@@ -37,6 +56,24 @@ export const create = mutation({
   args: {
     logtoId: v.string(),
     name: v.string(),
+    eventType: v.optional(
+      v.union(
+        v.literal("social"),
+        v.literal("technical"),
+        v.literal("outreach"),
+        v.literal("professional"),
+        v.literal("projects"),
+        v.literal("other"),
+      ),
+    ),
+    department: v.optional(
+      v.union(
+        v.literal("events"),
+        v.literal("projects"),
+        v.literal("internal"),
+        v.literal("other"),
+      ),
+    ),
     location: v.string(),
     startDateTime: v.number(),
     endDateTime: v.number(),
@@ -52,6 +89,7 @@ export const create = mutation({
     otherLogos: v.optional(v.array(v.string())),
     advertisingFormat: v.optional(v.string()),
     additionalSpecifications: v.optional(v.string()),
+    graphicsUploadNote: v.optional(v.string()),
     willOrHaveRoomBooking: v.boolean(),
     expectedAttendance: v.optional(v.number()),
     roomBookingFiles: v.array(v.string()),
@@ -89,7 +127,7 @@ export const create = mutation({
       ...data,
       status: isDraft ? "draft" : "submitted",
       requestedUser: userId,
-      flyersCompleted: false,
+      flyersCompleted: args.flyersCompleted ?? false,
       isDraft: isDraft ?? false,
     });
   },
@@ -100,6 +138,24 @@ export const update = mutation({
     logtoId: v.string(),
     id: v.id("eventRequests"),
     name: v.optional(v.string()),
+    eventType: v.optional(
+      v.union(
+        v.literal("social"),
+        v.literal("technical"),
+        v.literal("outreach"),
+        v.literal("professional"),
+        v.literal("projects"),
+        v.literal("other"),
+      ),
+    ),
+    department: v.optional(
+      v.union(
+        v.literal("events"),
+        v.literal("projects"),
+        v.literal("internal"),
+        v.literal("other"),
+      ),
+    ),
     location: v.optional(v.string()),
     startDateTime: v.optional(v.number()),
     endDateTime: v.optional(v.number()),
@@ -114,6 +170,8 @@ export const update = mutation({
     otherLogos: v.optional(v.array(v.string())),
     advertisingFormat: v.optional(v.string()),
     additionalSpecifications: v.optional(v.string()),
+    graphicsUploadNote: v.optional(v.string()),
+    flyersCompleted: v.optional(v.boolean()),
     willOrHaveRoomBooking: v.optional(v.boolean()),
     expectedAttendance: v.optional(v.number()),
     roomBookingFiles: v.optional(v.array(v.string())),

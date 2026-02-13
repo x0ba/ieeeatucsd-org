@@ -410,18 +410,30 @@ export const updateBudgetConfig = mutation({
       .withIndex("by_department", (q) => q.eq("department", department))
       .first();
 
-    if (!config) {
-      throw new Error("Budget config not found");
-    }
-
     const now = Date.now();
-    await ctx.db.patch(config._id, {
+    const updateData = {
       ...data,
+      department,
       updatedAt: now,
       updatedBy: adminId,
       updatedByName: admin.name,
-    });
+    };
 
+    if (!config) {
+      if (data.totalBudget === undefined || data.startDate === undefined) {
+        throw new Error(
+          "Budget config does not exist. totalBudget and startDate are required to create it.",
+        );
+      }
+      const createData = {
+        ...updateData,
+        totalBudget: data.totalBudget,
+        startDate: data.startDate,
+      };
+      return await ctx.db.insert("budgetConfigs", createData);
+    }
+
+    await ctx.db.patch(config._id, updateData);
     return config._id;
   },
 });

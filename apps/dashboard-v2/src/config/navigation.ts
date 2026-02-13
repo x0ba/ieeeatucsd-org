@@ -5,7 +5,6 @@ import {
   Users,
   DollarSign,
   Trophy,
-  Banknote,
   FileText,
   MessageSquare,
   Link as LinkIcon,
@@ -13,6 +12,7 @@ import {
   Building2,
   UserPlus,
   ClipboardList,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "../hooks/useAuth";
@@ -37,7 +37,6 @@ export const NAVIGATION_PATHS = {
   LINKS: "/links",
   MANAGE_EVENTS: "/manage-events",
   MANAGE_REIMBURSEMENTS: "/manage-reimbursements",
-  FUND_DEPOSITS: "/fund-deposits",
   FUND_REQUESTS: "/fund-requests",
   MANAGE_FUND_REQUESTS: "/manage-fund-requests",
   SLACK_ACCESS: "/slack-access",
@@ -45,6 +44,7 @@ export const NAVIGATION_PATHS = {
   MANAGE_SPONSORS: "/manage-sponsors",
   ONBOARDING: "/onboarding",
   CONSTITUTION_BUILDER: "/constitution-builder",
+  EXECUTIVE_ANALYTICS: "/executive-analytics",
   RESUME_DATABASE: "/sponsors/resume-database",
   SPONSOR_INFORMATION: "/sponsors/information",
   SETTINGS: "/settings",
@@ -82,11 +82,6 @@ export const navigationCategories: NavigationCategory[] = [
         icon: Calendar,
         label: "Manage Events",
         href: NAVIGATION_PATHS.MANAGE_EVENTS,
-      },
-      {
-        icon: Banknote,
-        label: "Fund Deposits",
-        href: NAVIGATION_PATHS.FUND_DEPOSITS,
       },
       {
         icon: ClipboardList,
@@ -133,6 +128,11 @@ export const navigationCategories: NavigationCategory[] = [
         icon: FileText,
         label: "Constitution Builder",
         href: NAVIGATION_PATHS.CONSTITUTION_BUILDER,
+      },
+      {
+        icon: BarChart3,
+        label: "Executive Analytics",
+        href: NAVIGATION_PATHS.EXECUTIVE_ANALYTICS,
       },
     ],
   },

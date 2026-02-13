@@ -176,8 +176,7 @@ function ManageSponsorsPage() {
           sponsors={filteredAndSortedDomains()}
           sortConfig={sortConfig}
           onSort={handleSort}
-          onEditSponsor={handleEditClick}
-          onDeleteSponsor={handleDelete}
+          onRowClick={handleEditClick}
         />
       )}
 
@@ -189,6 +188,7 @@ function ManageSponsorsPage() {
           setEditingSponsor(null);
         }}
         onSave={handleSave}
+        onDelete={handleDelete}
         editingSponsor={editingSponsor}
       />
     </div>

@@ -6,6 +6,43 @@ import {
   getCurrentUser,
 } from "./permissions";
 
+const FISCAL_YEAR_START_MONTH = 6; // July
+const FISCAL_MONTH_LABELS = [
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+];
+
+function getFiscalYearStartYear(timestamp: number) {
+  const date = new Date(timestamp);
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  return month >= FISCAL_YEAR_START_MONTH ? year : year - 1;
+}
+
+function getFiscalYearRange(startYear: number) {
+  return {
+    start: Date.UTC(startYear, FISCAL_YEAR_START_MONTH, 1),
+    end: Date.UTC(startYear + 1, FISCAL_YEAR_START_MONTH, 1),
+  };
+}
+
+function toPercentChange(currentValue: number, previousValue: number) {
+  if (previousValue === 0) {
+    return null;
+  }
+  return ((currentValue - previousValue) / previousValue) * 100;
+}
+
 export const getMe = query({
   args: { logtoId: v.string() },
   handler: async (ctx, args) => {
@@ -485,6 +522,177 @@ export const getLeaderboard = query({
         avatar: u.avatar,
       }))
       .sort((a, b) => b.points - a.points);
+  },
+});
+
+export const getExecutiveAnalytics = query({
+  args: {
+    logtoId: v.string(),
+    fiscalYearStart: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdminAccess(ctx, args.logtoId);
+
+    const [events, attendees, users] = await Promise.all([
+      ctx.db.query("events").collect(),
+      ctx.db.query("attendees").collect(),
+      ctx.db.query("users").collect(),
+    ]);
+
+    const recordedTimestamps: number[] = [
+      ...events.map((event) => event.startDate),
+      ...attendees.map((attendee) => attendee.timeCheckedIn),
+      ...users.map((user) => user.joinDate),
+    ].filter((timestamp) => Number.isFinite(timestamp));
+
+    if (recordedTimestamps.length === 0) {
+      recordedTimestamps.push(Date.now());
+    }
+
+    const earliestFiscalYear = getFiscalYearStartYear(
+      Math.min(...recordedTimestamps),
+    );
+    const latestFiscalYear = getFiscalYearStartYear(
+      Math.max(...recordedTimestamps),
+    );
+
+    const fiscalYears: number[] = [];
+    for (let year = latestFiscalYear; year >= earliestFiscalYear; year -= 1) {
+      fiscalYears.push(year);
+    }
+
+    const selectedFiscalYear =
+      args.fiscalYearStart !== undefined &&
+      fiscalYears.includes(args.fiscalYearStart)
+        ? args.fiscalYearStart
+        : fiscalYears[0];
+
+    const currentRange = getFiscalYearRange(selectedFiscalYear);
+    const previousRange = getFiscalYearRange(selectedFiscalYear - 1);
+
+    const publishedEvents = events.filter((event) => event.published);
+
+    const eventsInRange = publishedEvents.filter(
+      (event) =>
+        event.startDate >= currentRange.start && event.startDate < currentRange.end,
+    );
+    const previousEvents = publishedEvents.filter(
+      (event) =>
+        event.startDate >= previousRange.start &&
+        event.startDate < previousRange.end,
+    );
+
+    const eventsInRangeIds = new Set(eventsInRange.map((event) => event._id));
+    const previousEventsIds = new Set(previousEvents.map((event) => event._id));
+
+    const attendeesInRange = attendees.filter((attendee) =>
+      eventsInRangeIds.has(attendee.eventId),
+    );
+    const previousAttendees = attendees.filter((attendee) =>
+      previousEventsIds.has(attendee.eventId),
+    );
+
+    const activeUsers = users.filter(
+      (user) => user.signedUp && user.status === "active",
+    );
+    const newUsersInRange = activeUsers.filter(
+      (user) =>
+        user.joinDate >= currentRange.start && user.joinDate < currentRange.end,
+    );
+    const newUsersPreviousRange = activeUsers.filter(
+      (user) =>
+        user.joinDate >= previousRange.start && user.joinDate < previousRange.end,
+    );
+
+    const totalAttendees = attendeesInRange.length;
+    const uniqueAttendees = new Set(attendeesInRange.map((a) => a.userId)).size;
+
+    const monthlyTrend = FISCAL_MONTH_LABELS.map((label, index) => {
+      const month = (FISCAL_YEAR_START_MONTH + index) % 12;
+      const year = month >= FISCAL_YEAR_START_MONTH
+        ? selectedFiscalYear
+        : selectedFiscalYear + 1;
+      const monthStart = Date.UTC(year, month, 1);
+      const monthEnd = Date.UTC(year, month + 1, 1);
+
+      const monthEvents = eventsInRange.filter(
+        (event) =>
+          event.startDate >= monthStart && event.startDate < monthEnd,
+      );
+      const monthEventIds = new Set(monthEvents.map((event) => event._id));
+      const monthAttendees = attendeesInRange.filter((attendee) =>
+        monthEventIds.has(attendee.eventId),
+      );
+
+      return {
+        month: label,
+        eventsHosted: monthEvents.length,
+        attendees: monthAttendees.length,
+        uniqueAttendees: new Set(monthAttendees.map((a) => a.userId)).size,
+      };
+    });
+
+    const eventTypeBreakdown = [
+      { key: "technical", label: "Technical" },
+      { key: "professional", label: "Professional" },
+      { key: "social", label: "Social" },
+      { key: "projects", label: "Projects" },
+      { key: "outreach", label: "Outreach" },
+      { key: "other", label: "Other" },
+    ].map(({ key, label }) => ({
+      type: key,
+      label,
+      value: eventsInRange.filter((event) => event.eventType === key).length,
+    }));
+
+    const topEvents = eventsInRange
+      .map((event) => {
+        const attendeeCount = attendeesInRange.filter(
+          (attendee) => attendee.eventId === event._id,
+        ).length;
+        return {
+          eventId: event._id,
+          name: event.eventName,
+          eventType: event.eventType,
+          date: event.startDate,
+          attendees: attendeeCount,
+        };
+      })
+      .sort((a, b) => b.attendees - a.attendees)
+      .slice(0, 5);
+
+    const attendeeCoverage =
+      activeUsers.length > 0 ? (uniqueAttendees / activeUsers.length) * 100 : 0;
+
+    return {
+      fiscalYearOptions: fiscalYears.map((year) => ({
+        startYear: year,
+        label: `July ${year} - June ${year + 1}`,
+      })),
+      selectedFiscalYear,
+      selectedFiscalYearLabel: `July ${selectedFiscalYear} - June ${selectedFiscalYear + 1}`,
+      overview: {
+        eventsHosted: eventsInRange.length,
+        totalAttendees,
+        uniqueAttendees,
+        activeUsers: activeUsers.length,
+        newUsers: newUsersInRange.length,
+        avgAttendeesPerEvent:
+          eventsInRange.length > 0 ? totalAttendees / eventsInRange.length : 0,
+        attendeeCoverage,
+      },
+      comparisons: {
+        eventsHosted: toPercentChange(eventsInRange.length, previousEvents.length),
+        totalAttendees: toPercentChange(totalAttendees, previousAttendees.length),
+        newUsers: toPercentChange(
+          newUsersInRange.length,
+          newUsersPreviousRange.length,
+        ),
+      },
+      monthlyTrend,
+      eventTypeBreakdown,
+      topEvents,
+    };
   },
 });
 

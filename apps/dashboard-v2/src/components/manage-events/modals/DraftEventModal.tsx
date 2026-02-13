@@ -26,6 +26,12 @@ import {
   combineDateAndTime,
 } from "../utils/parseTime";
 import type { EventRequest } from "../types";
+import {
+  DEPARTMENT_OPTIONS,
+  EVENT_TYPE_OPTIONS,
+  normalizeDepartment,
+  normalizeEventType,
+} from "../constants";
 
 interface DraftEventModalProps {
   isOpen: boolean;
@@ -35,13 +41,10 @@ interface DraftEventModalProps {
   onConvertToRequest?: (data: Partial<EventRequest>) => void;
 }
 
-const eventTypes = ["Social", "Technical", "Outreach", "Professional", "Projects", "Other"];
-const departments = ["General", "Technical", "Social", "Outreach", "Professional", "Projects"];
-
 const defaultDraftData: Partial<EventRequest> = {
   eventName: "",
   eventDescription: "",
-  eventType: "Social",
+  eventType: "social",
   department: undefined,
   location: "TBD",
   startDate: Date.now() + 86400000,
@@ -83,7 +86,14 @@ export function DraftEventModal({
   // Sync when modal opens or initialData changes
   useEffect(() => {
     if (isOpen) {
-      const data = initialData ? { ...defaultDraftData, ...initialData } : { ...defaultDraftData };
+      const data = initialData
+        ? {
+            ...defaultDraftData,
+            ...initialData,
+            eventType: initialData.eventType ? normalizeEventType(initialData.eventType) : defaultDraftData.eventType,
+            department: normalizeDepartment(initialData.department),
+          }
+        : { ...defaultDraftData };
       setFormData(data);
       setDateText(formatDateShort(data.startDate || Date.now()));
       setStartTimeText(formatTimeShort(data.startDate || Date.now()));
@@ -193,8 +203,8 @@ export function DraftEventModal({
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {eventTypes.map((type) => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  {EVENT_TYPE_OPTIONS.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -202,15 +212,18 @@ export function DraftEventModal({
             <div className="space-y-2">
               <Label htmlFor="draft-department">Department</Label>
               <Select
-                value={formData.department || ""}
-                onValueChange={(value) => updateField("department", value || undefined)}
+                value={formData.department || "none"}
+                onValueChange={(value) =>
+                  updateField("department", value === "none" ? undefined : value)
+                }
               >
                 <SelectTrigger id="draft-department">
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  <SelectItem value="none">Unspecified</SelectItem>
+                  {DEPARTMENT_OPTIONS.map((dept) => (
+                    <SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

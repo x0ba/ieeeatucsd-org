@@ -1,14 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Plus,
   ArrowLeft,
   Trash2,
   Loader2,
-  ChevronDown,
-  ChevronUp,
   ChevronLeft,
   ChevronRight,
   Receipt,
@@ -24,6 +23,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Search,
+  Upload,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +43,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -110,6 +110,7 @@ interface ReceiptEntry {
   location: string;
   dateOfPurchase: number;
   receiptFile?: string;
+  receiptFileType?: string;
   lineItems: LineItem[];
   notes?: string;
   subtotal: number;
@@ -117,6 +118,11 @@ interface ReceiptEntry {
   tip?: number;
   shipping?: number;
   total: number;
+}
+
+interface ReceiptParseResult {
+  success: boolean;
+  message: string;
 }
 
 const CATEGORIES = [
@@ -172,7 +178,7 @@ function StepIndicator({
   onStepClick: (step: number) => void;
 }) {
   return (
-    <div className="w-full mb-8">
+    <div className="w-full max-w-4xl mb-8 px-2">
       <div className="flex items-center justify-between mb-2">
         {STEPS.map((step, index) => {
           const isActive = step.id === currentStep;
@@ -230,16 +236,6 @@ function StepIndicator({
             </div>
           );
         })}
-      </div>
-      <p className="text-center text-xs text-muted-foreground">
-        Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1]?.description}
-      </p>
-      {/* Progress bar */}
-      <div className="mt-3 w-full bg-muted rounded-full h-1 overflow-hidden">
-        <div
-          className="bg-primary h-full transition-all duration-300 ease-out"
-          style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
-        />
       </div>
     </div>
   );
@@ -906,15 +902,30 @@ function BasicInfoStep({
 function ReceiptsStep({
   receipts,
   setReceipts,
+  generateUploadUrl,
+  getStorageUrl,
   onBack,
   onNext,
 }: {
   receipts: ReceiptEntry[];
   setReceipts: React.Dispatch<React.SetStateAction<ReceiptEntry[]>>;
+  generateUploadUrl: (args: Record<string, never>) => Promise<string>;
+  getStorageUrl: (args: { storageId: Id<"_storage"> }) => Promise<string | null>;
   onBack: () => void;
   onNext: () => void;
 }) {
-  const [expandedReceipt, setExpandedReceipt] = useState<string | null>(null);
+  const [activeReceiptId, setActiveReceiptId] = useState<string | null>(receipts[0]?.id ?? null);
+  const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
+  const [parsingReceipts, setParsingReceipts] = useState<Set<string>>(new Set());
+  const [parseResults, setParseResults] = useState<Record<string, ReceiptParseResult>>({});
+
+  useEffect(() => {
+    if (receipts.length === 0) return;
+    const hasActive = activeReceiptId && receipts.some((r) => r.id === activeReceiptId);
+    if (!hasActive) {
+      setActiveReceiptId(receipts[0].id);
+    }
+  }, [receipts, activeReceiptId]);
 
   const updateReceipt = (id: string, updates: Partial<ReceiptEntry>) => {
     setReceipts((prev) =>
@@ -968,263 +979,626 @@ function ReceiptsStep({
     );
   };
 
-  const canProceed = receipts.length > 0 && receipts.every((r) => r.total > 0 && r.vendorName);
+  const setReceiptUploading = (receiptId: string, uploading: boolean) => {
+    setUploadingFiles((prev) => {
+      const next = new Set(prev);
+      if (uploading) {
+        next.add(receiptId);
+      } else {
+        next.delete(receiptId);
+      }
+      return next;
+    });
+  };
 
-  // Remove unused expandedReceipt variable by using it
-  if (expandedReceipt === null && receipts.length > 0) {
-    // Expand first receipt by default when none is expanded
-    setExpandedReceipt(receipts[0].id);
-  }
+  const setReceiptParsing = (receiptId: string, parsing: boolean) => {
+    setParsingReceipts((prev) => {
+      const next = new Set(prev);
+      if (parsing) {
+        next.add(receiptId);
+      } else {
+        next.delete(receiptId);
+      }
+      return next;
+    });
+  };
+
+  const parseReceipt = async (receiptId: string, receiptUrl: string) => {
+    setReceiptParsing(receiptId, true);
+    setParseResults((prev) => {
+      const next = { ...prev };
+      delete next[receiptId];
+      return next;
+    });
+
+    try {
+      const response = await fetch("/api/parse-receipt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: receiptUrl }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success || !result.data) {
+        throw new Error(result.error || "Failed to parse receipt");
+      }
+
+      const parsed = result.data as {
+        vendorName?: string;
+        location?: string;
+        dateOfPurchase?: string;
+        lineItems?: Array<{ description?: string; category?: string; amount?: number }>;
+        subtotal?: number;
+        tax?: number;
+        tip?: number;
+        shipping?: number;
+        total?: number;
+      };
+
+      const parsedDate = parsed.dateOfPurchase ? new Date(parsed.dateOfPurchase) : null;
+      const hasValidParsedDate = parsedDate && !Number.isNaN(parsedDate.getTime());
+
+      const parsedLineItems = Array.isArray(parsed.lineItems)
+        ? parsed.lineItems.map((item, index) => ({
+            id: crypto.randomUUID(),
+            description: item.description || `Item ${index + 1}`,
+            category: CATEGORIES.includes(item.category || "") ? item.category! : "Other",
+            amount: Number(item.amount) || 0,
+          }))
+        : [];
+
+      const fallbackTotal = Number(parsed.total) || 0;
+      const finalLineItems =
+        parsedLineItems.length > 0
+          ? parsedLineItems
+          : fallbackTotal > 0
+            ? [
+                {
+                  id: crypto.randomUUID(),
+                  description: "Receipt Total",
+                  category: "Other",
+                  amount: fallbackTotal,
+                },
+              ]
+            : [];
+
+      updateReceipt(receiptId, {
+        vendorName: parsed.vendorName || "",
+        location: parsed.location || "",
+        dateOfPurchase: hasValidParsedDate ? parsedDate.getTime() : Date.now(),
+        lineItems: finalLineItems,
+        subtotal: Number(parsed.subtotal) || 0,
+        tax: Number(parsed.tax) || 0,
+        tip: Number(parsed.tip) || 0,
+        shipping: Number(parsed.shipping) || 0,
+        total: Number(parsed.total) || 0,
+      });
+
+      setParseResults((prev) => ({
+        ...prev,
+        [receiptId]: {
+          success: true,
+          message: "Receipt parsed successfully. Please verify all fields.",
+        },
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      setParseResults((prev) => ({
+        ...prev,
+        [receiptId]: {
+          success: false,
+          message: `AI parsing failed: ${message}. Enter details manually or try again.`,
+        },
+      }));
+    } finally {
+      setReceiptParsing(receiptId, false);
+    }
+  };
+
+  const handleFileUpload = async (receiptId: string, file: File) => {
+    if (!file) {
+      return;
+    }
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error("File too large. Maximum size is 10MB.");
+      return;
+    }
+
+    setReceiptUploading(receiptId, true);
+    setParseResults((prev) => {
+      const next = { ...prev };
+      delete next[receiptId];
+      return next;
+    });
+
+    try {
+      const uploadUrl = await generateUploadUrl({});
+      console.log('Upload URL:', uploadUrl);
+      
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload receipt file");
+      }
+
+      const uploadPayload = await uploadResponse.json();
+      console.log('Upload payload:', uploadPayload);
+      
+      const fileUrl = await getStorageUrl({ storageId: uploadPayload.storageId });
+      console.log('File URL:', fileUrl);
+      
+      if (!fileUrl) {
+        throw new Error("Failed to resolve receipt file URL");
+      }
+
+      updateReceipt(receiptId, { receiptFile: fileUrl, receiptFileType: file.type });
+      await parseReceipt(receiptId, fileUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      console.error('Upload error:', error);
+      setParseResults((prev) => ({
+        ...prev,
+        [receiptId]: {
+          success: false,
+          message: `Upload failed: ${message}`,
+        },
+      }));
+    } finally {
+      setReceiptUploading(receiptId, false);
+    }
+  };
+
+  const canProceed =
+    receipts.length > 0 &&
+    receipts.every((r) => !!r.receiptFile && r.total > 0 && r.vendorName);
+
+  const activeReceipt = receipts.find((r) => r.id === activeReceiptId) ?? receipts[0];
+  const activeReceiptIndex = receipts.findIndex((r) => r.id === activeReceipt?.id);
+  const isActiveUploading = activeReceipt ? uploadingFiles.has(activeReceipt.id) : false;
+  const isActiveParsing = activeReceipt ? parsingReceipts.has(activeReceipt.id) : false;
+
+  const addReceipt = () => {
+    const nextReceipt = emptyReceipt();
+    setReceipts((prev) => [...prev, nextReceipt]);
+    setActiveReceiptId(nextReceipt.id);
+  };
+
+  const removeReceipt = (receiptId: string) => {
+    if (receipts.length <= 1) return;
+    const indexToRemove = receipts.findIndex((r) => r.id === receiptId);
+    const nextReceipts = receipts.filter((r) => r.id !== receiptId);
+    setReceipts(nextReceipts);
+
+    if (activeReceiptId === receiptId) {
+      const fallbackIndex = Math.max(0, Math.min(indexToRemove, nextReceipts.length - 1));
+      setActiveReceiptId(nextReceipts[fallbackIndex]?.id ?? null);
+    }
+  };
+
+  if (!activeReceipt) return null;
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-bold">Upload Receipts</h2>
-          <p className="text-xs text-muted-foreground">Manage expenses for this report</p>
+          <p className="text-xs text-muted-foreground">Use tabs to organize each receipt, then verify AI-filled details</p>
         </div>
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setReceipts((prev) => [...prev, emptyReceipt()])}
+          onClick={addReceipt}
         >
           <Plus className="w-4 h-4 mr-1" />
           Add Receipt
         </Button>
       </div>
 
-      <div className="space-y-4 flex-1 overflow-auto">
-        {receipts.map((receipt, rIdx) => {
-          const isExpanded = expandedReceipt === receipt.id;
-          return (
-            <div key={receipt.id} className="rounded-xl border bg-card overflow-hidden">
-              <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-accent/50 transition-colors"
-                onClick={() => setExpandedReceipt(isExpanded ? null : receipt.id)}
+      <div className="mb-4 overflow-x-auto">
+        <div className="flex gap-2 min-w-max">
+          {receipts.map((receipt, index) => {
+            const isActive = receipt.id === activeReceipt.id;
+            return (
+              <button
+                key={receipt.id}
+                type="button"
+                onClick={() => setActiveReceiptId(receipt.id)}
+                className={cn(
+                  "group rounded-lg border px-3 py-2 text-left transition-colors",
+                  isActive
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-card hover:bg-muted/50",
+                )}
               >
-                <div className="flex items-center gap-3">
-                  <Receipt className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">
-                    Receipt {rIdx + 1}
-                    {receipt.vendorName && ` — ${receipt.vendorName}`}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm">${receipt.total.toFixed(2)}</span>
+                <div className="flex items-center gap-2">
+                  <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium">Receipt {index + 1}</span>
                   {receipts.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <span
+                      role="button"
+                      tabIndex={0}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setReceipts((prev) => prev.filter((r) => r.id !== receipt.id));
+                        removeReceipt(receipt.id);
                       }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          removeReceipt(receipt.id);
+                        }
+                      }}
+                      className="ml-1 rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </span>
                   )}
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
+                </div>
+                <div className="mt-1 text-[11px] text-muted-foreground max-w-44 truncate">
+                  {receipt.vendorName || "Awaiting upload"}
+                </div>
+                <div className="mt-0.5 text-[11px] font-mono">${receipt.total.toFixed(2)}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-card flex-1 min-h-[560px] overflow-hidden">
+        {activeReceipt.receiptFile ? (
+          <div className="grid h-full lg:grid-cols-2">
+            <div className="border-b lg:border-b-0 lg:border-r bg-background overflow-y-auto p-5 space-y-5">
+              <div className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/20">
+                <div className="min-w-0">
+                  <Label className="font-semibold">Receipt File</Label>
+                  <a
+                    className="text-xs text-primary underline-offset-2 hover:underline truncate block"
+                    href={activeReceipt.receiptFile}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {activeReceipt.receiptFile ? "Open file" : "No file uploaded"}
+                  </a>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void handleFileUpload(activeReceipt.id, file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      disabled={isActiveUploading || isActiveParsing}
+                    >
+                      <span>{activeReceipt.receiptFile ? "Replace" : "Upload"}</span>
+                    </Button>
+                  </label>
+                  {activeReceipt.receiptFile && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void parseReceipt(activeReceipt.id, activeReceipt.receiptFile!)}
+                      disabled={isActiveParsing}
+                    >
+                      {isActiveParsing && (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                      )}
+                      Re-Parse
+                    </Button>
                   )}
                 </div>
               </div>
 
-              {isExpanded && (
-                <div className="border-t p-4 space-y-4">
-                  {/* Vendor Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Vendor Name</Label>
-                      <Input
-                        placeholder="e.g. Amazon"
-                        value={receipt.vendorName}
-                        onChange={(e) =>
-                          updateReceipt(receipt.id, { vendorName: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Location</Label>
-                      <Input
-                        placeholder="e.g. Online"
-                        value={receipt.location}
-                        onChange={(e) =>
-                          updateReceipt(receipt.id, { location: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Date of Purchase</Label>
-                      <Input
-                        type="date"
-                        value={receipt.dateOfPurchase ? new Date(receipt.dateOfPurchase).toISOString().split("T")[0] : ""}
-                        onChange={(e) =>
-                          updateReceipt(receipt.id, { dateOfPurchase: new Date(e.target.value).getTime() })
-                        }
-                      />
-                    </div>
-                  </div>
+              {isActiveUploading && (
+                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Uploading receipt...
+                </div>
+              )}
 
-                  {/* Line Items */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>Line Items</Label>
-                      <Button variant="ghost" size="sm" onClick={() => addLineItem(receipt.id)}>
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add Item
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      {receipt.lineItems.map((li) => (
-                        <div key={li.id} className="flex items-center gap-2">
-                          <Input
-                            placeholder="Description"
-                            className="flex-1"
-                            value={li.description}
-                            onChange={(e) =>
-                              updateLineItem(receipt.id, li.id, { description: e.target.value })
-                            }
-                          />
-                          <Select
-                            value={li.category}
-                            onValueChange={(val) =>
-                              updateLineItem(receipt.id, li.id, { category: val })
-                            }
-                          >
-                            <SelectTrigger className="w-40">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {CATEGORIES.map((cat) => (
-                                <SelectItem key={cat} value={cat}>
-                                  {cat}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <div className="relative w-28">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                              $
-                            </span>
+              {parseResults[activeReceipt.id] && (
+                <p
+                  className={cn(
+                    "text-xs",
+                    parseResults[activeReceipt.id].success ? "text-green-600" : "text-amber-600",
+                  )}
+                >
+                  {parseResults[activeReceipt.id].message}
+                </p>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Vendor Name</Label>
+                  <Input
+                    placeholder="e.g. Amazon"
+                    value={activeReceipt.vendorName}
+                    onChange={(e) =>
+                      updateReceipt(activeReceipt.id, { vendorName: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Input
+                    placeholder="e.g. Online"
+                    value={activeReceipt.location}
+                    onChange={(e) =>
+                      updateReceipt(activeReceipt.id, { location: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Date of Purchase</Label>
+                  <Input
+                    type="date"
+                    value={activeReceipt.dateOfPurchase ? new Date(activeReceipt.dateOfPurchase).toISOString().split("T")[0] : ""}
+                    onChange={(e) =>
+                      updateReceipt(activeReceipt.id, { dateOfPurchase: new Date(e.target.value).getTime() })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Line Items</Label>
+                  <Button variant="ghost" size="sm" onClick={() => addLineItem(activeReceipt.id)}>
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Item
+                  </Button>
+                </div>
+                <div className="rounded-lg border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium">Description</th>
+                        <th className="px-3 py-2 text-left font-medium w-40">Category</th>
+                        <th className="px-3 py-2 text-left font-medium w-28">Amount</th>
+                        <th className="px-3 py-2 w-10" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeReceipt.lineItems.map((li) => (
+                        <tr key={li.id} className="border-t">
+                          <td className="px-2 py-2">
                             <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              className="pl-7"
-                              value={li.amount || ""}
+                              placeholder="Description"
+                              value={li.description}
                               onChange={(e) =>
-                                updateLineItem(receipt.id, li.id, {
-                                  amount: parseFloat(e.target.value) || 0,
-                                })
+                                updateLineItem(activeReceipt.id, li.id, { description: e.target.value })
                               }
                             />
-                          </div>
-                          {receipt.lineItems.length > 1 && (
-                            <Button variant="ghost" size="sm" onClick={() => removeLineItem(receipt.id, li.id)}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
+                          </td>
+                          <td className="px-2 py-2">
+                            <Select
+                              value={li.category}
+                              onValueChange={(val) =>
+                                updateLineItem(activeReceipt.id, li.id, { category: val })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CATEGORIES.map((cat) => (
+                                  <SelectItem key={cat} value={cat}>
+                                    {cat}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-2 py-2">
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                                $
+                              </span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                className="pl-7"
+                                value={li.amount || ""}
+                                onChange={(e) =>
+                                  updateLineItem(activeReceipt.id, li.id, {
+                                    amount: parseFloat(e.target.value) || 0,
+                                  })
+                                }
+                              />
+                            </div>
+                          </td>
+                          <td className="px-2 py-2">
+                            {activeReceipt.lineItems.length > 1 && (
+                              <Button variant="ghost" size="icon" onClick={() => removeLineItem(activeReceipt.id, li.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
                       ))}
-                    </div>
-                  </div>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-                  {/* Totals */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                      <Label>Tax</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                          $
-                        </span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="pl-7"
-                          value={receipt.tax || ""}
-                          onChange={(e) =>
-                            updateReceipt(receipt.id, {
-                              tax: parseFloat(e.target.value) || 0,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Tip</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                          $
-                        </span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="pl-7"
-                          value={receipt.tip || ""}
-                          onChange={(e) =>
-                            updateReceipt(receipt.id, {
-                              tip: parseFloat(e.target.value) || 0,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Shipping</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                          $
-                        </span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="pl-7"
-                          value={receipt.shipping || ""}
-                          onChange={(e) =>
-                            updateReceipt(receipt.id, {
-                              shipping: parseFloat(e.target.value) || 0,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Subtotal</Label>
-                      <div className="flex items-center h-9 px-3 rounded-md border bg-muted/50 font-mono text-sm">
-                        ${receipt.subtotal.toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Receipt Total</p>
-                      <p className="text-xl font-bold font-mono">${receipt.total.toFixed(2)}</p>
-                    </div>
-                  </div>
-
-                  {/* Notes */}
-                  <div className="space-y-2">
-                    <Label>Notes</Label>
-                    <Textarea
-                      placeholder="Any notes about this receipt..."
-                      value={receipt.notes}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>Tax</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      $
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="pl-7"
+                      value={activeReceipt.tax || ""}
                       onChange={(e) =>
-                        updateReceipt(receipt.id, { notes: e.target.value })
+                        updateReceipt(activeReceipt.id, { tax: parseFloat(e.target.value) || 0 })
                       }
-                      rows={2}
                     />
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label>Tip</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      $
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="pl-7"
+                      value={activeReceipt.tip || ""}
+                      onChange={(e) =>
+                        updateReceipt(activeReceipt.id, { tip: parseFloat(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Shipping</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      $
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="pl-7"
+                      value={activeReceipt.shipping || ""}
+                      onChange={(e) =>
+                        updateReceipt(activeReceipt.id, { shipping: parseFloat(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Subtotal</Label>
+                  <div className="flex items-center h-9 px-3 rounded-md border bg-muted/50 font-mono text-sm">
+                    ${activeReceipt.subtotal.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Receipt Total</p>
+                  <p className="text-xl font-bold font-mono">${activeReceipt.total.toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea
+                  placeholder="Any notes about this receipt..."
+                  value={activeReceipt.notes}
+                  onChange={(e) =>
+                    updateReceipt(activeReceipt.id, { notes: e.target.value })
+                  }
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            <div className="bg-muted/20 h-full min-h-[320px] p-4 flex items-center justify-center">
+              {activeReceipt.receiptFile ? (
+                activeReceipt.receiptFileType === "application/pdf" ||
+                activeReceipt.receiptFile.toLowerCase().endsWith(".pdf") ||
+                activeReceipt.receiptFile.toLowerCase().includes(".pdf?") ? (
+                  <iframe
+                    src={activeReceipt.receiptFile}
+                    className="w-full h-full rounded-lg border bg-white"
+                    title={`Receipt ${activeReceiptIndex + 1}`}
+                  />
+                ) : (
+                  <img
+                    src={activeReceipt.receiptFile}
+                    alt={`Receipt ${activeReceiptIndex + 1}`}
+                    className="max-w-full max-h-full object-contain rounded-lg border bg-black/5"
+                    onError={(e) => {
+                      // If image fails to load, it might be a PDF — try rendering as iframe
+                      const parent = e.currentTarget.parentElement;
+                      if (parent && activeReceipt.receiptFile) {
+                        e.currentTarget.style.display = 'none';
+                        const iframe = document.createElement('iframe');
+                        iframe.src = activeReceipt.receiptFile;
+                        iframe.className = 'w-full h-full rounded-lg border bg-white';
+                        iframe.title = `Receipt ${activeReceiptIndex + 1}`;
+                        iframe.style.minHeight = '320px';
+                        parent.appendChild(iframe);
+                      }
+                    }}
+                  />
+                )
+              ) : (
+                <div className="text-center text-muted-foreground">
+                  <Receipt className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No receipt uploaded</p>
+                </div>
               )}
             </div>
-          );
-        })}
+          </div>
+        ) : (
+          <div className="h-full flex items-center justify-center p-8">
+            <div className="w-full max-w-md rounded-xl border-2 border-dashed bg-muted/20 p-8 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <Upload className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-base font-semibold">Upload receipt before entering details</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Fields will appear after upload. Supports PDF, PNG, JPG, JPEG, WEBP.
+              </p>
+              <label className="mt-4 block">
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void handleFileUpload(activeReceipt.id, file);
+                    e.target.value = "";
+                  }}
+                />
+                <Button asChild>
+                  <span>Select File</span>
+                </Button>
+              </label>
+              {(isActiveUploading || isActiveParsing) && (
+                <div className="mt-4 text-xs text-muted-foreground flex items-center justify-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {isActiveUploading ? "Uploading receipt..." : "AI is parsing receipt..."}
+                </div>
+              )}
+              {parseResults[activeReceipt.id] && (
+                <p
+                  className={cn(
+                    "mt-3 text-xs",
+                    parseResults[activeReceipt.id].success ? "text-green-600" : "text-amber-600",
+                  )}
+                >
+                  {parseResults[activeReceipt.id].message}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <StepNavigation
@@ -1414,6 +1788,8 @@ function ReimbursementPage() {
     logtoId ? { logtoId } : "skip",
   );
   const createReimbursement = useMutation(api.reimbursements.create);
+  const generateUploadUrl = useMutation(api.reimbursements.generateUploadUrl);
+  const getStorageUrl = useMutation(api.reimbursements.getStorageUrl);
 
   const [view, setView] = useState<"list" | "create" | "detail">("list");
   const [selectedReimbursementId, setSelectedReimbursementId] = useState<string | null>(null);
@@ -1512,6 +1888,7 @@ function ReimbursementPage() {
         vendorName: r.vendorName,
         location: r.location,
         dateOfPurchase: new Date(r.dateOfPurchase).getTime(),
+        receiptFile: r.receiptFile,
         lineItems: r.lineItems.filter((li) => li.description.trim()),
         notes: r.notes || undefined,
         subtotal: r.subtotal,
@@ -1581,11 +1958,13 @@ function ReimbursementPage() {
         </div>
 
         {/* Step Progress Indicator */}
-        <StepIndicator
-          currentStep={step}
-          maxVisitedStep={maxVisitedStep}
-          onStepClick={handleStepChange}
-        />
+        <div className="flex justify-center">
+          <StepIndicator
+            currentStep={step}
+            maxVisitedStep={maxVisitedStep}
+            onStepClick={handleStepChange}
+          />
+        </div>
 
         {/* Step Content */}
         {step === 1 && <AIWarningStep onNext={handleNext} />}
@@ -1601,6 +1980,8 @@ function ReimbursementPage() {
           <ReceiptsStep
             receipts={receipts}
             setReceipts={setReceipts}
+            generateUploadUrl={generateUploadUrl}
+            getStorageUrl={getStorageUrl}
             onBack={handleBack}
             onNext={handleNext}
           />

@@ -28,11 +28,7 @@ interface UserTableProps {
   users: User[];
   sortConfig: SortConfig;
   onSort: (field: string) => void;
-  onEditUser: (user: User) => void;
-  onDeleteUser: (userId: Id<"users">) => void;
   currentUserId?: Id<"users">;
-  canEditUser?: (user: User) => boolean;
-  canDeleteUser?: (user: User) => boolean;
   onRowClick?: (user: User) => void;
 }
 
@@ -44,12 +40,6 @@ const roleColors: Record<UserRole, string> = {
   "Past Officer": "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
   Sponsor: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
   Administrator: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-};
-
-const statusColors: Record<UserStatus, string> = {
-  active: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  inactive: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-  suspended: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
 };
 
 const truncateMajor = (major: string, maxLength = 20) => {
@@ -64,11 +54,7 @@ export function UserTable({
   users,
   sortConfig,
   onSort,
-  onEditUser,
-  onDeleteUser,
   currentUserId,
-  canEditUser = () => true,
-  canDeleteUser = () => true,
   onRowClick,
 }: UserTableProps) {
   const getSortIcon = (field: string) => {
@@ -116,10 +102,7 @@ export function UserTable({
               <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => onSort("role")}>
                 <span className="flex items-center gap-1">Role {getSortIcon("role")}</span>
               </th>
-              <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell">Status</th>
-              <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => onSort("team")}>
-                <span className="flex items-center gap-1">Team {getSortIcon("team")}</span>
-              </th>
+
               <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 hidden xl:table-cell">Points</th>
               <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 hidden xl:table-cell cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => onSort("lastLogin")}>
                 <span className="flex items-center gap-1">Last Active {getSortIcon("lastLogin")}</span>
@@ -130,9 +113,8 @@ export function UserTable({
             {users.map((user, idx) => (
               <tr
                 key={user._id}
-                className={`border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer ${
-                  idx % 2 === 1 ? "bg-gray-50/30 dark:bg-gray-800/20" : ""
-                }`}
+                className={`border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer ${idx % 2 === 1 ? "bg-gray-50/30 dark:bg-gray-800/20" : ""
+                  }`}
                 onClick={() => onRowClick?.(user)}
               >
                 <td className="p-4">
@@ -167,14 +149,7 @@ export function UserTable({
                 <td className="p-4">
                   <Badge className={`text-xs ${roleColors[user.role]}`}>{user.role}</Badge>
                 </td>
-                <td className="p-4 hidden lg:table-cell">
-                  <Badge className={`text-xs ${statusColors[user.status]}`}>
-                    {user.status}
-                  </Badge>
-                </td>
-                <td className="p-4 hidden lg:table-cell text-gray-600 dark:text-gray-400">
-                  {user.team || "—"}
-                </td>
+
                 <td className="p-4 hidden xl:table-cell">
                   <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 font-mono">
                     {user.points || 0}

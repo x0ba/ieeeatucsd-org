@@ -40,6 +40,12 @@ export function FundingSection({ data, onChange, generateUploadUrl }: FundingSec
     const newInvoiceId = crypto.randomUUID();
 
     let fileUrl = "";
+    const parseDataUrl = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+
     // Upload to Convex if available
     if (generateUploadUrl) {
       try {
@@ -58,22 +64,13 @@ export function FundingSection({ data, onChange, generateUploadUrl }: FundingSec
       }
     }
 
-    // Convert to base64 for AI parsing if no Convex URL
-    let parseUrl = fileUrl;
-    if (!parseUrl) {
-      parseUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
-    }
-
     // AI parse
     try {
       const response = await fetch("/api/parse-invoice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: parseUrl }),
+        // Use local data URL for parsing. Convex storage IDs are not fetchable URLs.
+        body: JSON.stringify({ imageUrl: parseDataUrl }),
       });
 
       if (response.ok) {

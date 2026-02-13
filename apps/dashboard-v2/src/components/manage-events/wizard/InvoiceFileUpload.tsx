@@ -55,6 +55,12 @@ export function InvoiceFileUpload({
       return;
     }
 
+    const parseDataUrl = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+
     // Upload file to Convex storage if generateUploadUrl is available
     let fileUrl = "";
     if (generateUploadUrl) {
@@ -81,13 +87,6 @@ export function InvoiceFileUpload({
         return;
       }
       setIsUploading(false);
-    } else {
-      // Convert to base64 data URL for direct AI parsing
-      const reader = new FileReader();
-      fileUrl = await new Promise<string>((resolve) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
     }
 
     // Parse with AI
@@ -96,7 +95,8 @@ export function InvoiceFileUpload({
       const response = await fetch("/api/parse-invoice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: fileUrl }),
+        // Parse the actual file bytes via data URL, not Convex storage ID.
+        body: JSON.stringify({ imageUrl: parseDataUrl }),
       });
 
       if (!response.ok) {

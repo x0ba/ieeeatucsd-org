@@ -12,6 +12,7 @@ import {
   Eye,
   ChevronUp,
   ChevronDown,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,20 +155,48 @@ function ManageFundRequestsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-sm text-muted-foreground font-medium">Pending Review</p>
-          <p className="text-2xl font-semibold mt-1">{stats.pendingCount}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">Pending Review</p>
+              <p className="text-xl font-bold mt-1 text-blue-600">{stats.pendingCount}</p>
+            </div>
+            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+              <Clock className="w-4 h-4 text-blue-600" />
+            </div>
+          </div>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-sm text-muted-foreground font-medium">Needs Information</p>
-          <p className="text-2xl font-semibold mt-1">{stats.needsInfoCount}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">Needs Information</p>
+              <p className="text-xl font-bold mt-1 text-orange-600">{stats.needsInfoCount}</p>
+            </div>
+            <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
+              <AlertCircle className="w-4 h-4 text-orange-600" />
+            </div>
+          </div>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-sm text-muted-foreground font-medium">Pending Amount</p>
-          <p className="text-2xl font-semibold mt-1">{formatCurrency(stats.pendingValue)}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">Pending Amount</p>
+              <p className="text-xl font-bold mt-1 text-gray-900">{formatCurrency(stats.pendingValue)}</p>
+            </div>
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-gray-600" />
+            </div>
+          </div>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-sm text-muted-foreground font-medium">Total Approved</p>
-          <p className="text-2xl font-semibold mt-1">{formatCurrency(stats.approvedValue)}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">Total Approved</p>
+              <p className="text-xl font-bold mt-1 text-green-600">{formatCurrency(stats.approvedValue)}</p>
+            </div>
+            <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+            </div>
+          </div>
         </div>
       </div>
 

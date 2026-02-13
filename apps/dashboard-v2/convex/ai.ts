@@ -1,0 +1,248 @@
+import { query } from "./_generated/server";
+import { v } from "convex/values";
+import { requireOfficerAccess } from "./permissions";
+
+const ALL_TABLES = [
+  "users",
+  "publicProfiles",
+  "events",
+  "attendees",
+  "eventRequests",
+  "reimbursements",
+  "links",
+  "constitutions",
+  "constitutionAuditLogs",
+  "officerInvitations",
+  "sponsorDomains",
+  "fundRequests",
+  "fundDeposits",
+  "logs",
+  "organizationSettings",
+  "emailTemplates",
+  "notifications",
+  "googleGroupAssignments",
+  "directOnboardings",
+  "invites",
+  "budgetConfigs",
+  "budgetAdjustments",
+] as const;
+
+type TableName = (typeof ALL_TABLES)[number];
+type OfficerUser = {
+  _id: string | { toString(): string };
+  logtoId?: string;
+  name: string;
+  email: string;
+  role: string;
+  position?: string;
+  team?: string;
+  status: string;
+  sponsorTier?: string;
+  points?: number;
+  eventsAttended?: number;
+  joinDate: number;
+  lastLogin?: number;
+};
+
+const MAX_DOCS_PER_TABLE = 300;
+const MAX_ARRAY_ITEMS = 20;
+const MAX_OBJECT_KEYS = 40;
+const MAX_STRING_LENGTH = 500;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalize(text: string) {
+  return text.toLowerCase().trim();
+}
+
+function tokenize(queryText: string) {
+  return Array.from(
+    new Set(
+      normalize(queryText)
+        .split(/\s+/)
+        .map((part) => part.replace(/[^\w@.-]/g, ""))
+        .filter((part) => part.length >= 2),
+    ),
+  );
+}
+
+function asSearchText(value: unknown, depth = 0): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+
+  if (Array.isArray(value)) {
+    if (depth >= 2) return "";
+    return value
+      .slice(0, MAX_ARRAY_ITEMS)
+      .map((item) => asSearchText(item, depth + 1))
+      .join(" ");
+  }
+
+  if (typeof value === "object") {
+    if (depth >= 2) return "";
+    return Object.entries(value)
+      .slice(0, MAX_OBJECT_KEYS)
+      .map(([key, item]) => `${key} ${asSearchText(item, depth + 1)}`)
+      .join(" ");
+  }
+
+  return "";
+}
+
+function sanitizeValue(value: unknown, depth = 0): unknown {
+  if (value === null || value === undefined) return value;
+
+  if (typeof value === "string") {
+    return value.length > MAX_STRING_LENGTH
+      ? `${value.slice(0, MAX_STRING_LENGTH)}...`
+      : value;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") return value;
+
+  if (Array.isArray(value)) {
+    if (depth >= 2) return [`[truncated ${value.length} items]`];
+    return value
+      .slice(0, MAX_ARRAY_ITEMS)
+      .map((item) => sanitizeValue(item, depth + 1));
+  }
+
+  if (typeof value === "object") {
+    if (depth >= 2) return { _truncated: true };
+    const entries = Object.entries(value).slice(0, MAX_OBJECT_KEYS);
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, item] of entries) {
+      sanitized[key] = sanitizeValue(item, depth + 1);
+    }
+    return sanitized;
+  }
+
+  return String(value);
+}
+
+function scoreDocument(searchText: string, normalizedQuery: string, tokens: string[]) {
+  if (!searchText) return 0;
+  const normalizedDoc = normalize(searchText);
+
+  let score = 0;
+  if (normalizedDoc.includes(normalizedQuery)) score += 12;
+
+  for (const token of tokens) {
+    if (normalizedDoc.includes(token)) score += 2;
+  }
+
+  return score;
+}
+
+function buildSnippet(searchText: string, normalizedQuery: string) {
+  const normalizedDoc = normalize(searchText);
+  const matchIndex = normalizedDoc.indexOf(normalizedQuery);
+  if (matchIndex < 0) return searchText.slice(0, 240);
+
+  const start = Math.max(0, matchIndex - 80);
+  const end = Math.min(searchText.length, matchIndex + normalizedQuery.length + 160);
+  return searchText.slice(start, end).trim();
+}
+
+function toCurrentUserContext(user: OfficerUser) {
+  return {
+    id: String(user._id),
+    logtoId: user.logtoId,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    position: user.position,
+    team: user.team,
+    status: user.status,
+    sponsorTier: user.sponsorTier,
+    points: user.points ?? 0,
+    eventsAttended: user.eventsAttended ?? 0,
+    joinDate: user.joinDate,
+    lastLogin: user.lastLogin,
+  };
+}
+
+export const searchEverything = query({
+  args: {
+    logtoId: v.string(),
+    query: v.string(),
+    limit: v.optional(v.number()),
+    table: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const currentUser = toCurrentUserContext(user);
+    const currentServerTimeMs = Date.now();
+    const normalizedQuery = normalize(args.query);
+    const tokens = tokenize(args.query);
+    const limit = clamp(args.limit ?? 25, 1, 60);
+
+    const selectedTables: TableName[] = args.table
+      ? ALL_TABLES.includes(args.table as TableName)
+        ? [args.table as TableName]
+        : []
+      : [...ALL_TABLES];
+
+    if (!normalizedQuery || selectedTables.length === 0) {
+      return {
+        currentServerTimeMs,
+        currentUser,
+        userRole: user.role,
+        query: args.query,
+        scannedTables: selectedTables,
+        scannedCountByTable: {},
+        totalMatches: 0,
+        results: [],
+      };
+    }
+
+    const scannedCountByTable: Record<string, number> = {};
+    const results: Array<{
+      table: TableName;
+      score: number;
+      id: string;
+      createdAt: number;
+      snippet: string;
+      record: unknown;
+    }> = [];
+
+    for (const tableName of selectedTables) {
+      const docs = await ctx.db.query(tableName).take(MAX_DOCS_PER_TABLE);
+      scannedCountByTable[tableName] = docs.length;
+
+      for (const doc of docs) {
+        const searchText = `${tableName} ${asSearchText(doc)}`;
+        const score = scoreDocument(searchText, normalizedQuery, tokens);
+        if (score <= 0) continue;
+
+        results.push({
+          table: tableName,
+          score,
+          id: String((doc as { _id: string })._id),
+          createdAt: (doc as { _creationTime: number })._creationTime ?? 0,
+          snippet: buildSnippet(searchText, normalizedQuery),
+          record: sanitizeValue(doc),
+        });
+      }
+    }
+
+    results.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return b.createdAt - a.createdAt;
+    });
+
+    return {
+      currentServerTimeMs,
+      currentUser,
+      userRole: user.role,
+      query: args.query,
+      scannedTables: selectedTables,
+      scannedCountByTable,
+      totalMatches: results.length,
+      results: results.slice(0, limit),
+    };
+  },
+});

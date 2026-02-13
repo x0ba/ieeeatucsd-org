@@ -129,6 +129,35 @@ export const upsertReimbursement = mutation({
   },
 });
 
+export const upsertFundRequest = mutation({
+  args: {
+    dedupKey: v.string(),
+    data: v.any(),
+  },
+  handler: async (ctx, args) => {
+    const all = await ctx.db
+      .query("fundRequests")
+      .withIndex("by_requestedBy", (q) =>
+        q.eq("requestedBy", args.data.requestedBy),
+      )
+      .collect();
+
+    const existing = all.find(
+      (r) =>
+        r.title === args.data.title &&
+        r.amount === args.data.amount,
+    );
+
+    if (existing) {
+      await ctx.db.patch(existing._id, args.data);
+      return { id: existing._id, action: "updated" as const };
+    }
+
+    const id = await ctx.db.insert("fundRequests", args.data);
+    return { id, action: "inserted" as const };
+  },
+});
+
 export const upsertFundDeposit = mutation({
   args: {
     dedupKey: v.string(),
@@ -436,6 +465,34 @@ export const updateDocumentField = mutation({
     const update: Record<string, unknown> = {};
     update[args.field] = args.value;
     await ctx.db.patch(args.docId as any, update);
+  },
+});
+
+export const clearTable = mutation({
+  args: { table: v.string() },
+  handler: async (ctx, args) => {
+    const tableName = args.table as any;
+    const docs = await ctx.db.query(tableName).collect();
+    for (const doc of docs) {
+      await ctx.db.delete(doc._id);
+    }
+    // Also clear storage files if requested
+    if (args.table === "_storage") {
+      // Storage is handled separately via ctx.storage
+      return { deleted: 0, table: args.table };
+    }
+    return { deleted: docs.length, table: args.table };
+  },
+});
+
+export const clearStorage = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const files = await ctx.db.system.query("_storage").collect();
+    for (const file of files) {
+      await ctx.storage.delete(file._id);
+    }
+    return { deleted: files.length };
   },
 });
 
