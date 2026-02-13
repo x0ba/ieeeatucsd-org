@@ -38,6 +38,7 @@ import { Route as DashboardGetStartedRouteImport } from './routes/_dashboard/get
 import { Route as DashboardFundRequestsRouteImport } from './routes/_dashboard/fund-requests'
 import { Route as DashboardExecutiveAnalyticsRouteImport } from './routes/_dashboard/executive-analytics'
 import { Route as DashboardEventsRouteImport } from './routes/_dashboard/events'
+import { Route as DashboardConstitutionPreviewRouteImport } from './routes/_dashboard/constitution-preview'
 import { Route as DashboardConstitutionBuilderRouteImport } from './routes/_dashboard/constitution-builder'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 import { Route as ApiOnboardingSendInvitationRouteImport } from './routes/api/onboarding/send-invitation'
@@ -46,6 +47,7 @@ import { Route as ApiOnboardingResendInvitationRouteImport } from './routes/api/
 import { Route as ApiIeeeEmailFetchEmailsRouteImport } from './routes/api/ieee-email/fetch-emails'
 import { Route as ApiIeeeEmailFetchContentRouteImport } from './routes/api/ieee-email/fetch-content'
 import { Route as ApiEmailSendRouteImport } from './routes/api/email/send'
+import { Route as ApiEmailNotifyRouteImport } from './routes/api/email/notify'
 import { Route as ApiAiQueryRouteImport } from './routes/api/ai/query'
 import { Route as DashboardSponsorsResumeDatabaseRouteImport } from './routes/_dashboard/sponsors/resume-database'
 import { Route as DashboardSponsorsInformationRouteImport } from './routes/_dashboard/sponsors/information'
@@ -198,6 +200,12 @@ const DashboardEventsRoute = DashboardEventsRouteImport.update({
   path: '/events',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardConstitutionPreviewRoute =
+  DashboardConstitutionPreviewRouteImport.update({
+    id: '/constitution-preview',
+    path: '/constitution-preview',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardConstitutionBuilderRoute =
   DashboardConstitutionBuilderRouteImport.update({
     id: '/constitution-builder',
@@ -243,6 +251,11 @@ const ApiEmailSendRoute = ApiEmailSendRouteImport.update({
   path: '/api/email/send',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEmailNotifyRoute = ApiEmailNotifyRouteImport.update({
+  id: '/api/email/notify',
+  path: '/api/email/notify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAiQueryRoute = ApiAiQueryRouteImport.update({
   id: '/api/ai/query',
   path: '/api/ai/query',
@@ -268,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/signin': typeof SigninRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/constitution-builder': typeof DashboardConstitutionBuilderRoute
+  '/constitution-preview': typeof DashboardConstitutionPreviewRoute
   '/events': typeof DashboardEventsRoute
   '/executive-analytics': typeof DashboardExecutiveAnalyticsRoute
   '/fund-requests': typeof DashboardFundRequestsRoute
@@ -294,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/sponsors/information': typeof DashboardSponsorsInformationRoute
   '/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
   '/api/ai/query': typeof ApiAiQueryRoute
+  '/api/email/notify': typeof ApiEmailNotifyRoute
   '/api/email/send': typeof ApiEmailSendRoute
   '/api/ieee-email/fetch-content': typeof ApiIeeeEmailFetchContentRoute
   '/api/ieee-email/fetch-emails': typeof ApiIeeeEmailFetchEmailsRoute
@@ -309,6 +324,7 @@ export interface FileRoutesByTo {
   '/signin': typeof SigninRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/constitution-builder': typeof DashboardConstitutionBuilderRoute
+  '/constitution-preview': typeof DashboardConstitutionPreviewRoute
   '/events': typeof DashboardEventsRoute
   '/executive-analytics': typeof DashboardExecutiveAnalyticsRoute
   '/fund-requests': typeof DashboardFundRequestsRoute
@@ -335,6 +351,7 @@ export interface FileRoutesByTo {
   '/sponsors/information': typeof DashboardSponsorsInformationRoute
   '/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
   '/api/ai/query': typeof ApiAiQueryRoute
+  '/api/email/notify': typeof ApiEmailNotifyRoute
   '/api/email/send': typeof ApiEmailSendRoute
   '/api/ieee-email/fetch-content': typeof ApiIeeeEmailFetchContentRoute
   '/api/ieee-email/fetch-emails': typeof ApiIeeeEmailFetchEmailsRoute
@@ -352,6 +369,7 @@ export interface FileRoutesById {
   '/signin': typeof SigninRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/_dashboard/constitution-builder': typeof DashboardConstitutionBuilderRoute
+  '/_dashboard/constitution-preview': typeof DashboardConstitutionPreviewRoute
   '/_dashboard/events': typeof DashboardEventsRoute
   '/_dashboard/executive-analytics': typeof DashboardExecutiveAnalyticsRoute
   '/_dashboard/fund-requests': typeof DashboardFundRequestsRoute
@@ -378,6 +396,7 @@ export interface FileRoutesById {
   '/_dashboard/sponsors/information': typeof DashboardSponsorsInformationRoute
   '/_dashboard/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
   '/api/ai/query': typeof ApiAiQueryRoute
+  '/api/email/notify': typeof ApiEmailNotifyRoute
   '/api/email/send': typeof ApiEmailSendRoute
   '/api/ieee-email/fetch-content': typeof ApiIeeeEmailFetchContentRoute
   '/api/ieee-email/fetch-emails': typeof ApiIeeeEmailFetchEmailsRoute
@@ -395,6 +414,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/terms-of-service'
     | '/constitution-builder'
+    | '/constitution-preview'
     | '/events'
     | '/executive-analytics'
     | '/fund-requests'
@@ -421,6 +441,7 @@ export interface FileRouteTypes {
     | '/sponsors/information'
     | '/sponsors/resume-database'
     | '/api/ai/query'
+    | '/api/email/notify'
     | '/api/email/send'
     | '/api/ieee-email/fetch-content'
     | '/api/ieee-email/fetch-emails'
@@ -436,6 +457,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/terms-of-service'
     | '/constitution-builder'
+    | '/constitution-preview'
     | '/events'
     | '/executive-analytics'
     | '/fund-requests'
@@ -462,6 +484,7 @@ export interface FileRouteTypes {
     | '/sponsors/information'
     | '/sponsors/resume-database'
     | '/api/ai/query'
+    | '/api/email/notify'
     | '/api/email/send'
     | '/api/ieee-email/fetch-content'
     | '/api/ieee-email/fetch-emails'
@@ -478,6 +501,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/terms-of-service'
     | '/_dashboard/constitution-builder'
+    | '/_dashboard/constitution-preview'
     | '/_dashboard/events'
     | '/_dashboard/executive-analytics'
     | '/_dashboard/fund-requests'
@@ -504,6 +528,7 @@ export interface FileRouteTypes {
     | '/_dashboard/sponsors/information'
     | '/_dashboard/sponsors/resume-database'
     | '/api/ai/query'
+    | '/api/email/notify'
     | '/api/email/send'
     | '/api/ieee-email/fetch-content'
     | '/api/ieee-email/fetch-emails'
@@ -528,6 +553,7 @@ export interface RootRouteChildren {
   ApiParseReceiptRoute: typeof ApiParseReceiptRoute
   ApiResetEmailPasswordRoute: typeof ApiResetEmailPasswordRoute
   ApiAiQueryRoute: typeof ApiAiQueryRoute
+  ApiEmailNotifyRoute: typeof ApiEmailNotifyRoute
   ApiEmailSendRoute: typeof ApiEmailSendRoute
   ApiIeeeEmailFetchContentRoute: typeof ApiIeeeEmailFetchContentRoute
   ApiIeeeEmailFetchEmailsRoute: typeof ApiIeeeEmailFetchEmailsRoute
@@ -742,6 +768,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardEventsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/constitution-preview': {
+      id: '/_dashboard/constitution-preview'
+      path: '/constitution-preview'
+      fullPath: '/constitution-preview'
+      preLoaderRoute: typeof DashboardConstitutionPreviewRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/_dashboard/constitution-builder': {
       id: '/_dashboard/constitution-builder'
       path: '/constitution-builder'
@@ -798,6 +831,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiEmailSendRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/email/notify': {
+      id: '/api/email/notify'
+      path: '/api/email/notify'
+      fullPath: '/api/email/notify'
+      preLoaderRoute: typeof ApiEmailNotifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/ai/query': {
       id: '/api/ai/query'
       path: '/api/ai/query'
@@ -824,6 +864,7 @@ declare module '@tanstack/react-router' {
 
 interface DashboardRouteChildren {
   DashboardConstitutionBuilderRoute: typeof DashboardConstitutionBuilderRoute
+  DashboardConstitutionPreviewRoute: typeof DashboardConstitutionPreviewRoute
   DashboardEventsRoute: typeof DashboardEventsRoute
   DashboardExecutiveAnalyticsRoute: typeof DashboardExecutiveAnalyticsRoute
   DashboardFundRequestsRoute: typeof DashboardFundRequestsRoute
@@ -846,6 +887,7 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardConstitutionBuilderRoute: DashboardConstitutionBuilderRoute,
+  DashboardConstitutionPreviewRoute: DashboardConstitutionPreviewRoute,
   DashboardEventsRoute: DashboardEventsRoute,
   DashboardExecutiveAnalyticsRoute: DashboardExecutiveAnalyticsRoute,
   DashboardFundRequestsRoute: DashboardFundRequestsRoute,
@@ -885,6 +927,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiParseReceiptRoute: ApiParseReceiptRoute,
   ApiResetEmailPasswordRoute: ApiResetEmailPasswordRoute,
   ApiAiQueryRoute: ApiAiQueryRoute,
+  ApiEmailNotifyRoute: ApiEmailNotifyRoute,
   ApiEmailSendRoute: ApiEmailSendRoute,
   ApiIeeeEmailFetchContentRoute: ApiIeeeEmailFetchContentRoute,
   ApiIeeeEmailFetchEmailsRoute: ApiIeeeEmailFetchEmailsRoute,

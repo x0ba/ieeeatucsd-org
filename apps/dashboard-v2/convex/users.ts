@@ -472,15 +472,6 @@ export const getOverviewData = query({
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .collect();
 
-    // Get event details for attended events
-    const eventDetails = await Promise.all(
-      attendees.map(async (a) => {
-        const event = await ctx.db.get(a.eventId);
-        return event ? { ...event, timeCheckedIn: a.timeCheckedIn, pointsEarned: a.pointsEarned } : null;
-      })
-    );
-    const validEventDetails = eventDetails.filter(Boolean);
-
     // Build points history
     const sortedAttendees = [...attendees].sort((a, b) => a.timeCheckedIn - b.timeCheckedIn);
     let cumulative = 0;

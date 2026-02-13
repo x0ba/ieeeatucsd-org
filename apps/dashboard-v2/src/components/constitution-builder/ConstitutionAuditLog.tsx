@@ -1,11 +1,10 @@
-import React, { useState, useMemo } from "react";
-import { Clock, User, Search, Filter, Plus, Minus, Edit3 } from "lucide-react";
+import React, { useState, useMemo, useCallback } from "react";
+import { Clock, User, Search, Filter, Plus, Minus, Edit3, ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -22,10 +21,81 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConstitutionAuditEntry } from "./types";
-import { format } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 
 interface ConstitutionAuditLogProps {
   constitutionId: string;
+}
+
+/**
+ * Strips HTML tags and returns clean plain text.
+ */
+function stripHtml(html: string): string {
+  if (!html) return "";
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>\s*<p[^>]*>/gi, "\n\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
+ * Truncates text to a max length with ellipsis.
+ */
+function truncate(text: string, maxLen: number): string {
+  if (!text || text.length <= maxLen) return text || "";
+  return text.slice(0, maxLen).trimEnd() + "…";
+}
+
+/**
+ * Builds a human-readable summary of what changed between before and after values.
+ */
+function buildChangeSummary(entry: ConstitutionAuditEntry): string {
+  const parts: string[] = [];
+  const sectionType = entry.afterValue?.type || entry.beforeValue?.type || "section";
+  const sectionTitle = entry.afterValue?.title || entry.beforeValue?.title || "Untitled";
+
+  if (entry.changeType === "create") {
+    return `Created new ${sectionType}: "${sectionTitle}"`;
+  }
+  if (entry.changeType === "delete") {
+    return `Deleted ${sectionType}: "${sectionTitle}"`;
+  }
+  if (entry.changeType === "reorder") {
+    return `Reordered ${sectionType}: "${sectionTitle}"`;
+  }
+
+  // Update — describe what changed
+  if (entry.beforeValue?.title !== entry.afterValue?.title) {
+    const before = entry.beforeValue?.title || "Untitled";
+    const after = entry.afterValue?.title || "Untitled";
+    parts.push(`Title: "${before}" → "${after}"`);
+  }
+
+  if (entry.beforeValue?.content !== entry.afterValue?.content) {
+    const beforeClean = stripHtml(entry.beforeValue?.content || "");
+    const afterClean = stripHtml(entry.afterValue?.content || "");
+    if (!beforeClean && afterClean) {
+      parts.push("Content added");
+    } else if (beforeClean && !afterClean) {
+      parts.push("Content removed");
+    } else {
+      parts.push("Content updated");
+    }
+  }
+
+  if (parts.length === 0) {
+    return `Updated ${sectionType}: "${sectionTitle}"`;
+  }
+
+  return parts.join(" · ");
 }
 
 export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({
@@ -45,7 +115,6 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
@@ -54,42 +123,18 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({
     return Array.from(users).sort();
   }, [entries]);
 
-  const searchInEntry = (entry: ConstitutionAuditEntry, query: string): boolean => {
+  const searchInEntry = useCallback((entry: ConstitutionAuditEntry, query: string): boolean => {
     if (!query) return true;
-
     const lowerQuery = query.toLowerCase();
-
-    if (
-      entry.changeDescription.toLowerCase().includes(lowerQuery) ||
+    const summary = buildChangeSummary(entry).toLowerCase();
+    return (
+      summary.includes(lowerQuery) ||
       entry.userName.toLowerCase().includes(lowerQuery) ||
-      entry.changeType.toLowerCase().includes(lowerQuery)
-    ) {
-      return true;
-    }
-
-    if (
-      entry.beforeValue?.title?.toLowerCase().includes(lowerQuery) ||
-      entry.afterValue?.title?.toLowerCase().includes(lowerQuery) ||
-      entry.beforeValue?.content?.toLowerCase().includes(lowerQuery) ||
-      entry.afterValue?.content?.toLowerCase().includes(lowerQuery)
-    ) {
-      return true;
-    }
-
-    if (
-      entry.sectionId?.toLowerCase().includes(lowerQuery) ||
-      entry.userId?.toLowerCase().includes(lowerQuery)
-    ) {
-      return true;
-    }
-
-    const formattedDate = formatTimestamp(entry.timestamp);
-    if (formattedDate.toLowerCase().includes(lowerQuery)) {
-      return true;
-    }
-
-    return false;
-  };
+      entry.changeType.toLowerCase().includes(lowerQuery) ||
+      stripHtml(entry.beforeValue?.title || "").toLowerCase().includes(lowerQuery) ||
+      stripHtml(entry.afterValue?.title || "").toLowerCase().includes(lowerQuery)
+    );
+  }, []);
 
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
@@ -97,7 +142,6 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({
       const matchesChangeType =
         changeTypeFilter === "all" || entry.changeType === changeTypeFilter;
       const matchesUser = userFilter === "all" || entry.userName === userFilter;
-
       return matchesSearch && matchesChangeType && matchesUser;
     });
   }, [entries, debouncedSearchQuery, changeTypeFilter, userFilter, searchInEntry]);
@@ -105,147 +149,53 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({
   const getChangeTypeIcon = (changeType: ConstitutionAuditEntry["changeType"]) => {
     switch (changeType) {
       case "create":
-        return <Plus className="h-4 w-4 text-green-600" />;
+        return <Plus className="h-3.5 w-3.5 text-green-600" />;
       case "update":
-        return <Edit3 className="h-4 w-4 text-blue-600" />;
+        return <Edit3 className="h-3.5 w-3.5 text-blue-600" />;
       case "delete":
-        return <Minus className="h-4 w-4 text-red-600" />;
+        return <Minus className="h-3.5 w-3.5 text-red-600" />;
+      case "reorder":
+        return <ArrowUpDown className="h-3.5 w-3.5 text-orange-600" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
+        return <Clock className="h-3.5 w-3.5 text-gray-600" />;
     }
   };
 
   const getChangeTypeBadge = (changeType: ConstitutionAuditEntry["changeType"]) => {
-    const variants = {
-      create: "bg-green-100 text-green-800 hover:bg-green-100",
-      update: "bg-blue-100 text-blue-800 hover:bg-blue-100",
-      delete: "bg-red-100 text-red-800 hover:bg-red-100",
-      reorder: "bg-orange-100 text-orange-800 hover:bg-orange-100",
+    const variants: Record<string, string> = {
+      create: "bg-green-50 text-green-700 border-green-200",
+      update: "bg-blue-50 text-blue-700 border-blue-200",
+      delete: "bg-red-50 text-red-700 border-red-200",
+      reorder: "bg-orange-50 text-orange-700 border-orange-200",
     };
-
     return (
-      <Badge variant="secondary" className={variants[changeType]}>
+      <Badge variant="outline" className={`text-xs font-medium ${variants[changeType] || ""}`}>
         {changeType.charAt(0).toUpperCase() + changeType.slice(1)}
       </Badge>
     );
   };
 
-  const formatTimestamp = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return format(date, "MMM dd, yyyy 'at' h:mm a");
+  const formatRelativeTime = (timestamp: number) => {
+    return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   };
 
-  const renderBeforeAfterComparison = (entry: ConstitutionAuditEntry) => {
-    if (entry.changeType === "create") {
-      return (
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-medium text-green-700 mb-2">Created Section:</h4>
-            <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-              <p>
-                <strong>Title:</strong> {entry.afterValue?.title || "Untitled"}
-              </p>
-              <p>
-                <strong>Type:</strong> {entry.afterValue?.type}
-              </p>
-              {entry.afterValue?.content && (
-                <div className="mt-2">
-                  <strong>Content:</strong>
-                  <p className="mt-1 text-sm bg-white p-2 rounded border">
-                    {entry.afterValue.content.substring(0, 300)}
-                    {entry.afterValue.content.length > 300 && "..."}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (entry.changeType === "delete") {
-      return (
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-medium text-red-700 mb-2">Deleted Section:</h4>
-            <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-              <p>
-                <strong>Title:</strong> {entry.beforeValue?.title || "Untitled"}
-              </p>
-              <p>
-                <strong>Type:</strong> {entry.beforeValue?.type}
-              </p>
-              {entry.beforeValue?.content && (
-                <div className="mt-2">
-                  <strong>Content:</strong>
-                  <p className="mt-1 text-sm bg-white p-2 rounded border">
-                    {entry.beforeValue.content}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (entry.changeType === "update") {
-      return (
-        <div className="space-y-4">
-          {entry.beforeValue?.title !== entry.afterValue?.title && (
-            <div>
-              <h4 className="font-medium text-blue-700 mb-2">Title Changed:</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-                  <h5 className="font-medium text-red-700">Before:</h5>
-                  <p className="text-sm">{entry.beforeValue?.title || "Untitled"}</p>
-                </div>
-                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                  <h5 className="font-medium text-green-700">After:</h5>
-                  <p className="text-sm">{entry.afterValue?.title || "Untitled"}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {entry.beforeValue?.content !== entry.afterValue?.content && (
-            <div>
-              <h4 className="font-medium text-blue-700 mb-2">Content Changed:</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-                  <h5 className="font-medium text-red-700">Before:</h5>
-                  <p className="text-sm bg-white p-2 rounded border mt-1 max-h-32 overflow-y-auto">
-                    {entry.beforeValue?.content || "Empty"}
-                  </p>
-                </div>
-                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                  <h5 className="font-medium text-green-700">After:</h5>
-                  <p className="text-sm bg-white p-2 rounded border mt-1 max-h-32 overflow-y-auto">
-                    {entry.afterValue?.content || "Empty"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return null;
+  const formatFullTime = (timestamp: number) => {
+    return format(new Date(timestamp), "MMM d, yyyy 'at' h:mm a");
   };
 
   if (entries.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Constitution Audit Log
+      <Card className="border-0 shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Clock className="h-5 w-5 text-gray-400" />
+            Change History
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            No audit entries found.
+          <div className="text-center py-12 text-gray-400">
+            <Clock className="h-10 w-10 mx-auto mb-3 opacity-50" />
+            <p className="text-sm">No changes recorded yet.</p>
           </div>
         </CardContent>
       </Card>
@@ -253,37 +203,35 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Constitution Audit Log
+    <Card className="border-0 shadow-none">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Clock className="h-5 w-5 text-gray-400" />
+          Change History
         </CardTitle>
-        <p className="text-sm text-gray-600">
-          Complete history of all changes made to the constitution. This log is
-          read-only and cannot be modified.
+        <p className="text-sm text-gray-500 mt-1">
+          Read-only log of all constitution changes
         </p>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search audit entries..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-5">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search changes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
           </div>
           <Select value={changeTypeFilter} onValueChange={setChangeTypeFilter}>
-            <SelectTrigger className="w-full sm:w-40">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Change Type" />
+            <SelectTrigger className="w-full sm:w-36 h-9 text-sm">
+              <Filter className="h-3.5 w-3.5 mr-1.5" />
+              <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Changes</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="create">Created</SelectItem>
               <SelectItem value="update">Updated</SelectItem>
               <SelectItem value="delete">Deleted</SelectItem>
@@ -291,8 +239,8 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({
             </SelectContent>
           </Select>
           <Select value={userFilter} onValueChange={setUserFilter}>
-            <SelectTrigger className="w-full sm:w-40">
-              <User className="h-4 w-4 mr-2" />
+            <SelectTrigger className="w-full sm:w-36 h-9 text-sm">
+              <User className="h-3.5 w-3.5 mr-1.5" />
               <SelectValue placeholder="User" />
             </SelectTrigger>
             <SelectContent>
@@ -306,84 +254,238 @@ export const ConstitutionAuditLog: React.FC<ConstitutionAuditLogProps> = ({
           </Select>
         </div>
 
-        <ScrollArea className="h-96">
-          <div className="space-y-3">
+        {/* Entries */}
+        <ScrollArea className="h-[500px]">
+          <div className="space-y-1">
             {filteredEntries.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                {entries.length === 0
-                  ? "No audit entries found."
-                  : "No entries match your filters."}
+              <div className="text-center py-12 text-gray-400 text-sm">
+                No entries match your filters.
               </div>
             ) : (
               filteredEntries.map((entry) => (
-                <div
+                <AuditEntryRow
                   key={entry.id}
-                  className="flex items-start gap-3 p-4 border rounded-xl hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex-shrink-0 mt-1">
-                    {getChangeTypeIcon(entry.changeType)}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {getChangeTypeBadge(entry.changeType)}
-                      <span className="text-sm text-gray-600">by</span>
-                      <span className="font-medium text-sm">
-                        {entry.userName}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {formatTimestamp(entry.timestamp)}
-                      </span>
-                    </div>
-
-                    <p className="text-sm text-gray-800 mb-2">
-                      {entry.changeDescription}
-                    </p>
-
-                    {(entry.beforeValue || entry.afterValue) && (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            View Details
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                              {getChangeTypeIcon(entry.changeType)}
-                              Change Details - {formatTimestamp(entry.timestamp)}
-                            </DialogTitle>
-                          </DialogHeader>
-                          <div className="mt-4">
-                            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                              <p>
-                                <strong>User:</strong> {entry.userName}
-                              </p>
-                              <p>
-                                <strong>Action:</strong> {entry.changeDescription}
-                              </p>
-                            </div>
-                            {renderBeforeAfterComparison(entry)}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                  </div>
-                </div>
+                  entry={entry}
+                  getChangeTypeIcon={getChangeTypeIcon}
+                  getChangeTypeBadge={getChangeTypeBadge}
+                  formatRelativeTime={formatRelativeTime}
+                  formatFullTime={formatFullTime}
+                />
               ))
             )}
           </div>
         </ScrollArea>
 
-        <div className="mt-4 pt-4 border-t">
-          <p className="text-sm text-gray-600">
-            {filteredEntries.length === entries.length
-              ? `Showing all ${entries.length} audit entries`
-              : `Showing ${filteredEntries.length} of ${entries.length} audit entries`}
-            {debouncedSearchQuery && ` (filtered by "${debouncedSearchQuery}")`}
-          </p>
+        {/* Footer */}
+        <div className="mt-3 pt-3 border-t text-xs text-gray-400">
+          {filteredEntries.length === entries.length
+            ? `${entries.length} total changes`
+            : `${filteredEntries.length} of ${entries.length} changes`}
         </div>
       </CardContent>
     </Card>
+  );
+};
+
+/**
+ * Individual audit entry row with expandable detail dialog.
+ */
+const AuditEntryRow: React.FC<{
+  entry: ConstitutionAuditEntry;
+  getChangeTypeIcon: (type: ConstitutionAuditEntry["changeType"]) => React.ReactNode;
+  getChangeTypeBadge: (type: ConstitutionAuditEntry["changeType"]) => React.ReactNode;
+  formatRelativeTime: (ts: number) => string;
+  formatFullTime: (ts: number) => string;
+}> = ({ entry, getChangeTypeIcon, getChangeTypeBadge, formatRelativeTime, formatFullTime }) => {
+  const summary = useMemo(() => buildChangeSummary(entry), [entry]);
+
+  return (
+    <div className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50/80 transition-colors group">
+      <div className="flex-shrink-0 mt-0.5 w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+        {getChangeTypeIcon(entry.changeType)}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          {getChangeTypeBadge(entry.changeType)}
+          <span className="text-xs text-gray-500" title={formatFullTime(entry.timestamp)}>
+            {formatRelativeTime(entry.timestamp)}
+          </span>
+          <span className="text-xs text-gray-400">
+            by {entry.userName}
+          </span>
+        </div>
+
+        <p className="text-sm text-gray-700 mt-0.5 leading-snug">
+          {summary}
+        </p>
+
+        {(entry.beforeValue || entry.afterValue) && (
+          <Dialog>
+            <DialogTrigger asChild>
+              <button className="text-xs text-blue-600 hover:text-blue-700 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                View details
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="text-base font-semibold flex items-center gap-2">
+                  {getChangeTypeIcon(entry.changeType)}
+                  Change Details
+                </DialogTitle>
+              </DialogHeader>
+              <DetailContent entry={entry} formatFullTime={formatFullTime} />
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Clean detail content for the dialog — no raw HTML, human-readable.
+ */
+const DetailContent: React.FC<{
+  entry: ConstitutionAuditEntry;
+  formatFullTime: (ts: number) => string;
+}> = ({ entry, formatFullTime }) => {
+  const [expandedContent, setExpandedContent] = useState(false);
+
+  const sectionType = entry.afterValue?.type || entry.beforeValue?.type || "section";
+  const sectionTitle = entry.afterValue?.title || entry.beforeValue?.title || "Untitled";
+
+  return (
+    <div className="space-y-4 mt-2">
+      {/* Meta */}
+      <div className="flex items-center gap-3 text-xs text-gray-500">
+        <span>{formatFullTime(entry.timestamp)}</span>
+        <span>·</span>
+        <span>by {entry.userName}</span>
+      </div>
+
+      {/* Section info */}
+      <div className="bg-gray-50 rounded-lg px-3 py-2">
+        <div className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">
+          {sectionType}
+        </div>
+        <div className="text-sm font-medium text-gray-900">
+          {sectionTitle}
+        </div>
+      </div>
+
+      {/* Changes */}
+      {entry.changeType === "create" && (
+        <div className="space-y-2">
+          {entry.afterValue?.content && (
+            <ContentBlock
+              label="Initial content"
+              content={stripHtml(entry.afterValue.content)}
+              expanded={expandedContent}
+              onToggle={() => setExpandedContent(!expandedContent)}
+              variant="green"
+            />
+          )}
+        </div>
+      )}
+
+      {entry.changeType === "delete" && (
+        <div className="space-y-2">
+          {entry.beforeValue?.content && (
+            <ContentBlock
+              label="Deleted content"
+              content={stripHtml(entry.beforeValue.content)}
+              expanded={expandedContent}
+              onToggle={() => setExpandedContent(!expandedContent)}
+              variant="red"
+            />
+          )}
+        </div>
+      )}
+
+      {entry.changeType === "update" && (
+        <div className="space-y-3">
+          {entry.beforeValue?.title !== entry.afterValue?.title && (
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-1.5">Title changed</div>
+              <div className="space-y-1.5">
+                <div className="flex items-start gap-2">
+                  <span className="text-xs text-red-500 font-medium mt-0.5 shrink-0">Before</span>
+                  <span className="text-sm text-gray-600 line-through">
+                    {entry.beforeValue?.title || "Untitled"}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-xs text-green-600 font-medium mt-0.5 shrink-0">After</span>
+                  <span className="text-sm text-gray-900 font-medium">
+                    {entry.afterValue?.title || "Untitled"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {entry.beforeValue?.content !== entry.afterValue?.content && (
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-1.5">Content changed</div>
+              <ContentBlock
+                label="Updated content"
+                content={stripHtml(entry.afterValue?.content || "")}
+                expanded={expandedContent}
+                onToggle={() => setExpandedContent(!expandedContent)}
+                variant="blue"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {entry.changeType === "reorder" && (
+        <p className="text-sm text-gray-600">
+          Section position was changed in the document.
+        </p>
+      )}
+    </div>
+  );
+};
+
+/**
+ * Collapsible content block with truncation.
+ */
+const ContentBlock: React.FC<{
+  label: string;
+  content: string;
+  expanded: boolean;
+  onToggle: () => void;
+  variant: "green" | "red" | "blue";
+}> = ({ label: _label, content, expanded, onToggle, variant }) => {
+  const MAX_LEN = 150;
+  const needsTruncation = content.length > MAX_LEN;
+  const displayText = expanded ? content : truncate(content, MAX_LEN);
+
+  const borderColors = {
+    green: "border-l-green-400",
+    red: "border-l-red-400",
+    blue: "border-l-blue-400",
+  };
+
+  return (
+    <div className={`border-l-2 ${borderColors[variant]} pl-3`}>
+      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+        {displayText}
+      </p>
+      {needsTruncation && (
+        <button
+          onClick={onToggle}
+          className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mt-1"
+        >
+          {expanded ? (
+            <>Show less <ChevronUp className="h-3 w-3" /></>
+          ) : (
+            <>Show more <ChevronDown className="h-3 w-3" /></>
+          )}
+        </button>
+      )}
+    </div>
   );
 };

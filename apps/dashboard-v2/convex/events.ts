@@ -20,7 +20,42 @@ export const listAll = query({
   args: { logtoId: v.string() },
   handler: async (ctx, args) => {
     await requireOfficerAccess(ctx, args.logtoId);
-    return await ctx.db.query("events").collect();
+    const events = await ctx.db.query("events").collect();
+
+    return await Promise.all(
+      events.map(async (event) => {
+        const attendees = await ctx.db
+          .query("attendees")
+          .withIndex("by_eventId", (q) => q.eq("eventId", event._id))
+          .collect();
+
+        const enrichedAttendees = await Promise.all(
+          attendees.map(async (attendee) => {
+            const user = await ctx.db
+              .query("users")
+              .withIndex("by_logtoId", (q) => q.eq("logtoId", attendee.userId))
+              .first();
+
+            return {
+              userId: attendee.userId,
+              name: user?.name || attendee.userId,
+              email: user?.email || "",
+              timeCheckedIn: attendee.timeCheckedIn,
+              food: attendee.food,
+              pointsEarned: attendee.pointsEarned,
+            };
+          })
+        );
+
+        return {
+          ...event,
+          attendeeCount: enrichedAttendees.length,
+          attendees: enrichedAttendees.sort(
+            (a, b) => b.timeCheckedIn - a.timeCheckedIn
+          ),
+        };
+      })
+    );
   },
 });
 

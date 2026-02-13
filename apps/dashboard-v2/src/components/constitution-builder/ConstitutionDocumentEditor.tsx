@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Heading from "@tiptap/extension-heading";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import {
   Bold,
   Italic,
@@ -24,24 +27,329 @@ import {
   Type,
   Minus,
 } from "lucide-react";
-import { ConstitutionSection } from "./types";
 import { Button } from "@/components/ui/button";
 import {
   sectionsToHtml,
-  htmlToSectionUpdates,
+  htmlToDocumentSections,
+  normalizeHtmlForComparison,
 } from "./utils/documentEditorUtils";
+import { toRomanNumeral } from "./utils/constitutionUtils";
+import type {
+  ConstitutionDocumentSaveResult,
+  ConstitutionDocumentSectionInput,
+  ConstitutionSection,
+  ConstitutionSectionType,
+} from "./types";
 
 interface ConstitutionDocumentEditorProps {
   sections: ConstitutionSection[];
-  onUpdateSection: (
-    id: string,
-    updates: Partial<ConstitutionSection>,
-  ) => void;
+  onSaveDocument: (
+    parsedSections: ConstitutionDocumentSectionInput[],
+  ) => Promise<ConstitutionDocumentSaveResult>;
+}
+
+/**
+ * ProseMirror plugin key for the section prefix decoration plugin.
+ */
+const sectionPrefixPluginKey = new PluginKey("sectionPrefixDecorations");
+
+/**
+ * Custom Heading extension that preserves data-section-id and data-section-type
+ * HTML attributes through the ProseMirror schema so they survive parse/serialize.
+ */
+const ConstitutionHeading = Heading.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      "data-section-id": {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.getAttribute("data-section-id"),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          if (!attributes["data-section-id"]) return {};
+          return { "data-section-id": attributes["data-section-id"] };
+        },
+      },
+      "data-section-type": {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.getAttribute("data-section-type"),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          if (!attributes["data-section-type"]) return {};
+          return { "data-section-type": attributes["data-section-type"] };
+        },
+      },
+    };
+  },
+});
+
+/**
+ * Maps an untyped heading level to a default section type.
+ */
+function headingLevelToType(level: number): ConstitutionSectionType {
+  if (level === 2) return "article";
+  if (level === 3) return "section";
+  return "subsection";
+}
+
+function normalizeStructuralTypeForLevel(
+  level: number,
+  type: ConstitutionSectionType,
+): ConstitutionSectionType {
+  if (type === "article" || type === "section" || type === "subsection") {
+    return headingLevelToType(level);
+  }
+
+  return type;
+}
+
+function isSectionType(value: string | null): value is ConstitutionSectionType {
+  return (
+    value === "preamble" ||
+    value === "article" ||
+    value === "section" ||
+    value === "subsection" ||
+    value === "amendment"
+  );
+}
+
+function toAlphabeticIndex(index: number): string {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let value = index;
+  let result = "";
+
+  while (value > 0) {
+    value -= 1;
+    result = letters[value % 26] + result;
+    value = Math.floor(value / 26);
+  }
+
+  return result || "A";
+}
+
+/**
+ * Builds a fresh DecorationSet with prefix widgets for all headings.
+ * Prefixes are derived from current editor order so numbering stays deterministic
+ * during in-session structural edits (insert/delete/reorder).
+ */
+function buildPrefixDecorations(doc: import("@tiptap/pm/model").Node, allSections: ConstitutionSection[]): DecorationSet {
+  const existingTypeById = new Map<string, ConstitutionSectionType>();
+  for (const s of allSections) {
+    existingTypeById.set(s.id, s.type);
+  }
+
+  const headings: Array<{
+    node: import("@tiptap/pm/model").Node;
+    pos: number;
+    sectionId: string | null;
+    sectionType: ConstitutionSectionType;
+    level: number;
+    key: string;
+  }> = [];
+
+  let generatedCount = 0;
+  doc.descendants((node, pos) => {
+    if (node.type.name === "heading") {
+      const rawSectionId = node.attrs["data-section-id"] || null;
+      const rawSectionType = node.attrs["data-section-type"] || null;
+      const typeCandidate = isSectionType(rawSectionType)
+        ? rawSectionType
+        : rawSectionId && existingTypeById.get(rawSectionId)
+          ? (existingTypeById.get(rawSectionId) as ConstitutionSectionType)
+          : headingLevelToType(node.attrs.level as number);
+      const inferredType = normalizeStructuralTypeForLevel(
+        node.attrs.level as number,
+        typeCandidate,
+      );
+
+      const headingKey = rawSectionId || `generated-${generatedCount++}`;
+      headings.push({
+        node,
+        pos,
+        sectionId: rawSectionId,
+        sectionType: inferredType,
+        level: node.attrs.level as number,
+        key: headingKey,
+      });
+    }
+  });
+
+  if (headings.length === 0) return DecorationSet.empty;
+
+  let articleCount = 0;
+  let amendmentCount = 0;
+  const sectionCountByArticle = new Map<string, number>();
+  const subsectionCountByParent = new Map<string, number>();
+  const sectionNumberByKey = new Map<string, number>();
+  const subsectionCodeByKey = new Map<string, string>();
+  const rootSectionNumberByKey = new Map<string, number>();
+  const stack: Array<{
+    key: string;
+    level: number;
+    sectionType: ConstitutionSectionType;
+  }> = [];
+
+  const decorations: Decoration[] = [];
+
+  for (const h of headings) {
+    while (stack.length > 0 && stack[stack.length - 1].level >= h.level) {
+      stack.pop();
+    }
+
+    let prefix = "";
+    if (h.sectionType === "preamble") {
+      prefix = "Preamble";
+    } else if (h.sectionType === "article") {
+      articleCount += 1;
+      prefix = `Article ${toRomanNumeral(articleCount)}`;
+    } else if (h.sectionType === "amendment") {
+      amendmentCount += 1;
+      prefix = `Amendment ${amendmentCount}`;
+    } else if (h.sectionType === "section") {
+      let articleKey = "__root_article__";
+      for (let i = stack.length - 1; i >= 0; i--) {
+        if (stack[i].sectionType === "article") {
+          articleKey = stack[i].key;
+          break;
+        }
+      }
+
+      const nextSection = (sectionCountByArticle.get(articleKey) ?? 0) + 1;
+      sectionCountByArticle.set(articleKey, nextSection);
+      sectionNumberByKey.set(h.key, nextSection);
+      prefix = `Section ${nextSection}`;
+    } else if (h.sectionType === "subsection") {
+      let parent: (typeof stack)[number] | undefined;
+      for (let i = stack.length - 1; i >= 0; i--) {
+        if (
+          stack[i].sectionType === "section" ||
+          stack[i].sectionType === "subsection"
+        ) {
+          parent = stack[i];
+          break;
+        }
+      }
+
+      const parentKey = parent?.key ?? "__root_subsection__";
+      const nextSubsectionIndex = (subsectionCountByParent.get(parentKey) ?? 0) + 1;
+      subsectionCountByParent.set(parentKey, nextSubsectionIndex);
+
+      let subsectionCode = `1.${nextSubsectionIndex}`;
+      if (parent?.sectionType === "section") {
+        const parentSectionNumber = sectionNumberByKey.get(parent.key) ?? 1;
+        rootSectionNumberByKey.set(h.key, parentSectionNumber);
+        subsectionCode = `${parentSectionNumber}.${nextSubsectionIndex}`;
+      } else if (parent?.sectionType === "subsection") {
+        const parentCode =
+          subsectionCodeByKey.get(parent.key) ??
+          `${rootSectionNumberByKey.get(parent.key) ?? 1}.1`;
+        rootSectionNumberByKey.set(
+          h.key,
+          rootSectionNumberByKey.get(parent.key) ?? 1,
+        );
+        subsectionCode = `${parentCode}${toAlphabeticIndex(nextSubsectionIndex)}`;
+      } else {
+        rootSectionNumberByKey.set(h.key, 1);
+      }
+
+      subsectionCodeByKey.set(h.key, subsectionCode);
+      prefix = `Subsection ${subsectionCode}`;
+    }
+
+    const hasTitle = h.node.textContent.trim().length > 0;
+    const label = h.sectionType === "preamble"
+      ? prefix
+      : hasTitle
+        ? `${prefix} — `
+        : prefix;
+
+    const widget = Decoration.widget(h.pos + 1, () => {
+      const span = document.createElement("span");
+      span.className = "constitution-section-prefix";
+      span.contentEditable = "false";
+      span.textContent = label;
+      return span;
+    }, { side: -1 });
+
+    decorations.push(widget);
+    stack.push({
+      key: h.key,
+      level: h.level,
+      sectionType: h.sectionType,
+    });
+  }
+
+  return DecorationSet.create(doc, decorations);
+}
+
+/**
+ * Creates a ProseMirror plugin that renders non-editable prefix decorations
+ * (e.g. "Article I — ") at the start of each heading that has a data-section-id.
+ *
+ * Uses state-based decoration management: decorations are mapped through
+ * transactions (cheap) and only fully rebuilt when a heading node is affected
+ * or when sections data changes externally.
+ */
+function createSectionPrefixPlugin(sectionsRef: React.RefObject<ConstitutionSection[]>) {
+  return new Plugin({
+    key: sectionPrefixPluginKey,
+    state: {
+      init(_, state) {
+        return buildPrefixDecorations(state.doc, sectionsRef.current ?? []);
+      },
+      apply(tr, oldDecorations, _oldState, newState) {
+        // If sections data changed externally, do a full rebuild
+        if (tr.getMeta(sectionPrefixPluginKey)) {
+          return buildPrefixDecorations(newState.doc, sectionsRef.current ?? []);
+        }
+
+        // If the document didn't change, keep existing decorations as-is
+        if (!tr.docChanged) {
+          return oldDecorations;
+        }
+
+        // Check if any heading was affected by the transaction.
+        // For simple text edits inside paragraphs, we can just map positions.
+        let headingAffected = false;
+        // Check if any step touches a heading node
+        for (let i = 0; i < tr.steps.length && !headingAffected; i++) {
+          const stepMap = tr.mapping.maps[i];
+          stepMap.forEach((oldStart, oldEnd) => {
+            if (headingAffected) return;
+            // Check nodes in the affected range of the NEW doc
+            const newStart = tr.mapping.map(oldStart, -1);
+            const newEnd = tr.mapping.map(oldEnd, 1);
+            newState.doc.nodesBetween(
+              Math.max(0, newStart),
+              Math.min(newState.doc.content.size, newEnd),
+              (node) => {
+                if (node.type.name === "heading") {
+                  headingAffected = true;
+                  return false;
+                }
+              },
+            );
+          });
+        }
+
+        if (headingAffected) {
+          // A heading was modified — full rebuild to get correct prefixes
+          return buildPrefixDecorations(newState.doc, sectionsRef.current ?? []);
+        }
+
+        // No heading affected — just map decoration positions through the change
+        return oldDecorations.map(tr.mapping, tr.doc);
+      },
+    },
+    props: {
+      decorations(state) {
+        return sectionPrefixPluginKey.getState(state) as DecorationSet;
+      },
+    },
+  });
 }
 
 const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
   sections,
-  onUpdateSection,
+  onSaveDocument,
 }) => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,21 +358,31 @@ const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
   const [, setEditorRevision] = useState(0);
   const initialHtmlRef = useRef<string>("");
   const sectionsRef = useRef(sections);
+  // Ref flag to suppress onUpdate when we programmatically set content
+  const suppressOnUpdateRef = useRef(false);
+  // Ref flag to block external sync during save (prevents stale overwrite)
+  const isSavingRef = useRef(false);
 
   // Keep sections ref up to date
   useEffect(() => {
     sectionsRef.current = sections;
   }, [sections]);
 
-  // Generate initial HTML from sections
-  const initialHtml = sectionsToHtml(sections, sections);
+  // Memoize the prefix plugin so it's created once with a stable ref
+  const prefixPlugin = useMemo(
+    () => createSectionPrefixPlugin(sectionsRef),
+    [],
+  );
+
+  const initialHtml = useMemo(() => sectionsToHtml(sections, sections), [sections]);
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: {
-          levels: [2, 3, 4, 5, 6],
-        },
+        heading: false,
+      }),
+      ConstitutionHeading.configure({
+        levels: [2, 3, 4, 5, 6],
       }),
       Underline,
       TextAlign.configure({
@@ -77,9 +395,9 @@ const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
     content: initialHtml,
     immediatelyRender: false,
     onUpdate: () => {
+      if (suppressOnUpdateRef.current) return;
       setHasUnsavedChanges(true);
       setSaveMessage("");
-      setEditorRevision((r) => r + 1);
     },
     onSelectionUpdate: () => {
       // Force re-render so toolbar active states update
@@ -87,19 +405,39 @@ const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
     },
   });
 
-  // Store initial HTML for reset
+  // Register the prefix decoration plugin once the editor is ready
   useEffect(() => {
-    initialHtmlRef.current = initialHtml;
-  }, [initialHtml]);
+    if (editor) {
+      editor.registerPlugin(prefixPlugin);
+      return () => {
+        editor.unregisterPlugin(sectionPrefixPluginKey);
+      };
+    }
+  }, [editor, prefixPlugin]);
 
-  // Update editor content when sections change externally (only if no unsaved changes)
+  // Force decoration refresh when sections change (e.g. reorder, add, delete)
   useEffect(() => {
-    if (editor && !hasUnsavedChanges) {
-      const newHtml = sectionsToHtml(sections, sections);
-      if (newHtml !== initialHtmlRef.current) {
-        editor.commands.setContent(newHtml);
-        initialHtmlRef.current = newHtml;
+    if (editor) {
+      // Dispatch a no-op transaction to trigger decoration recalculation
+      const { tr } = editor.state;
+      editor.view.dispatch(tr.setMeta(sectionPrefixPluginKey, { sectionsUpdated: true }));
+    }
+  }, [sections, editor]);
+
+  // Update editor content when sections change externally (only if no unsaved changes and not saving)
+  useEffect(() => {
+    if (editor && !hasUnsavedChanges && !isSavingRef.current) {
+      const serverHtml = sectionsToHtml(sections, sections);
+      const editorHtml = editor.getHTML();
+      if (
+        normalizeHtmlForComparison(serverHtml) !==
+        normalizeHtmlForComparison(editorHtml)
+      ) {
+        suppressOnUpdateRef.current = true;
+        editor.commands.setContent(serverHtml);
+        suppressOnUpdateRef.current = false;
       }
+      initialHtmlRef.current = serverHtml;
     }
   }, [sections, editor, hasUnsavedChanges]);
 
@@ -107,36 +445,37 @@ const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
     if (!editor) return;
 
     setIsSaving(true);
+    isSavingRef.current = true;
     setSaveMessage("");
 
-    try {
-      const currentHtml = editor.getHTML();
-      const updates = htmlToSectionUpdates(currentHtml, sectionsRef.current);
+    const currentHtml = editor.getHTML();
 
-      if (updates.length === 0) {
+    try {
+      const parsedSections = htmlToDocumentSections(currentHtml, sectionsRef.current);
+      const result = await onSaveDocument(parsedSections);
+      const changedCount =
+        result.created + result.updated + result.deleted + result.reordered;
+
+      if (changedCount === 0) {
         setSaveMessage("No changes detected");
         setHasUnsavedChanges(false);
-        setIsSaving(false);
+        initialHtmlRef.current = currentHtml;
         return;
       }
 
-      // Apply all updates
-      for (const { sectionId, updates: sectionUpdates } of updates) {
-        await onUpdateSection(sectionId, sectionUpdates);
-      }
-
-      setSaveMessage(`Saved ${updates.length} section${updates.length > 1 ? "s" : ""}`);
       setHasUnsavedChanges(false);
-
-      // Update the initial HTML ref to current state
       initialHtmlRef.current = currentHtml;
+      setSaveMessage(
+        `Saved ${changedCount} change${changedCount > 1 ? "s" : ""} (${result.created} created, ${result.updated} updated, ${result.deleted} deleted, ${result.reordered} reordered)`,
+      );
     } catch (error) {
       console.error("Failed to save:", error);
       setSaveMessage("Failed to save changes");
     } finally {
       setIsSaving(false);
+      isSavingRef.current = false;
     }
-  }, [editor, onUpdateSection]);
+  }, [editor, onSaveDocument]);
 
   // Ctrl/Cmd+S keyboard shortcut to save
   useEffect(() => {
@@ -155,7 +494,9 @@ const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
   const handleReset = useCallback(() => {
     if (!editor) return;
     const freshHtml = sectionsToHtml(sectionsRef.current, sectionsRef.current);
+    suppressOnUpdateRef.current = true;
     editor.commands.setContent(freshHtml);
+    suppressOnUpdateRef.current = false;
     initialHtmlRef.current = freshHtml;
     setHasUnsavedChanges(false);
     setSaveMessage("");

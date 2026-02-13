@@ -34,6 +34,7 @@ import { useState } from "react";
 import { type ReactElement } from "react";
 import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
+import { sendNotification } from "@/lib/send-notification";
 import { cn } from "@/lib/utils";
 import BudgetManagementModal from "@/components/fund-requests/BudgetManagementModal";
 
@@ -183,6 +184,21 @@ function FundRequestDetailView({
           id: request._id as any,
           status: statusToSet as any,
           reviewNotes: notesChanged ? reviewNotes : undefined,
+        });
+      }
+
+      // Send email notification for status changes
+      if (statusChanged) {
+        sendNotification(logtoId, "fund_request_status_changed", {
+          requestId: request._id,
+          title: request.title,
+          amount: request.amount,
+          newStatus: statusToSet,
+          previousStatus: request.status,
+          reviewNotes: reviewNotes || undefined,
+          selectedFundingSource: selectedFundSource,
+          submitterName: request.submittedByName,
+          submitterEmail: request.submittedByEmail,
         });
       }
 

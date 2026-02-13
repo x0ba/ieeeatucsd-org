@@ -145,6 +145,108 @@ export const getSubsectionDisplayTitle = (
     : `Subsection ${subsectionNumber}`;
 };
 
+/**
+ * Returns just the auto-generated prefix for a section (e.g., "Article I", "Section 1",
+ * "Subsection 1.2") without the user's title. Used by the document editor to render
+ * non-editable prefix decorations on headings.
+ */
+export const getSectionPrefix = (
+  section: ConstitutionSection,
+  allSections: ConstitutionSection[],
+): string => {
+  switch (section.type) {
+    case "preamble":
+      return "Preamble";
+    case "article": {
+      const articles = allSections
+        .filter((s) => s.type === "article")
+        .sort((a, b) => a.order - b.order);
+      const articleIndex = articles.findIndex((a) => a.id === section.id) + 1;
+      return `Article ${toRomanNumeral(articleIndex)}`;
+    }
+    case "section": {
+      const siblingSections = allSections
+        .filter(
+          (s) => s.parentId === section.parentId && s.type === "section",
+        )
+        .sort((a, b) => a.order - b.order);
+      const sectionIndex =
+        siblingSections.findIndex((s) => s.id === section.id) + 1;
+      return `Section ${sectionIndex}`;
+    }
+    case "subsection":
+      return getSubsectionPrefix(section, allSections);
+    case "amendment": {
+      const amendments = allSections
+        .filter((s) => s.type === "amendment")
+        .sort((a, b) => a.order - b.order);
+      const amendmentIndex =
+        amendments.findIndex((a) => a.id === section.id) + 1;
+      return `Amendment ${amendmentIndex}`;
+    }
+    default:
+      return "";
+  }
+};
+
+const getSubsectionPrefix = (
+  section: ConstitutionSection,
+  allSections: ConstitutionSection[],
+): string => {
+  const findRootSection = (
+    currentSection: ConstitutionSection,
+  ): ConstitutionSection | null => {
+    if (currentSection.type === "section") {
+      return currentSection;
+    }
+    if (currentSection.parentId) {
+      const parent = allSections.find((s) => s.id === currentSection.parentId);
+      if (parent) {
+        return findRootSection(parent);
+      }
+    }
+    return null;
+  };
+
+  const rootSection = findRootSection(section);
+  if (!rootSection) return "Subsection";
+
+  const articleSections = allSections
+    .filter(
+      (s) =>
+        s.parentId === rootSection.parentId && s.type === "section",
+    )
+    .sort((a, b) => a.order - b.order);
+  const sectionNumber =
+    articleSections.findIndex((s) => s.id === rootSection.id) + 1;
+
+  const buildHierarchy = (currentSection: ConstitutionSection): string => {
+    const parent = allSections.find((s) => s.id === currentSection.parentId);
+    if (!parent) return "";
+
+    const siblings = allSections
+      .filter(
+        (s) =>
+          s.parentId === currentSection.parentId && s.type === "subsection",
+      )
+      .sort((a, b) => a.order - b.order);
+    const index = siblings.findIndex((s) => s.id === currentSection.id) + 1;
+
+    if (parent.type === "section") {
+      return `${sectionNumber}.${index}`;
+    } else if (parent.type === "subsection") {
+      const parentNumber = buildHierarchy(parent);
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      return `${parentNumber}${letters[index - 1] || index}`;
+    }
+
+    return "";
+  };
+
+  const subsectionNumber = buildHierarchy(section);
+  return `Subsection ${subsectionNumber}`;
+};
+
 export const getSubsectionIndentLevel = (
   section: ConstitutionSection,
   allSections: ConstitutionSection[],

@@ -40,6 +40,7 @@ export interface ConstitutionAuditEntry {
   sectionId?: string;
   changeType: "create" | "update" | "delete" | "reorder";
   changeDescription: string;
+  changeSummary?: string;
   beforeValue?: Partial<ConstitutionSection>;
   afterValue?: Partial<ConstitutionSection>;
   userId: string;
@@ -47,6 +48,23 @@ export interface ConstitutionAuditEntry {
   timestamp: number;
   ipAddress?: string;
   userAgent?: string;
+}
+
+export interface ConstitutionDocumentSectionInput {
+  id: string;
+  type: ConstitutionSectionType;
+  title: string;
+  content: string;
+  order: number;
+  parentId?: string;
+}
+
+export interface ConstitutionDocumentSaveResult {
+  created: number;
+  updated: number;
+  deleted: number;
+  reordered: number;
+  total: number;
 }
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";

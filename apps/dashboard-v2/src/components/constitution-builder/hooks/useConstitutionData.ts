@@ -1,15 +1,18 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import {
+  ConstitutionDocumentSaveResult,
+  ConstitutionDocumentSectionInput,
   ConstitutionSection,
   SaveStatus,
 } from "../types";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export function useConstitutionData() {
   const { isAuthenticated, logtoId } = useAuth();
   const [initialized, setInitialized] = useState(false);
+  const [ensuringDefault, setEnsuringDefault] = useState(false);
 
   // Get or ensure constitution exists
   const constitution = useQuery(
@@ -29,16 +32,51 @@ export function useConstitutionData() {
   const updateSection = useMutation(api.constitutions.updateSection);
   const deleteSection = useMutation(api.constitutions.deleteSection);
   const reorderSection = useMutation(api.constitutions.reorderSection);
+  const syncDocumentSections = useMutation(
+    api.constitutions.syncDocumentSections,
+  );
 
-  const isLoading = constitution === undefined || (!initialized && isAuthenticated && logtoId);
+  const constitutionLoading =
+    Boolean(isAuthenticated && logtoId) && constitution === undefined;
+  const sectionsLoading = Boolean(constitution) && sections === undefined;
+  const needsInitialization = Boolean(
+    isAuthenticated && logtoId && !initialized,
+  );
+  const isLoading =
+    constitutionLoading ||
+    sectionsLoading ||
+    ensuringDefault ||
+    needsInitialization ||
+    constitution === null;
   const saveStatus: SaveStatus = isLoading ? "idle" : "saved";
 
   // Auto-initialize constitution when authenticated
   useEffect(() => {
-    if (isAuthenticated && logtoId && !initialized && constitution === undefined) {
-      ensureConstitution({ logtoId }).then(() => setInitialized(true));
+    if (!isAuthenticated || !logtoId) {
+      setInitialized(false);
+      setEnsuringDefault(false);
+      return;
     }
-  }, [isAuthenticated, logtoId, initialized, constitution, ensureConstitution]);
+
+    if (constitution && !initialized) {
+      setInitialized(true);
+      return;
+    }
+
+    if (constitution === null && !ensuringDefault) {
+      setEnsuringDefault(true);
+      ensureConstitution({ logtoId })
+        .then(() => setInitialized(true))
+        .finally(() => setEnsuringDefault(false));
+    }
+  }, [
+    isAuthenticated,
+    logtoId,
+    initialized,
+    constitution,
+    ensureConstitution,
+    ensuringDefault,
+  ]);
 
   const handleAddSection = async (
     type: ConstitutionSection["type"],
@@ -48,10 +86,19 @@ export function useConstitutionData() {
   ) => {
     if (!constitution || !logtoId) return;
 
+    // Validate parent requirements
+    if (type === "section" && !parentId) return;
+    if (type === "subsection" && !parentId) return;
+
     const existingSections = sections || [];
+
+    // Compute order scoped to siblings (same parentId), not global
+    const siblings = existingSections.filter((s) =>
+      parentId ? s.parentId === parentId : !s.parentId,
+    );
     const newOrder =
-      existingSections.length > 0
-        ? Math.max(...existingSections.map((s) => s.order)) + 1
+      siblings.length > 0
+        ? Math.max(...siblings.map((s) => s.order)) + 1
         : 1;
 
     let articleNumber: number | undefined;
@@ -135,11 +182,40 @@ export function useConstitutionData() {
     });
   };
 
-  const initializeConstitution = async () => {
-    if (!isAuthenticated || !logtoId) return;
-    await ensureConstitution({ logtoId });
-    setInitialized(true);
-  };
+  const initializeConstitution = useCallback(async () => {
+    if (!isAuthenticated || !logtoId || ensuringDefault) return;
+    if (constitution) {
+      setInitialized(true);
+      return;
+    }
+    setEnsuringDefault(true);
+    try {
+      await ensureConstitution({ logtoId });
+      setInitialized(true);
+    } finally {
+      setEnsuringDefault(false);
+    }
+  }, [isAuthenticated, logtoId, ensuringDefault, constitution, ensureConstitution]);
+
+  const handleSaveDocumentSections = useCallback(async (
+    parsedSections: ConstitutionDocumentSectionInput[],
+  ): Promise<ConstitutionDocumentSaveResult> => {
+    if (!constitution || !logtoId) {
+      return {
+        created: 0,
+        updated: 0,
+        deleted: 0,
+        reordered: 0,
+        total: 0,
+      };
+    }
+
+    return await syncDocumentSections({
+      logtoId,
+      constitutionId: constitution._id,
+      sections: parsedSections,
+    });
+  }, [constitution, logtoId, syncDocumentSections]);
 
   return {
     constitution,
@@ -150,6 +226,7 @@ export function useConstitutionData() {
     updateSection: handleUpdateSection,
     deleteSection: handleDeleteSection,
     reorderSection: handleReorderSection,
+    saveDocumentSections: handleSaveDocumentSections,
     initializeConstitution,
     constitutionId: constitution?._id,
   };

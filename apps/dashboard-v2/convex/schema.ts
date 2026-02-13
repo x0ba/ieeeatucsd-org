@@ -429,6 +429,7 @@ export default defineSchema({
           v.literal("reorder"),
         ),
         changeDescription: v.string(),
+        changeSummary: v.optional(v.string()),
         beforeValue: v.optional(v.any()),
         afterValue: v.optional(v.any()),
         userId: v.string(),

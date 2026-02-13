@@ -1,35 +1,24 @@
-import { useState, useEffect } from "react";
-import { FileText, Check, Edit3, Eye, History, Layers, FileEdit } from "lucide-react";
-import { SaveStatus, ViewMode, EditorMode } from "./types";
+import { useState, useEffect, useCallback } from "react";
+import { FileText, Check, Edit3, ExternalLink, History } from "lucide-react";
+import type { SaveStatus } from "./types";
 import { useConstitutionData } from "./hooks/useConstitutionData";
-import ConstitutionSidebar from "./ConstitutionSidebar";
-import ConstitutionEditor from "./ConstitutionEditor";
 import ConstitutionDocumentEditor from "./ConstitutionDocumentEditor";
-import ConstitutionPreview from "./ConstitutionPreview";
 import { ConstitutionAuditLog } from "./ConstitutionAuditLog";
 import ConstitutionSearch from "./ConstitutionSearch";
 import { Button } from "@/components/ui/button";
-import { exportConstitutionToPdf } from "./utils/pdfExport";
+
+type BuilderView = "editor" | "audit";
 
 const ConstitutionBuilderContent = () => {
   const {
-    constitution,
     sections,
     isLoading,
-    addSection,
-    updateSection,
-    deleteSection,
+    saveDocumentSections,
     initializeConstitution,
     constitutionId,
   } = useConstitutionData();
 
-  const [currentView, setCurrentView] = useState<ViewMode>("editor");
-  const [editorMode, setEditorMode] = useState<EditorMode>("section");
-  const [selectedSection, setSelectedSection] = useState<string | null>(null);
-  const [editingSection, setEditingSection] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
-  const [highlightedSectionId, setHighlightedSectionId] = useState<string>("");
+  const [currentView, setCurrentView] = useState<BuilderView>("editor");
 
   const saveStatus: SaveStatus = isLoading ? "idle" : "saved";
 
@@ -37,98 +26,17 @@ const ConstitutionBuilderContent = () => {
     initializeConstitution();
   }, [initializeConstitution]);
 
-  const toggleSectionExpansion = (sectionId: string) => {
-    const newExpanded = new Set(expandedSections);
-    if (newExpanded.has(sectionId)) {
-      newExpanded.delete(sectionId);
-    } else {
-      newExpanded.add(sectionId);
-    }
-    setExpandedSections(newExpanded);
-  };
-
-  const handleDeleteSection = async (sectionId: string) => {
-    await deleteSection(sectionId);
-
-    if (selectedSection === sectionId) {
-      setSelectedSection(null);
-    }
-    if (editingSection === sectionId) {
-      setEditingSection(null);
-    }
-  };
-
-  const handleSelectSection = (sectionId: string, pageNumber?: number) => {
-    setSelectedSection(sectionId);
-
-    if (pageNumber && currentView === "preview") {
-      // If we're in preview mode and have a page number, navigate to that page
-      setCurrentPage(pageNumber);
-      // Highlight the selected section temporarily
-      setHighlightedSectionId(sectionId);
-      setTimeout(() => setHighlightedSectionId(""), 3000); // Clear after 3 seconds
-    } else {
-      // Otherwise, switch to editor view
-      setCurrentView("editor");
-
-      // Auto-expand parent sections in sidebar
-      const section = sections.find((s) => s.id === sectionId);
-      if (section) {
-        const newExpandedSections = new Set(expandedSections);
-
-        let currentParentId = section.parentId;
-        while (currentParentId) {
-          newExpandedSections.add(currentParentId);
-          const parentSection = sections.find((s) => s.id === currentParentId);
-          currentParentId = parentSection?.parentId;
-        }
-
-        setExpandedSections(newExpandedSections);
-      }
-    }
-  };
-
-  const handlePrint = () => {
-    exportConstitutionToPdf(constitution || null, sections);
-  };
+  const handleOpenPreview = useCallback(() => {
+    window.open("/constitution-preview", "_blank");
+  }, []);
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-gray-50">
-        <div className="w-80 bg-white border-r border-gray-200 p-6">
+      <div className="w-full max-w-none p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
           <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="space-y-2">
-                <div className="h-6 w-full bg-gray-200 rounded animate-pulse" />
-                <div className="ml-4 space-y-1">
-                  <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col">
-          <div className="bg-white border-b border-gray-200 p-6">
-            <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2" />
-            <div className="h-4 w-96 bg-gray-200 rounded animate-pulse" />
-          </div>
-
-          <div className="flex-1 p-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-6 h-full">
-              <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-4" />
-              <div className="space-y-4">
-                <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-5/6 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-4/5 bg-gray-200 rounded animate-pulse" />
-                <div className="h-32 w-full bg-gray-200 rounded animate-pulse" />
-                <div className="flex space-x-2">
-                  <div className="h-10 w-20 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-10 w-20 bg-gray-200 rounded animate-pulse" />
-                </div>
-              </div>
-            </div>
+            <div className="h-10 bg-gray-200 rounded animate-pulse" />
+            <div className="h-64 bg-gray-100 rounded animate-pulse" />
           </div>
         </div>
       </div>
@@ -152,7 +60,9 @@ const ConstitutionBuilderContent = () => {
               <div className="max-w-md">
                 <ConstitutionSearch
                   sections={sections}
-                  onSelectSection={(id) => handleSelectSection(id)}
+                  onSelectSection={() => {
+                    setCurrentView("editor");
+                  }}
                 />
               </div>
             </div>
@@ -173,6 +83,15 @@ const ConstitutionBuilderContent = () => {
                 )}
               </div>
 
+              <Button
+                onClick={handleOpenPreview}
+                variant="outline"
+                className="inline-flex items-center gap-2 text-sm font-medium"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Live Preview
+              </Button>
+
               <div className="flex bg-gray-100 rounded-xl p-1">
                 <Button
                   onClick={() => setCurrentView("editor")}
@@ -185,18 +104,6 @@ const ConstitutionBuilderContent = () => {
                 >
                   <Edit3 className="h-4 w-4 inline mr-2" />
                   Editor
-                </Button>
-                <Button
-                  onClick={() => setCurrentView("preview")}
-                  className={`px-3 py-2 rounded-md text-sm font-medium min-h-[44px] ${
-                    currentView === "preview"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                  variant="ghost"
-                >
-                  <Eye className="h-4 w-4 inline mr-2" />
-                  Preview
                 </Button>
                 <Button
                   onClick={() => setCurrentView("audit")}
@@ -219,92 +126,13 @@ const ConstitutionBuilderContent = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto">
         {currentView === "editor" ? (
-          <>
-            {/* Editor Mode Toggle */}
-            <div className="mb-4 flex items-center gap-2">
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setEditorMode("section")}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    editorMode === "section"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  <Layers className="h-3.5 w-3.5" />
-                  Section Editor
-                </button>
-                <button
-                  onClick={() => setEditorMode("document")}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    editorMode === "document"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  <FileEdit className="h-3.5 w-3.5" />
-                  Document Editor
-                </button>
-              </div>
-              <span className="text-xs text-gray-500">
-                {editorMode === "section"
-                  ? "Edit individual sections from the sidebar"
-                  : "Edit the entire constitution as a rich text document"}
-              </span>
-            </div>
-
-            {editorMode === "section" ? (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-                <div className="lg:col-span-3">
-                  <ConstitutionSidebar
-                    sections={sections}
-                    selectedSection={selectedSection}
-                    expandedSections={expandedSections}
-                    onSelectSection={setSelectedSection}
-                    onToggleExpand={toggleSectionExpansion}
-                    onAddSection={addSection}
-                    updateSection={updateSection}
-                  />
-                </div>
-
-                <div className="lg:col-span-9">
-                  <ConstitutionEditor
-                    sections={sections}
-                    selectedSection={selectedSection}
-                    editingSection={editingSection}
-                    onSelectSection={setSelectedSection}
-                    onEditSection={setEditingSection}
-                    onUpdateSection={updateSection}
-                    onDeleteSection={handleDeleteSection}
-                    onAddSection={addSection}
-                  />
-                </div>
-              </div>
-            ) : (
-              <ConstitutionDocumentEditor
-                sections={sections}
-                onUpdateSection={updateSection}
-              />
-            )}
-          </>
+          <ConstitutionDocumentEditor
+            sections={sections}
+            onSaveDocument={saveDocumentSections}
+          />
         ) : (
-          <div className="w-full">
-            {currentView === "preview" ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 h-[calc(100vh-200px)] overflow-auto">
-                <ConstitutionPreview
-                  constitution={constitution || null}
-                  sections={sections}
-                  onPrint={handlePrint}
-                  currentPage={currentPage}
-                  onPageChange={setCurrentPage}
-                  highlightedSectionId={highlightedSectionId}
-                />
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
-                <ConstitutionAuditLog constitutionId={constitutionId || ""} />
-              </div>
-            )}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
+            <ConstitutionAuditLog constitutionId={constitutionId || ""} />
           </div>
         )}
       </div>

@@ -22,6 +22,7 @@ import type * as fundDeposits from "../fundDeposits.js";
 import type * as fundRequests from "../fundRequests.js";
 import type * as links from "../links.js";
 import type * as logs from "../logs.js";
+import type * as migrations from "../migrations.js";
 import type * as notifications from "../notifications.js";
 import type * as officerInvitations from "../officerInvitations.js";
 import type * as organizationSettings from "../organizationSettings.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   fundRequests: typeof fundRequests;
   links: typeof links;
   logs: typeof logs;
+  migrations: typeof migrations;
   notifications: typeof notifications;
   officerInvitations: typeof officerInvitations;
   organizationSettings: typeof organizationSettings;

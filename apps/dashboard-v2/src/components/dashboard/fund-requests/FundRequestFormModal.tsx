@@ -15,6 +15,8 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { useAuth } from "@/hooks/useAuth";
+import { sendNotification } from "@/lib/send-notification";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -82,6 +84,7 @@ export function FundRequestFormModal({
 	editRequestId,
 	className,
 }: FundRequestFormModalProps) {
+	const { user: authUser } = useAuth();
 	const createFundRequest = useMutation(api.fundRequests.create);
 	const updateFundRequest = useMutation(api.fundRequests.update);
 	const [currentStep, setCurrentStep] = useState(1);
@@ -282,7 +285,7 @@ export function FundRequestFormModal({
 					vendorLinks: cleanedVendorLinks.length > 0 ? cleanedVendorLinks : undefined,
 				});
 			} else {
-				await createFundRequest({
+				const newId = await createFundRequest({
 					logtoId,
 					title,
 					purpose,
@@ -291,6 +294,21 @@ export function FundRequestFormModal({
 					amount: parsedAmount,
 					vendorLinks: cleanedVendorLinks.length > 0 ? cleanedVendorLinks : undefined,
 				});
+
+				// Fire-and-forget email notification
+				if (logtoId) {
+					sendNotification(logtoId, "fund_request_submitted", {
+						requestId: newId,
+						title,
+						amount: parsedAmount,
+						category,
+						department,
+						purpose,
+						vendorLinksCount: cleanedVendorLinks.length || undefined,
+						submitterName: authUser?.name || "Unknown",
+						submitterEmail: authUser?.email || "",
+					});
+				}
 			}
 
 			onSuccess();
