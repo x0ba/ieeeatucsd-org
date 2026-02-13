@@ -1,9 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { resetEmailPassword } from "@/server/mxroute";
+import { requireApiAuth } from "@/server/auth";
 
 async function handle({ request }: { request: Request }) {
   try {
-    const { email, password } = await request.json();
+    const authResult = await requireApiAuth(request);
+    if (authResult instanceof Response) return authResult;
+    const { body } = authResult;
+    const { email, password } = body as { email?: string; password?: string };
 
     if (!email || !password) {
       return new Response(

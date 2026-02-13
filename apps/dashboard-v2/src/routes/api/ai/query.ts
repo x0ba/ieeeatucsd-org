@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { chatWithAI, chatWithAIStream, OfficerAccessError } from "@/server/ai";
+import { validateLogtoId } from "@/server/auth";
 
 async function handle({ request }: { request: Request }) {
 	try {
@@ -14,6 +15,14 @@ async function handle({ request }: { request: Request }) {
 
 		if (!logtoId) {
 			return new Response(JSON.stringify({ error: "Missing logtoId" }), {
+				status: 401,
+				headers: { "Content-Type": "application/json" },
+			});
+		}
+
+		const user = await validateLogtoId(logtoId);
+		if (!user) {
+			return new Response(JSON.stringify({ error: "Authentication failed: invalid logtoId" }), {
 				status: 401,
 				headers: { "Content-Type": "application/json" },
 			});

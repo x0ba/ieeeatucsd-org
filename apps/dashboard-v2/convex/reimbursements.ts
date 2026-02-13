@@ -26,8 +26,9 @@ export const listAll = query({
 });
 
 export const get = query({
-  args: { id: v.id("reimbursements") },
+  args: { logtoId: v.string(), id: v.id("reimbursements") },
   handler: async (ctx, args) => {
+    await requireCurrentUser(ctx, args.logtoId);
     return await ctx.db.get(args.id);
   },
 });

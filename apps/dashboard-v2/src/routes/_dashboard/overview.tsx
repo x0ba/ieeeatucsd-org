@@ -90,9 +90,9 @@ function ChartTooltip({ active, payload, label }: Record<string, unknown>) {
 
 /* ─── Activity Icon Map ─── */
 const activityConfig: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
-  event: { icon: Calendar, color: "text-blue-600 dark:text-blue-400" },
-  reimbursement: { icon: CreditCard, color: "text-emerald-600 dark:text-emerald-400" },
-  fund_deposit: { icon: DollarSign, color: "text-violet-600 dark:text-violet-400" },
+  event: { icon: Calendar, color: "text-blue-600" },
+  reimbursement: { icon: CreditCard, color: "text-emerald-600" },
+  fund_deposit: { icon: DollarSign, color: "text-violet-600" },
 };
 
 /* ─── Main Page ─── */
@@ -189,8 +189,8 @@ function OverviewPage() {
           </div>
           {chartData.length >= 2 ? (
             <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="pointsFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#1e40af" stopOpacity={0.25} />
@@ -289,12 +289,12 @@ function OverviewPage() {
 
       {/* ─── Profile CTA ─── */}
       {!user.signedUp && (
-        <div className="rounded-xl border border-amber-200/50 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-900/30 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="rounded-xl border border-amber-200/50 bg-amber-50/50 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-0.5">
-            <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+            <h3 className="text-sm font-semibold text-amber-900">
               Complete Your Profile
             </h3>
-            <p className="text-xs text-amber-800/80 dark:text-amber-300/80 max-w-2xl">
+            <p className="text-xs text-amber-800/80 max-w-2xl">
               Finish setting up your account to access all features and start earning points.
             </p>
           </div>

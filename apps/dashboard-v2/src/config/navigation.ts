@@ -154,6 +154,28 @@ export const navigationCategories: NavigationCategory[] = [
   },
 ];
 
+export const PATH_LABELS: Record<string, string> = {
+  "/overview": "Overview",
+  "/events": "Events",
+  "/reimbursement": "Reimbursement",
+  "/leaderboard": "Leaderboard",
+  "/links": "Links",
+  "/manage-events": "Manage Events",
+  "/manage-reimbursements": "Manage Reimbursements",
+  "/fund-requests": "Fund Requests",
+  "/manage-fund-requests": "Manage Fund Requests",
+  "/slack-access": "Slack Access",
+  "/manage-users": "Manage Users",
+  "/manage-sponsors": "Manage Sponsors",
+  "/onboarding": "Onboarding",
+  "/constitution-builder": "Constitution Builder",
+  "/executive-analytics": "Executive Analytics",
+  "/sponsors/resume-database": "Resume Database",
+  "/sponsors/information": "Sponsor Information",
+  "/settings": "Settings",
+  "/get-started": "Get Started",
+};
+
 export const LEGAL_VERSIONS = {
   TOS_VERSION: "1.2",
   TOS_EFFECTIVE_DATE: "2024-12-29",

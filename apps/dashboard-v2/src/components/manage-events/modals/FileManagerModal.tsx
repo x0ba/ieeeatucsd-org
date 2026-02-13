@@ -93,15 +93,15 @@ export function FileManagerModal({
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
               isDragging
-                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300 hover:border-gray-400"
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
             <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <p className="text-sm text-gray-600 mb-2">
               Drag and drop files here, or{" "}
               <label className="text-blue-600 hover:text-blue-700 cursor-pointer font-medium">
                 browse
@@ -119,9 +119,9 @@ export function FileManagerModal({
           </div>
 
           {selectedFiles && selectedFiles.length > 0 && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+            <div className="bg-blue-50 rounded-lg p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-blue-900 dark:text-blue-100">
+                <span className="text-sm text-blue-900">
                   {selectedFiles.length} file{selectedFiles.length !== 1 ? "s" : ""}{" "}
                   selected
                 </span>
@@ -144,7 +144,7 @@ export function FileManagerModal({
                 {Array.from(selectedFiles).map((file, idx) => (
                   <div
                     key={idx}
-                    className="text-xs text-blue-700 dark:text-blue-300 flex items-center gap-2"
+                    className="text-xs text-blue-700 flex items-center gap-2"
                   >
                     <File className="h-3 w-3" />
                     {file.name} ({formatFileSize(file.size)})
@@ -155,7 +155,7 @@ export function FileManagerModal({
           )}
 
           <div className="border rounded-lg overflow-hidden">
-            <div className="bg-gray-50 dark:bg-gray-800/50 px-4 py-2 border-b text-xs font-medium text-gray-500 uppercase">
+            <div className="bg-gray-50 px-4 py-2 border-b text-xs font-medium text-gray-500 uppercase">
               {files.length} file{files.length !== 1 ? "s" : ""}
             </div>
 
@@ -172,12 +172,12 @@ export function FileManagerModal({
                 {files.map((file) => (
                   <div
                     key={file._id}
-                    className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    className="flex items-center justify-between p-4 hover:bg-gray-50"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <File className="h-8 w-8 text-gray-400 flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <p className="text-sm font-medium text-gray-900 truncate">
                           {file.name}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-gray-500">

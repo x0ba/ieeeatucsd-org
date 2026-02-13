@@ -3,6 +3,7 @@ import { Mail, AlertCircle, RefreshCw, Paperclip, Download, Image, FileVideo, Fi
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -114,7 +115,10 @@ export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
 
   return (
     <Dialog open={!!email} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent aria-describedby="email-modal-desc" className="max-w-[90vw] w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogDescription id="email-modal-desc" className="sr-only">
+          Full email content viewer
+        </DialogDescription>
         <style>{`
           .email-content img {
             max-width: 100%;
@@ -178,11 +182,11 @@ export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
 
         <DialogHeader className="border-b border-border pb-4">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-xl">
-              <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="p-2 bg-blue-100 rounded-xl">
+              <Mail className="w-5 h-5 text-blue-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+              <DialogTitle className="text-lg font-semibold text-gray-900 truncate">
                 {email.subject.length > 50 ? `${email.subject.substring(0, 50)}...` : email.subject}
               </DialogTitle>
             </div>
@@ -194,22 +198,22 @@ export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
             <div className="flex flex-col items-center justify-center py-16 px-6 h-full">
               <RefreshCw className="w-8 h-8 text-ieee-blue animate-spin mb-4" />
               <div className="text-center">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
                   Loading Email Content
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">Please wait while we fetch your email...</p>
+                <p className="text-gray-600">Please wait while we fetch your email...</p>
               </div>
             </div>
           ) : error ? (
             <div className="p-8 h-full flex items-center justify-center">
               <div className="max-w-md mx-auto text-center">
-                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-red-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   Unable to Load Email
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
+                <p className="text-gray-600 mb-6">{error}</p>
                 <Button onClick={() => window.location.reload()}>
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Try Again
@@ -219,20 +223,20 @@ export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
           ) : emailContent ? (
             <div className="p-6">
               {/* Email Headers */}
-              <div className="mb-6 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900/20 rounded-xl p-4 border border-border">
+              <div className="mb-6 bg-muted/40 rounded-xl p-4 border border-border">
                 <div className="flex flex-col space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 leading-tight mb-1">
+                      <h3 className="text-lg font-semibold text-gray-900 leading-tight mb-1">
                         {emailContent.subject}
                       </h3>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
                         <span className="font-medium">From:</span>
-                        <span className="text-gray-800 dark:text-gray-200">{emailContent.from}</span>
+                        <span className="text-gray-800">{emailContent.from}</span>
                       </div>
                     </div>
-                    <div className="flex-shrink-0">
-                      <div className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-3 py-1 rounded-full border border-border">
+                    <div className="shrink-0">
+                      <div className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full border border-border">
                         {new Date(emailContent.date).toLocaleDateString("en-US", {
                           weekday: "short",
                           year: "numeric",
@@ -244,9 +248,9 @@ export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
                     <span className="font-medium">To:</span>
-                    <span className="text-gray-800 dark:text-gray-200">{emailContent.to}</span>
+                    <span className="text-gray-800">{emailContent.to}</span>
                   </div>
                 </div>
               </div>
@@ -255,10 +259,10 @@ export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
               {emailContent.attachments && emailContent.attachments.length > 0 && (
                 <div className="mb-6">
                   <div className="flex items-center space-x-2 mb-4">
-                    <div className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-xl">
-                      <Paperclip className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <div className="p-1.5 bg-blue-100 rounded-xl">
+                      <Paperclip className="w-4 h-4 text-blue-600" />
                     </div>
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    <h4 className="text-sm font-semibold text-gray-900">
                       {emailContent.attachments.length} Attachment{emailContent.attachments.length > 1 ? "s" : ""}
                     </h4>
                   </div>
@@ -266,18 +270,18 @@ export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
                     {emailContent.attachments.map((attachment: any, index: number) => (
                       <div
                         key={index}
-                        className="group flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900/20 rounded-lg border border-border hover:border-ieee-blue hover:shadow-md transition-all duration-200"
+                        className="group flex items-center justify-between p-3 bg-muted/40 rounded-lg border border-border hover:border-ieee-blue hover:shadow-md transition-all duration-200"
                       >
                         <div className="flex items-center space-x-3 flex-1 min-w-0">
-                          <div className="flex-shrink-0">{getFileTypeIcon(attachment.contentType, attachment.filename)}</div>
+                          <div className="shrink-0">{getFileTypeIcon(attachment.contentType, attachment.filename)}</div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-ieee-blue transition-colors">
+                            <p className="text-sm font-medium text-gray-900 truncate group-hover:text-ieee-blue transition-colors">
                               {attachment.filename.length > 25
                                 ? `${attachment.filename.substring(0, 22)}...${attachment.filename.split(".").pop()}`
                                 : attachment.filename}
                             </p>
-                            <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-                              <span className="px-2 py-0.5 bg-white dark:bg-gray-800 rounded-full border border-border text-xs">
+                            <div className="flex items-center space-x-2 text-xs text-gray-500">
+                              <span className="px-2 py-0.5 bg-white rounded-full border border-border text-xs">
                                 {attachment.contentType.split("/")[1]?.toUpperCase() || "FILE"}
                               </span>
                               <span>•</span>
@@ -298,13 +302,13 @@ export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
               <div className="border-t border-border pt-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-2">
-                    <div className="p-1.5 bg-green-100 dark:bg-green-900/40 rounded-lg">
-                      <Mail className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <div className="p-1.5 bg-green-100 rounded-lg">
+                      <Mail className="w-4 h-4 text-green-600" />
                     </div>
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Message Content</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">Message Content</h4>
                   </div>
                   {emailContent && (emailContent.htmlContent || emailContent.textContent) && emailContent.htmlContent && emailContent.textContent && (
-                    <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                    <div className="flex bg-gray-100 rounded-lg p-1">
                       <Button
                         size="sm"
                         variant={viewMode === "html" ? "default" : "ghost"}
@@ -327,9 +331,9 @@ export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
 
                 {/* Content Display */}
                 {viewMode === "html" && emailContent.htmlContent ? (
-                  <div className="bg-white dark:bg-gray-900 border border-border rounded-xl overflow-hidden shadow-sm">
+                  <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm">
                     <div
-                      className="prose prose-sm max-w-none p-6 email-content dark:prose-invert"
+                      className="prose prose-sm max-w-none p-6 email-content"
                       dangerouslySetInnerHTML={{
                         __html: DOMPurify.sanitize(emailContent.htmlContent, {
                           ALLOWED_TAGS: [
@@ -411,8 +415,8 @@ export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
                     />
                   </div>
                 ) : (
-                  <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900/20 p-6 rounded-xl border border-border">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100 font-mono leading-relaxed">
+                  <div className="bg-muted/40 p-6 rounded-xl border border-border">
+                    <pre className="whitespace-pre-wrap text-sm text-gray-900 font-mono leading-relaxed">
                       {emailContent.textContent || emailContent.htmlContent}
                     </pre>
                   </div>

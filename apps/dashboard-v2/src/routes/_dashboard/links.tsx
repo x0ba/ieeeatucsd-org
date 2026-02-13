@@ -36,15 +36,15 @@ export const Route = createFileRoute("/_dashboard/links")({
 const ITEMS_PER_PAGE = 12;
 
 const categoryColors: Record<string, string> = {
-  General: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  "Social Media": "bg-pink-100 text-pink-800 dark:bg-pink-900/40 dark:text-pink-300",
-  Resources: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  Events: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  Projects: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
+  General: "bg-blue-100 text-blue-800",
+  "Social Media": "bg-pink-100 text-pink-800",
+  Resources: "bg-green-100 text-green-800",
+  Events: "bg-purple-100 text-purple-800",
+  Projects: "bg-orange-100 text-orange-800",
 };
 
 function getCategoryColor(category: string) {
-  return categoryColors[category] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+  return categoryColors[category] || "bg-gray-100 text-gray-800";
 }
 
 function LinksPage() {
@@ -244,8 +244,8 @@ function LinksPage() {
                   rel="noopener noreferrer"
                   className="flex items-start gap-3 flex-1 min-w-0"
                 >
-                  <div className="rounded-lg bg-blue-100 dark:bg-blue-900/40 p-2 shrink-0">
-                    <LinkIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <div className="rounded-lg bg-blue-100 p-2 shrink-0">
+                    <LinkIcon className="h-4 w-4 text-blue-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

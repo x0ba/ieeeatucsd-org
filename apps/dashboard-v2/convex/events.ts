@@ -25,8 +25,9 @@ export const listAll = query({
 });
 
 export const getByCode = query({
-  args: { eventCode: v.string() },
+  args: { logtoId: v.string(), eventCode: v.string() },
   handler: async (ctx, args) => {
+    await requireCurrentUser(ctx, args.logtoId);
     return await ctx.db
       .query("events")
       .withIndex("by_eventCode", (q) => q.eq("eventCode", args.eventCode))
@@ -35,8 +36,9 @@ export const getByCode = query({
 });
 
 export const get = query({
-  args: { id: v.id("events") },
+  args: { logtoId: v.string(), id: v.id("events") },
   handler: async (ctx, args) => {
+    await requireCurrentUser(ctx, args.logtoId);
     return await ctx.db.get(args.id);
   },
 });
@@ -142,12 +144,21 @@ export const checkIn = mutation({
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx, args.logtoId);
 
-    // Case-insensitive event code lookup
-    const normalizedCode = args.eventCode.toUpperCase().trim();
-    const events = await ctx.db
+    // Look up event by code using index (try exact match first, then uppercase)
+    const trimmedCode = args.eventCode.trim();
+    let event = await ctx.db
       .query("events")
-      .collect();
-    const event = events.find(e => e.eventCode.toUpperCase() === normalizedCode);
+      .withIndex("by_eventCode", (q) => q.eq("eventCode", trimmedCode))
+      .first();
+
+    if (!event) {
+      // Fallback: try uppercase version
+      const upperCode = trimmedCode.toUpperCase();
+      event = await ctx.db
+        .query("events")
+        .withIndex("by_eventCode", (q) => q.eq("eventCode", upperCode))
+        .first();
+    }
 
     if (!event) {
       throw new Error("Event not found");

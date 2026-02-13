@@ -2,15 +2,9 @@ import { useLogto } from "@logto/react";
 import { useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "../../convex/_generated/api";
+import type { UserRole } from "@/types/roles";
 
-export type UserRole =
-  | "Member"
-  | "General Officer"
-  | "Executive Officer"
-  | "Member at Large"
-  | "Past Officer"
-  | "Sponsor"
-  | "Administrator";
+export type { UserRole };
 
 const isServer = typeof window === "undefined";
 

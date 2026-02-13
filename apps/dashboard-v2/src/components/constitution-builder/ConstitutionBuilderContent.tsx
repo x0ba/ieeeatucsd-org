@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { FileText, Check, Edit3, Eye, History } from "lucide-react";
-import { SaveStatus, ViewMode } from "./types";
+import { FileText, Check, Edit3, Eye, History, Layers, FileEdit } from "lucide-react";
+import { SaveStatus, ViewMode, EditorMode } from "./types";
 import { useConstitutionData } from "./hooks/useConstitutionData";
 import ConstitutionSidebar from "./ConstitutionSidebar";
 import ConstitutionEditor from "./ConstitutionEditor";
+import ConstitutionDocumentEditor from "./ConstitutionDocumentEditor";
 import ConstitutionPreview from "./ConstitutionPreview";
 import { ConstitutionAuditLog } from "./ConstitutionAuditLog";
 import ConstitutionSearch from "./ConstitutionSearch";
@@ -23,6 +24,7 @@ const ConstitutionBuilderContent = () => {
   } = useConstitutionData();
 
   const [currentView, setCurrentView] = useState<ViewMode>("editor");
+  const [editorMode, setEditorMode] = useState<EditorMode>("section");
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -217,32 +219,74 @@ const ConstitutionBuilderContent = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto">
         {currentView === "editor" ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-            <div className="lg:col-span-3">
-              <ConstitutionSidebar
-                sections={sections}
-                selectedSection={selectedSection}
-                expandedSections={expandedSections}
-                onSelectSection={setSelectedSection}
-                onToggleExpand={toggleSectionExpansion}
-                onAddSection={addSection}
-                updateSection={updateSection}
-              />
+          <>
+            {/* Editor Mode Toggle */}
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setEditorMode("section")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    editorMode === "section"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  Section Editor
+                </button>
+                <button
+                  onClick={() => setEditorMode("document")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    editorMode === "document"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  <FileEdit className="h-3.5 w-3.5" />
+                  Document Editor
+                </button>
+              </div>
+              <span className="text-xs text-gray-500">
+                {editorMode === "section"
+                  ? "Edit individual sections from the sidebar"
+                  : "Edit the entire constitution as a rich text document"}
+              </span>
             </div>
 
-            <div className="lg:col-span-9">
-              <ConstitutionEditor
+            {editorMode === "section" ? (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+                <div className="lg:col-span-3">
+                  <ConstitutionSidebar
+                    sections={sections}
+                    selectedSection={selectedSection}
+                    expandedSections={expandedSections}
+                    onSelectSection={setSelectedSection}
+                    onToggleExpand={toggleSectionExpansion}
+                    onAddSection={addSection}
+                    updateSection={updateSection}
+                  />
+                </div>
+
+                <div className="lg:col-span-9">
+                  <ConstitutionEditor
+                    sections={sections}
+                    selectedSection={selectedSection}
+                    editingSection={editingSection}
+                    onSelectSection={setSelectedSection}
+                    onEditSection={setEditingSection}
+                    onUpdateSection={updateSection}
+                    onDeleteSection={handleDeleteSection}
+                    onAddSection={addSection}
+                  />
+                </div>
+              </div>
+            ) : (
+              <ConstitutionDocumentEditor
                 sections={sections}
-                selectedSection={selectedSection}
-                editingSection={editingSection}
-                onSelectSection={setSelectedSection}
-                onEditSection={setEditingSection}
                 onUpdateSection={updateSection}
-                onDeleteSection={handleDeleteSection}
-                onAddSection={addSection}
               />
-            </div>
-          </div>
+            )}
+          </>
         ) : (
           <div className="w-full">
             {currentView === "preview" ? (

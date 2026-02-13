@@ -145,7 +145,7 @@ function renderInlineMarkdown(text: string, keyPrefix: string) {
 			return (
 				<code
 					key={key}
-					className="rounded bg-gray-200 dark:bg-gray-700 px-1 py-0.5 text-xs font-mono text-gray-900 dark:text-gray-100"
+					className="rounded bg-gray-200 px-1 py-0.5 text-xs font-mono text-gray-900"
 				>
 					{part.slice(1, -1)}
 				</code>
@@ -207,7 +207,7 @@ function CodeBlock({
 
 	if (inline) {
 		return (
-			<code className="rounded bg-gray-200 dark:bg-gray-700 px-1 py-0.5 text-xs font-mono text-gray-900 dark:text-gray-100">
+			<code className="rounded bg-gray-200 px-1 py-0.5 text-xs font-mono text-gray-900">
 				{children}
 			</code>
 		);
@@ -338,7 +338,7 @@ function MarkdownRenderer({ content }: { content: string }) {
 			rendered.push(
 				<blockquote
 					key={`quote-${i}`}
-					className="mb-2 border-l-2 border-blue-300 pl-3 text-gray-700 dark:text-gray-300"
+					className="mb-2 border-l-2 border-blue-300 pl-3 text-gray-700"
 				>
 					{renderInlineMarkdown(line.replace(/^>\s?/, ""), `q-${i}`)}
 				</blockquote>,
@@ -381,11 +381,11 @@ function MarkdownRenderer({ content }: { content: string }) {
 					<table className="w-full text-xs border-collapse">
 						{headerRow && (
 							<thead>
-								<tr className="border-b border-gray-300 dark:border-gray-600">
+								<tr className="border-b border-gray-300">
 									{headerRow.map((cell, ci) => (
 										<th
 											key={`th-${i}-${ci}`}
-											className="px-2 py-1.5 text-left font-semibold text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/50"
+											className="px-2 py-1.5 text-left font-semibold text-gray-700 bg-gray-50"
 										>
 											{renderInlineMarkdown(cell, `th-${i}-${ci}`)}
 										</th>
@@ -397,12 +397,12 @@ function MarkdownRenderer({ content }: { content: string }) {
 							{bodyRows.map((row, ri) => (
 								<tr
 									key={`tr-${i}-${ri}`}
-									className="border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+									className="border-b border-gray-200 last:border-b-0"
 								>
 									{row.map((cell, ci) => (
 										<td
 											key={`td-${i}-${ri}-${ci}`}
-											className="px-2 py-1 text-gray-600 dark:text-gray-300"
+											className="px-2 py-1 text-gray-600"
 										>
 											{renderInlineMarkdown(cell, `td-${i}-${ri}-${ci}`)}
 										</td>
@@ -420,7 +420,7 @@ function MarkdownRenderer({ content }: { content: string }) {
 			rendered.push(
 				<hr
 					key={`hr-${i}`}
-					className="my-2 border-gray-300 dark:border-gray-700"
+					className="my-2 border-gray-300"
 				/>,
 			);
 			i += 1;
@@ -436,7 +436,7 @@ function MarkdownRenderer({ content }: { content: string }) {
 	}
 
 	return (
-		<div className="prose dark:prose-invert prose-sm max-w-none break-words [&>p]:m-0 [&>p]:leading-normal">
+		<div className="prose prose-sm max-w-none break-words [&>p]:m-0 [&>p]:leading-normal">
 			{rendered}
 		</div>
 	);
@@ -455,11 +455,11 @@ function ReasoningBlock({ content, isStreaming }: { content: string; isStreaming
 	const preview = lines.slice(0, 2).join(" ").slice(0, 120);
 
 	return (
-		<div className="mb-2 rounded-md border border-purple-200 dark:border-purple-800/50 bg-purple-50/50 dark:bg-purple-900/10 overflow-hidden">
+		<div className="mb-2 rounded-md border border-purple-200 bg-purple-50/50 overflow-hidden">
 			<button
 				type="button"
 				onClick={() => setIsExpanded(!isExpanded)}
-				className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-purple-700 dark:text-purple-300 hover:bg-purple-100/50 dark:hover:bg-purple-900/20 transition-colors"
+				className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-purple-700 hover:bg-purple-100/50 transition-colors"
 			>
 				<Brain className="w-3 h-3 flex-shrink-0" />
 				<span className="font-medium flex-shrink-0">Thinking</span>
@@ -469,7 +469,7 @@ function ReasoningBlock({ content, isStreaming }: { content: string; isStreaming
 					</span>
 				)}
 				{!isExpanded && (
-					<span className="text-purple-500/70 dark:text-purple-400/50 truncate text-left">
+					<span className="text-purple-500/70 truncate text-left">
 						{preview}...
 					</span>
 				)}
@@ -481,7 +481,7 @@ function ReasoningBlock({ content, isStreaming }: { content: string; isStreaming
 				/>
 			</button>
 			{isExpanded && (
-				<div className="px-3 pb-2 text-xs text-purple-600/80 dark:text-purple-300/60 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
+				<div className="px-3 pb-2 text-xs text-purple-600/80 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
 					{content}
 					{isStreaming && (
 						<span className="inline-block w-1 h-3 bg-purple-400 animate-pulse ml-0.5 align-text-bottom" />
@@ -514,28 +514,28 @@ function ToolCallCards({
 						className={cn(
 							"rounded-md border px-3 py-1.5 text-xs flex items-center gap-2",
 							isDone
-								? "border-green-200 dark:border-green-800/50 bg-green-50/50 dark:bg-green-900/10"
-								: "border-amber-200 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-900/10",
+								? "border-green-200 bg-green-50/50"
+								: "border-amber-200 bg-amber-50/50",
 						)}
 					>
 						<Wrench
 							className={cn(
 								"w-3 h-3 flex-shrink-0",
 								isDone
-									? "text-green-600 dark:text-green-400"
-									: "text-amber-600 dark:text-amber-400",
+									? "text-green-600"
+									: "text-amber-600",
 							)}
 						/>
-						<span className="font-medium text-gray-700 dark:text-gray-300">
+						<span className="font-medium text-gray-700">
 							{tc.name.replace(/_/g, " ")}
 						</span>
 						{isDone ? (
 							<>
 								<Check className="w-3 h-3 text-green-500 flex-shrink-0" />
-								<span className="text-gray-500 dark:text-gray-400 truncate">
+								<span className="text-gray-500 truncate">
 									{result.summary}
 								</span>
-								<span className="text-gray-400 dark:text-gray-500 ml-auto flex-shrink-0">
+								<span className="text-gray-400 ml-auto flex-shrink-0">
 									{result.durationMs}ms
 								</span>
 							</>
@@ -957,9 +957,9 @@ export function OfficerAiChat() {
 					</div>
 
 					{/* Beta notice */}
-					<div className="bg-blue-50/50 dark:bg-blue-900/10 px-4 py-1.5 border-b border-blue-100 dark:border-blue-900/20 flex gap-2 items-center">
-						<AlertCircle className="w-3 h-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-						<p className="text-[11px] text-blue-700 dark:text-blue-300 leading-tight">
+					<div className="bg-blue-50/50 px-4 py-1.5 border-b border-blue-100 flex gap-2 items-center">
+						<AlertCircle className="w-3 h-3 text-blue-600 flex-shrink-0" />
+						<p className="text-[11px] text-blue-700 leading-tight">
 							Beta — double check all info. Has access to tools for searching data, looking up records, and checking budgets.
 						</p>
 					</div>
@@ -996,8 +996,8 @@ export function OfficerAiChat() {
 									)}
 								>
 									{msg.role === "assistant" && (
-										<div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0 mt-1">
-											<Bot className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+										<div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
+											<Bot className="w-4 h-4 text-blue-600" />
 										</div>
 									)}
 
@@ -1006,7 +1006,7 @@ export function OfficerAiChat() {
 											"rounded-lg text-sm max-w-[88%] min-w-0",
 											msg.role === "user"
 												? "bg-blue-600 text-white p-3"
-												: "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 p-3",
+												: "bg-gray-100 text-gray-800 p-3",
 										)}
 									>
 										{msg.role === "assistant" && msg.reasoning && (
@@ -1037,8 +1037,8 @@ export function OfficerAiChat() {
 									</div>
 
 									{msg.role === "user" && (
-										<div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 mt-1">
-											<UserIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+										<div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 mt-1">
+											<UserIcon className="w-4 h-4 text-gray-600" />
 										</div>
 									)}
 								</div>
@@ -1047,14 +1047,14 @@ export function OfficerAiChat() {
 								{msg.role === "assistant" && (
 									<div className="ml-10 flex items-center gap-2">
 										{msg.steps && msg.steps.length > 0 && (
-											<details className="text-xs text-gray-500 dark:text-gray-400 cursor-pointer group">
-												<summary className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-300 select-none">
+											<details className="text-xs text-gray-500 cursor-pointer group">
+												<summary className="flex items-center gap-1 hover:text-gray-700 select-none">
 													<span className="font-medium">
 														Trace ({msg.steps.length})
 													</span>
 													<ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
 												</summary>
-												<div className="mt-1 pl-2 border-l-2 border-gray-200 dark:border-gray-700 flex flex-col gap-0.5 py-1">
+												<div className="mt-1 pl-2 border-l-2 border-gray-200 flex flex-col gap-0.5 py-1">
 													{msg.steps.map((step, idx) => (
 														<span
 															key={`${msg.id}-step-${idx}`}
@@ -1070,7 +1070,7 @@ export function OfficerAiChat() {
 											<button
 												type="button"
 												onClick={() => handleRetry(msg.id)}
-												className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
+												className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-600"
 											>
 												<RotateCcw className="w-3 h-3" />
 												Retry

@@ -637,6 +637,8 @@ export default defineSchema({
   logs: defineTable({
     userId: v.string(),
     type: v.union(
+      v.literal("info"),
+      v.literal("warning"),
       v.literal("error"),
       v.literal("update"),
       v.literal("delete"),

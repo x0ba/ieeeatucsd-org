@@ -300,7 +300,7 @@ export function DraftEventModal({
             </div>
           </div>
 
-          <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+          <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600">
             <p>
               {isEditing
                 ? "Update your draft event. You can submit it for approval later through the full event request form."

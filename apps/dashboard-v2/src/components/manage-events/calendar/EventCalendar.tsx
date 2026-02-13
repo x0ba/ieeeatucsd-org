@@ -33,13 +33,13 @@ const statusColors: Record<EventStatus, string> = {
 };
 
 const statusBgColors: Record<EventStatus, string> = {
-  draft: "bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700",
-  submitted: "bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40",
-  pending: "bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/40",
-  needs_review: "bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/40",
-  approved: "bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40",
-  declined: "bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40",
-  published: "bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40",
+  draft: "bg-gray-100 hover:bg-gray-200",
+  submitted: "bg-indigo-50 hover:bg-indigo-100",
+  pending: "bg-yellow-50 hover:bg-yellow-100",
+  needs_review: "bg-orange-50 hover:bg-orange-100",
+  approved: "bg-green-50 hover:bg-green-100",
+  declined: "bg-red-50 hover:bg-red-100",
+  published: "bg-blue-50 hover:bg-blue-100",
 };
 
 const legendItems: { status: EventStatus; label: string }[] = [
@@ -79,7 +79,7 @@ export function EventCalendar({
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border overflow-hidden">
+    <div className="bg-white rounded-xl border overflow-hidden">
       <div className="p-4 border-b flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button
@@ -100,24 +100,24 @@ export function EventCalendar({
             Today
           </Button>
         </div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h2 className="text-lg font-semibold text-gray-900">
           {format(currentMonth, "MMMM yyyy")}
         </h2>
         <div className="w-20" />
       </div>
 
-      <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700">
+      <div className="grid grid-cols-7 gap-px bg-gray-200">
         {weekDays.map((day) => (
           <div
             key={day}
-            className="bg-gray-50 dark:bg-gray-700/50 p-2 text-center text-sm font-medium text-gray-600 dark:text-gray-400"
+            className="bg-gray-50 p-2 text-center text-sm font-medium text-gray-600"
           >
             {day}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700">
+      <div className="grid grid-cols-7 gap-px bg-gray-200">
         {days.map((day) => {
           const dayEvents = getEventsForDay(day);
           const isCurrentMonth = isSameMonth(day, currentMonth);
@@ -126,23 +126,23 @@ export function EventCalendar({
           return (
             <div
               key={day.toISOString()}
-              className={`bg-white dark:bg-gray-800 min-h-[100px] p-2 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+              className={`bg-white min-h-[100px] p-2 cursor-pointer transition-colors hover:bg-gray-50 ${
                 !isCurrentMonth ? "opacity-50" : ""
-              } ${isTodayDate ? "bg-blue-50/50 dark:bg-blue-900/20" : ""}`}
+              } ${isTodayDate ? "bg-blue-50/50" : ""}`}
               onClick={() => onDateClick?.(day)}
             >
               <div className="flex items-center justify-between mb-1">
                 <span
                   className={`text-sm font-medium ${
                     isTodayDate
-                      ? "text-blue-600 dark:text-blue-400"
-                      : "text-gray-700 dark:text-gray-300"
+                      ? "text-blue-600"
+                      : "text-gray-700"
                   }`}
                 >
                   {format(day, "d")}
                 </span>
                 {isTodayDate && (
-                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                  <span className="text-xs text-blue-600 font-medium">
                     Today
                   </span>
                 )}
@@ -156,7 +156,7 @@ export function EventCalendar({
                       statusBgColors[event.status]
                     } ${
                       hoveredEvent === event._id
-                        ? "ring-2 ring-offset-1 ring-gray-300 dark:ring-gray-600"
+                        ? "ring-2 ring-offset-1 ring-gray-300"
                         : ""
                     }`}
                     onClick={(e) => {
@@ -176,7 +176,7 @@ export function EventCalendar({
                   </button>
                 ))}
                 {dayEvents.length > 3 && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 px-2">
+                  <div className="text-xs text-gray-500 px-2">
                     +{dayEvents.length - 3} more
                   </div>
                 )}
@@ -186,16 +186,16 @@ export function EventCalendar({
         })}
       </div>
 
-      <div className="p-4 border-t bg-gray-50/50 dark:bg-gray-800/50">
+      <div className="p-4 border-t bg-gray-50/50">
         <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-1.5 text-sm text-gray-600">
             <Info className="h-4 w-4" />
             <span className="font-medium">Status:</span>
           </div>
           {legendItems.map((item) => (
             <div
               key={item.status}
-              className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400"
+              className="flex items-center gap-1.5 text-xs text-gray-600"
             >
               <span
                 className={`w-2.5 h-2.5 rounded-full ${statusColors[item.status]}`}

@@ -258,6 +258,7 @@ function InvitationFlowTab({ logtoId }: { logtoId: string | null }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            logtoId,
             inviteId: result,
             name,
             email,
@@ -394,11 +395,11 @@ function InvitationFlowTab({ logtoId }: { logtoId: string | null }) {
             />
           </div>
 
-          <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 p-4">
-            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <h4 className="text-sm font-medium text-blue-900 mb-2">
               What happens next?
             </h4>
-            <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
+            <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
               <li>An invitation email will be sent to the prospective officer</li>
               <li>They will have until the acceptance deadline to accept or decline</li>
               <li>Upon acceptance, they will automatically receive onboarding instructions</li>
@@ -519,6 +520,7 @@ function DirectOnboardingTab({ logtoId }: { logtoId: string | null }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          logtoId,
           name,
           email,
           role,
@@ -618,7 +620,7 @@ function DirectOnboardingTab({ logtoId }: { logtoId: string | null }) {
                 </p>
               </div>
             ) : (
-              <div className="mt-4 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+              <div className="mt-4 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>
                   No Google Sheets URL configured. Please configure it before
@@ -749,11 +751,11 @@ function DirectOnboardingTab({ logtoId }: { logtoId: string | null }) {
             />
           </div>
 
-          <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800 p-4">
-            <h4 className="text-sm font-medium text-green-900 dark:text-green-200 mb-2">
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+            <h4 className="text-sm font-medium text-green-900 mb-2">
               What happens immediately?
             </h4>
-            <ul className="text-sm text-green-700 dark:text-green-300 space-y-1 list-disc list-inside">
+            <ul className="text-sm text-green-700 space-y-1 list-disc list-inside">
               <li>Onboarding email will be sent with all necessary instructions</li>
               <li>User will be added to the appropriate Google Group</li>
               <li>Officer permissions will be granted in the system</li>
@@ -843,11 +845,11 @@ function DirectOnboardingTab({ logtoId }: { logtoId: string | null }) {
               </div>
             )}
 
-            <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 p-4">
-              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <h4 className="text-sm font-medium text-blue-900 mb-2">
                 Instructions:
               </h4>
-              <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside">
+              <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
                 <li>Open your Google Sheets contact list</li>
                 <li>Click "Share" and ensure it's accessible to anyone with the link</li>
                 <li>Copy the full URL from your browser's address bar</li>
@@ -915,7 +917,7 @@ function PendingInvitationsTab({ logtoId }: { logtoId: string | null }) {
   const getStatusBadge = (status: string, expired: boolean) => {
     if (expired) {
       return (
-        <Badge variant="secondary" className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 gap-1">
+        <Badge variant="secondary" className="bg-gray-100 text-gray-800 gap-1">
           <AlertCircle className="w-3 h-3" /> Expired
         </Badge>
       );
@@ -923,19 +925,19 @@ function PendingInvitationsTab({ logtoId }: { logtoId: string | null }) {
     switch (status) {
       case "pending":
         return (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 gap-1">
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 gap-1">
             <Clock className="w-3 h-3" /> Pending
           </Badge>
         );
       case "accepted":
         return (
-          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 gap-1">
+          <Badge variant="secondary" className="bg-green-100 text-green-800 gap-1">
             <CheckCircle className="w-3 h-3" /> Accepted
           </Badge>
         );
       case "declined":
         return (
-          <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 gap-1">
+          <Badge variant="secondary" className="bg-red-100 text-red-800 gap-1">
             <XCircle className="w-3 h-3" /> Declined
           </Badge>
         );
@@ -956,6 +958,7 @@ function PendingInvitationsTab({ logtoId }: { logtoId: string | null }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            logtoId,
             invitationId: inv._id,
             name: inv.name,
             email: inv.email,

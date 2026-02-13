@@ -91,9 +91,9 @@ export function DraftViewModal({
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Users className="h-4 w-4" />
-                <span className="text-xs font-semibold uppercase tracking-wider">Capacity</span>
+                <span className="text-xs font-semibold uppercase tracking-wider">Expected Attendees</span>
               </div>
-              <p className="font-medium">{event.capacity || "Unlimited"} attendees</p>
+              <p className="font-medium">{event.estimatedAttendance || "N/A"}</p>
             </div>
 
             <div className="space-y-1">
@@ -132,11 +132,11 @@ export function DraftViewModal({
             </div>
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-            <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-blue-900 mb-2">
               Draft Event
             </h4>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
+            <p className="text-sm text-blue-700">
               This is a draft event. You can edit the draft details or convert it to a full event request with additional requirements like room bookings, graphics, and funding.
             </p>
           </div>

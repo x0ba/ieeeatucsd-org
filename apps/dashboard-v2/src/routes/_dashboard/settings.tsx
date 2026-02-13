@@ -232,14 +232,14 @@ function SettingsPage() {
         <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
           {/* Status Messages */}
           {error && (
-            <div className="flex items-center space-x-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-950/20 dark:border-red-900/30 dark:text-red-400">
+            <div className="flex items-center space-x-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm md:text-base">{error}</span>
             </div>
           )}
 
           {success && (
-            <div className="flex items-center space-x-2 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 dark:bg-green-950/20 dark:border-green-900/30 dark:text-green-400">
+            <div className="flex items-center space-x-2 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
               <CheckCircle className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm md:text-base">{success}</span>
             </div>
@@ -248,8 +248,8 @@ function SettingsPage() {
           {/* Profile Settings */}
           <div className="rounded-xl border bg-card p-4 md:p-6">
             <div className="flex items-center space-x-3 mb-4 md:mb-6">
-              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <UserCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <UserCircle className="w-5 h-5 text-blue-600" />
               </div>
               <h2 className="text-base md:text-lg font-semibold">
                 Profile Settings
@@ -351,8 +351,8 @@ function SettingsPage() {
           {/* Resume Settings */}
           <div className="rounded-xl border bg-card p-6">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <FileText className="w-5 h-5 text-green-600" />
               </div>
               <h2 className="text-lg font-semibold">Resume</h2>
             </div>
@@ -374,14 +374,14 @@ function SettingsPage() {
                       href={user.resume}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium dark:text-blue-400"
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
                       View
                     </a>
                     <button
                       onClick={handleResumeRemove}
                       disabled={saving}
-                      className="text-sm text-red-600 hover:text-red-700 font-medium disabled:opacity-50 dark:text-red-400"
+                      className="text-sm text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
                     >
                       Remove
                     </button>
@@ -397,7 +397,7 @@ function SettingsPage() {
                       onChange={(e) =>
                         setResumeFile(e.target.files?.[0] || null)
                       }
-                      className="flex-1 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400"
+                      className="flex-1 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
                     <Button
                       onClick={handleResumeUpload}
@@ -422,7 +422,7 @@ function SettingsPage() {
                     onChange={(e) =>
                       setResumeFile(e.target.files?.[0] || null)
                     }
-                    className="flex-1 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400"
+                    className="flex-1 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                   <Button
                     onClick={handleResumeUpload}
@@ -442,8 +442,8 @@ function SettingsPage() {
           {/* Account Information */}
           <div className="rounded-xl border bg-card p-4 md:p-6">
             <div className="flex items-center space-x-3 mb-4 md:mb-6">
-              <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Shield className="w-5 h-5 text-purple-600" />
               </div>
               <h2 className="text-base md:text-lg font-semibold">
                 Account Information
@@ -482,12 +482,12 @@ function SettingsPage() {
 
           {/* Security Note for OAuth users */}
           {isOAuthUser() && (
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 rounded-lg p-6">
-              <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-400">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-center space-x-2 text-blue-700">
                 <Shield className="w-5 h-5" />
                 <span className="font-medium">OAuth Account</span>
               </div>
-              <p className="text-blue-600 dark:text-blue-300 mt-2 text-sm">
+              <p className="text-blue-600 mt-2 text-sm">
                 You signed in with OAuth. To change your password, please visit
                 your account settings in your OAuth provider.
               </p>

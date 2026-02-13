@@ -29,11 +29,11 @@ import {
 import { toast } from "sonner";
 
 const STATUS_COLORS: Record<string, string> = {
-  submitted: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  needs_info: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
-  approved: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  denied: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  completed: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  submitted: "bg-blue-100 text-blue-800",
+  needs_info: "bg-orange-100 text-orange-800",
+  approved: "bg-green-100 text-green-800",
+  denied: "bg-red-100 text-red-800",
+  completed: "bg-purple-100 text-purple-800",
 };
 
 const DEPARTMENT_LABELS: Record<string, string> = {
@@ -98,7 +98,7 @@ export default function FundRequestActionModal({
   const [fundingSource, setFundingSource] = useState<FUNDING_SOURCE>("department");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fundRequest = useQuery(api.fundRequests.get, requestId as any);
+  const fundRequest = useQuery(api.fundRequests.get, logtoId && requestId ? { logtoId, id: requestId as any } : "skip");
   const updateStatus = useMutation(api.fundRequests.updateStatus);
 
   useEffect(() => {
@@ -175,7 +175,7 @@ export default function FundRequestActionModal({
                </div>
                <div className="text-right">
                  <p className="text-xs font-semibold text-muted-foreground uppercase">Amount</p>
-                 <p className="text-xl font-bold text-green-600 dark:text-green-400">{formatCurrency(fundRequest.amount)}</p>
+                 <p className="text-xl font-bold text-green-600">{formatCurrency(fundRequest.amount)}</p>
                </div>
              </div>
 
@@ -202,8 +202,8 @@ export default function FundRequestActionModal({
 
             {/* Info Response */}
             {fundRequest.infoResponseNotes && (
-              <div className="bg-yellow-50/50 dark:bg-yellow-950/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                <h4 className="text-xs font-bold text-yellow-800 dark:text-yellow-200 uppercase flex items-center gap-1 mb-2">
+              <div className="bg-yellow-50/50 p-4 rounded-lg border border-yellow-200">
+                <h4 className="text-xs font-bold text-yellow-800 uppercase flex items-center gap-1 mb-2">
                   <Megaphone className="w-3 h-3" /> Additional Context
                 </h4>
                 <p className="text-sm text-foreground whitespace-pre-wrap">
@@ -264,7 +264,7 @@ export default function FundRequestActionModal({
                    <RadioGroupItem value="approve" id="approve" />
                    <Label htmlFor="approve" className="flex-1 cursor-pointer font-medium">
                      <div className="flex items-center gap-2">
-                       <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                       <CheckCircle className="w-4 h-4 text-green-600" />
                        Approve Request
                      </div>
                      <span className="text-xs text-muted-foreground font-normal">Authorize funding</span>
@@ -274,7 +274,7 @@ export default function FundRequestActionModal({
                    <RadioGroupItem value="needs_info" id="needs_info" />
                    <Label htmlFor="needs_info" className="flex-1 cursor-pointer font-medium">
                      <div className="flex items-center gap-2">
-                       <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                       <AlertCircle className="w-4 h-4 text-yellow-600" />
                        Request More Info
                      </div>
                      <span className="text-xs text-muted-foreground font-normal">Ask user for details</span>

@@ -119,19 +119,19 @@ export function BudgetLogModal({
             <div className="space-y-6">
               {/* Summary Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="rounded-xl border bg-green-50/50 dark:bg-green-950/20 p-4">
-                  <div className="flex items-center gap-2 mb-2 text-green-600 dark:text-green-400">
+                <div className="rounded-xl border bg-green-50/50 p-4">
+                  <div className="flex items-center gap-2 mb-2 text-green-600">
                     <User className="w-4 h-4" />
                     <span className="text-xs font-bold uppercase tracking-wide">Approved</span>
                   </div>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">{formatCurrency(stats.approved)}</p>
+                  <p className="text-2xl font-bold text-green-700">{formatCurrency(stats.approved)}</p>
                 </div>
-                <div className="rounded-xl border bg-yellow-50/50 dark:bg-yellow-950/20 p-4">
-                  <div className="flex items-center gap-2 mb-2 text-yellow-600 dark:text-yellow-400">
+                <div className="rounded-xl border bg-yellow-50/50 p-4">
+                  <div className="flex items-center gap-2 mb-2 text-yellow-600">
                     <Loader2 className="w-4 h-4" />
                     <span className="text-xs font-bold uppercase tracking-wide">Pending</span>
                   </div>
-                  <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{formatCurrency(stats.pending)}</p>
+                  <p className="text-2xl font-bold text-yellow-700">{formatCurrency(stats.pending)}</p>
                 </div>
                 <div className="rounded-xl border bg-muted p-4">
                   <div className="flex items-center gap-2 mb-2 text-foreground">
@@ -190,7 +190,7 @@ export function BudgetLogModal({
                                       </div>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                      <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(request.amount)}</span>
+                                      <span className="font-bold text-green-600">{formatCurrency(request.amount)}</span>
                                     </TableCell>
                                     <TableCell className="text-center">
                                       <Badge className={STATUS_COLORS[request.status as keyof typeof STATUS_COLORS] || ""}>
@@ -221,7 +221,7 @@ export function BudgetLogModal({
                         <div className="space-y-4">
                           {selectedTab === "all" && (
                             <div className="flex items-center gap-2">
-                              <Wrench className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                              <Wrench className="w-4 h-4 text-yellow-600" />
                               <span className="text-sm font-semibold text-foreground">Manual Adjustments</span>
                             </div>
                           )}
@@ -250,7 +250,7 @@ export function BudgetLogModal({
                                       </div>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                      <span className="font-bold text-yellow-600 dark:text-yellow-400">
+                                      <span className="font-bold text-yellow-600">
                                         {formatCurrency(adjustment.amount)}
                                       </span>
                                     </TableCell>

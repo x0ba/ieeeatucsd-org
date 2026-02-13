@@ -99,7 +99,7 @@ export function EventDetailModal({
                 </Badge>
               )}
               {isUpcoming && (
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
                   Upcoming
                 </Badge>
               )}
@@ -110,7 +110,7 @@ export function EventDetailModal({
               )}
 
               {userHasAttended && (
-                <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800">
+                <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                   <UserCheck className="w-3 h-3 mr-1" />
                   Attended
                 </Badge>

@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { isHtmlContent } from "./utils/documentEditorUtils";
 
 interface ConstitutionEditorProps {
   sections: ConstitutionSection[];
@@ -319,9 +320,16 @@ const ConstitutionEditor: React.FC<ConstitutionEditorProps> = ({
               </div>
             ) : currentSection.content ? (
               <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <div className="whitespace-pre-wrap text-gray-900 leading-relaxed text-base">
-                  {renderContentWithImages(currentSection.content)}
-                </div>
+                {isHtmlContent(currentSection.content) ? (
+                  <div
+                    className="prose max-w-none text-gray-900 leading-relaxed text-base constitution-html-content"
+                    dangerouslySetInnerHTML={{ __html: currentSection.content }}
+                  />
+                ) : (
+                  <div className="whitespace-pre-wrap text-gray-900 leading-relaxed text-base">
+                    {renderContentWithImages(currentSection.content)}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">

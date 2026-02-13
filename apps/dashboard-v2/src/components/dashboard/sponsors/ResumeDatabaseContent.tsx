@@ -278,36 +278,36 @@ export default function ResumeDatabaseContent() {
 			<div className="p-6 space-y-6">
 				{/* Stats Cards */}
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					<div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
+					<div className="bg-white rounded-2xl shadow p-6">
 						<div className="flex items-center">
-							<div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-xl">
-								<FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+							<div className="p-3 bg-blue-100 rounded-xl">
+								<FileText className="w-6 h-6 text-blue-600" />
 							</div>
 							<div className="ml-4">
-								<p className="text-sm text-gray-600 dark:text-gray-400">Total Resumes</p>
-								<p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{users.length}</p>
+								<p className="text-sm text-gray-600">Total Resumes</p>
+								<p className="text-2xl font-bold text-gray-900">{users.length}</p>
 							</div>
 						</div>
 					</div>
-					<div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
+					<div className="bg-white rounded-2xl shadow p-6">
 						<div className="flex items-center">
-							<div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
-								<GraduationCap className="w-6 h-6 text-green-600 dark:text-green-400" />
+							<div className="p-3 bg-green-100 rounded-lg">
+								<GraduationCap className="w-6 h-6 text-green-600" />
 							</div>
 							<div className="ml-4">
-								<p className="text-sm text-gray-600 dark:text-gray-400">Unique Majors</p>
-								<p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{uniqueMajors.length}</p>
+								<p className="text-sm text-gray-600">Unique Majors</p>
+								<p className="text-2xl font-bold text-gray-900">{uniqueMajors.length}</p>
 							</div>
 						</div>
 					</div>
-					<div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
+					<div className="bg-white rounded-2xl shadow p-6">
 						<div className="flex items-center">
-							<div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
-								<Briefcase className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+							<div className="p-3 bg-purple-100 rounded-lg">
+								<Briefcase className="w-6 h-6 text-purple-600" />
 							</div>
 							<div className="ml-4">
-								<p className="text-sm text-gray-600 dark:text-gray-400">Officers</p>
-								<p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+								<p className="text-sm text-gray-600">Officers</p>
+								<p className="text-2xl font-bold text-gray-900">
 									{users.filter((u) => u.role !== "Member" && u.role !== "Sponsor").length}
 								</p>
 							</div>
@@ -316,7 +316,7 @@ export default function ResumeDatabaseContent() {
 				</div>
 
 				{/* Search and Filters */}
-				<div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
+				<div className="bg-white rounded-2xl shadow p-6">
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 						{/* Search */}
 						<div className="relative">
@@ -404,22 +404,22 @@ export default function ResumeDatabaseContent() {
 
 				{/* Results */}
 				{loading ? (
-					<div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-12 text-center">
+					<div className="bg-white rounded-2xl shadow p-12 text-center">
 						<div className="flex flex-col items-center justify-center space-y-4">
 							<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-							<p className="text-gray-600 dark:text-gray-400">Loading resumes...</p>
+							<p className="text-gray-600">Loading resumes...</p>
 						</div>
 					</div>
 				) : error ? (
-					<div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
-						<p className="text-red-800 dark:text-red-200 font-semibold">Error</p>
-						<p className="text-red-600 dark:text-red-400">{error}</p>
+					<div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+						<p className="text-red-800 font-semibold">Error</p>
+						<p className="text-red-600">{error}</p>
 					</div>
 				) : filteredUsers.length === 0 ? (
-					<div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-12 text-center">
+					<div className="bg-white rounded-2xl shadow p-12 text-center">
 						<FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-						<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No Resumes Found</h3>
-						<p className="text-gray-600 dark:text-gray-400">
+						<h3 className="text-lg font-semibold text-gray-900 mb-2">No Resumes Found</h3>
+						<p className="text-gray-600">
 							{searchTerm || selectedMajors.size > 0 || selectedYears.size > 0 || selectedOfficerStatus !== "all"
 								? "Try adjusting your filters"
 								: "No members have opted in to share their resumes yet"}
@@ -429,9 +429,9 @@ export default function ResumeDatabaseContent() {
 					<>
 						{/* Selection Actions */}
 						{selectedUsers.size > 0 && (
-							<div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4">
+							<div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
 								<div className="flex items-center justify-between">
-									<p className="text-sm text-blue-700 dark:text-blue-300">
+									<p className="text-sm text-blue-700">
 										<strong>{selectedUsers.size}</strong> user{selectedUsers.size !== 1 ? "s" : ""} selected
 									</p>
 									<div className="flex items-center gap-3">
@@ -455,11 +455,11 @@ export default function ResumeDatabaseContent() {
 							</div>
 						)}
 
-						<div className="bg-white dark:bg-gray-800 rounded-2xl shadow overflow-hidden">
+						<div className="bg-white rounded-2xl shadow overflow-hidden">
 							<div className="overflow-x-auto">
 								<Table>
 									<TableHeader>
-										<TableRow className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+										<TableRow className="bg-gray-50 hover:bg-gray-50">
 											<TableHead className="px-6 py-3">
 												<Checkbox
 													checked={paginatedUsers.length > 0 && paginatedUsers.every((u) => selectedUsers.has(u.id))}
@@ -478,7 +478,7 @@ export default function ResumeDatabaseContent() {
 										{paginatedUsers.map((user) => (
 											<TableRow
 												key={user.id}
-												className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+												className="hover:bg-gray-50 cursor-pointer transition-colors"
 											>
 												<TableCell
 													className="px-6 py-4 whitespace-nowrap cursor-pointer"
@@ -499,20 +499,20 @@ export default function ResumeDatabaseContent() {
 													className="px-6 py-4 whitespace-nowrap"
 													onClick={() => handleRowClick(user)}
 												>
-													<div className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.name}</div>
+													<div className="text-sm font-medium text-gray-900">{user.name}</div>
 												</TableCell>
 												<TableCell
 													className="px-6 py-4 whitespace-nowrap"
 													onClick={() => handleRowClick(user)}
 												>
-													<div className="text-sm text-gray-600 dark:text-gray-400">{user.email}</div>
+													<div className="text-sm text-gray-600">{user.email}</div>
 												</TableCell>
 												<TableCell
 													className="px-6 py-4 whitespace-nowrap"
 													onClick={() => handleRowClick(user)}
 												>
 													<div
-														className="text-sm text-gray-900 dark:text-gray-100 max-w-[200px] truncate"
+														className="text-sm text-gray-900 max-w-[200px] truncate"
 														title={getNormalizedMajor(user.major) || "N/A"}
 													>
 														{getNormalizedMajor(user.major) || "N/A"}
@@ -522,7 +522,7 @@ export default function ResumeDatabaseContent() {
 													className="px-6 py-4 whitespace-nowrap"
 													onClick={() => handleRowClick(user)}
 												>
-													<div className="text-sm text-gray-900 dark:text-gray-100">{user.graduationYear || "N/A"}</div>
+													<div className="text-sm text-gray-900">{user.graduationYear || "N/A"}</div>
 												</TableCell>
 												<TableCell
 													className="px-6 py-4 whitespace-nowrap"
@@ -540,11 +540,11 @@ export default function ResumeDatabaseContent() {
 
 							{/* Pagination Controls */}
 							{totalPages > 1 && (
-								<div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+								<div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
 									<div className="flex flex-col sm:flex-row items-center justify-between gap-4">
 										{/* Results info and items per page selector */}
 										<div className="flex flex-col sm:flex-row items-center gap-4">
-											<p className="text-sm text-gray-700 dark:text-gray-300">
+											<p className="text-sm text-gray-700">
 												Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
 												<span className="font-medium">{Math.min(endIndex, filteredUsers.length)}</span> of{" "}
 												<span className="font-medium">{filteredUsers.length}</span> results
@@ -552,7 +552,7 @@ export default function ResumeDatabaseContent() {
 
 											{/* Items per page selector */}
 											<div className="flex items-center gap-2">
-												<label className="text-sm text-gray-700 dark:text-gray-300">
+												<label className="text-sm text-gray-700">
 													Per page:
 												</label>
 												<Select
@@ -582,7 +582,7 @@ export default function ResumeDatabaseContent() {
 											>
 												Previous
 											</Button>
-											<span className="text-sm text-gray-700 dark:text-gray-300">
+											<span className="text-sm text-gray-700">
 												Page {currentPage} of {totalPages}
 											</span>
 											<Button
@@ -608,13 +608,13 @@ export default function ResumeDatabaseContent() {
 							<>
 								{/* Modal Header */}
 								<DialogHeader>
-									<DialogTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+									<DialogTitle className="text-2xl font-bold text-gray-900">
 										{selectedUserForModal.name}
 									</DialogTitle>
 									<DialogDescription className="sr-only">
 										View {selectedUserForModal.name}'s resume and download it
 									</DialogDescription>
-									<p className="text-sm text-gray-600 dark:text-gray-400">
+									<p className="text-sm text-gray-600">
 										{selectedUserForModal.email} • {getNormalizedMajor(selectedUserForModal.major) || "N/A"} • Class of{" "}
 										{selectedUserForModal.graduationYear || "N/A"}
 									</p>
@@ -625,14 +625,14 @@ export default function ResumeDatabaseContent() {
 									{selectedUserForModal.resume ? (
 										<iframe
 											src={selectedUserForModal.resume}
-											className="w-full h-[600px] border border-gray-300 dark:border-gray-700 rounded-xl"
+											className="w-full h-[600px] border border-gray-300 rounded-xl"
 											title={`${selectedUserForModal.name}'s Resume`}
 										/>
 									) : (
 										<div className="flex items-center justify-center h-64">
 											<div className="text-center">
 												<FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-												<p className="text-gray-600 dark:text-gray-400">No resume available</p>
+												<p className="text-gray-600">No resume available</p>
 											</div>
 										</div>
 									)}

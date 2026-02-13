@@ -47,7 +47,6 @@ const defaultFormData: EventFormData = {
   location: "",
   startDate: Date.now(),
   endDate: Date.now() + 3600000,
-  capacity: undefined,
   eventCode: "",
   hasFood: false,
   needsFlyers: false,
@@ -83,7 +82,6 @@ function buildFormDataFromInitial(initialData?: Partial<EventRequest>): EventFor
     location: initialData.location || defaultFormData.location,
     startDate: initialData.startDate || Date.now(),
     endDate: initialData.endDate || Date.now() + 3600000,
-    capacity: initialData.capacity ?? defaultFormData.capacity,
     eventCode: initialData.eventCode || defaultFormData.eventCode,
     hasFood: initialData.hasFood ?? initialData.foodDrinksBeingServed ?? defaultFormData.hasFood,
     needsFlyers: initialData.needsFlyers ?? defaultFormData.needsFlyers,
@@ -211,7 +209,6 @@ export function EventRequestWizardModal({
               location: formData.location,
               startDate: formData.startDate,
               endDate: formData.endDate,
-              capacity: formData.capacity,
               eventCode: formData.eventCode,
               hasFood: formData.hasFood,
               willOrHaveRoomBooking: formData.willOrHaveRoomBooking,
@@ -297,7 +294,7 @@ export function EventRequestWizardModal({
         <div className="space-y-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-gray-900 dark:text-gray-100">
+              <span className="font-medium text-gray-900">
                 Step {currentStep} of {steps.length}
               </span>
               <span className="text-gray-500">{steps[currentStep - 1].title}</span>
@@ -309,9 +306,9 @@ export function EventRequestWizardModal({
                   key={step.id}
                   className={
                     step.id === currentStep
-                      ? "text-blue-600 dark:text-blue-400 font-medium"
+                      ? "text-blue-600 font-medium"
                       : step.id < currentStep
-                      ? "text-green-600 dark:text-green-400"
+                      ? "text-green-600"
                       : ""
                   }
                 >

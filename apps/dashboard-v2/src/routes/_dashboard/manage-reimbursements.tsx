@@ -52,7 +52,59 @@ import {
 } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
+
+function formatAuditAction(action: string): {
+  label: string;
+  description: string;
+  color: string;
+  icon: typeof CheckCircle;
+} {
+  const map: Record<string, { label: string; description: string; color: string; icon: typeof CheckCircle }> = {
+    submitted: {
+      label: "Submitted",
+      description: "Reimbursement request was submitted for review",
+      color: "bg-blue-500",
+      icon: FileText,
+    },
+    status_changed_to_approved: {
+      label: "Approved",
+      description: "Request was reviewed and approved",
+      color: "bg-green-500",
+      icon: CheckCircle,
+    },
+    status_changed_to_declined: {
+      label: "Declined",
+      description: "Request was reviewed and declined",
+      color: "bg-red-500",
+      icon: XCircle,
+    },
+    status_changed_to_paid: {
+      label: "Marked as Paid",
+      description: "Payment has been processed",
+      color: "bg-emerald-500",
+      icon: DollarSign,
+    },
+    payment_details_added: {
+      label: "Payment Confirmed",
+      description: "Payment confirmation details were recorded",
+      color: "bg-emerald-600",
+      icon: CreditCard,
+    },
+    status_changed_to_submitted: {
+      label: "Re-submitted",
+      description: "Request was re-submitted for review",
+      color: "bg-blue-500",
+      icon: FileText,
+    },
+  };
+  return map[action] || {
+    label: action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    description: "",
+    color: "bg-gray-400",
+    icon: Clock,
+  };
+}
 
 export const Route = createFileRoute("/_dashboard/manage-reimbursements")({
   component: ManageReimbursementsPage,
@@ -404,7 +456,7 @@ function ManageReimbursementsPage() {
       const response = await fetch("/api/extract-payment-details", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: proofUrl }),
+        body: JSON.stringify({ imageUrl: proofUrl, logtoId }),
       });
 
       if (!response.ok) {
@@ -675,18 +727,42 @@ function ManageReimbursementsPage() {
                 selectedReimbursement.auditLogs.length > 0 && (
                   <section className="border-t border-gray-100 pt-6 space-y-4">
                     <h3 className="text-sm font-bold text-gray-900">Audit History</h3>
-                    <div className="space-y-4 relative pl-4 border-l-2 border-gray-100">
-                      {selectedReimbursement.auditLogs.map(
-                        (log: any, i: number) => (
-                          <div key={i} className="relative">
-                            <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-muted-foreground/30 border-2 border-background" />
-                            <p className="text-sm">{log.action}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {format(log.timestamp, "MMM d, yyyy h:mm a")}
-                              {log.createdBy && ` • ${log.createdBy}`}
-                            </p>
-                          </div>
-                        )
+                    <div className="space-y-0 relative ml-3">
+                      {[...selectedReimbursement.auditLogs].reverse().map(
+                        (log: any, i: number, arr: any[]) => {
+                          const info = formatAuditAction(log.action);
+                          const Icon = info.icon;
+                          const isLast = i === arr.length - 1;
+                          return (
+                            <div key={i} className="relative flex gap-3 pb-6 last:pb-0">
+                              {!isLast && (
+                                <div className="absolute left-[11px] top-7 bottom-0 w-px bg-gray-200" />
+                              )}
+                              <div className={`relative z-10 flex-shrink-0 w-[23px] h-[23px] rounded-full ${info.color} flex items-center justify-center ring-4 ring-white`}>
+                                <Icon className="w-3 h-3 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0 pt-0.5">
+                                <div className="flex items-baseline justify-between gap-2">
+                                  <span className="text-sm font-semibold text-gray-900">{info.label}</span>
+                                  <span className="text-[11px] text-gray-400 whitespace-nowrap">
+                                    {formatDistanceToNow(log.timestamp, { addSuffix: true })}
+                                  </span>
+                                </div>
+                                {info.description && (
+                                  <p className="text-xs text-gray-500 mt-0.5">{info.description}</p>
+                                )}
+                                <p className="text-[11px] text-gray-400 mt-1">
+                                  {format(log.timestamp, "MMM d, yyyy 'at' h:mm a")}
+                                  {log.createdBy && (
+                                    <span className="ml-1.5 inline-flex items-center gap-1 bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px] font-mono">
+                                      {log.createdBy}
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        }
                       )}
                     </div>
                   </section>

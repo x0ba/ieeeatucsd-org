@@ -137,13 +137,13 @@ export function FundRequestDetailModal({ isOpen, onClose, request, onEdit }: Fun
           <div className="space-y-6">
             {/* Alerts for Needs Info / Denied / Approved */}
             {request.status === "needs_info" && request.infoRequestNotes && (
-              <div className="rounded-md border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 p-3 flex flex-row gap-3">
-                <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div className="rounded-md border border-yellow-200 bg-yellow-50 p-3 flex flex-row gap-3">
+                <AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-300 text-sm mb-0.5">
+                  <h4 className="font-semibold text-yellow-800 text-sm mb-0.5">
                     Information Requested
                   </h4>
-                  <p className="text-xs text-yellow-700 dark:text-yellow-400 leading-relaxed">
+                  <p className="text-xs text-yellow-700 leading-relaxed">
                     {request.infoRequestNotes}
                   </p>
                 </div>
@@ -151,22 +151,22 @@ export function FundRequestDetailModal({ isOpen, onClose, request, onEdit }: Fun
             )}
 
             {request.status === "denied" && request.reviewNotes && (
-              <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 p-4 flex flex-row gap-3">
-                <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex flex-row gap-3">
+                <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-red-800 dark:text-red-300 text-sm mb-1">Request Denied</h4>
-                  <p className="text-sm text-red-700 dark:text-red-400 leading-relaxed">{request.reviewNotes}</p>
+                  <h4 className="font-semibold text-red-800 text-sm mb-1">Request Denied</h4>
+                  <p className="text-sm text-red-700 leading-relaxed">{request.reviewNotes}</p>
                 </div>
               </div>
             )}
 
             {request.status === "approved" && (
-              <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-950/20 p-4 flex flex-row gap-3">
-                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+              <div className="rounded-xl border border-green-200 bg-green-50 p-4 flex flex-row gap-3">
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-green-800 dark:text-green-300 text-sm mb-1">Request Approved</h4>
+                  <h4 className="font-semibold text-green-800 text-sm mb-1">Request Approved</h4>
                   <div className="space-y-1">
-                    {request.reviewNotes && <p className="text-sm text-green-700 dark:text-green-400 leading-relaxed">{request.reviewNotes}</p>}
+                    {request.reviewNotes && <p className="text-sm text-green-700 leading-relaxed">{request.reviewNotes}</p>}
                   </div>
                 </div>
               </div>
@@ -184,11 +184,11 @@ export function FundRequestDetailModal({ isOpen, onClose, request, onEdit }: Fun
 
             {request.infoResponseNotes && (
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-yellow-600 uppercase tracking-wide flex items-center gap-2">
                   <Briefcase className="w-4 h-4" /> Additional Context
                 </h3>
-                <div className="bg-yellow-50/30 dark:bg-yellow-950/30 p-4 rounded-xl border border-yellow-100 dark:border-yellow-900/50">
-                  <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-2">Response to Info Request:</p>
+                <div className="bg-yellow-50/30 p-4 rounded-xl border border-yellow-100">
+                  <p className="text-xs font-semibold text-yellow-700 mb-2">Response to Info Request:</p>
                   <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{request.infoResponseNotes}</p>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export function FundRequestDetailModal({ isOpen, onClose, request, onEdit }: Fun
                 <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
                   Amount
                 </span>
-                <div className="flex items-center gap-1 mt-0.5 text-green-600 dark:text-green-400 font-bold text-base">
+                <div className="flex items-center gap-1 mt-0.5 text-green-600 font-bold text-base">
                   {formatCurrency(request.amount)}
                 </div>
               </div>

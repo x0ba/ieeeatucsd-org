@@ -94,12 +94,12 @@ export const STATUS_LABELS: Record<FundRequestStatus, string> = {
 };
 
 export const STATUS_COLORS: Record<FundRequestStatus, string> = {
-  draft: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-  submitted: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  needs_info: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-  approved: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  denied: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  completed: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  draft: "bg-gray-100 text-gray-800",
+  submitted: "bg-blue-100 text-blue-800",
+  needs_info: "bg-yellow-100 text-yellow-800",
+  approved: "bg-green-100 text-green-800",
+  denied: "bg-red-100 text-red-800",
+  completed: "bg-purple-100 text-purple-800",
 };
 
 export const CATEGORY_LABELS: Record<FundRequestCategory, string> = {

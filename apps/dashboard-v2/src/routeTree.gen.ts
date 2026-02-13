@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
 import { Route as SigninRouteImport } from './routes/signin'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as IndexRouteImport } from './routes/index'
@@ -41,14 +43,26 @@ import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 import { Route as ApiOnboardingSendInvitationRouteImport } from './routes/api/onboarding/send-invitation'
 import { Route as ApiOnboardingSendDirectOnboardingRouteImport } from './routes/api/onboarding/send-direct-onboarding'
 import { Route as ApiOnboardingResendInvitationRouteImport } from './routes/api/onboarding/resend-invitation'
+import { Route as ApiIeeeEmailFetchEmailsRouteImport } from './routes/api/ieee-email/fetch-emails'
+import { Route as ApiIeeeEmailFetchContentRouteImport } from './routes/api/ieee-email/fetch-content'
 import { Route as ApiEmailSendRouteImport } from './routes/api/email/send'
 import { Route as ApiAiQueryRouteImport } from './routes/api/ai/query'
 import { Route as DashboardSponsorsResumeDatabaseRouteImport } from './routes/_dashboard/sponsors/resume-database'
 import { Route as DashboardSponsorsInformationRouteImport } from './routes/_dashboard/sponsors/information'
 
+const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
+  id: '/terms-of-service',
+  path: '/terms-of-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SigninRoute = SigninRouteImport.update({
   id: '/signin',
   path: '/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CallbackRoute = CallbackRouteImport.update({
@@ -213,6 +227,17 @@ const ApiOnboardingResendInvitationRoute =
     path: '/api/onboarding/resend-invitation',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiIeeeEmailFetchEmailsRoute = ApiIeeeEmailFetchEmailsRouteImport.update({
+  id: '/api/ieee-email/fetch-emails',
+  path: '/api/ieee-email/fetch-emails',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiIeeeEmailFetchContentRoute =
+  ApiIeeeEmailFetchContentRouteImport.update({
+    id: '/api/ieee-email/fetch-content',
+    path: '/api/ieee-email/fetch-content',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiEmailSendRoute = ApiEmailSendRouteImport.update({
   id: '/api/email/send',
   path: '/api/email/send',
@@ -239,7 +264,9 @@ const DashboardSponsorsInformationRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/callback': typeof CallbackRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/signin': typeof SigninRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/constitution-builder': typeof DashboardConstitutionBuilderRoute
   '/events': typeof DashboardEventsRoute
   '/executive-analytics': typeof DashboardExecutiveAnalyticsRoute
@@ -268,6 +295,8 @@ export interface FileRoutesByFullPath {
   '/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
   '/api/ai/query': typeof ApiAiQueryRoute
   '/api/email/send': typeof ApiEmailSendRoute
+  '/api/ieee-email/fetch-content': typeof ApiIeeeEmailFetchContentRoute
+  '/api/ieee-email/fetch-emails': typeof ApiIeeeEmailFetchEmailsRoute
   '/api/onboarding/resend-invitation': typeof ApiOnboardingResendInvitationRoute
   '/api/onboarding/send-direct-onboarding': typeof ApiOnboardingSendDirectOnboardingRoute
   '/api/onboarding/send-invitation': typeof ApiOnboardingSendInvitationRoute
@@ -276,7 +305,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/callback': typeof CallbackRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/signin': typeof SigninRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/constitution-builder': typeof DashboardConstitutionBuilderRoute
   '/events': typeof DashboardEventsRoute
   '/executive-analytics': typeof DashboardExecutiveAnalyticsRoute
@@ -305,6 +336,8 @@ export interface FileRoutesByTo {
   '/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
   '/api/ai/query': typeof ApiAiQueryRoute
   '/api/email/send': typeof ApiEmailSendRoute
+  '/api/ieee-email/fetch-content': typeof ApiIeeeEmailFetchContentRoute
+  '/api/ieee-email/fetch-emails': typeof ApiIeeeEmailFetchEmailsRoute
   '/api/onboarding/resend-invitation': typeof ApiOnboardingResendInvitationRoute
   '/api/onboarding/send-direct-onboarding': typeof ApiOnboardingSendDirectOnboardingRoute
   '/api/onboarding/send-invitation': typeof ApiOnboardingSendInvitationRoute
@@ -315,7 +348,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_dashboard': typeof DashboardRouteWithChildren
   '/callback': typeof CallbackRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/signin': typeof SigninRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/_dashboard/constitution-builder': typeof DashboardConstitutionBuilderRoute
   '/_dashboard/events': typeof DashboardEventsRoute
   '/_dashboard/executive-analytics': typeof DashboardExecutiveAnalyticsRoute
@@ -344,6 +379,8 @@ export interface FileRoutesById {
   '/_dashboard/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
   '/api/ai/query': typeof ApiAiQueryRoute
   '/api/email/send': typeof ApiEmailSendRoute
+  '/api/ieee-email/fetch-content': typeof ApiIeeeEmailFetchContentRoute
+  '/api/ieee-email/fetch-emails': typeof ApiIeeeEmailFetchEmailsRoute
   '/api/onboarding/resend-invitation': typeof ApiOnboardingResendInvitationRoute
   '/api/onboarding/send-direct-onboarding': typeof ApiOnboardingSendDirectOnboardingRoute
   '/api/onboarding/send-invitation': typeof ApiOnboardingSendInvitationRoute
@@ -354,7 +391,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/callback'
+    | '/privacy-policy'
     | '/signin'
+    | '/terms-of-service'
     | '/constitution-builder'
     | '/events'
     | '/executive-analytics'
@@ -383,6 +422,8 @@ export interface FileRouteTypes {
     | '/sponsors/resume-database'
     | '/api/ai/query'
     | '/api/email/send'
+    | '/api/ieee-email/fetch-content'
+    | '/api/ieee-email/fetch-emails'
     | '/api/onboarding/resend-invitation'
     | '/api/onboarding/send-direct-onboarding'
     | '/api/onboarding/send-invitation'
@@ -391,7 +432,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/callback'
+    | '/privacy-policy'
     | '/signin'
+    | '/terms-of-service'
     | '/constitution-builder'
     | '/events'
     | '/executive-analytics'
@@ -420,6 +463,8 @@ export interface FileRouteTypes {
     | '/sponsors/resume-database'
     | '/api/ai/query'
     | '/api/email/send'
+    | '/api/ieee-email/fetch-content'
+    | '/api/ieee-email/fetch-emails'
     | '/api/onboarding/resend-invitation'
     | '/api/onboarding/send-direct-onboarding'
     | '/api/onboarding/send-invitation'
@@ -429,7 +474,9 @@ export interface FileRouteTypes {
     | '/'
     | '/_dashboard'
     | '/callback'
+    | '/privacy-policy'
     | '/signin'
+    | '/terms-of-service'
     | '/_dashboard/constitution-builder'
     | '/_dashboard/events'
     | '/_dashboard/executive-analytics'
@@ -458,6 +505,8 @@ export interface FileRouteTypes {
     | '/_dashboard/sponsors/resume-database'
     | '/api/ai/query'
     | '/api/email/send'
+    | '/api/ieee-email/fetch-content'
+    | '/api/ieee-email/fetch-emails'
     | '/api/onboarding/resend-invitation'
     | '/api/onboarding/send-direct-onboarding'
     | '/api/onboarding/send-invitation'
@@ -468,7 +517,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   CallbackRoute: typeof CallbackRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   SigninRoute: typeof SigninRoute
+  TermsOfServiceRoute: typeof TermsOfServiceRoute
   ApiSplatRoute: typeof ApiSplatRoute
   ApiCheckEmailExistsRoute: typeof ApiCheckEmailExistsRoute
   ApiCreateIeeeEmailRoute: typeof ApiCreateIeeeEmailRoute
@@ -478,6 +529,8 @@ export interface RootRouteChildren {
   ApiResetEmailPasswordRoute: typeof ApiResetEmailPasswordRoute
   ApiAiQueryRoute: typeof ApiAiQueryRoute
   ApiEmailSendRoute: typeof ApiEmailSendRoute
+  ApiIeeeEmailFetchContentRoute: typeof ApiIeeeEmailFetchContentRoute
+  ApiIeeeEmailFetchEmailsRoute: typeof ApiIeeeEmailFetchEmailsRoute
   ApiOnboardingResendInvitationRoute: typeof ApiOnboardingResendInvitationRoute
   ApiOnboardingSendDirectOnboardingRoute: typeof ApiOnboardingSendDirectOnboardingRoute
   ApiOnboardingSendInvitationRoute: typeof ApiOnboardingSendInvitationRoute
@@ -486,11 +539,25 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms-of-service': {
+      id: '/terms-of-service'
+      path: '/terms-of-service'
+      fullPath: '/terms-of-service'
+      preLoaderRoute: typeof TermsOfServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signin': {
       id: '/signin'
       path: '/signin'
       fullPath: '/signin'
       preLoaderRoute: typeof SigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/callback': {
@@ -710,6 +777,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOnboardingResendInvitationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ieee-email/fetch-emails': {
+      id: '/api/ieee-email/fetch-emails'
+      path: '/api/ieee-email/fetch-emails'
+      fullPath: '/api/ieee-email/fetch-emails'
+      preLoaderRoute: typeof ApiIeeeEmailFetchEmailsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ieee-email/fetch-content': {
+      id: '/api/ieee-email/fetch-content'
+      path: '/api/ieee-email/fetch-content'
+      fullPath: '/api/ieee-email/fetch-content'
+      preLoaderRoute: typeof ApiIeeeEmailFetchContentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/email/send': {
       id: '/api/email/send'
       path: '/api/email/send'
@@ -793,7 +874,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
   CallbackRoute: CallbackRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   SigninRoute: SigninRoute,
+  TermsOfServiceRoute: TermsOfServiceRoute,
   ApiSplatRoute: ApiSplatRoute,
   ApiCheckEmailExistsRoute: ApiCheckEmailExistsRoute,
   ApiCreateIeeeEmailRoute: ApiCreateIeeeEmailRoute,
@@ -803,6 +886,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiResetEmailPasswordRoute: ApiResetEmailPasswordRoute,
   ApiAiQueryRoute: ApiAiQueryRoute,
   ApiEmailSendRoute: ApiEmailSendRoute,
+  ApiIeeeEmailFetchContentRoute: ApiIeeeEmailFetchContentRoute,
+  ApiIeeeEmailFetchEmailsRoute: ApiIeeeEmailFetchEmailsRoute,
   ApiOnboardingResendInvitationRoute: ApiOnboardingResendInvitationRoute,
   ApiOnboardingSendDirectOnboardingRoute:
     ApiOnboardingSendDirectOnboardingRoute,

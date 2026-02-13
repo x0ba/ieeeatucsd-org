@@ -48,7 +48,6 @@ function mapEventRequestToType(er: any): EventRequest {
     location: er.location || "TBD",
     startDate: er.startDateTime || Date.now(),
     endDate: er.endDateTime || Date.now() + 3600000,
-    capacity: er.expectedAttendance,
     eventCode: er.eventCode || `EVENT-${er._id.slice(-6)}`,
     hasFood: er.foodDrinksBeingServed || false,
     needsFlyers: er.flyersNeeded || false,
@@ -105,7 +104,6 @@ function mapEventToType(event: any): EventRequest {
     location: event.location || "TBD",
     startDate: event.startDate || Date.now(),
     endDate: event.endDate || Date.now() + 3600000,
-    capacity: event.capacity,
     eventCode: event.eventCode || `EVENT-${event._id.slice(-6)}`,
     hasFood: event.hasFood || false,
     needsFlyers: event.needsFlyers || false,
@@ -696,8 +694,8 @@ function ManageEventsPage() {
       {/* Loading State */}
       {(!eventRequestsData || !eventsData) && (
         <div className="space-y-4">
-          <div className="h-8 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
+          <div className="h-64 bg-gray-200 rounded animate-pulse" />
         </div>
       )}
 
@@ -836,7 +834,7 @@ function ManageEventsPage() {
       {/* Processing Overlay */}
       {isProcessing && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center gap-3">
+          <div className="bg-white rounded-lg p-6 flex items-center gap-3">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span>Processing...</span>
           </div>

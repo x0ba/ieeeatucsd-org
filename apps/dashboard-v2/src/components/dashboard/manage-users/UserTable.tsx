@@ -33,13 +33,13 @@ interface UserTableProps {
 }
 
 const roleColors: Record<UserRole, string> = {
-  Member: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-  "General Officer": "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  "Executive Officer": "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  "Member at Large": "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300",
-  "Past Officer": "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
-  Sponsor: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-  Administrator: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
+  Member: "bg-gray-100 text-gray-800",
+  "General Officer": "bg-blue-100 text-blue-800",
+  "Executive Officer": "bg-purple-100 text-purple-800",
+  "Member at Large": "bg-teal-100 text-teal-800",
+  "Past Officer": "bg-orange-100 text-orange-800",
+  Sponsor: "bg-yellow-100 text-yellow-800",
+  Administrator: "bg-red-100 text-red-800",
 };
 
 const truncateMajor = (major: string, maxLength = 20) => {
@@ -70,8 +70,8 @@ export function UserTable({
 
   if (users.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl border p-8 text-center">
-        <div className="text-gray-400 dark:text-gray-500 mb-4">
+      <div className="bg-white rounded-xl border p-8 text-center">
+        <div className="text-gray-400 mb-4">
           <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
@@ -81,30 +81,30 @@ export function UserTable({
             />
           </svg>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No users found</h3>
-        <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or filter criteria.</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+        <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border overflow-hidden">
+    <div className="bg-white rounded-xl border overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-gray-50/50 dark:bg-gray-700/50">
-              <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => onSort("name")}>
+            <tr className="border-b bg-gray-50/50">
+              <th className="text-left p-4 font-medium text-gray-500 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => onSort("name")}>
                 <span className="flex items-center gap-1">User {getSortIcon("name")}</span>
               </th>
-              <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => onSort("email")}>
+              <th className="text-left p-4 font-medium text-gray-500 hidden md:table-cell cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => onSort("email")}>
                 <span className="flex items-center gap-1">Email {getSortIcon("email")}</span>
               </th>
-              <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => onSort("role")}>
+              <th className="text-left p-4 font-medium text-gray-500 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => onSort("role")}>
                 <span className="flex items-center gap-1">Role {getSortIcon("role")}</span>
               </th>
 
-              <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 hidden xl:table-cell">Points</th>
-              <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 hidden xl:table-cell cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => onSort("lastLogin")}>
+              <th className="text-left p-4 font-medium text-gray-500 hidden xl:table-cell">Points</th>
+              <th className="text-left p-4 font-medium text-gray-500 hidden xl:table-cell cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => onSort("lastLogin")}>
                 <span className="flex items-center gap-1">Last Active {getSortIcon("lastLogin")}</span>
               </th>
             </tr>
@@ -113,7 +113,7 @@ export function UserTable({
             {users.map((user, idx) => (
               <tr
                 key={user._id}
-                className={`border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer ${idx % 2 === 1 ? "bg-gray-50/30 dark:bg-gray-800/20" : ""
+                className={`border-b last:border-b-0 hover:bg-gray-50 transition-colors cursor-pointer ${idx % 2 === 1 ? "bg-gray-50/30" : ""
                   }`}
                 onClick={() => onRowClick?.(user)}
               >
@@ -126,7 +126,7 @@ export function UserTable({
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                      <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
                         {user.name}
                         {user._id === currentUserId && (
                           <Badge variant="outline" className="rounded-full text-xs">
@@ -135,15 +135,15 @@ export function UserTable({
                         )}
                       </div>
                       {user.pid && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">PID: {user.pid}</div>
+                        <div className="text-xs text-gray-500">PID: {user.pid}</div>
                       )}
                     </div>
                   </div>
                 </td>
                 <td className="p-4 hidden md:table-cell">
-                  <div className="text-sm text-gray-900 dark:text-gray-100">{user.email}</div>
+                  <div className="text-sm text-gray-900">{user.email}</div>
                   {user.memberId && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">ID: {user.memberId}</div>
+                    <div className="text-xs text-gray-500">ID: {user.memberId}</div>
                   )}
                 </td>
                 <td className="p-4">
@@ -151,11 +151,11 @@ export function UserTable({
                 </td>
 
                 <td className="p-4 hidden xl:table-cell">
-                  <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 font-mono">
+                  <Badge className="bg-yellow-100 text-yellow-800 font-mono">
                     {user.points || 0}
                   </Badge>
                 </td>
-                <td className="p-4 hidden xl:table-cell text-gray-600 dark:text-gray-400">
+                <td className="p-4 hidden xl:table-cell text-gray-600">
                   {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : "Never"}
                 </td>
               </tr>

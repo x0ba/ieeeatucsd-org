@@ -73,14 +73,14 @@ export function EventsDataTable({
 
   if (events.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl border p-8 text-center">
-        <div className="text-gray-400 dark:text-gray-500 mb-4">
+      <div className="bg-white rounded-xl border p-8 text-center">
+        <div className="text-gray-400 mb-4">
           <MapPin className="w-12 h-12 mx-auto" />
         </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
           No events found
         </h3>
-        <p className="text-gray-500 dark:text-gray-400">
+        <p className="text-gray-500">
           Create a new event or adjust your filters to see events here.
         </p>
       </div>
@@ -88,7 +88,7 @@ export function EventsDataTable({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border overflow-hidden max-w-full">
+    <div className="bg-white rounded-xl border overflow-hidden max-w-full">
       <div className="overflow-x-auto scrollbar-thin">
         <Table className="w-full">
           <TableHeader>
@@ -151,10 +151,10 @@ export function EventsDataTable({
                       <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span className="truncate max-w-[150px]">{event.location}</span>
                     </div>
-                    {event.capacity && (
+                    {event.estimatedAttendance > 0 && (
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                         <Users className="h-3 w-3" />
-                        Cap: {event.capacity}
+                        Expected: {event.estimatedAttendance}
                       </div>
                     )}
                   </TableCell>

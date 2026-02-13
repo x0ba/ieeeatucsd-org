@@ -2,7 +2,6 @@
 
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
 
 body {
   @apply m-0;
@@ -65,51 +64,6 @@ code {
   --ieee-base-200: oklch(0.97 0.005 250);
 }
 
-.dark {
-  --background: oklch(0.15 0.01 250);
-  --foreground: oklch(0.95 0.01 250);
-  --card: oklch(0.18 0.01 250);
-  --card-foreground: oklch(0.95 0.01 250);
-  --popover: oklch(0.18 0.01 250);
-  --popover-foreground: oklch(0.95 0.01 250);
-  --primary: oklch(0.76 0.11 250);
-  --primary-foreground: oklch(0.15 0.01 250);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.95 0.01 250);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.95 0.01 250);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.274 0.006 286.033);
-  --input: oklch(0.274 0.006 286.033);
-  --ring: oklch(0.76 0.11 250);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.18 0.01 250);
-  --sidebar-foreground: oklch(0.95 0.01 250);
-  --sidebar-primary: oklch(0.76 0.11 250);
-  --sidebar-primary-foreground: oklch(0.15 0.01 250);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.95 0.01 250);
-  --sidebar-border: oklch(0.274 0.006 286.033);
-  --sidebar-ring: oklch(0.76 0.11 250);
-
-  /* IEEE UCSD Dark Mode Color Palette */
-  --ieee-blue: oklch(0.76 0.11 250);
-  --ieee-blue-light: oklch(0.85 0.1 250);
-  --ieee-gold: oklch(0.85 0.2 85);
-  --ieee-success: oklch(0.8 0.16 150);
-  --ieee-warning: oklch(0.85 0.2 70);
-  --ieee-error: oklch(0.75 0.22 25);
-  --ieee-info: oklch(0.8 0.16 230);
-  --ieee-base-100: oklch(0.15 0.01 250);
-  --ieee-base-200: oklch(0.18 0.01 250);
-}
 
 @theme inline {
   --color-background: var(--background);
@@ -168,4 +122,192 @@ code {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Tiptap Document Editor Styles */
+.constitution-document-editor .tiptap {
+  outline: none;
+  min-height: 400px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #1a1a1a;
+}
+
+.constitution-document-editor .tiptap > * + * {
+  margin-top: 0.75em;
+}
+
+.constitution-document-editor .tiptap h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.3em;
+}
+
+.constitution-document-editor .tiptap h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.4em;
+  color: #1f2937;
+}
+
+.constitution-document-editor .tiptap h4 {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.3em;
+  color: #374151;
+}
+
+.constitution-document-editor .tiptap h5,
+.constitution-document-editor .tiptap h6 {
+  font-size: 1em;
+  font-weight: 600;
+  margin-top: 0.75em;
+  margin-bottom: 0.25em;
+  color: #4b5563;
+}
+
+.constitution-document-editor .tiptap p {
+  margin-bottom: 0.75em;
+}
+
+.constitution-document-editor .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+
+.constitution-document-editor .tiptap ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.constitution-document-editor .tiptap ol {
+  list-style-type: decimal;
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.constitution-document-editor .tiptap li {
+  margin-bottom: 0.25em;
+}
+
+.constitution-document-editor .tiptap li > p {
+  margin-bottom: 0.25em;
+}
+
+.constitution-document-editor .tiptap blockquote {
+  border-left: 3px solid #d1d5db;
+  padding-left: 1em;
+  margin-left: 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.constitution-document-editor .tiptap hr {
+  border: none;
+  border-top: 2px solid #e5e7eb;
+  margin: 1.5em 0;
+}
+
+.constitution-document-editor .tiptap code {
+  background-color: #f3f4f6;
+  border-radius: 0.25em;
+  padding: 0.15em 0.4em;
+  font-size: 0.9em;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+}
+
+.constitution-document-editor .tiptap pre {
+  background-color: #1f2937;
+  color: #e5e7eb;
+  border-radius: 0.5em;
+  padding: 1em;
+  overflow-x: auto;
+  margin-bottom: 0.75em;
+}
+
+.constitution-document-editor .tiptap pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: 0.875em;
+}
+
+.constitution-document-editor .tiptap strong {
+  font-weight: 700;
+}
+
+.constitution-document-editor .tiptap em {
+  font-style: italic;
+}
+
+.constitution-document-editor .tiptap u {
+  text-decoration: underline;
+}
+
+/* HTML content rendered in section editor and preview (saved from document editor) */
+.constitution-html-content p {
+  margin-bottom: 0.75em;
+}
+
+.constitution-html-content strong {
+  font-weight: 700;
+}
+
+.constitution-html-content em {
+  font-style: italic;
+}
+
+.constitution-html-content u {
+  text-decoration: underline;
+}
+
+.constitution-html-content ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.constitution-html-content ol {
+  list-style-type: decimal;
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.constitution-html-content li {
+  margin-bottom: 0.25em;
+}
+
+.constitution-html-content h2,
+.constitution-html-content h3,
+.constitution-html-content h4,
+.constitution-html-content h5,
+.constitution-html-content h6 {
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.constitution-html-content blockquote {
+  border-left: 3px solid #d1d5db;
+  padding-left: 1em;
+  margin-left: 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.constitution-html-content hr {
+  border: none;
+  border-top: 2px solid #e5e7eb;
+  margin: 1.5em 0;
 }

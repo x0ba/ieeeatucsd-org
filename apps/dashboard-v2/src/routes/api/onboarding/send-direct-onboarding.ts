@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { sendDirectOnboardingEmail } from "@/server/email-templates";
+import { requireApiAuth } from "@/server/auth";
 
 async function handle({ request }: { request: Request }) {
   try {
@@ -10,7 +11,9 @@ async function handle({ request }: { request: Request }) {
       });
     }
 
-    const data = await request.json();
+    const authResult = await requireApiAuth(request);
+    if (authResult instanceof Response) return authResult;
+    const data = authResult.body;
     const {
       name,
       email,
@@ -20,7 +23,7 @@ async function handle({ request }: { request: Request }) {
       customMessage,
       emailTemplate,
       googleSheetsUrl,
-    } = data;
+    } = data as Record<string, string | undefined>;
 
     if (!name || !email || !role || !position || !emailTemplate) {
       return new Response(

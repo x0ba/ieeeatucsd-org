@@ -18,6 +18,7 @@ interface InvoiceFileUploadProps {
   onParsed: (data: ParsedInvoiceData) => void;
   onFileUploaded: (fileUrl: string) => void;
   generateUploadUrl?: () => Promise<string>;
+  logtoId?: string | null;
 }
 
 export function InvoiceFileUpload({
@@ -25,6 +26,7 @@ export function InvoiceFileUpload({
   onParsed,
   onFileUploaded,
   generateUploadUrl,
+  logtoId,
 }: InvoiceFileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
@@ -96,7 +98,7 @@ export function InvoiceFileUpload({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Parse the actual file bytes via data URL, not Convex storage ID.
-        body: JSON.stringify({ imageUrl: parseDataUrl }),
+        body: JSON.stringify({ imageUrl: parseDataUrl, logtoId }),
       });
 
       if (!response.ok) {
@@ -135,10 +137,10 @@ export function InvoiceFileUpload({
   return (
     <div className="space-y-2">
       {error && (
-        <div className="flex items-start gap-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
           <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
           <div className="flex-1">
-            <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-xs text-red-600">{error}</p>
           </div>
           <Button
             type="button"
@@ -153,16 +155,16 @@ export function InvoiceFileUpload({
       )}
 
       {parseSuccess && (
-        <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+        <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg">
           <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-          <p className="text-xs text-green-600 dark:text-green-400">
+          <p className="text-xs text-green-600">
             Invoice parsed successfully! Please verify the extracted data below.
           </p>
         </div>
       )}
 
       {uploadedFileUrl && (
-        <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+        <div className="flex items-center gap-2 text-xs text-green-600">
           <FileText className="h-3.5 w-3.5" />
           <span>Invoice file attached</span>
         </div>

@@ -15,9 +15,10 @@ interface FundingSectionProps {
   };
   onChange: (data: Partial<FundingSectionProps["data"]>) => void;
   generateUploadUrl?: () => Promise<string>;
+  logtoId?: string | null;
 }
 
-export function FundingSection({ data, onChange, generateUploadUrl }: FundingSectionProps) {
+export function FundingSection({ data, onChange, generateUploadUrl, logtoId }: FundingSectionProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +71,7 @@ export function FundingSection({ data, onChange, generateUploadUrl }: FundingSec
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Use local data URL for parsing. Convex storage IDs are not fetchable URLs.
-        body: JSON.stringify({ imageUrl: parseDataUrl }),
+        body: JSON.stringify({ imageUrl: parseDataUrl, logtoId }),
       });
 
       if (response.ok) {
@@ -219,13 +220,13 @@ export function FundingSection({ data, onChange, generateUploadUrl }: FundingSec
             }}
             className="space-y-2"
           >
-            <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
               <RadioGroupItem value="yes" id="funding-yes" />
               <Label htmlFor="funding-yes" className="cursor-pointer flex-1">
                 Yes, I need AS funding
               </Label>
             </div>
-            <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
               <RadioGroupItem value="no" id="funding-no" />
               <Label htmlFor="funding-no" className="cursor-pointer flex-1">
                 No, I have other funding sources
@@ -238,9 +239,9 @@ export function FundingSection({ data, onChange, generateUploadUrl }: FundingSec
         </div>
 
         {data.needsASFunding && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-            <p className="text-xs text-amber-700 dark:text-amber-300 font-medium mb-1">AS Funding Guidelines</p>
-            <ul className="text-xs text-amber-600 dark:text-amber-400 list-disc list-inside space-y-0.5">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <p className="text-xs text-amber-700 font-medium mb-1">AS Funding Guidelines</p>
+            <ul className="text-xs text-amber-600 list-disc list-inside space-y-0.5">
               <li>Maximum $5,000 per event</li>
               <li>Itemized receipts required</li>
               <li>Food/drinks must follow university guidelines</li>
@@ -251,7 +252,7 @@ export function FundingSection({ data, onChange, generateUploadUrl }: FundingSec
 
         <div className="space-y-4 pt-4 border-t">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <h3 className="text-sm font-medium text-gray-900">
               Invoices
             </h3>
             <div className="flex gap-2">
@@ -289,14 +290,14 @@ export function FundingSection({ data, onChange, generateUploadUrl }: FundingSec
           </div>
 
           {uploadError && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-              <p className="text-xs text-red-600 dark:text-red-400">{uploadError}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-xs text-red-600">{uploadError}</p>
             </div>
           )}
 
           {data.invoices.length === 0 ? (
             <div
-              className="text-center py-8 border border-dashed rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors"
+              className="text-center py-8 border border-dashed rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors"
               onClick={() => !isUploading && fileInputRef.current?.click()}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
@@ -318,7 +319,7 @@ export function FundingSection({ data, onChange, generateUploadUrl }: FundingSec
               {data.invoices.map((invoice) => (
                 <div
                   key={invoice._id}
-                  className="p-4 border rounded-lg space-y-4 bg-gray-50/50 dark:bg-gray-800/50"
+                  className="p-4 border rounded-lg space-y-4 bg-gray-50/50"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-gray-500 uppercase">
@@ -348,7 +349,7 @@ export function FundingSection({ data, onChange, generateUploadUrl }: FundingSec
                   </div>
 
                   {invoice.invoiceFile && (
-                    <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                       <FileText className="h-3.5 w-3.5 shrink-0" />
                       <span>Invoice file attached (AI-scanned)</span>
                     </div>
@@ -480,10 +481,10 @@ export function FundingSection({ data, onChange, generateUploadUrl }: FundingSec
 
               {data.invoices.length > 0 && (
                 <div className="flex justify-between items-center pt-4 border-t">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  <span className="text-sm font-medium text-gray-600">
                     Total Invoiced:
                   </span>
-                  <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  <span className="text-lg font-bold text-gray-900">
                     ${totalAmount.toFixed(2)}
                   </span>
                 </div>

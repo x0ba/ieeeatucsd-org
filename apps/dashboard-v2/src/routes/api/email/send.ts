@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { sendEmail } from "@/server/email";
+import { requireApiAuth } from "@/server/auth";
 
 async function handle({ request }: { request: Request }) {
   try {
@@ -10,8 +11,10 @@ async function handle({ request }: { request: Request }) {
       });
     }
 
-    const body = await request.json();
-    const { to, subject, html } = body;
+    const authResult = await requireApiAuth(request);
+    if (authResult instanceof Response) return authResult;
+    const { body } = authResult;
+    const { to, subject, html } = body as { to?: string; subject?: string; html?: string };
 
     if (!to || !subject || !html) {
       return new Response(

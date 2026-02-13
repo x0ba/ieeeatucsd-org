@@ -5,6 +5,7 @@ import {
   getSubsectionIndentLevel,
   toRomanNumeral,
 } from "./utils/constitutionUtils";
+import { isHtmlContent } from "./utils/documentEditorUtils";
 
 interface SectionRendererProps {
   section: ConstitutionSection;
@@ -411,7 +412,15 @@ const SectionRenderer: React.FC<SectionRendererProps> = ({
       {/* Articles should not render content, only title */}
       {section.content && section.type !== "article" && (
         <div style={getContentStyle()}>
-          {renderParsedContent(section.content)}
+          {isHtmlContent(section.content) ? (
+            <div
+              className="constitution-html-content"
+              dangerouslySetInnerHTML={{ __html: section.content }}
+              style={{ whiteSpace: "normal" }}
+            />
+          ) : (
+            renderParsedContent(section.content)
+          )}
         </div>
       )}
     </div>

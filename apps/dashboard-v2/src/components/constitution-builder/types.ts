@@ -51,3 +51,4 @@ export interface ConstitutionAuditEntry {
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 export type ViewMode = "editor" | "preview" | "audit";
+export type EditorMode = "section" | "document";

@@ -44,11 +44,11 @@ export const Route = createFileRoute("/_dashboard/manage-fund-requests")({
 const ITEMS_PER_PAGE = 10;
 
 const STATUS_COLORS: Record<string, string> = {
-  submitted: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  needs_info: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
-  approved: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  denied: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  completed: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  submitted: "bg-blue-100 text-blue-800",
+  needs_info: "bg-orange-100 text-orange-800",
+  approved: "bg-green-100 text-green-800",
+  denied: "bg-red-100 text-red-800",
+  completed: "bg-purple-100 text-purple-800",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -245,7 +245,7 @@ function FundRequestDetailView({
       {/* Content - Split Pane */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 flex-1 min-h-0 overflow-hidden">
         {/* Left Panel: Details & Actions (5/12) */}
-        <div className="lg:col-span-5 border-r border-gray-200 dark:border-gray-800 overflow-y-auto">
+        <div className="lg:col-span-5 border-r border-gray-200 overflow-y-auto">
           <div className="p-5 space-y-5">
             {/* Officer Actions Section */}
             <section className="space-y-4">
@@ -275,9 +275,9 @@ function FundRequestDetailView({
                   <Button
                     variant="outline"
                     className={cn(
-                      "flex-1 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-900 dark:text-green-400 dark:hover:bg-green-950/20",
+                      "flex-1 border-green-200 text-green-700 hover:bg-green-50",
                       selectedStatus === "approve" &&
-                        "bg-green-100 border-green-300 dark:bg-green-950/40 dark:border-green-700"
+                        "bg-green-100 border-green-300"
                     )}
                     onClick={() => setSelectedStatus("approve")}
                   >
@@ -287,9 +287,9 @@ function FundRequestDetailView({
                   <Button
                     variant="outline"
                     className={cn(
-                      "flex-1 border-yellow-200 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-900 dark:text-yellow-400 dark:hover:bg-yellow-950/20",
+                      "flex-1 border-yellow-200 text-yellow-700 hover:bg-yellow-50",
                       selectedStatus === "needs_info" &&
-                        "bg-yellow-100 border-yellow-300 dark:bg-yellow-950/40 dark:border-yellow-700"
+                        "bg-yellow-100 border-yellow-300"
                     )}
                     onClick={() => setSelectedStatus("needs_info")}
                   >
@@ -299,9 +299,9 @@ function FundRequestDetailView({
                   <Button
                     variant="outline"
                     className={cn(
-                      "flex-1 border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/20",
+                      "flex-1 border-red-200 text-red-700 hover:bg-red-50",
                       selectedStatus === "deny" &&
-                        "bg-red-100 border-red-300 dark:bg-red-950/40 dark:border-red-700"
+                        "bg-red-100 border-red-300"
                     )}
                     onClick={() => setSelectedStatus("deny")}
                   >
@@ -415,7 +415,7 @@ function FundRequestDetailView({
                   {request.auditLogs.map((entry) => (
                     <div
                       key={entry.id}
-                      className="text-sm p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
+                      className="text-sm p-3 bg-gray-50 rounded-lg"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium capitalize">{entry.action.replace(/_/g, " ")}</span>

@@ -44,15 +44,15 @@ export const Route = createFileRoute("/_dashboard/fund-requests")({
 const ITEMS_PER_PAGE = 6;
 
 const statusColors: Record<string, string> = {
-	draft: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-	submitted: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+	draft: "bg-gray-100 text-gray-800",
+	submitted: "bg-blue-100 text-blue-800",
 	needs_info:
-		"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+		"bg-yellow-100 text-yellow-800",
 	approved:
-		"bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-	denied: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
+		"bg-green-100 text-green-800",
+	denied: "bg-red-100 text-red-800",
 	completed:
-		"bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+		"bg-purple-100 text-purple-800",
 };
 
 const statusBorderColors: Record<string, string> = {
@@ -395,7 +395,7 @@ function FundRequestsPage() {
 								{stats.submitted > 0 && (
 									<Badge
 										variant="secondary"
-										className="bg-blue-500/10 text-blue-700 dark:text-blue-300"
+										className="bg-blue-500/10 text-blue-700"
 									>
 										{stats.submitted}
 									</Badge>
@@ -406,7 +406,7 @@ function FundRequestsPage() {
 								{stats.needsInfo > 0 && (
 									<Badge
 										variant="secondary"
-										className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-300"
+										className="bg-yellow-500/10 text-yellow-700"
 									>
 										{stats.needsInfo}
 									</Badge>
@@ -417,7 +417,7 @@ function FundRequestsPage() {
 								{stats.approved > 0 && (
 									<Badge
 										variant="secondary"
-										className="bg-green-500/10 text-green-700 dark:text-green-300"
+										className="bg-green-500/10 text-green-700"
 									>
 										{stats.approved}
 									</Badge>
@@ -428,7 +428,7 @@ function FundRequestsPage() {
 								{stats.denied > 0 && (
 									<Badge
 										variant="secondary"
-										className="bg-red-500/10 text-red-700 dark:text-red-300"
+										className="bg-red-500/10 text-red-700"
 									>
 										{stats.denied}
 									</Badge>
@@ -439,7 +439,7 @@ function FundRequestsPage() {
 								{stats.completed > 0 && (
 									<Badge
 										variant="secondary"
-										className="bg-purple-500/10 text-purple-700 dark:text-purple-300"
+										className="bg-purple-500/10 text-purple-700"
 									>
 										{stats.completed}
 									</Badge>
@@ -556,13 +556,13 @@ function FundRequestsPage() {
 											</div>
 
 											{r.status === "needs_info" && r.infoRequestNotes && (
-												<div className="mt-2 p-2 bg-yellow-50/50 dark:bg-yellow-950/20 rounded border border-yellow-200/50 dark:border-yellow-900/30 flex items-start gap-2">
-													<AlertCircle className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
+												<div className="mt-2 p-2 bg-yellow-50/50 rounded border border-yellow-200/50 flex items-start gap-2">
+													<AlertCircle className="w-3.5 h-3.5 text-yellow-600 flex-shrink-0 mt-0.5" />
 													<div>
-														<span className="text-xs font-semibold text-yellow-700 dark:text-yellow-500 block mb-0.5">
+														<span className="text-xs font-semibold text-yellow-700 block mb-0.5">
 															Action Required
 														</span>
-														<p className="text-xs text-yellow-800 dark:text-yellow-400 line-clamp-1">
+														<p className="text-xs text-yellow-800 line-clamp-1">
 															{r.infoRequestNotes}
 														</p>
 													</div>

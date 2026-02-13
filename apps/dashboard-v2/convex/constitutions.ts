@@ -353,7 +353,7 @@ async function createAuditEntryInternal(
 
   const entry = {
     id: crypto.randomUUID(),
-    constitutionId: args.constitutionId._id,
+    constitutionId: args.constitutionId,
     sectionId: args.sectionId,
     changeType: args.changeType,
     changeDescription: args.changeDescription,
@@ -362,8 +362,6 @@ async function createAuditEntryInternal(
     userId: args.userId,
     userName: args.userName,
     timestamp: Date.now(),
-    ipAddress: "Not tracked",
-    userAgent: "Browser",
   };
 
   if (auditLog) {

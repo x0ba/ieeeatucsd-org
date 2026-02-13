@@ -68,11 +68,11 @@ export function MarketingSection({ data, onChange }: MarketingSectionProps) {
     <div className="space-y-6">
       <div className="grid gap-6">
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <h3 className="text-sm font-medium text-gray-900">
             Marketing Materials
           </h3>
 
-          <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
             <Checkbox
               id="needsFlyers"
               checked={data.needsFlyers}
@@ -94,9 +94,9 @@ export function MarketingSection({ data, onChange }: MarketingSectionProps) {
           </div>
 
           {(data.needsFlyers || data.needsGraphics) && (
-            <div className="ml-7 space-y-4 p-4 border rounded-lg bg-gray-50/50 dark:bg-gray-800/30">
+            <div className="ml-7 space-y-4 p-4 border rounded-lg bg-gray-50/50">
               <div className="space-y-2">
-                <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                <Label className="text-xs font-medium text-gray-700">
                   Graphics Needed
                 </Label>
                 <div className="flex flex-col space-y-2">
@@ -153,7 +153,7 @@ export function MarketingSection({ data, onChange }: MarketingSectionProps) {
             </div>
           )}
 
-          <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
             <Checkbox
               id="needsGraphics"
               checked={data.needsGraphics}
@@ -175,7 +175,7 @@ export function MarketingSection({ data, onChange }: MarketingSectionProps) {
           </div>
 
           {(data.needsFlyers || data.needsGraphics) && (
-            <div className="ml-7 space-y-4 p-4 border rounded-lg bg-gray-50/50 dark:bg-gray-800/30">
+            <div className="ml-7 space-y-4 p-4 border rounded-lg bg-gray-50/50">
               <div className="space-y-2">
                 <Label htmlFor="advertisingFormat">Preferred file format for final graphics</Label>
                 <Select
@@ -220,7 +220,7 @@ export function MarketingSection({ data, onChange }: MarketingSectionProps) {
             </div>
           )}
 
-          <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
             <Checkbox
               id="photographyNeeded"
               checked={data.photographyNeeded}
@@ -243,7 +243,7 @@ export function MarketingSection({ data, onChange }: MarketingSectionProps) {
         </div>
 
         <div className="space-y-4 pt-4 border-t">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <h3 className="text-sm font-medium text-gray-900">
             Required Logos
           </h3>
           <div className="flex flex-col space-y-2">
@@ -266,7 +266,7 @@ export function MarketingSection({ data, onChange }: MarketingSectionProps) {
         </div>
 
         <div className="space-y-4 pt-4 border-t">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <h3 className="text-sm font-medium text-gray-900">
             Expected Attendance
           </h3>
 

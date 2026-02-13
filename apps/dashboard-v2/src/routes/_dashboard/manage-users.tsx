@@ -234,7 +234,7 @@ function ManageUsersPage() {
     return (
       <div className="w-full">
         <div className="space-y-6 p-6 max-w-7xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border p-8 text-center">
+          <div className="bg-white rounded-xl border p-8 text-center">
             <div className="text-red-400 mb-4">
               <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -245,10 +245,10 @@ function ManageUsersPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
               Access Denied
             </h3>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-gray-500">
               You don't have permission to access user management.
             </p>
           </div>
@@ -271,7 +271,7 @@ function ManageUsersPage() {
 
 
         {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border p-6">
+        <div className="bg-white rounded-xl border p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
@@ -470,7 +470,7 @@ function ManageUsersPage() {
             )}
           </>
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border p-12 text-center">
+          <div className="bg-white rounded-xl border p-12 text-center">
             <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -479,8 +479,8 @@ function ManageUsersPage() {
                 d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
               />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No users found</h3>
-            <p className="text-gray-500 dark:text-gray-400">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+            <p className="text-gray-500">
               Try adjusting your search or filter criteria.
             </p>
           </div>

@@ -24,7 +24,7 @@ export function PasswordStrengthIndicator({ validation }: PasswordStrengthIndica
     <div className="mt-2 space-y-2">
       {/* Strength Bar */}
       <div className="flex items-center space-x-2">
-        <div className="flex-1 bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+        <div className="flex-1 bg-gray-200 rounded-full h-2">
           <div
             className={`h-2 rounded-full transition-all duration-300 ${getStrengthColor(validation.strength)}`}
             style={{ width: `${(validation.strength / 5) * 100}%` }}
@@ -40,42 +40,42 @@ export function PasswordStrengthIndicator({ validation }: PasswordStrengthIndica
       {/* Requirements List */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs">
         <div
-          className={`flex items-center space-x-1 ${validation.requirements.minLength ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}
+          className={`flex items-center space-x-1 ${validation.requirements.minLength ? "text-green-600" : "text-gray-500"}`}
         >
           <Check
-            className={`w-3 h-3 ${validation.requirements.minLength ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"}`}
+            className={`w-3 h-3 ${validation.requirements.minLength ? "text-green-600" : "text-gray-400"}`}
           />
           <span>8+ characters</span>
         </div>
         <div
-          className={`flex items-center space-x-1 ${validation.requirements.hasUppercase ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}
+          className={`flex items-center space-x-1 ${validation.requirements.hasUppercase ? "text-green-600" : "text-gray-500"}`}
         >
           <Check
-            className={`w-3 h-3 ${validation.requirements.hasUppercase ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"}`}
+            className={`w-3 h-3 ${validation.requirements.hasUppercase ? "text-green-600" : "text-gray-400"}`}
           />
           <span>Uppercase letter</span>
         </div>
         <div
-          className={`flex items-center space-x-1 ${validation.requirements.hasLowercase ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}
+          className={`flex items-center space-x-1 ${validation.requirements.hasLowercase ? "text-green-600" : "text-gray-500"}`}
         >
           <Check
-            className={`w-3 h-3 ${validation.requirements.hasLowercase ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"}`}
+            className={`w-3 h-3 ${validation.requirements.hasLowercase ? "text-green-600" : "text-gray-400"}`}
           />
           <span>Lowercase letter</span>
         </div>
         <div
-          className={`flex items-center space-x-1 ${validation.requirements.hasNumber ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}
+          className={`flex items-center space-x-1 ${validation.requirements.hasNumber ? "text-green-600" : "text-gray-500"}`}
         >
           <Check
-            className={`w-3 h-3 ${validation.requirements.hasNumber ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"}`}
+            className={`w-3 h-3 ${validation.requirements.hasNumber ? "text-green-600" : "text-gray-400"}`}
           />
           <span>Number</span>
         </div>
         <div
-          className={`flex items-center space-x-1 ${validation.requirements.hasSpecialChar ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}
+          className={`flex items-center space-x-1 ${validation.requirements.hasSpecialChar ? "text-green-600" : "text-gray-500"}`}
         >
           <Check
-            className={`w-3 h-3 ${validation.requirements.hasSpecialChar ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"}`}
+            className={`w-3 h-3 ${validation.requirements.hasSpecialChar ? "text-green-600" : "text-gray-400"}`}
           />
           <span>Special character</span>
         </div>

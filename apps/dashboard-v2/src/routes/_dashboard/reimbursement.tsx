@@ -42,16 +42,77 @@ import { Separator } from "@/components/ui/separator";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { format, formatDistanceToNow } from "date-fns";
+
+function formatAuditAction(action: string): {
+  label: string;
+  description: string;
+  color: string;
+  iconName: "FileText" | "CheckCircle" | "AlertTriangle" | "Calendar" | "Receipt";
+} {
+  const map: Record<string, { label: string; description: string; color: string; iconName: "FileText" | "CheckCircle" | "AlertTriangle" | "Calendar" | "Receipt" }> = {
+    submitted: {
+      label: "Submitted",
+      description: "Reimbursement request was submitted for review",
+      color: "bg-blue-500",
+      iconName: "FileText",
+    },
+    status_changed_to_approved: {
+      label: "Approved",
+      description: "Request was reviewed and approved",
+      color: "bg-green-500",
+      iconName: "CheckCircle",
+    },
+    status_changed_to_declined: {
+      label: "Declined",
+      description: "Request was reviewed and declined",
+      color: "bg-red-500",
+      iconName: "AlertTriangle",
+    },
+    status_changed_to_paid: {
+      label: "Marked as Paid",
+      description: "Payment has been processed",
+      color: "bg-emerald-500",
+      iconName: "Receipt",
+    },
+    payment_details_added: {
+      label: "Payment Confirmed",
+      description: "Payment confirmation details were recorded",
+      color: "bg-emerald-600",
+      iconName: "Receipt",
+    },
+    status_changed_to_submitted: {
+      label: "Re-submitted",
+      description: "Request was re-submitted for review",
+      color: "bg-blue-500",
+      iconName: "FileText",
+    },
+  };
+  return map[action] || {
+    label: action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    description: "",
+    color: "bg-gray-400",
+    iconName: "Calendar",
+  };
+}
+
+const AUDIT_ICONS = {
+  FileText,
+  CheckCircle,
+  AlertTriangle,
+  Calendar,
+  Receipt,
+};
 
 export const Route = createFileRoute("/_dashboard/reimbursement")({
   component: ReimbursementPage,
 });
 
 const statusColors: Record<string, string> = {
-  submitted: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  approved: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  declined: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  paid: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  submitted: "bg-blue-100 text-blue-800",
+  approved: "bg-green-100 text-green-800",
+  declined: "bg-red-100 text-red-800",
+  paid: "bg-purple-100 text-purple-800",
 };
 
 const STEPS = [
@@ -355,10 +416,10 @@ function ReimbursementDetailView({
       {/* Content - Split Pane */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 flex-1 min-h-0 overflow-hidden">
         {/* Left Panel: Info (5/12) */}
-        <div className="lg:col-span-5 border-r border-gray-200 dark:border-gray-800 overflow-y-auto">
+        <div className="lg:col-span-5 border-r border-gray-200 overflow-y-auto">
           {/* Receipt Navigation */}
           {hasReceipts && (
-            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-gray-50/50">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
                 Receipt {activeReceiptIndex + 1} of {receipts.length}
               </span>
@@ -388,24 +449,24 @@ function ReimbursementDetailView({
           <div className="p-5 space-y-5">
             {/* Payment Details Section */}
             {reimbursement.status === "paid" && reimbursement.paymentDetails && (
-              <section className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl p-5 space-y-4">
-                <div className="flex items-center gap-2 border-b border-green-100 dark:border-green-800 pb-2 mb-2">
+              <section className="bg-green-50 border border-green-200 rounded-xl p-5 space-y-4">
+                <div className="flex items-center gap-2 border-b border-green-100 pb-2 mb-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
-                  <h3 className="text-sm font-bold text-green-900 dark:text-green-200 uppercase tracking-wide">
+                  <h3 className="text-sm font-bold text-green-900 uppercase tracking-wide">
                     Payment Confirmation
                   </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-4">
                   <div>
-                    <p className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase mb-1">
+                    <p className="text-xs font-semibold text-green-700 uppercase mb-1">
                       Confirmation Number
                     </p>
-                    <p className="text-sm font-mono font-medium bg-white/50 dark:bg-black/20 px-2 py-1 rounded border border-green-100 dark:border-green-800 inline-block">
+                    <p className="text-sm font-mono font-medium bg-white/50 px-2 py-1 rounded border border-green-100 inline-block">
                       {reimbursement.paymentDetails.confirmationNumber}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase mb-1">
+                    <p className="text-xs font-semibold text-green-700 uppercase mb-1">
                       Payment Date
                     </p>
                     <div className="flex items-center gap-1.5 text-sm">
@@ -414,7 +475,7 @@ function ReimbursementDetailView({
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase mb-1">
+                    <p className="text-xs font-semibold text-green-700 uppercase mb-1">
                       Amount Paid
                     </p>
                     <p className="text-lg font-bold flex items-center gap-1">
@@ -423,7 +484,7 @@ function ReimbursementDetailView({
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase mb-1">
+                    <p className="text-xs font-semibold text-green-700 uppercase mb-1">
                       Payment Proof
                     </p>
                     {reimbursement.paymentDetails.proofFileUrl ? (
@@ -443,10 +504,10 @@ function ReimbursementDetailView({
                   </div>
                   {reimbursement.paymentDetails.memo && (
                     <div className="col-span-2 mt-1">
-                      <p className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase mb-1">
+                      <p className="text-xs font-semibold text-green-700 uppercase mb-1">
                         Memo
                       </p>
-                      <p className="text-sm bg-white/50 dark:bg-black/20 p-2 rounded border border-green-100 dark:border-green-800">
+                      <p className="text-sm bg-white/50 p-2 rounded border border-green-100">
                         {reimbursement.paymentDetails.memo}
                       </p>
                     </div>
@@ -536,7 +597,7 @@ function ReimbursementDetailView({
                   <p className="text-sm tabular-nums">${(currentReceipt.shipping || 0).toFixed(2)}</p>
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-[11px] font-bold text-green-700 dark:text-green-400 uppercase">Total</p>
+                  <p className="text-[11px] font-bold text-green-700 uppercase">Total</p>
                   <p className="text-base font-bold tabular-nums text-green-600">${(currentReceipt.total || 0).toFixed(2)}</p>
                 </div>
               </div>
@@ -553,16 +614,16 @@ function ReimbursementDetailView({
               {currentLineItems.length > 0 ? (
                 <div className="border rounded-lg overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50 dark:bg-gray-800 text-muted-foreground text-xs uppercase font-semibold">
+                    <thead className="bg-gray-50 text-muted-foreground text-xs uppercase font-semibold">
                       <tr>
                         <th className="px-3 py-2 text-left">Item</th>
                         <th className="px-3 py-2 text-center">Qty</th>
                         <th className="px-3 py-2 text-right">Price</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    <tbody className="divide-y divide-gray-100">
                       {currentLineItems.map((item: LineItem, idx: number) => (
-                        <tr key={idx} className="bg-white dark:bg-gray-900">
+                        <tr key={idx} className="bg-white">
                           <td className="px-3 py-2">
                             <div className="font-medium">{item.description}</div>
                             <div className="text-xs text-muted-foreground">{item.category}</div>
@@ -587,28 +648,46 @@ function ReimbursementDetailView({
             {reimbursement.auditLog && reimbursement.auditLog.length > 0 && (
               <section className="space-y-4">
                 <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
-                  Audit Log
+                  Audit History
                 </h3>
-                <div className="space-y-2">
-                  {reimbursement.auditLog.map((entry, idx) => (
-                    <div
-                      key={idx}
-                      className="text-sm p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{entry.action}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDateTime(entry.timestamp)}
-                        </span>
+                <div className="space-y-0 relative ml-3">
+                  {[...reimbursement.auditLog].reverse().map((entry, idx, arr) => {
+                    const info = formatAuditAction(entry.action);
+                    const Icon = AUDIT_ICONS[info.iconName];
+                    const isLast = idx === arr.length - 1;
+                    return (
+                      <div key={idx} className="relative flex gap-3 pb-5 last:pb-0">
+                        {!isLast && (
+                          <div className="absolute left-[11px] top-7 bottom-0 w-px bg-border" />
+                        )}
+                        <div className={`relative z-10 flex-shrink-0 w-[23px] h-[23px] rounded-full ${info.color} flex items-center justify-center ring-4 ring-background`}>
+                          <Icon className="w-3 h-3 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-sm font-semibold">{info.label}</span>
+                            <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                              {formatDistanceToNow(entry.timestamp, { addSuffix: true })}
+                            </span>
+                          </div>
+                          {info.description && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{info.description}</p>
+                          )}
+                          <p className="text-[11px] text-muted-foreground/60 mt-1">
+                            {format(entry.timestamp, "MMM d, yyyy 'at' h:mm a")}
+                            {entry.userName && (
+                              <span className="ml-1.5 inline-flex items-center bg-muted text-muted-foreground px-1.5 py-0.5 rounded text-[10px]">
+                                {entry.userName}
+                              </span>
+                            )}
+                          </p>
+                          {entry.details && (
+                            <p className="text-xs text-muted-foreground mt-1">{entry.details}</p>
+                          )}
+                        </div>
                       </div>
-                      {entry.userName && (
-                        <p className="text-xs text-muted-foreground mt-1">by {entry.userName}</p>
-                      )}
-                      {entry.details && (
-                        <p className="text-xs text-muted-foreground mt-1">{entry.details}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -803,6 +882,7 @@ function ReceiptsStep({
   getStorageUrl,
   onBack,
   onNext,
+  logtoId,
 }: {
   receipts: ReceiptEntry[];
   setReceipts: React.Dispatch<React.SetStateAction<ReceiptEntry[]>>;
@@ -810,6 +890,7 @@ function ReceiptsStep({
   getStorageUrl: (args: { storageId: Id<"_storage"> }) => Promise<string | null>;
   onBack: () => void;
   onNext: () => void;
+  logtoId: string | null;
 }) {
   const [activeReceiptId, setActiveReceiptId] = useState<string | null>(receipts[0]?.id ?? null);
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
@@ -912,7 +993,7 @@ function ReceiptsStep({
       const response = await fetch("/api/parse-receipt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: receiptUrl }),
+        body: JSON.stringify({ imageUrl: receiptUrl, logtoId }),
       });
       const result = await response.json();
       if (!response.ok || !result.success || !result.data) {
@@ -1258,8 +1339,9 @@ function ReceiptsStep({
                   </Button>
                 </div>
                 <div className="rounded-lg border overflow-hidden">
+                  <div className="max-h-[280px] overflow-y-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-muted/50">
+                    <thead className="bg-muted/50 sticky top-0 z-10">
                       <tr>
                         <th className="px-3 py-2 text-left font-medium">Description</th>
                         <th className="px-3 py-2 text-left font-medium w-40">Category</th>
@@ -1328,6 +1410,7 @@ function ReceiptsStep({
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
 
@@ -1881,6 +1964,7 @@ function ReimbursementPage() {
             getStorageUrl={getStorageUrl}
             onBack={handleBack}
             onNext={handleNext}
+            logtoId={logtoId}
           />
         )}
         {step === 4 && (

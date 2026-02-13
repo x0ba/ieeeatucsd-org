@@ -226,9 +226,9 @@ export function FundDepositDetail({
 
                                 {/* IEEE Info */}
                                 {deposit.isIeeeDeposit && (
-                                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                                        <Label className="text-blue-700 dark:text-blue-400 font-semibold mb-1 block">IEEE Deposit</Label>
-                                        <p className="text-sm text-blue-600 dark:text-blue-300">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <Label className="text-blue-700 font-semibold mb-1 block">IEEE Deposit</Label>
+                                        <p className="text-sm text-blue-600">
                                             Source: <span className="uppercase">{deposit.ieeeDepositSource}</span>
                                         </p>
                                     </div>
@@ -254,7 +254,7 @@ export function FundDepositDetail({
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-900/50">
+                                    <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-gray-100">
                                         {isPdf ? (
                                             <iframe src={currentFile} className="w-full h-full border-0" title="Receipt PDF" />
                                         ) : (

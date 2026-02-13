@@ -18,7 +18,6 @@ interface LogisticsSectionProps {
     location: string;
     startDate: number;
     endDate: number;
-    capacity?: number;
     eventCode: string;
     hasFood: boolean;
     willOrHaveRoomBooking: boolean;
@@ -149,36 +148,20 @@ export function LogisticsSection({ data, onChange, onUploadRoomBooking }: Logist
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="capacity">Capacity (Optional)</Label>
-            <Input
-              id="capacity"
-              type="number"
-              min={1}
-              value={data.capacity || ""}
-              onChange={(e) =>
-                onChange({ capacity: e.target.value ? parseInt(e.target.value) : undefined })
-              }
-              placeholder="e.g., 100"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="eventCode">
-              Event Code <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="eventCode"
-              value={data.eventCode}
-              onChange={(e) => onChange({ eventCode: e.target.value })}
-              placeholder="e.g., TECH-WORKSHOP-2024"
-              required
-            />
-            <p className="text-xs text-gray-500">
-              Used for check-in and tracking attendance.
-            </p>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="eventCode">
+            Event Code <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="eventCode"
+            value={data.eventCode}
+            onChange={(e) => onChange({ eventCode: e.target.value })}
+            placeholder="e.g., TECH-WORKSHOP-2024"
+            required
+          />
+          <p className="text-xs text-gray-500">
+            Used for check-in and tracking attendance.
+          </p>
         </div>
 
         <div className="space-y-4 pt-4 border-t">
@@ -199,7 +182,7 @@ export function LogisticsSection({ data, onChange, onUploadRoomBooking }: Logist
           </div>
 
           {data.willOrHaveRoomBooking && (
-            <div className="ml-7 space-y-3 p-4 border rounded-lg bg-gray-50/50 dark:bg-gray-800/30">
+            <div className="ml-7 space-y-3 p-4 border rounded-lg bg-gray-50/50">
               <Label className="text-xs font-medium">Room Booking Files</Label>
               {data.roomBookingFiles.length > 0 && (
                 <div className="space-y-2">
@@ -225,7 +208,7 @@ export function LogisticsSection({ data, onChange, onUploadRoomBooking }: Logist
                   })}
                 </div>
               )}
-              <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors">
+              <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
                 <Upload className="h-4 w-4 text-gray-400" />
                 <span className="text-sm text-gray-500">Upload room booking confirmation</span>
                 <input
@@ -251,13 +234,13 @@ export function LogisticsSection({ data, onChange, onUploadRoomBooking }: Logist
               }}
               className="space-y-2"
             >
-              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                 <RadioGroupItem value="yes" id="food-yes" />
                 <Label htmlFor="food-yes" className="cursor-pointer flex-1">
                   Yes, we will serve food or drinks
                 </Label>
               </div>
-              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                 <RadioGroupItem value="no" id="food-no" />
                 <Label htmlFor="food-no" className="cursor-pointer flex-1">
                   No food or drinks will be served
@@ -265,10 +248,10 @@ export function LogisticsSection({ data, onChange, onUploadRoomBooking }: Logist
               </div>
             </RadioGroup>
             {data.foodDrinksBeingServed && (
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700">
                     <strong>Important:</strong> If serving food/drinks, you may need AS funding and must follow university guidelines.
                     All food must be from approved AS vendors. Home-cooked food is not permitted unless approved by VC Operations.
                   </p>

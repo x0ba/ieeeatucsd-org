@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { requireApiAuth } from "@/server/auth";
 
 type PaymentDetailsResponse = {
 	confirmationNumber: string;
@@ -10,7 +11,10 @@ type PaymentDetailsResponse = {
 
 async function handle({ request }: { request: Request }) {
 	try {
-		const { imageUrl } = await request.json();
+		const authResult = await requireApiAuth(request);
+		if (authResult instanceof Response) return authResult;
+		const { body } = authResult;
+		const { imageUrl } = body as { imageUrl?: string };
 
 		if (!imageUrl) {
 			return new Response(JSON.stringify({ error: "Missing image URL" }), {

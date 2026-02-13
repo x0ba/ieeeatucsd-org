@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_dashboard/slack-access")({
 });
 
 function SlackAccessPage() {
-  const { user } = useAuth();
+  const { user, logtoId } = useAuth();
   const passwordInputId = useId();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -143,10 +143,10 @@ function SlackAccessPage() {
       const username = extractUsername(user.email);
       const proposedEmail = `${username}@ieeeatucsd.org`;
 
-      const checkResponse = await fetch("/api/ieee-email/check", {
+      const checkResponse = await fetch("/api/check-email-exists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: proposedEmail }),
+        body: JSON.stringify({ logtoId, email: proposedEmail }),
       });
 
       if (checkResponse.ok) {
@@ -161,13 +161,12 @@ function SlackAccessPage() {
         }
       }
 
-      const response = await fetch("/api/ieee-email/create", {
+      const response = await fetch("/api/create-ieee-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: user._id,
-          name: user.name,
-          email: user.email,
+          logtoId,
+          username: extractUsername(user.email),
           password: customPassword,
         }),
       });
@@ -179,8 +178,8 @@ function SlackAccessPage() {
         setEmailState((prev) => ({
           ...prev,
           isGenerating: false,
-          generatedEmail: result.data.ieeeEmail,
-          success: result.data.message,
+          generatedEmail: result.ieeeEmail,
+          success: `IEEE email ${result.ieeeEmail} created successfully!`,
         }));
         toast.success("IEEE email created successfully!");
         setCustomPassword("");
@@ -217,10 +216,10 @@ function SlackAccessPage() {
     setEmailState((prev) => ({ ...prev, isResetting: true, error: null, success: null }));
 
     try {
-      const response = await fetch("/api/ieee-email/reset-password", {
+      const response = await fetch("/api/reset-email-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: ieeeEmailAddress, password: customPassword }),
+        body: JSON.stringify({ logtoId, email: ieeeEmailAddress, password: customPassword }),
       });
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

@@ -45,7 +45,6 @@ export interface EventRequest {
   location: string;
   startDate: number;
   endDate: number;
-  capacity?: number;
   eventCode: string;
   hasFood: boolean;
   needsFlyers: boolean;
@@ -108,7 +107,6 @@ export interface EventFormData {
   location: string;
   startDate: number;
   endDate: number;
-  capacity?: number;
   eventCode: string;
   hasFood: boolean;
   needsFlyers: boolean;

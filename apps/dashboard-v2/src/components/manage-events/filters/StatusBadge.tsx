@@ -8,19 +8,19 @@ interface StatusBadgeProps {
 
 const statusStyles: Record<EventStatus, string> = {
   draft:
-    "bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300 border-gray-200 dark:border-gray-700",
+    "bg-gray-100 text-gray-800 border-gray-200",
   submitted:
-    "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700",
+    "bg-indigo-100 text-indigo-800 border-indigo-200",
   pending:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700",
+    "bg-yellow-100 text-yellow-800 border-yellow-200",
   needs_review:
-    "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-700",
+    "bg-orange-100 text-orange-800 border-orange-200",
   approved:
-    "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-700",
+    "bg-green-100 text-green-800 border-green-200",
   declined:
-    "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-700",
+    "bg-red-100 text-red-800 border-red-200",
   published:
-    "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-700",
+    "bg-blue-100 text-blue-800 border-blue-200",
 };
 
 const statusLabels: Record<EventStatus, string> = {

@@ -14,8 +14,8 @@ export const Route = createFileRoute("/_dashboard/leaderboard")({
 const ITEMS_PER_PAGE = 10;
 
 function LeaderboardPage() {
-  const { user } = useAuth();
-  const leaderboard = useQuery(api.users.getLeaderboard);
+  const { user, logtoId } = useAuth();
+  const leaderboard = useQuery(api.users.getLeaderboard, logtoId ? { logtoId } : "skip");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);

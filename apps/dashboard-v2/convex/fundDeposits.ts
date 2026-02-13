@@ -62,8 +62,9 @@ export const listByStatus = query({
 });
 
 export const get = query({
-  args: { id: v.id("fundDeposits") },
+  args: { logtoId: v.string(), id: v.id("fundDeposits") },
   handler: async (ctx, args) => {
+    await requireOfficerAccess(ctx, args.logtoId);
     return await ctx.db.get(args.id);
   },
 });

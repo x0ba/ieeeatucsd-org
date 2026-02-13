@@ -304,6 +304,23 @@ export const updateProfile = mutation({
   },
 });
 
+export const setIEEEEmail = mutation({
+  args: {
+    logtoId: v.string(),
+    ieeeEmail: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    await ctx.db.patch(user._id, {
+      hasIEEEEmail: true,
+      ieeeEmail: args.ieeeEmail,
+      ieeeEmailCreatedAt: Date.now(),
+      lastUpdated: Date.now(),
+    });
+    return user._id;
+  },
+});
+
 export const acceptPolicyUpdate = mutation({
   args: {
     logtoId: v.string(),
@@ -326,7 +343,13 @@ export const acceptPolicyUpdate = mutation({
 });
 
 export const list = query({
-  args: { logtoId: v.string() },
+  args: {
+    logtoId: v.string(),
+    paginationOpts: v.optional(v.object({
+      cursor: v.optional(v.string()),
+      numItems: v.optional(v.number()),
+    })),
+  },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx, args.logtoId);
     return await ctx.db.query("users").collect();
@@ -456,7 +479,7 @@ export const getOverviewData = query({
         return event ? { ...event, timeCheckedIn: a.timeCheckedIn, pointsEarned: a.pointsEarned } : null;
       })
     );
-    eventDetails.filter(Boolean);
+    const validEventDetails = eventDetails.filter(Boolean);
 
     // Build points history
     const sortedAttendees = [...attendees].sort((a, b) => a.timeCheckedIn - b.timeCheckedIn);
@@ -526,8 +549,9 @@ export const getOverviewData = query({
 });
 
 export const getLeaderboard = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { logtoId: v.string() },
+  handler: async (ctx, args) => {
+    await requireCurrentUser(ctx, args.logtoId);
     const users = await ctx.db.query("users").collect();
     return users
       .filter((u) => u.signedUp && u.status === "active")
