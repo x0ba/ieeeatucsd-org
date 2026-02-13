@@ -14,6 +14,7 @@ import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiResetEmailPasswordRouteImport } from './routes/api/reset-email-password'
+import { Route as ApiParseInvoiceRouteImport } from './routes/api/parse-invoice'
 import { Route as ApiCreateIeeeEmailRouteImport } from './routes/api/create-ieee-email'
 import { Route as ApiCheckEmailExistsRouteImport } from './routes/api/check-email-exists'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
@@ -63,6 +64,11 @@ const IndexRoute = IndexRouteImport.update({
 const ApiResetEmailPasswordRoute = ApiResetEmailPasswordRouteImport.update({
   id: '/api/reset-email-password',
   path: '/api/reset-email-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiParseInvoiceRoute = ApiParseInvoiceRouteImport.update({
+  id: '/api/parse-invoice',
+  path: '/api/parse-invoice',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCreateIeeeEmailRoute = ApiCreateIeeeEmailRouteImport.update({
@@ -227,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/api/$': typeof ApiSplatRoute
   '/api/check-email-exists': typeof ApiCheckEmailExistsRoute
   '/api/create-ieee-email': typeof ApiCreateIeeeEmailRoute
+  '/api/parse-invoice': typeof ApiParseInvoiceRoute
   '/api/reset-email-password': typeof ApiResetEmailPasswordRoute
   '/sponsors/information': typeof DashboardSponsorsInformationRoute
   '/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByTo {
   '/api/$': typeof ApiSplatRoute
   '/api/check-email-exists': typeof ApiCheckEmailExistsRoute
   '/api/create-ieee-email': typeof ApiCreateIeeeEmailRoute
+  '/api/parse-invoice': typeof ApiParseInvoiceRoute
   '/api/reset-email-password': typeof ApiResetEmailPasswordRoute
   '/sponsors/information': typeof DashboardSponsorsInformationRoute
   '/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
@@ -293,6 +301,7 @@ export interface FileRoutesById {
   '/api/$': typeof ApiSplatRoute
   '/api/check-email-exists': typeof ApiCheckEmailExistsRoute
   '/api/create-ieee-email': typeof ApiCreateIeeeEmailRoute
+  '/api/parse-invoice': typeof ApiParseInvoiceRoute
   '/api/reset-email-password': typeof ApiResetEmailPasswordRoute
   '/_dashboard/sponsors/information': typeof DashboardSponsorsInformationRoute
   '/_dashboard/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
@@ -327,6 +336,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/check-email-exists'
     | '/api/create-ieee-email'
+    | '/api/parse-invoice'
     | '/api/reset-email-password'
     | '/sponsors/information'
     | '/sponsors/resume-database'
@@ -359,6 +369,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/check-email-exists'
     | '/api/create-ieee-email'
+    | '/api/parse-invoice'
     | '/api/reset-email-password'
     | '/sponsors/information'
     | '/sponsors/resume-database'
@@ -392,6 +403,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/check-email-exists'
     | '/api/create-ieee-email'
+    | '/api/parse-invoice'
     | '/api/reset-email-password'
     | '/_dashboard/sponsors/information'
     | '/_dashboard/sponsors/resume-database'
@@ -408,6 +420,7 @@ export interface RootRouteChildren {
   ApiSplatRoute: typeof ApiSplatRoute
   ApiCheckEmailExistsRoute: typeof ApiCheckEmailExistsRoute
   ApiCreateIeeeEmailRoute: typeof ApiCreateIeeeEmailRoute
+  ApiParseInvoiceRoute: typeof ApiParseInvoiceRoute
   ApiResetEmailPasswordRoute: typeof ApiResetEmailPasswordRoute
   ApiAiQueryRoute: typeof ApiAiQueryRoute
   ApiEmailSendRoute: typeof ApiEmailSendRoute
@@ -449,6 +462,13 @@ declare module '@tanstack/react-router' {
       path: '/api/reset-email-password'
       fullPath: '/api/reset-email-password'
       preLoaderRoute: typeof ApiResetEmailPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/parse-invoice': {
+      id: '/api/parse-invoice'
+      path: '/api/parse-invoice'
+      fullPath: '/api/parse-invoice'
+      preLoaderRoute: typeof ApiParseInvoiceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/create-ieee-email': {
@@ -694,6 +714,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSplatRoute: ApiSplatRoute,
   ApiCheckEmailExistsRoute: ApiCheckEmailExistsRoute,
   ApiCreateIeeeEmailRoute: ApiCreateIeeeEmailRoute,
+  ApiParseInvoiceRoute: ApiParseInvoiceRoute,
   ApiResetEmailPasswordRoute: ApiResetEmailPasswordRoute,
   ApiAiQueryRoute: ApiAiQueryRoute,
   ApiEmailSendRoute: ApiEmailSendRoute,

@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BudgetCalculation } from "./BudgetCalculation";
 
 const FLYER_TYPE_OPTIONS = [
   "Digital flyer (with social media advertising: Facebook, Instagram, Discord)",
@@ -274,6 +275,7 @@ export function MarketingSection({ data, onChange }: MarketingSectionProps) {
             <p className="text-xs text-gray-500">
               This helps us plan resources and capacity for your event.
             </p>
+            <BudgetCalculation estimatedAttendance={data.estimatedAttendance} />
           </div>
         </div>
       </div>

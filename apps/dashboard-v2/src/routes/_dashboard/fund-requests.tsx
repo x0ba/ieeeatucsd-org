@@ -316,42 +316,6 @@ function FundRequestsPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border border-border/50 shadow-sm bg-muted/30">
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground font-medium">Total Requests</p>
-            <p className="text-2xl font-semibold text-foreground mt-1">
-              {requests ? stats.total : 0}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border border-border/50 shadow-sm bg-muted/30">
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground font-medium">Pending Review</p>
-            <p className="text-2xl font-semibold text-foreground mt-1">
-              {requests ? stats.submitted + stats.needsInfo : 0}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border border-border/50 shadow-sm bg-muted/30">
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground font-medium">Approved</p>
-            <p className="text-2xl font-semibold text-foreground mt-1">
-              {requests ? stats.approved : 0}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border border-border/50 shadow-sm bg-muted/30">
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground font-medium">Total Awarded</p>
-            <p className="text-2xl font-semibold text-foreground mt-1">
-              {formatCurrency(stats.totalAmount)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Budget Tracking Section */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 px-1">
@@ -386,49 +350,75 @@ function FundRequestsPage() {
       </div>
 
       {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between sticky top-0 z-20 bg-background/80 backdrop-blur-md py-2 -mx-2 px-2">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between sticky top-0 z-20 bg-background/95 backdrop-blur-sm py-2 -mx-2 px-2 border-b border-border/50">
         <Tabs
           value={selectedTab}
           onValueChange={(v) => setSelectedTab(v as FilterTab)}
           className="w-full sm:w-auto"
         >
-          <TabsList className="relative rounded-none p-0 border-b border-border bg-transparent h-12 w-full justify-start gap-6 data-[orientation=horizontal]:h-12">
-            <TabsTrigger
-              value="all"
-              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground px-0 h-12 relative group"
-            >
-              <div className="flex items-center gap-2">
-                <span>All Requests</span>
-                <Badge variant="secondary" className="text-muted-foreground bg-muted/50">
-                  {stats.total}
+          <TabsList>
+            <TabsTrigger value="all" className="gap-2">
+              <span>All Requests</span>
+              <Badge variant="secondary">{stats.total}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="draft" className="gap-2">
+              <span>Draft</span>
+              {stats.draft > 0 && <Badge variant="secondary">{stats.draft}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="submitted" className="gap-2">
+              <span>Submitted</span>
+              {stats.submitted > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                >
+                  {stats.submitted}
                 </Badge>
-              </div>
+              )}
             </TabsTrigger>
-            <TabsTrigger
-              value="submitted"
-              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground px-0 h-12 relative group"
-            >
-              <div className="flex items-center gap-2">
-                <span>Submitted</span>
-                {stats.submitted > 0 && (
-                  <Badge variant="secondary" className="text-blue-700 bg-blue-100 dark:bg-blue-900/40">
-                    {stats.submitted}
-                  </Badge>
-                )}
-              </div>
+            <TabsTrigger value="needs_info" className="gap-2">
+              <span>Needs Info</span>
+              {stats.needsInfo > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-300"
+                >
+                  {stats.needsInfo}
+                </Badge>
+              )}
             </TabsTrigger>
-            <TabsTrigger
-              value="approved"
-              className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground px-0 h-12 relative group"
-            >
-              <div className="flex items-center gap-2">
-                <span>Approved</span>
-                {stats.approved > 0 && (
-                  <Badge variant="secondary" className="text-green-700 bg-green-100 dark:bg-green-900/40">
-                    {stats.approved}
-                  </Badge>
-                )}
-              </div>
+            <TabsTrigger value="approved" className="gap-2">
+              <span>Approved</span>
+              {stats.approved > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-green-500/10 text-green-700 dark:text-green-300"
+                >
+                  {stats.approved}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="denied" className="gap-2">
+              <span>Denied</span>
+              {stats.denied > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-red-500/10 text-red-700 dark:text-red-300"
+                >
+                  {stats.denied}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="gap-2">
+              <span>Completed</span>
+              {stats.completed > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-purple-500/10 text-purple-700 dark:text-purple-300"
+                >
+                  {stats.completed}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -451,7 +441,7 @@ function FundRequestsPage() {
           ))}
         </div>
       ) : filteredRequests.length === 0 ? (
-        <Card className="border-dashed border-2 border-border bg-transparent shadow-none">
+        <Card className="border-dashed border-2 border-border/50 bg-muted/30">
           <CardContent className="py-12 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
               <FileText className="w-8 h-8" />
@@ -477,7 +467,7 @@ function FundRequestsPage() {
           {paginatedRequests.map((r) => (
             <Card
               key={r._id}
-              className="w-full border border-border/50 shadow-sm hover:border-primary/50 hover:shadow-md transition-all duration-200 cursor-pointer"
+              className="group w-full border border-border/50 shadow-sm hover:border-primary/50 hover:shadow-md hover:bg-accent/50 transition-all duration-200 cursor-pointer"
               onClick={() => handleViewRequest(r)}
             >
               <CardContent className="p-4 sm:p-5">
@@ -525,7 +515,7 @@ function FundRequestsPage() {
                     </div>
 
                     {r.status === "needs_info" && r.infoRequestNotes && (
-                      <div className="mt-3 p-3 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-lg border border-yellow-100 dark:border-yellow-900/30 flex items-start gap-2.5">
+                      <div className="mt-3 p-3 bg-yellow-50/50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200/50 dark:border-yellow-900/30 flex items-start gap-2.5">
                         <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
                         <div>
                           <span className="text-xs font-semibold text-yellow-700 dark:text-yellow-500 block mb-0.5">Action Required</span>

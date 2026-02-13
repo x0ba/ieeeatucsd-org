@@ -24,7 +24,9 @@ interface EventCalendarProps {
 
 const statusColors: Record<EventStatus, string> = {
   draft: "bg-gray-400",
+  submitted: "bg-indigo-400",
   pending: "bg-yellow-400",
+  needs_review: "bg-orange-400",
   approved: "bg-green-400",
   declined: "bg-red-400",
   published: "bg-blue-400",
@@ -32,7 +34,9 @@ const statusColors: Record<EventStatus, string> = {
 
 const statusBgColors: Record<EventStatus, string> = {
   draft: "bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700",
+  submitted: "bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40",
   pending: "bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/40",
+  needs_review: "bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/40",
   approved: "bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40",
   declined: "bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40",
   published: "bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40",
@@ -40,7 +44,9 @@ const statusBgColors: Record<EventStatus, string> = {
 
 const legendItems: { status: EventStatus; label: string }[] = [
   { status: "draft", label: "Draft" },
+  { status: "submitted", label: "Submitted" },
   { status: "pending", label: "Pending" },
+  { status: "needs_review", label: "Needs Review" },
   { status: "approved", label: "Approved" },
   { status: "declined", label: "Declined" },
   { status: "published", label: "Published" },

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { ArrowRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,21 +11,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  parseFlexibleTime,
+  parseFlexibleDate,
+  formatDateShort,
+  formatTimeShort,
+  combineDateAndTime,
+} from "../utils/parseTime";
 import type { EventRequest } from "../types";
 
 interface DraftEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: Partial<EventRequest>) => void;
+  initialData?: Partial<EventRequest>;
+  onConvertToRequest?: (data: Partial<EventRequest>) => void;
 }
+
+const eventTypes = ["Social", "Technical", "Outreach", "Professional", "Projects", "Other"];
+const departments = ["General", "Technical", "Social", "Outreach", "Professional", "Projects"];
 
 const defaultDraftData: Partial<EventRequest> = {
   eventName: "",
   eventDescription: "",
-  eventType: "General Meeting",
+  eventType: "Social",
+  department: undefined,
   location: "TBD",
-  startDate: Date.now() + 86400000, // Tomorrow
-  endDate: Date.now() + 90000000, // Tomorrow + 1 hour
+  startDate: Date.now() + 86400000,
+  endDate: Date.now() + 90000000,
   eventCode: "",
   status: "draft",
   hasFood: false,
@@ -34,14 +55,44 @@ const defaultDraftData: Partial<EventRequest> = {
   estimatedAttendance: 0,
   files: [],
   invoices: [],
+  willOrHaveRoomBooking: false,
+  foodDrinksBeingServed: false,
+  asFundingRequired: false,
+  photographyNeeded: false,
 };
 
 export function DraftEventModal({
   isOpen,
   onClose,
   onSubmit,
+  initialData,
+  onConvertToRequest,
 }: DraftEventModalProps) {
-  const [formData, setFormData] = useState<Partial<EventRequest>>(defaultDraftData);
+  const isEditing = !!initialData;
+  const [formData, setFormData] = useState<Partial<EventRequest>>(
+    initialData ? { ...defaultDraftData, ...initialData } : { ...defaultDraftData }
+  );
+
+  const [dateText, setDateText] = useState("");
+  const [startTimeText, setStartTimeText] = useState("");
+  const [endTimeText, setEndTimeText] = useState("");
+  const [dateError, setDateError] = useState("");
+  const [startTimeError, setStartTimeError] = useState("");
+  const [endTimeError, setEndTimeError] = useState("");
+
+  // Sync when modal opens or initialData changes
+  useEffect(() => {
+    if (isOpen) {
+      const data = initialData ? { ...defaultDraftData, ...initialData } : { ...defaultDraftData };
+      setFormData(data);
+      setDateText(formatDateShort(data.startDate || Date.now()));
+      setStartTimeText(formatTimeShort(data.startDate || Date.now()));
+      setEndTimeText(formatTimeShort(data.endDate || Date.now() + 3600000));
+      setDateError("");
+      setStartTimeError("");
+      setEndTimeError("");
+    }
+  }, [isOpen, initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +101,9 @@ export function DraftEventModal({
         ...formData,
         eventCode: formData.eventCode || `EVENT-${Date.now()}`,
       });
-      setFormData(defaultDraftData);
+      if (!isEditing) {
+        setFormData({ ...defaultDraftData });
+      }
       onClose();
     }
   };
@@ -59,21 +112,49 @@ export function DraftEventModal({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const formatDateForInput = (timestamp?: number) => {
-    if (!timestamp) return "";
-    return new Date(timestamp).toISOString().slice(0, 16);
+  const handleDateBlur = () => {
+    setDateError("");
+    const parsed = parseFlexibleDate(dateText);
+    if (!parsed) {
+      if (dateText.trim()) setDateError("Invalid date. Use mm/dd/yy format.");
+      return;
+    }
+    const startTime = new Date(formData.startDate || Date.now());
+    const endTime = new Date(formData.endDate || Date.now() + 3600000);
+    const newStart = combineDateAndTime(parsed, { hours: startTime.getHours(), minutes: startTime.getMinutes() });
+    const newEnd = combineDateAndTime(parsed, { hours: endTime.getHours(), minutes: endTime.getMinutes() });
+    setFormData((prev) => ({ ...prev, startDate: newStart, endDate: newEnd }));
   };
 
-  const handleDateChange = (field: "startDate" | "endDate", value: string) => {
-    const timestamp = value ? new Date(value).getTime() : Date.now();
-    updateField(field, timestamp);
+  const handleStartTimeBlur = () => {
+    setStartTimeError("");
+    const parsed = parseFlexibleTime(startTimeText);
+    if (!parsed) {
+      if (startTimeText.trim()) setStartTimeError("Invalid time. Try 9am, 9:00am, 14:00, etc.");
+      return;
+    }
+    const newStart = combineDateAndTime(formData.startDate || Date.now(), parsed);
+    setFormData((prev) => ({ ...prev, startDate: newStart }));
+    setStartTimeText(formatTimeShort(newStart));
+  };
+
+  const handleEndTimeBlur = () => {
+    setEndTimeError("");
+    const parsed = parseFlexibleTime(endTimeText);
+    if (!parsed) {
+      if (endTimeText.trim()) setEndTimeError("Invalid time. Try 2pm, 2:00pm, 14:00, etc.");
+      return;
+    }
+    const newEnd = combineDateAndTime(formData.endDate || formData.startDate || Date.now(), parsed);
+    setFormData((prev) => ({ ...prev, endDate: newEnd }));
+    setEndTimeText(formatTimeShort(newEnd));
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Quick Draft</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Draft Event" : "Create Quick Draft"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -103,22 +184,36 @@ export function DraftEventModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="draft-start">Start Date</Label>
-              <Input
-                id="draft-start"
-                type="datetime-local"
-                value={formatDateForInput(formData.startDate)}
-                onChange={(e) => handleDateChange("startDate", e.target.value)}
-              />
+              <Label htmlFor="draft-type">Event Type</Label>
+              <Select
+                value={formData.eventType || ""}
+                onValueChange={(value) => updateField("eventType", value)}
+              >
+                <SelectTrigger id="draft-type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {eventTypes.map((type) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="draft-end">End Date</Label>
-              <Input
-                id="draft-end"
-                type="datetime-local"
-                value={formatDateForInput(formData.endDate)}
-                onChange={(e) => handleDateChange("endDate", e.target.value)}
-              />
+              <Label htmlFor="draft-department">Department</Label>
+              <Select
+                value={formData.department || ""}
+                onValueChange={(value) => updateField("department", value || undefined)}
+              >
+                <SelectTrigger id="draft-department">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -128,22 +223,104 @@ export function DraftEventModal({
               id="draft-location"
               value={formData.location}
               onChange={(e) => updateField("location", e.target.value)}
-              placeholder="e.g., TBD"
+              placeholder="e.g., Price Center East Ballroom"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="draft-date">Event Date</Label>
+            <Input
+              id="draft-date"
+              value={dateText}
+              onChange={(e) => setDateText(e.target.value)}
+              onBlur={handleDateBlur}
+              placeholder="mm/dd/yy"
+            />
+            {dateError && <p className="text-xs text-red-500">{dateError}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="draft-start-time">Start Time</Label>
+              <Input
+                id="draft-start-time"
+                value={startTimeText}
+                onChange={(e) => setStartTimeText(e.target.value)}
+                onBlur={handleStartTimeBlur}
+                placeholder="e.g., 9am, 9:00 AM"
+              />
+              {startTimeError && <p className="text-xs text-red-500">{startTimeError}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="draft-end-time">End Time</Label>
+              <Input
+                id="draft-end-time"
+                value={endTimeText}
+                onChange={(e) => setEndTimeText(e.target.value)}
+                onBlur={handleEndTimeBlur}
+                placeholder="e.g., 2pm, 2:00 PM"
+              />
+              {endTimeError && <p className="text-xs text-red-500">{endTimeError}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="draft-eventcode">Event Code</Label>
+              <Input
+                id="draft-eventcode"
+                value={formData.eventCode}
+                onChange={(e) => updateField("eventCode", e.target.value)}
+                placeholder="e.g., TECH-WORKSHOP-2024"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="draft-attendance">Expected Attendance</Label>
+              <Input
+                id="draft-attendance"
+                type="number"
+                min={0}
+                value={formData.estimatedAttendance || ""}
+                onChange={(e) => updateField("estimatedAttendance", e.target.value ? parseInt(e.target.value) : 0)}
+                placeholder="e.g., 50"
+              />
+            </div>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg text-sm text-gray-600 dark:text-gray-400">
             <p>
-              This will create a draft event. You can edit and submit it for
-              approval later through the full event request form.
+              {isEditing
+                ? "Update your draft event. You can submit it for approval later through the full event request form."
+                : "This will create a draft event. You can edit and submit it for approval later through the full event request form."}
             </p>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">Create Draft</Button>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1">
+              {isEditing && onConvertToRequest && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    onConvertToRequest({
+                      ...formData,
+                      eventCode: formData.eventCode || `EVENT-${Date.now()}`,
+                    });
+                    onClose();
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  Convert to Event Request
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit">{isEditing ? "Save Draft" : "Create Draft"}</Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

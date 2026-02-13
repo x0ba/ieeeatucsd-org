@@ -10,11 +10,9 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import {
-  EventStatsCards,
   EventsFilters,
   EventsDataTable,
   EventCalendar,
@@ -26,6 +24,7 @@ import {
   type EventFilters,
   type SortConfig,
   type EventFormData,
+  type EventStatus,
 } from "@/components/manage-events";
 
 export const Route = createFileRoute("/_dashboard/manage-events")({
@@ -120,8 +119,11 @@ function mapStatus(status: string): EventRequest["status"] {
     case "draft":
       return "draft";
     case "submitted":
+      return "submitted";
     case "pending":
       return "pending";
+    case "needs_review":
+      return "needs_review";
     case "approved":
       return "approved";
     case "declined":
@@ -158,7 +160,6 @@ function ManageEventsPage() {
   // Filters state
   const [filters, setFilters] = useState<EventFilters>({
     search: "",
-    status: "all",
   });
 
   // Sort state
@@ -166,6 +167,10 @@ function ManageEventsPage() {
     field: "startDate",
     direction: "desc",
   });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Modal states
   const [selectedRequest, setSelectedRequest] = useState<EventRequest | null>(
@@ -178,6 +183,7 @@ function ManageEventsPage() {
   const [editingRequest, setEditingRequest] = useState<EventRequest | null>(
     null
   );
+  const [editingDraft, setEditingDraft] = useState<EventRequest | null>(null);
 
   // Loading state
   const [isProcessing, setIsProcessing] = useState(false);
@@ -188,18 +194,6 @@ function ManageEventsPage() {
     const events = (eventsData || []).map(mapEventToType);
     return [...requests, ...events];
   }, [eventRequestsData, eventsData]);
-
-  // Compute stats
-  const stats = useMemo(() => {
-    return {
-      totalEvents: allEvents.length,
-      publishedEvents: allEvents.filter((e) => e.status === "published").length,
-      totalAttendees: allEvents.reduce(
-        (sum, e) => sum + (e.estimatedAttendance || 0),
-        0
-      ),
-    };
-  }, [allEvents]);
 
   // Filter events
   const filteredEvents = useMemo(() => {
@@ -213,17 +207,13 @@ function ManageEventsPage() {
           .includes(filters.search.toLowerCase()) ||
         event.location.toLowerCase().includes(filters.search.toLowerCase());
 
-      // Status filter
-      const statusMatch =
-        filters.status === "all" || event.status === filters.status;
-
       // Date range filter
       const startDateMatch =
         !filters.startDate || event.startDate >= filters.startDate;
       const endDateMatch =
         !filters.endDate || event.endDate <= filters.endDate;
 
-      return searchMatch && statusMatch && startDateMatch && endDateMatch;
+      return searchMatch && startDateMatch && endDateMatch;
     });
   }, [allEvents, filters]);
 
@@ -239,6 +229,18 @@ function ManageEventsPage() {
       return sortConfig.direction === "asc" ? comparison : -comparison;
     });
   }, [filteredEvents, sortConfig]);
+
+  // Pagination
+  const totalPages = Math.ceil(sortedEvents.length / itemsPerPage);
+  const paginatedEvents = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedEvents.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedEvents, currentPage, itemsPerPage]);
+
+  // Reset page on filter/sort change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [filters, sortConfig]);
 
   // Permission check
   if (!hasOfficerAccess) {
@@ -443,6 +445,55 @@ function ManageEventsPage() {
     }
   };
 
+  // Status change handler (from EventViewModal dropdown)
+  const handleStatusChange = async (event: EventRequest, newStatus: EventStatus) => {
+    if (!logtoId) return;
+    if (newStatus === "declined") {
+      handleDecline(event);
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      await updateEventRequestStatus({
+        logtoId,
+        id: event._id,
+        status: newStatus === "needs_review" ? "needs_review" : newStatus as any,
+      });
+      toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
+      // Update local state so the modal reflects the change
+      setSelectedRequest((prev) =>
+        prev && prev._id === event._id ? { ...prev, status: newStatus } : prev
+      );
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update status");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Toggle publish handler
+  const handleTogglePublish = async (event: EventRequest, shouldPublish: boolean) => {
+    if (!logtoId) return;
+    setIsProcessing(true);
+    try {
+      await updateEventRequestStatus({
+        logtoId,
+        id: event._id,
+        status: shouldPublish ? ("completed" as any) : "approved",
+      });
+      toast.success(shouldPublish ? "Event published!" : "Event unpublished");
+      setSelectedRequest((prev) =>
+        prev && prev._id === event._id
+          ? { ...prev, status: shouldPublish ? "published" : "approved" }
+          : prev
+      );
+    } catch (error: any) {
+      toast.error(error.message || "Failed to toggle publish");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Create draft handler
   const handleCreateDraft = async (data: Partial<EventRequest>) => {
     if (!logtoId) return;
@@ -497,17 +548,59 @@ function ManageEventsPage() {
 
   // Edit handler from view modal
   const handleEditFromView = (event: EventRequest) => {
-    setEditingRequest(event);
     setIsViewModalOpen(false);
-    setIsWizardOpen(true);
+    if (event.status === "draft") {
+      setEditingDraft(event);
+      setIsDraftModalOpen(true);
+    } else {
+      setEditingRequest(event);
+      setIsWizardOpen(true);
+    }
+  };
+
+  // Update draft handler
+  const handleUpdateDraft = async (data: Partial<EventRequest>) => {
+    if (!logtoId || !editingDraft) return;
+    setIsProcessing(true);
+    try {
+      await updateEventRequest({
+        logtoId,
+        id: editingDraft._id,
+        name: data.eventName || editingDraft.eventName,
+        location: data.location || editingDraft.location,
+        startDateTime: data.startDate || editingDraft.startDate,
+        endDateTime: data.endDate || editingDraft.endDate,
+        eventDescription: data.eventDescription || editingDraft.eventDescription,
+        expectedAttendance: data.estimatedAttendance,
+        flyersNeeded: data.needsFlyers ?? false,
+        needsGraphics: data.needsGraphics ?? false,
+        needsAsFunding: data.needsASFunding ?? false,
+        flyerType: data.flyerType || [],
+        willOrHaveRoomBooking: data.willOrHaveRoomBooking ?? false,
+        roomBookingFiles: data.roomBookingFiles || [],
+        asFundingRequired: data.asFundingRequired ?? false,
+        foodDrinksBeingServed: data.foodDrinksBeingServed ?? false,
+        photographyNeeded: data.photographyNeeded ?? false,
+        requiredLogos: data.requiredLogos || [],
+      });
+      toast.success("Draft updated successfully!");
+      setIsDraftModalOpen(false);
+      setEditingDraft(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update draft");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Clear filters handler
   const handleClearFilters = () => {
     setFilters({
       search: "",
-      status: "all",
+      startDate: undefined,
+      endDate: undefined,
     });
+    setCurrentPage(1);
   };
 
   return (
@@ -532,26 +625,30 @@ function ManageEventsPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <EventStatsCards
-        stats={stats}
-        loading={!eventRequestsData || !eventsData}
-      />
-
-      {/* View Toggle Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "calendar")}>
-          <TabsList>
-            <TabsTrigger value="list" className="flex items-center gap-2">
-              <List className="h-4 w-4" />
-              Events List
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" />
-              Event Planning
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* View Toggle */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setViewMode("list")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            viewMode === "list"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted hover:bg-muted/80 text-muted-foreground"
+          }`}
+        >
+          <List className="h-4 w-4" />
+          Events List
+        </button>
+        <button
+          onClick={() => setViewMode("calendar")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            viewMode === "calendar"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted hover:bg-muted/80 text-muted-foreground"
+          }`}
+        >
+          <CalendarIcon className="h-4 w-4" />
+          Event Planning
+        </button>
       </div>
 
       {/* Filters */}
@@ -574,7 +671,7 @@ function ManageEventsPage() {
         <>
           {viewMode === "list" ? (
             <EventsDataTable
-              events={sortedEvents}
+              events={paginatedEvents}
               sortConfig={sortConfig}
               onSort={handleSort}
               onView={(event) => {
@@ -582,11 +679,21 @@ function ManageEventsPage() {
                 setIsViewModalOpen(true);
               }}
               onEdit={(event) => {
-                setEditingRequest(event);
-                setIsWizardOpen(true);
+                if (event.status === "draft") {
+                  setEditingDraft(event);
+                  setIsDraftModalOpen(true);
+                } else {
+                  setEditingRequest(event);
+                  setIsWizardOpen(true);
+                }
               }}
               onDelete={handleDelete}
               onConvertToDraft={handleConvertToDraft}
+              pagination={{
+                currentPage,
+                totalPages,
+                onPageChange: setCurrentPage,
+              }}
             />
           ) : (
             <EventCalendar
@@ -621,13 +728,33 @@ function ManageEventsPage() {
         onDelete={handleDelete}
         onPublish={hasAdminAccess ? handlePublish : undefined}
         onDecline={hasAdminAccess ? handleDecline : undefined}
+        onStatusChange={hasAdminAccess ? handleStatusChange : undefined}
+        onTogglePublish={hasAdminAccess ? handleTogglePublish : undefined}
+        canManageStatus={hasAdminAccess}
       />
 
       {/* Draft Event Modal */}
       <DraftEventModal
         isOpen={isDraftModalOpen}
-        onClose={() => setIsDraftModalOpen(false)}
-        onSubmit={handleCreateDraft}
+        onClose={() => {
+          setIsDraftModalOpen(false);
+          setEditingDraft(null);
+        }}
+        onSubmit={editingDraft ? handleUpdateDraft : handleCreateDraft}
+        initialData={editingDraft || undefined}
+        onConvertToRequest={(data) => {
+          setIsDraftModalOpen(false);
+          setEditingDraft(null);
+          // Open wizard with draft data prefilled
+          setEditingRequest({
+            ...data,
+            _id: editingDraft?._id,
+            _creationTime: editingDraft?._creationTime || Date.now(),
+            status: "draft",
+            createdBy: editingDraft?.createdBy || "Unknown",
+          } as EventRequest);
+          setIsWizardOpen(true);
+        }}
       />
 
       {/* File Manager Modal */}

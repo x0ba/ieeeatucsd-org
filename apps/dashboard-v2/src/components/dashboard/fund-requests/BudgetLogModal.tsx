@@ -9,6 +9,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Loader2, DollarSign, User, Calendar, Wrench } from "lucide-react";
 import { formatCurrency, formatDate, type FundRequestDepartment } from "@/types/fund-requests";
 import { DEPARTMENT_LABELS, STATUS_COLORS, STATUS_LABELS } from "@/types/fund-requests";
@@ -145,67 +153,55 @@ export function BudgetLogModal({
 
                              {/* Requests Table */}
                    {selectedTab !== "adjustments" && (
-                     <TabsContent value={selectedTab} className="mt-4">
-                       {filteredRequests.length === 0 ? (
-                         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                           <div className="p-4 bg-muted rounded-full mb-3">
-                             <DollarSign className="w-6 h-6" />
-                           </div>
-                           <p>No requests found for this period.</p>
-                         </div>
-                       ) : (
-                         <div className="rounded-xl border overflow-hidden bg-card">
-                           <table className="w-full">
-                             <thead className="bg-muted">
-                               <tr>
-                                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                   Request
-                                 </th>
-                                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                   Requester
-                                 </th>
-                                 <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                   Amount
-                                 </th>
-                                 <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                   Status
-                                 </th>
-                                 <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                   Date
-                                 </th>
-                               </tr>
-                             </thead>
-                             <tbody className="divide-y">
-                               {filteredRequests.map((request) => (
-                                 <tr key={request._id} className="hover:bg-muted/50 transition-colors">
-                                   <td className="px-4 py-3">
-                                     <p className="font-semibold text-sm truncate max-w-[200px]">{request.title}</p>
-                                   </td>
-                                   <td className="px-4 py-3">
-                                     <div className="flex items-center gap-2">
-                                       <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                                         <User className="w-3 h-3" />
-                                       </div>
-                                       <p className="text-sm text-muted-foreground">{request.submittedByName || "Unknown"}</p>
-                                     </div>
-                                   </td>
-                                   <td className="px-4 py-3 text-right">
-                                     <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(request.amount)}</span>
-                                   </td>
-                                   <td className="px-4 py-3 text-center">
-                                     <Badge className={STATUS_COLORS[request.status as keyof typeof STATUS_COLORS] || ""}>
-                                       {STATUS_LABELS[request.status as keyof typeof STATUS_LABELS] || request.status}
-                                     </Badge>
-                                   </td>
-                                   <td className="px-4 py-3 text-right text-sm text-muted-foreground">{formatDate(request._creationTime)}</td>
-                                 </tr>
-                               ))}
-                             </tbody>
-                           </table>
-                         </div>
-                       )}
-                     </TabsContent>
-                   )}
+                      <TabsContent value={selectedTab} className="mt-4">
+                        {filteredRequests.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                            <div className="p-4 bg-muted rounded-full mb-3">
+                              <DollarSign className="w-6 h-6" />
+                            </div>
+                            <p>No requests found for this period.</p>
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border overflow-hidden bg-card">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-left">Request</TableHead>
+                                  <TableHead className="text-left">Requester</TableHead>
+                                  <TableHead className="text-right">Amount</TableHead>
+                                  <TableHead className="text-center">Status</TableHead>
+                                  <TableHead className="text-right">Date</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {filteredRequests.map((request) => (
+                                  <TableRow key={request._id} className="hover:bg-muted/50">
+                                    <TableCell className="font-medium text-sm truncate max-w-[200px]">{request.title}</TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                                          <User className="w-3 h-3" />
+                                        </div>
+                                        <span className="text-sm text-muted-foreground">{request.submittedByName || "Unknown"}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(request.amount)}</span>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <Badge className={STATUS_COLORS[request.status as keyof typeof STATUS_COLORS] || ""}>
+                                        {STATUS_LABELS[request.status as keyof typeof STATUS_LABELS] || request.status}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right text-sm text-muted-foreground">{formatDate(request._creationTime)}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+                      </TabsContent>
+                    )}
 
                   {/* Adjustments Table */}
                   {(selectedTab === "all" || selectedTab === "adjustments") && (
@@ -226,47 +222,39 @@ export function BudgetLogModal({
                             </div>
                           )}
                           <div className="rounded-xl border overflow-hidden bg-card mt-0">
-                            <table className="w-full">
-                              <thead className="bg-muted">
-                                <tr>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    Description
-                                  </th>
-                                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    Added By
-                                  </th>
-                                  <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    Amount
-                                  </th>
-                                  <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    Date
-                                  </th>
-                                </tr>
-                              </thead>
-                               <tbody className="divide-y">
-                                 {adjustments.map((adjustment) => (
-                                   <tr key={adjustment._id} className="hover:bg-muted/50 transition-colors">
-                                     <td className="px-4 py-3">
-                                       <p className="font-semibold text-sm text-foreground">{adjustment.description}</p>
-                                     </td>
-                                     <td className="px-4 py-3">
-                                       <div className="flex items-center gap-2">
-                                         <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                                           <User className="w-3 h-3" />
-                                         </div>
-                                         <p className="text-sm text-muted-foreground">{adjustment.createdByName || "Unknown"}</p>
-                                       </div>
-                                     </td>
-                                     <td className="px-4 py-3 text-right">
-                                       <span className="font-bold text-yellow-600 dark:text-yellow-400">
-                                         {formatCurrency(adjustment.amount)}
-                                       </span>
-                                     </td>
-                                     <td className="px-4 py-3 text-right text-sm text-muted-foreground">{formatDate(adjustment.createdAt)}</td>
-                                   </tr>
-                                 ))}
-                               </tbody>
-                            </table>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-left">Description</TableHead>
+                                  <TableHead className="text-left">Added By</TableHead>
+                                  <TableHead className="text-right">Amount</TableHead>
+                                  <TableHead className="text-right">Date</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {adjustments.map((adjustment) => (
+                                  <TableRow key={adjustment._id} className="hover:bg-muted/50">
+                                    <TableCell>
+                                      <p className="font-semibold text-sm text-foreground">{adjustment.description}</p>
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                                          <User className="w-3 h-3" />
+                                        </div>
+                                        <span className="text-sm text-muted-foreground">{adjustment.createdByName || "Unknown"}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <span className="font-bold text-yellow-600 dark:text-yellow-400">
+                                        {formatCurrency(adjustment.amount)}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="text-right text-sm text-muted-foreground">{formatDate(adjustment.createdAt)}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
                           </div>
                         </>
                       )}

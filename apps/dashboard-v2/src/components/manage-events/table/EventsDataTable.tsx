@@ -13,6 +13,7 @@ import {
   Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Table,
   TableBody,
@@ -33,6 +34,11 @@ interface EventsDataTableProps {
   onEdit: (event: EventRequest) => void;
   onDelete: (event: EventRequest) => void;
   onConvertToDraft: (event: EventRequest) => void;
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+  };
 }
 
 export function EventsDataTable({
@@ -43,6 +49,7 @@ export function EventsDataTable({
   onEdit,
   onDelete,
   onConvertToDraft,
+  pagination,
 }: EventsDataTableProps) {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
@@ -229,6 +236,20 @@ export function EventsDataTable({
           </TableBody>
         </Table>
       </div>
+      {pagination && (
+        <div className="flex items-center justify-between px-4 py-3 border-t">
+          <span className="text-sm text-muted-foreground">
+            Showing {((pagination.currentPage - 1) * 10 + 1).toLocaleString()} to{" "}
+            {Math.min(pagination.currentPage * 10, events.length).toLocaleString()} of{" "}
+            {events.length.toLocaleString()} events
+          </span>
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={pagination.onPageChange}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,17 @@
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Upload, X, FileText, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  parseFlexibleTime,
+  parseFlexibleDate,
+  formatDateShort,
+  formatTimeShort,
+  combineDateAndTime,
+} from "../utils/parseTime";
 
 interface LogisticsSectionProps {
   data: {
@@ -15,17 +26,66 @@ interface LogisticsSectionProps {
     foodDrinksBeingServed: boolean;
   };
   onChange: (data: Partial<LogisticsSectionProps["data"]>) => void;
+  onUploadRoomBooking?: (files: File[]) => void;
 }
 
-export function LogisticsSection({ data, onChange }: LogisticsSectionProps) {
-  const formatDateForInput = (timestamp: number) => {
-    if (!timestamp) return "";
-    return new Date(timestamp).toISOString().slice(0, 16);
+export function LogisticsSection({ data, onChange, onUploadRoomBooking }: LogisticsSectionProps) {
+  const [dateText, setDateText] = useState(formatDateShort(data.startDate));
+  const [startTimeText, setStartTimeText] = useState(formatTimeShort(data.startDate));
+  const [endTimeText, setEndTimeText] = useState(formatTimeShort(data.endDate));
+  const [dateError, setDateError] = useState("");
+  const [startTimeError, setStartTimeError] = useState("");
+  const [endTimeError, setEndTimeError] = useState("");
+
+  const handleDateBlur = () => {
+    setDateError("");
+    const parsed = parseFlexibleDate(dateText);
+    if (!parsed) {
+      if (dateText.trim()) setDateError("Invalid date. Use mm/dd/yy format.");
+      return;
+    }
+    // Preserve existing times
+    const startTime = new Date(data.startDate);
+    const endTime = new Date(data.endDate);
+    const newStart = combineDateAndTime(parsed, { hours: startTime.getHours(), minutes: startTime.getMinutes() });
+    const newEnd = combineDateAndTime(parsed, { hours: endTime.getHours(), minutes: endTime.getMinutes() });
+    onChange({ startDate: newStart, endDate: newEnd });
   };
 
-  const handleDateChange = (field: "startDate" | "endDate", value: string) => {
-    const timestamp = value ? new Date(value).getTime() : Date.now();
-    onChange({ [field]: timestamp });
+  const handleStartTimeBlur = () => {
+    setStartTimeError("");
+    const parsed = parseFlexibleTime(startTimeText);
+    if (!parsed) {
+      if (startTimeText.trim()) setStartTimeError("Invalid time. Try 9am, 9:00am, 14:00, etc.");
+      return;
+    }
+    const newStart = combineDateAndTime(data.startDate, parsed);
+    onChange({ startDate: newStart });
+    setStartTimeText(formatTimeShort(newStart));
+  };
+
+  const handleEndTimeBlur = () => {
+    setEndTimeError("");
+    const parsed = parseFlexibleTime(endTimeText);
+    if (!parsed) {
+      if (endTimeText.trim()) setEndTimeError("Invalid time. Try 2pm, 2:00pm, 14:00, etc.");
+      return;
+    }
+    const newEnd = combineDateAndTime(data.endDate || data.startDate, parsed);
+    onChange({ endDate: newEnd });
+    setEndTimeText(formatTimeShort(newEnd));
+  };
+
+  const handleRoomBookingFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0 && onUploadRoomBooking) {
+      onUploadRoomBooking(Array.from(e.target.files));
+    }
+    e.target.value = "";
+  };
+
+  const removeRoomBookingFile = (index: number) => {
+    const updated = data.roomBookingFiles.filter((_, i) => i !== index);
+    onChange({ roomBookingFiles: updated });
   };
 
   return (
@@ -44,31 +104,48 @@ export function LogisticsSection({ data, onChange }: LogisticsSectionProps) {
           />
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="eventDate">
+            Event Date <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="eventDate"
+            value={dateText}
+            onChange={(e) => setDateText(e.target.value)}
+            onBlur={handleDateBlur}
+            placeholder="mm/dd/yy"
+          />
+          {dateError && <p className="text-xs text-red-500">{dateError}</p>}
+          <p className="text-xs text-gray-500">Type in mm/dd/yy format (e.g., 02/14/26)</p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="startDate">
-              Start Date & Time <span className="text-red-500">*</span>
+            <Label htmlFor="startTime">
+              Start Time <span className="text-red-500">*</span>
             </Label>
             <Input
-              id="startDate"
-              type="datetime-local"
-              value={formatDateForInput(data.startDate)}
-              onChange={(e) => handleDateChange("startDate", e.target.value)}
-              required
+              id="startTime"
+              value={startTimeText}
+              onChange={(e) => setStartTimeText(e.target.value)}
+              onBlur={handleStartTimeBlur}
+              placeholder="e.g., 9am, 9:00 AM, 14:00"
             />
+            {startTimeError && <p className="text-xs text-red-500">{startTimeError}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="endDate">
-              End Date & Time <span className="text-red-500">*</span>
+            <Label htmlFor="endTime">
+              End Time <span className="text-red-500">*</span>
             </Label>
             <Input
-              id="endDate"
-              type="datetime-local"
-              value={formatDateForInput(data.endDate)}
-              onChange={(e) => handleDateChange("endDate", e.target.value)}
-              required
+              id="endTime"
+              value={endTimeText}
+              onChange={(e) => setEndTimeText(e.target.value)}
+              onBlur={handleEndTimeBlur}
+              placeholder="e.g., 2pm, 2:00 PM, 17:00"
             />
+            {endTimeError && <p className="text-xs text-red-500">{endTimeError}</p>}
           </div>
         </div>
 
@@ -121,20 +198,83 @@ export function LogisticsSection({ data, onChange }: LogisticsSectionProps) {
             </div>
           </div>
 
-          <div className="flex items-start space-x-3">
-            <Checkbox
-              id="foodDrinksBeingServed"
-              checked={data.foodDrinksBeingServed}
-              onCheckedChange={(checked) => onChange({ foodDrinksBeingServed: checked as boolean, hasFood: checked as boolean })}
-            />
-            <div className="space-y-1">
-              <Label htmlFor="foodDrinksBeingServed" className="cursor-pointer">
-                Food / drinks will be served
-              </Label>
-              <p className="text-xs text-gray-500">
-                All food must be from approved AS vendors and follow university food safety guidelines. Home-cooked food is not permitted unless approved by VC Operations.
-              </p>
+          {data.willOrHaveRoomBooking && (
+            <div className="ml-7 space-y-3 p-4 border rounded-lg bg-gray-50/50 dark:bg-gray-800/30">
+              <Label className="text-xs font-medium">Room Booking Files</Label>
+              {data.roomBookingFiles.length > 0 && (
+                <div className="space-y-2">
+                  {data.roomBookingFiles.map((file, idx) => {
+                    const fileName = file.split("/").pop()?.split("?")[0] || `File ${idx + 1}`;
+                    return (
+                      <div key={idx} className="flex items-center justify-between p-2 border rounded-lg text-sm">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-gray-400" />
+                          <span className="truncate max-w-50">{fileName}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => removeRoomBookingFile(idx)}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors">
+                <Upload className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-500">Upload room booking confirmation</span>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  multiple
+                  className="hidden"
+                  onChange={handleRoomBookingFileChange}
+                />
+              </label>
             </div>
+          )}
+
+          <div className="space-y-3 pt-2">
+            <Label className="text-sm font-medium">
+              Will you be serving food or drinks at this event? <span className="text-red-500">*</span>
+            </Label>
+            <RadioGroup
+              value={data.foodDrinksBeingServed ? "yes" : "no"}
+              onValueChange={(val) => {
+                const isYes = val === "yes";
+                onChange({ foodDrinksBeingServed: isYes, hasFood: isYes });
+              }}
+              className="space-y-2"
+            >
+              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <RadioGroupItem value="yes" id="food-yes" />
+                <Label htmlFor="food-yes" className="cursor-pointer flex-1">
+                  Yes, we will serve food or drinks
+                </Label>
+              </div>
+              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <RadioGroupItem value="no" id="food-no" />
+                <Label htmlFor="food-no" className="cursor-pointer flex-1">
+                  No food or drinks will be served
+                </Label>
+              </div>
+            </RadioGroup>
+            {data.foodDrinksBeingServed && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    <strong>Important:</strong> If serving food/drinks, you may need AS funding and must follow university guidelines.
+                    All food must be from approved AS vendors. Home-cooked food is not permitted unless approved by VC Operations.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

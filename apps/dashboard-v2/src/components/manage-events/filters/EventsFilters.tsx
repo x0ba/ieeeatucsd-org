@@ -19,7 +19,9 @@ interface EventsFiltersProps {
 const statusOptions: { value: EventStatus | "all"; label: string }[] = [
   { value: "all", label: "All Statuses" },
   { value: "draft", label: "Draft" },
+  { value: "submitted", label: "Submitted" },
   { value: "pending", label: "Pending" },
+  { value: "needs_review", label: "Needs Review" },
   { value: "approved", label: "Approved" },
   { value: "declined", label: "Declined" },
   { value: "published", label: "Published" },

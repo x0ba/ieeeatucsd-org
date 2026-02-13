@@ -46,19 +46,6 @@ function LeaderboardPage() {
     ? leaderboard?.findIndex((u) => u._id === user._id) ?? -1
     : -1;
 
-  const getPodiumHeight = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return "h-32";
-      case 2:
-        return "h-24";
-      case 3:
-        return "h-20";
-      default:
-        return "h-16";
-    }
-  };
-
   const getTotalStats = () => {
     const totalUsers = filteredData?.length || 0;
     const totalPoints = filteredData?.reduce((sum, u) => sum + u.points, 0) || 0;
@@ -77,89 +64,81 @@ function LeaderboardPage() {
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-gray-50/50 min-h-screen">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+    <div className="flex-1 overflow-auto bg-[#F8F9FB] min-h-screen">
+      <main className="max-w-6xl mx-auto px-5 py-10 space-y-10">
         {/* Header & Search */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-              Community Leaderboard
+            <h1 className="text-[34px] font-bold tracking-[-0.5px] text-gray-900 leading-none">
+              Leaderboard
             </h1>
-            <p className="text-gray-500 text-sm max-w-2xl">
-              Celebrating our most active members. Earn points by attending events,
-              workshops, and being an active part of the community.
+            <p className="text-gray-500 text-[15px] max-w-xl leading-relaxed">
+              Community rankings based on event participation and engagement
             </p>
           </div>
 
-          <div className="relative w-full md:w-72">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <div className="relative w-full md:w-[280px]">
+            <div className="absolute inset-y-0 left-0 pl-[14px] flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-gray-400" />
             </div>
             <input
               type="text"
-              placeholder="Find a member..."
+              placeholder="Search members..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all duration-200 shadow-sm text-sm"
+              className="block w-full pl-[42px] pr-4 py-[11px] border border-gray-200 rounded-[9px] bg-white text-[14px] placeholder-gray-400 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/5 transition-all duration-150"
             />
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {loading ? (
             <>
-              <Skeleton className="h-24 rounded-2xl" />
-              <Skeleton className="h-24 rounded-2xl" />
-              <Skeleton className="h-24 rounded-2xl" />
-              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-[76px] rounded-xl" />
+              <Skeleton className="h-[76px] rounded-xl" />
+              <Skeleton className="h-[76px] rounded-xl" />
+              <Skeleton className="h-[76px] rounded-xl" />
             </>
           ) : (
             <>
-              <div className="bg-white rounded-2xl p-5 shadow-sm ring-1 ring-gray-100 group hover:shadow-md transition-all duration-300">
-                <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                    Total Members
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {stats.totalUsers}
-                  </p>
-                </div>
+              <div className="bg-white rounded-xl px-5 py-4 border border-gray-200">
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-[2px]">
+                  Members
+                </p>
+                <p className="text-[26px] font-bold text-gray-900 leading-none tracking-tight">
+                  {stats.totalUsers}
+                </p>
               </div>
 
-              <div className="bg-white rounded-2xl p-5 shadow-sm ring-1 ring-gray-100 group hover:shadow-md transition-all duration-300">
-                <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                    Total Points
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {stats.totalPoints.toLocaleString()}
-                  </p>
-                </div>
+              <div className="bg-white rounded-xl px-5 py-4 border border-gray-200">
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-[2px]">
+                  Total Points
+                </p>
+                <p className="text-[26px] font-bold text-gray-900 leading-none tracking-tight">
+                  {stats.totalPoints.toLocaleString()}
+                </p>
               </div>
 
-              <div className="bg-white rounded-2xl p-5 shadow-sm ring-1 ring-gray-100 group hover:shadow-md transition-all duration-300">
-                <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                    Average Score
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.avgPoints}</p>
-                </div>
+              <div className="bg-white rounded-xl px-5 py-4 border border-gray-200">
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-[2px]">
+                  Average
+                </p>
+                <p className="text-[26px] font-bold text-gray-900 leading-none tracking-tight">
+                  {stats.avgPoints}
+                </p>
               </div>
 
-              <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl p-5 shadow-sm text-white relative overflow-hidden group">
-                <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-white opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity"></div>
-                <div className="relative z-10">
-                  <p className="text-xs font-bold text-indigo-100 uppercase tracking-wider mb-1">
-                    Your Rank
-                  </p>
-                  <p className="text-3xl font-black">
-                    {currentUserRank >= 0 ? `#${currentUserRank + 1}` : "-"}
-                  </p>
-                </div>
+              <div className="bg-gray-900 rounded-xl px-5 py-4">
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-[2px]">
+                  Your Rank
+                </p>
+                <p className="text-[26px] font-bold text-white leading-none tracking-tight">
+                  {currentUserRank >= 0 ? `#${currentUserRank + 1}` : "—"}
+                </p>
               </div>
             </>
           )}
@@ -171,104 +150,92 @@ function LeaderboardPage() {
             <Skeleton className="w-full h-full rounded-xl" />
           </div>
         ) : topThree.length >= 3 && !searchTerm ? (
-          <div className="pt-4 pb-8">
-            <div className="flex justify-center items-end gap-3 sm:gap-6 lg:gap-8">
+          <div className="pt-8 pb-10">
+            <div className="flex justify-center items-end gap-6 sm:gap-10">
               {/* Second Place */}
               {topThree[1] && (
-                <div className="flex flex-col items-center group relative top-4">
-                  <div className="relative mb-3 transition-transform duration-300 group-hover:-translate-y-1">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-white shadow-lg overflow-hidden relative z-10 bg-gray-100 flex items-center justify-center">
-                      <span className="text-xl font-black text-gray-400">
+                <div className="flex flex-col items-center relative top-2">
+                  <div className="relative mb-4">
+                    <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full border-[3px] border-white flex items-center justify-center bg-gray-100">
+                      <span className="text-[19px] font-bold text-gray-500 tracking-tight">
                         {topThree[1].name.substring(0, 2).toUpperCase()}
                       </span>
                     </div>
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gray-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-20 border-2 border-white">
-                      2nd
+                    <div className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 bg-gray-600 text-white text-[10px] font-bold px-2.5 py-[3px] rounded-sm tracking-wide">
+                      2
                     </div>
                   </div>
-                  <div className="text-center mb-2">
-                    <p className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-1 max-w-[80px]">
+                  <div className="text-center mb-3 min-w-[90px]">
+                    <p className="font-semibold text-gray-900 text-[13px] sm:text-[14px] truncate">
                       {topThree[1].name.split(" ")[0]}
                     </p>
-                    <p className="text-[10px] font-bold text-gray-500">
+                    <p className="text-[12px] font-bold text-gray-500 mt-[2px]">
                       {topThree[1].points} pts
                     </p>
                   </div>
-                  <div
-                    className={`w-16 sm:w-24 ${getPodiumHeight(2)} bg-gradient-to-t from-gray-200 to-gray-50 rounded-t-xl relative`}
-                  >
-                    <div className="absolute inset-0 bg-white/50"></div>
-                  </div>
+                  <div className="w-[72px] sm:w-[88px] h-[88px] bg-gray-200 rounded-t-sm border-t border-x border-gray-300" />
                 </div>
               )}
 
               {/* First Place */}
               {topThree[0] && (
-                <div className="flex flex-col items-center group z-10">
+                <div className="flex flex-col items-center relative z-10">
                   <style>{`
-                    @keyframes gentle-float {
-                      0%, 100% { transform: translateX(-50%) translateY(0px) rotate(0deg); }
-                      50% { transform: translateX(-50%) translateY(-6px) rotate(0deg); }
+                    @keyframes crown-float {
+                      0%, 100% { transform: translateX(-50%) translateY(0); }
+                      50% { transform: translateX(-50%) translateY(-5px); }
                     }
-                    .animate-gentle-float {
-                      animation: gentle-float 2.5s ease-in-out infinite;
+                    .crown-float {
+                      animation: crown-float 3s ease-in-out infinite;
                     }
                   `}</style>
-                  <div className="relative mb-4 transition-transform duration-300 group-hover:-translate-y-1">
-                    <div className="absolute -top-8 left-1/2 z-0 animate-gentle-float">
-                      <Crown className="w-10 h-10 text-yellow-500 fill-yellow-400/80 drop-shadow-sm" />
+                  <div className="relative mb-5">
+                    <div className="absolute -top-7 left-1/2 crown-float z-0">
+                      <Crown className="w-7 h-7 text-yellow-600 fill-yellow-500" />
                     </div>
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white shadow-xl overflow-hidden relative z-10 bg-gradient-to-br from-yellow-50 to-yellow-100 flex items-center justify-center ring-4 ring-yellow-400/20">
-                      <span className="text-2xl font-black text-yellow-700">
+                    <div className="w-[84px] h-[84px] sm:w-[96px] sm:h-[96px] rounded-full border-[4px] border-white flex items-center justify-center bg-gradient-to-br from-yellow-50 to-yellow-100 shadow-sm">
+                      <span className="text-[23px] font-bold text-yellow-700 tracking-tight">
                         {topThree[0].name.substring(0, 2).toUpperCase()}
                       </span>
                     </div>
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg z-20 border-2 border-white flex items-center gap-1">
-                      1st
+                    <div className="absolute -bottom-[10px] left-1/2 -translate-x-1/2 bg-yellow-600 text-white text-[11px] font-bold px-3 py-[3px] rounded-sm tracking-wide">
+                      1
                     </div>
                   </div>
-                  <div className="text-center mb-3">
-                    <p className="font-bold text-gray-900 text-sm sm:text-base">
+                  <div className="text-center mb-4 min-w-[110px]">
+                    <p className="font-semibold text-gray-900 text-[15px] sm:text-[16px]">
                       {topThree[0].name}
                     </p>
-                    <p className="text-xs font-bold text-yellow-600">
-                      {topThree[0].points} points
+                    <p className="text-[13px] font-bold text-yellow-700 mt-[2px]">
+                      {topThree[0].points} pts
                     </p>
                   </div>
-                  <div
-                    className={`w-20 sm:w-28 ${getPodiumHeight(1)} bg-gradient-to-t from-yellow-200/50 to-yellow-50/50 rounded-t-xl relative shadow-md ring-1 ring-yellow-400/10`}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/20"></div>
-                  </div>
+                  <div className="w-[84px] sm:w-[100px] h-[112px] bg-yellow-300 rounded-t-sm border-t border-x border-yellow-400" />
                 </div>
               )}
 
               {/* Third Place */}
               {topThree[2] && (
-                <div className="flex flex-col items-center group relative top-6">
-                  <div className="relative mb-3 transition-transform duration-300 group-hover:-translate-y-1">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-white shadow-lg overflow-hidden relative z-10 bg-orange-50 flex items-center justify-center">
-                      <span className="text-xl font-black text-orange-800/60">
+                <div className="flex flex-col items-center relative top-4">
+                  <div className="relative mb-4">
+                    <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full border-[3px] border-white flex items-center justify-center bg-orange-50">
+                      <span className="text-[19px] font-bold text-orange-700/70 tracking-tight">
                         {topThree[2].name.substring(0, 2).toUpperCase()}
                       </span>
                     </div>
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-orange-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-20 border-2 border-white">
-                      3rd
+                    <div className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 bg-orange-700 text-white text-[10px] font-bold px-2.5 py-[3px] rounded-sm tracking-wide">
+                      3
                     </div>
                   </div>
-                  <div className="text-center mb-2">
-                    <p className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-1 max-w-[80px]">
+                  <div className="text-center mb-3 min-w-[90px]">
+                    <p className="font-semibold text-gray-900 text-[13px] sm:text-[14px] truncate">
                       {topThree[2].name.split(" ")[0]}
                     </p>
-                    <p className="text-[10px] font-bold text-orange-800/60">
+                    <p className="text-[12px] font-bold text-orange-700/70 mt-[2px]">
                       {topThree[2].points} pts
                     </p>
                   </div>
-                  <div
-                    className={`w-16 sm:w-24 ${getPodiumHeight(3)} bg-gradient-to-t from-orange-200 to-orange-50 rounded-t-xl relative`}
-                  >
-                    <div className="absolute inset-0 bg-white/50"></div>
-                  </div>
+                  <div className="w-[72px] sm:w-[88px] h-[72px] bg-orange-200 rounded-t-sm border-t border-x border-orange-300" />
                 </div>
               )}
             </div>
@@ -276,19 +243,17 @@ function LeaderboardPage() {
         ) : null}
 
         {/* Main Leaderboard Table */}
-        <div className="bg-white rounded-3xl shadow-[0_2px_12px_-4px_rgba(0,0,0,0.08)] ring-1 ring-gray-200/75 overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-20">
+        <div className="bg-white rounded-[12px] border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">All Members</h2>
-                <p className="text-xs text-gray-500">
-                  Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of{" "}
-                  {leaderboard?.length || 0} members
-                </p>
-              </div>
+              <Users className="w-4 h-4 text-gray-400" />
+              <h2 className="text-[15px] font-semibold text-gray-900">
+                All Members
+              </h2>
+              <span className="text-[13px] text-gray-400">
+                {startIndex + 1}-{Math.min(endIndex, totalItems)} of{" "}
+                {leaderboard?.length || 0}
+              </span>
             </div>
           </div>
 
@@ -296,29 +261,29 @@ function LeaderboardPage() {
             {loading ? (
               <div className="p-6 space-y-3">
                 {[...Array(10)].map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                  <Skeleton key={i} className="h-14 w-full rounded-lg" />
                 ))}
               </div>
             ) : paginatedData && paginatedData.length > 0 ? (
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50/50 border-b border-gray-100/50">
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider w-20 text-center">
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider w-16 text-center">
                       Rank
                     </th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-left">
+                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider text-left">
                       Member
                     </th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">
+                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider text-right">
                       Points
                     </th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-left hidden md:table-cell">
+                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider text-left hidden md:table-cell">
                       Major
                     </th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-center hidden lg:table-cell">
+                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider text-center hidden lg:table-cell">
                       Year
                     </th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-center hidden sm:table-cell">
+                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider text-center hidden sm:table-cell">
                       Events
                     </th>
                   </tr>
@@ -329,35 +294,35 @@ function LeaderboardPage() {
                     return (
                       <tr
                         key={member._id}
-                        className={`group transition-all duration-200 ${
+                        className={`group transition-colors duration-150 ${
                           user?._id === member._id
-                            ? "bg-blue-50/30 hover:bg-blue-50/60"
-                            : "hover:bg-gray-50"
+                            ? "bg-blue-500/5"
+                            : "hover:bg-gray-50/80"
                         }`}
                       >
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-5 py-3.5 whitespace-nowrap">
                           <div
                             className={`
-                            w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm mx-auto
+                            w-8 h-8 flex items-center justify-center font-bold text-sm mx-auto rounded-sm
                             ${rank === 0
-                                ? "bg-gradient-to-br from-yellow-100 to-amber-100 text-amber-800 shadow-sm"
+                                ? "bg-yellow-100 text-yellow-700"
                                 : rank === 1
-                                  ? "bg-gradient-to-br from-gray-100 to-slate-200 text-slate-700 shadow-sm"
+                                  ? "bg-gray-200 text-gray-700"
                                   : rank === 2
-                                    ? "bg-gradient-to-br from-orange-100 to-orange-200 text-orange-800 shadow-sm"
-                                    : "text-gray-500 bg-gray-100/50"
+                                    ? "bg-orange-100 text-orange-700"
+                                    : "text-gray-400 bg-gray-100"
                               }
                           `}
                           >
                             {rank + 1}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-5 py-3.5 whitespace-nowrap">
                           <div className="flex items-center">
                             <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ring-2 ring-white
+                              className={`w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold
                               ${rank === 0 ? "bg-yellow-100 text-yellow-700" :
-                                  rank === 1 ? "bg-gray-100 text-gray-700" :
+                                  rank === 1 ? "bg-gray-200 text-gray-700" :
                                     rank === 2 ? "bg-orange-100 text-orange-700" :
                                       "bg-blue-50 text-blue-600"
                                 }
@@ -365,46 +330,42 @@ function LeaderboardPage() {
                             >
                               {member.name.substring(0, 2).toUpperCase()}
                             </div>
-                            <div className="ml-4">
+                            <div className="ml-3">
                               <div className="flex items-center gap-2">
-                                <div className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                <div className="text-[14px] font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">
                                   {member.name}
                                 </div>
                                 {user?._id === member._id && (
-                                  <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                                  <span className="text-[10px] bg-gray-900 text-white px-2 py-0.5 rounded-sm font-medium uppercase tracking-wide">
                                     You
                                   </span>
                                 )}
                               </div>
-                              <div className="text-xs text-gray-500 md:hidden mt-0.5">
-                                {truncateMajor(member.major || "Member")}
-                              </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-green-50 text-green-700 border border-green-100/50">
-                            <Star className="w-3 h-3 fill-current" />
+                        <td className="px-5 py-3.5 whitespace-nowrap text-right">
+                          <span className="text-[14px] font-semibold text-gray-900">
                             {member.points.toLocaleString()}
-                          </div>
+                          </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                        <td className="px-5 py-3.5 whitespace-nowrap hidden md:table-cell">
                           <div
-                            className="text-sm text-gray-600 font-medium"
+                            className="text-[14px] text-gray-600 font-medium"
                             title={member.major || "Member"}
                           >
                             {truncateMajor(member.major || "—")}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell text-center">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
+                        <td className="px-5 py-3.5 whitespace-nowrap hidden lg:table-cell text-center">
+                          <span className="text-[14px] text-gray-600 font-medium">
                             {member.graduationYear || "—"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell text-center">
-                          <div className="text-sm font-bold text-gray-900">
+                        <td className="px-5 py-3.5 whitespace-nowrap hidden sm:table-cell text-center">
+                          <span className="text-[14px] font-semibold text-gray-900">
                             {member.eventsAttended || 0}
-                          </div>
+                          </span>
                         </td>
                       </tr>
                     );
@@ -414,13 +375,12 @@ function LeaderboardPage() {
             ) : (
               <div className="text-center py-16">
                 <div className="flex flex-col items-center justify-center">
-                  <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                    <Search className="w-6 h-6 text-gray-300" />
+                  <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <Search className="w-5 h-5 text-gray-400" />
                   </div>
-                  <p className="text-lg font-bold text-gray-900">No members found</p>
-                  <p className="text-sm text-gray-500 mt-1 max-w-xs mx-auto">
-                    We couldn't find any members matching "{searchTerm}". Try
-                    adjusting your search.
+                  <p className="text-[15px] font-semibold text-gray-900">No results</p>
+                  <p className="text-[13px] text-gray-500 mt-1 max-w-xs mx-auto">
+                    No members match "{searchTerm}"
                   </p>
                 </div>
               </div>
@@ -430,15 +390,12 @@ function LeaderboardPage() {
           {/* Pagination Controls */}
           {totalPages > 1 && (
             <div className="bg-white px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-gray-500 text-center sm:text-left">
-                Showing{" "}
-                <span className="font-bold text-gray-900">{startIndex + 1}</span> to{" "}
-                <span className="font-bold text-gray-900">
+              <p className="text-[13px] text-gray-500 text-center sm:text-left">
+                Showing <span className="font-semibold text-gray-900">{startIndex + 1}</span> to{" "}
+                <span className="font-semibold text-gray-900">
                   {Math.min(endIndex, totalItems)}
                 </span>{" "}
-                of{" "}
-                <span className="font-bold text-gray-900">{totalItems}</span>{" "}
-                members
+                of <span className="font-semibold text-gray-900">{totalItems}</span>
               </p>
               <div className="flex justify-center">
                 <Pagination

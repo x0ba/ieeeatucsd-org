@@ -9,8 +9,12 @@ interface StatusBadgeProps {
 const statusStyles: Record<EventStatus, string> = {
   draft:
     "bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300 border-gray-200 dark:border-gray-700",
+  submitted:
+    "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700",
   pending:
     "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700",
+  needs_review:
+    "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-700",
   approved:
     "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-700",
   declined:
@@ -21,7 +25,9 @@ const statusStyles: Record<EventStatus, string> = {
 
 const statusLabels: Record<EventStatus, string> = {
   draft: "Draft",
+  submitted: "Submitted",
   pending: "Pending",
+  needs_review: "Needs Review",
   approved: "Approved",
   declined: "Declined",
   published: "Published",

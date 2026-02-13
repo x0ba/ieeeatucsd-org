@@ -12,11 +12,10 @@ import {
   User,
   FileText,
   History,
-  CheckCircle,
-  XCircle,
   Pencil,
   Trash2,
   Send,
+  Globe,
 } from "lucide-react";
 import {
   Dialog,
@@ -27,8 +26,17 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatusBadge } from "../filters/StatusBadge";
-import type { EventRequest } from "../types";
+import type { EventRequest, EventStatus } from "../types";
 
 interface EventViewModalProps {
   isOpen: boolean;
@@ -38,7 +46,18 @@ interface EventViewModalProps {
   onDelete?: (event: EventRequest) => void;
   onPublish?: (event: EventRequest) => void;
   onDecline?: (event: EventRequest) => void;
+  onStatusChange?: (event: EventRequest, status: EventStatus) => void;
+  onTogglePublish?: (event: EventRequest, canPublish: boolean) => void;
+  canManageStatus?: boolean;
 }
+
+const editableStatuses: { value: EventStatus; label: string }[] = [
+  { value: "submitted", label: "Submitted" },
+  { value: "pending", label: "Pending" },
+  { value: "needs_review", label: "Needs Review" },
+  { value: "approved", label: "Approved" },
+  { value: "declined", label: "Declined" },
+];
 
 export function EventViewModal({
   isOpen,
@@ -47,7 +66,9 @@ export function EventViewModal({
   onEdit,
   onDelete,
   onPublish,
-  onDecline,
+  onStatusChange,
+  onTogglePublish,
+  canManageStatus,
 }: EventViewModalProps) {
   const [activeTab, setActiveTab] = useState("details");
 
@@ -90,32 +111,6 @@ export function EventViewModal({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {event.status === "pending" && (
-                <>
-                  {onDecline && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 border-red-200 hover:bg-red-50"
-                      onClick={() => onDecline(event)}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Decline
-                    </Button>
-                  )}
-                  {onPublish && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-green-600 border-green-200 hover:bg-green-50"
-                      onClick={() => onPublish(event)}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Publish
-                    </Button>
-                  )}
-                </>
-              )}
               {event.status === "draft" && onPublish && (
                 <Button
                   variant="outline"
@@ -128,6 +123,47 @@ export function EventViewModal({
               )}
             </div>
           </div>
+
+          {/* Status management for non-draft events */}
+          {event.status !== "draft" && canManageStatus && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-3 pt-3 border-t">
+              <div className="flex items-center gap-2 flex-1">
+                <Label htmlFor="event-status" className="text-sm font-medium whitespace-nowrap">
+                  Status:
+                </Label>
+                <Select
+                  value={event.status}
+                  onValueChange={(value) => {
+                    if (onStatusChange) onStatusChange(event, value as EventStatus);
+                  }}
+                >
+                  <SelectTrigger id="event-status" className="w-44 h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {editableStatuses.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="can-publish"
+                  checked={event.status === "published"}
+                  onCheckedChange={(checked) => {
+                    if (onTogglePublish) onTogglePublish(event, checked as boolean);
+                  }}
+                />
+                <Label htmlFor="can-publish" className="text-sm cursor-pointer flex items-center gap-1.5">
+                  <Globe className="h-3.5 w-3.5" />
+                  Published
+                </Label>
+              </div>
+            </div>
+          )}
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -296,23 +332,33 @@ export function EventViewModal({
             {event.invoices.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium mb-2">Invoices</h4>
-                <div className="space-y-2">
-                  {event.invoices.map((invoice) => (
-                    <div
-                      key={invoice._id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{invoice.vendor}</p>
-                        <p className="text-xs text-gray-500">
-                          {invoice.description}
+                <div className="space-y-3">
+                  {event.invoices.map((invoice) => {
+                    const itemsSummary = invoice.items
+                      .map((item) => {
+                        const qty = item.quantity || 1;
+                        const price = item.unitPrice || (item.total / qty);
+                        return `${qty} ${item.description} x$${price.toFixed(2)} each`;
+                      })
+                      .join(" | ");
+                    const taxPart = invoice.tax > 0 ? ` | Tax = $${invoice.tax.toFixed(2)}` : "";
+                    const tipPart = invoice.tip > 0 ? ` | Tip = $${invoice.tip.toFixed(2)}` : "";
+                    const totalPart = ` | Total = $${(invoice.total || invoice.amount || 0).toFixed(2)}`;
+                    const vendorPart = invoice.vendor ? ` from ${invoice.vendor}` : "";
+
+                    return (
+                      <div
+                        key={invoice._id}
+                        className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                      >
+                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {invoice.items.length > 0
+                            ? `${itemsSummary}${taxPart}${tipPart}${totalPart}${vendorPart}`
+                            : `${invoice.description || "Invoice"}${totalPart}${vendorPart}`}
                         </p>
                       </div>
-                      <span className="text-sm font-medium">
-                        ${invoice.amount.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="flex justify-between items-center mt-4 pt-4 border-t">
                   <span className="font-medium">Total</span>

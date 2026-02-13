@@ -167,17 +167,17 @@ export default function FundRequestActionModal({
           {/* Left Column: Request Details */}
           <div className="flex-1 space-y-4 overflow-y-auto pr-2">
             {/* User & Financials */}
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Requested by</p>
-                <p className="font-medium">{fundRequest.submittedByName || "Unknown"}</p>
-                <p className="text-xs text-muted-foreground">{fundRequest.submittedByEmail}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Amount</p>
-                <p className="text-xl font-bold text-success-foreground">{formatCurrency(fundRequest.amount)}</p>
-              </div>
-            </div>
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+               <div>
+                 <p className="text-xs font-semibold text-muted-foreground uppercase">Requested by</p>
+                 <p className="font-medium">{fundRequest.submittedByName || "Unknown"}</p>
+                 <p className="text-xs text-muted-foreground">{fundRequest.submittedByEmail}</p>
+               </div>
+               <div className="text-right">
+                 <p className="text-xs font-semibold text-muted-foreground uppercase">Amount</p>
+                 <p className="text-xl font-bold text-green-600 dark:text-green-400">{formatCurrency(fundRequest.amount)}</p>
+               </div>
+             </div>
 
             {/* Title & Purpose */}
             <div className="space-y-2">
@@ -202,8 +202,8 @@ export default function FundRequestActionModal({
 
             {/* Info Response */}
             {fundRequest.infoResponseNotes && (
-              <div className="bg-warning-50/50 p-4 rounded-lg border border-orange-200 dark:bg-orange-950/20 dark:border-orange-800">
-                <h4 className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase flex items-center gap-1 mb-2">
+              <div className="bg-yellow-50/50 dark:bg-yellow-950/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <h4 className="text-xs font-bold text-yellow-800 dark:text-yellow-200 uppercase flex items-center gap-1 mb-2">
                   <Megaphone className="w-3 h-3" /> Additional Context
                 </h4>
                 <p className="text-sm text-foreground whitespace-pre-wrap">
@@ -259,38 +259,38 @@ export default function FundRequestActionModal({
           <div className="w-full md:w-[320px] space-y-6 flex-shrink-0">
             <div>
               <h3 className="font-semibold mb-4">Decision</h3>
-              <RadioGroup value={action} onValueChange={(v) => setAction(v as typeof action)} className="space-y-3">
-                <div className="flex items-center space-x-2 rounded-lg border p-3 hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="approve" id="approve" />
-                  <Label htmlFor="approve" className="flex-1 cursor-pointer font-medium">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-success-foreground" />
-                      Approve Request
-                    </div>
-                    <span className="text-xs text-muted-foreground font-normal">Authorize funding</span>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 rounded-lg border p-3 hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="needs_info" id="needs_info" />
-                  <Label htmlFor="needs_info" className="flex-1 cursor-pointer font-medium">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-warning-foreground" />
-                      Request More Info
-                    </div>
-                    <span className="text-xs text-muted-foreground font-normal">Ask user for details</span>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 rounded-lg border p-3 hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="deny" id="deny" />
-                  <Label htmlFor="deny" className="flex-1 cursor-pointer font-medium">
-                    <div className="flex items-center gap-2">
-                      <XCircle className="w-4 h-4 text-destructive-foreground" />
-                      Deny Request
-                    </div>
-                    <span className="text-xs text-muted-foreground font-normal">Reject this request</span>
-                  </Label>
-                </div>
-              </RadioGroup>
+               <RadioGroup value={action} onValueChange={(v) => setAction(v as typeof action)} className="space-y-3">
+                 <div className="flex items-center space-x-2 rounded-lg border p-3 hover:bg-muted/50 cursor-pointer">
+                   <RadioGroupItem value="approve" id="approve" />
+                   <Label htmlFor="approve" className="flex-1 cursor-pointer font-medium">
+                     <div className="flex items-center gap-2">
+                       <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                       Approve Request
+                     </div>
+                     <span className="text-xs text-muted-foreground font-normal">Authorize funding</span>
+                   </Label>
+                 </div>
+                 <div className="flex items-center space-x-2 rounded-lg border p-3 hover:bg-muted/50 cursor-pointer">
+                   <RadioGroupItem value="needs_info" id="needs_info" />
+                   <Label htmlFor="needs_info" className="flex-1 cursor-pointer font-medium">
+                     <div className="flex items-center gap-2">
+                       <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                       Request More Info
+                     </div>
+                     <span className="text-xs text-muted-foreground font-normal">Ask user for details</span>
+                   </Label>
+                 </div>
+                 <div className="flex items-center space-x-2 rounded-lg border p-3 hover:bg-muted/50 cursor-pointer">
+                   <RadioGroupItem value="deny" id="deny" />
+                   <Label htmlFor="deny" className="flex-1 cursor-pointer font-medium">
+                     <div className="flex items-center gap-2">
+                       <XCircle className="w-4 h-4 text-destructive" />
+                       Deny Request
+                     </div>
+                     <span className="text-xs text-muted-foreground font-normal">Reject this request</span>
+                   </Label>
+                 </div>
+               </RadioGroup>
             </div>
 
             {action === "approve" && (

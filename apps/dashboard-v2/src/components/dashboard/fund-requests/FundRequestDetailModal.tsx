@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import {
   Calendar,
   FileText,
@@ -179,68 +180,67 @@ export function FundRequestDetailModal({ isOpen, onClose, request, onEdit }: Fun
 
             {/* Details Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3 rounded-xl border bg-muted">
+              <Card className="p-3 rounded-xl border bg-muted">
                 <span className="text-xs text-muted-500 font-medium">Amount</span>
-                <div className="flex items-center gap-1 mt-1 text-green-600 font-bold text-lg">{formatCurrency(request.amount)}</div>
-              </div>
-              <div className="p-3 rounded-xl border bg-background">
+                <div className="flex items-center gap-1 mt-1 text-green-600 dark:text-green-400 font-bold text-lg">{formatCurrency(request.amount)}</div>
+              </Card>
+              <Card className="p-3 rounded-xl border bg-background">
                 <span className="text-xs text-muted-500 font-medium">Department</span>
                 <div className="flex items-center gap-2 mt-1 font-medium text-foreground">
                   <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
                   {request.department ? DEPARTMENT_LABELS[request.department as keyof typeof DEPARTMENT_LABELS] : "N/A"}
                 </div>
-              </div>
-              <div className="p-3 rounded-xl border bg-background">
+              </Card>
+              <Card className="p-3 rounded-xl border bg-background">
                 <span className="text-xs text-muted-500 font-medium">Category</span>
                 <div className="flex items-center gap-2 mt-1 font-medium text-foreground">
                   <Tag className="w-3.5 h-3.5 text-muted-foreground" />
                   {CATEGORY_LABELS[request.category as keyof typeof CATEGORY_LABELS]}
                 </div>
-              </div>
-              <div className="p-3 rounded-xl border bg-background">
+              </Card>
+              <Card className="p-3 rounded-xl border bg-background">
                 <span className="text-xs text-muted-500 font-medium">Timeline</span>
                 <div className="flex items-center gap-2 mt-1 font-medium text-foreground">
                   <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                   {formatDate(request.createdAt)}
                 </div>
-              </div>
+              </Card>
             </div>
 
             {/* Vendor Links & Attachments */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4" /> Links
-                </h3>
-                {request.vendorLinks && request.vendorLinks.length > 0 ? (
-                  <div className="space-y-2">
-                    {request.vendorLinks.map((link) => (
-                      <a
-                        key={link.id}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block rounded-xl border bg-card p-3 hover:border-primary transition-colors"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span className="text-xs font-medium bg-muted px-1.5 py-0.5 rounded flex-shrink-0">x{link.quantity || 1}</span>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium truncate text-foreground">
-                                {link.itemName || link.url || "Link"}
-                              </p>
-                              {link.url && <p className="text-xs text-muted-foreground truncate">{link.url}</p>}
-                            </div>
-                          </div>
-                          <ExternalLink className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">No links provided.</p>
-                )}
-              </div>
+               <div className="space-y-3">
+                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                   <ExternalLink className="w-4 h-4" /> Links
+                 </h3>
+                 {request.vendorLinks && request.vendorLinks.length > 0 ? (
+                   <div className="space-y-2">
+                     {request.vendorLinks.map((link) => (
+                       <Card key={link.id} className="p-3 hover:border-primary transition-colors">
+                         <a
+                           href={link.url}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="flex items-center justify-between gap-3"
+                         >
+                           <div className="flex items-center gap-2 min-w-0 flex-1">
+                             <span className="text-xs font-medium bg-muted px-1.5 py-0.5 rounded flex-shrink-0">x{link.quantity || 1}</span>
+                             <div className="min-w-0 flex-1">
+                               <p className="text-sm font-medium truncate text-foreground">
+                                 {link.itemName || link.url || "Link"}
+                               </p>
+                               {link.url && <p className="text-xs text-muted-foreground truncate">{link.url}</p>}
+                             </div>
+                           </div>
+                           <ExternalLink className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                         </a>
+                       </Card>
+                     ))}
+                   </div>
+                 ) : (
+                   <p className="text-sm text-muted-foreground italic">No links provided.</p>
+                 )}
+               </div>
 
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">

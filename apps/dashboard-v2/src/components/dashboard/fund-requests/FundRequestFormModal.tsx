@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -18,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, X, Link as LinkIcon, Check } from "lucide-react";
 import { formatCurrency } from "@/types/fund-requests";
 import { CATEGORY_LABELS, DEPARTMENT_LABELS, type FundRequestCategory, type FundRequestDepartment } from "@/types/fund-requests";
@@ -349,55 +351,57 @@ export function FundRequestFormModal({
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {vendorLinks.length > 0 && (
-                  <div className="flex gap-2 px-1 text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                    <span className="flex-1">Item Name</span>
-                    <span className="w-20">Qty</span>
-                    <span className="flex-[2]">URL</span>
-                    <span className="w-8"></span>
-                  </div>
-                )}
+              <ScrollArea className="max-h-60">
+                <div className="space-y-3 pr-4">
+                  {vendorLinks.length > 0 && (
+                    <div className="flex gap-2 px-1 text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                      <span className="flex-1">Item Name</span>
+                      <span className="w-20">Qty</span>
+                      <span className="flex-[2]">URL</span>
+                      <span className="w-8"></span>
+                    </div>
+                  )}
 
-                {vendorLinks.map((link) => (
-                  <div key={link.id} className="group flex gap-2 items-center">
-                    <Input
-                      placeholder="Item name"
-                      value={link.itemName || ""}
-                      onChange={(e) => handleLinkChange(link.id, "itemName", e.target.value)}
-                      onBlur={() => handleLinkBlur(link.id)}
-                      className="flex-1 h-8 text-sm"
-                    />
-                    <Input
-                      placeholder="1"
-                      type="number"
-                      min={1}
-                      value={link.quantity ?? 1}
-                      onChange={(e) => {
-                        const num = parseInt(e.target.value) || 1;
-                        handleLinkChange(link.id, "quantity", Math.max(1, num));
-                      }}
-                      className="w-20 h-8 text-sm"
-                    />
-                    <Input
-                      placeholder="https://..."
-                      value={link.url || ""}
-                      onChange={(e) => handleLinkChange(link.id, "url", e.target.value)}
-                      onBlur={() => handleLinkBlur(link.id)}
-                      className="flex-[2] h-8 text-sm"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveLink(link.id)}
-                      className="opacity-0 group-hover:opacity-100 w-8 h-8 p-0"
-                    >
-                      <X className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                  {vendorLinks.map((link) => (
+                    <div key={link.id} className="group flex gap-2 items-center">
+                      <Input
+                        placeholder="Item name"
+                        value={link.itemName || ""}
+                        onChange={(e) => handleLinkChange(link.id, "itemName", e.target.value)}
+                        onBlur={() => handleLinkBlur(link.id)}
+                        className="flex-1 h-8 text-sm"
+                      />
+                      <Input
+                        placeholder="1"
+                        type="number"
+                        min={1}
+                        value={link.quantity ?? 1}
+                        onChange={(e) => {
+                          const num = parseInt(e.target.value) || 1;
+                          handleLinkChange(link.id, "quantity", Math.max(1, num));
+                        }}
+                        className="w-20 h-8 text-sm"
+                      />
+                      <Input
+                        placeholder="https://..."
+                        value={link.url || ""}
+                        onChange={(e) => handleLinkChange(link.id, "url", e.target.value)}
+                        onBlur={() => handleLinkBlur(link.id)}
+                        className="flex-[2] h-8 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveLink(link.id)}
+                        className="opacity-0 group-hover:opacity-100 w-8 h-8 p-0"
+                      >
+                        <X className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
             </div>
           </div>
         );
@@ -409,37 +413,45 @@ export function FundRequestFormModal({
 
         return (
           <div className="space-y-6">
-            <div className="rounded-xl border bg-muted/50 p-5 space-y-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="text-lg font-bold">{title}</h4>
-                  <p className="text-sm text-muted-foreground mt-0.5">{DEPARTMENT_LABELS[department]}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-green-600">${formatCurrency(parseFloat(amount) || 0)}</p>
-                  <Badge variant="secondary" className="mt-1">
-                    {CATEGORY_LABELS[category]}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">
-                  Purpose
-                </span>
-                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{purpose}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="p-3 bg-background rounded-lg border">
-                  <div className="flex items-center gap-2 mb-1">
-                    <LinkIcon className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-medium text-muted-foreground uppercase">Items / Links</span>
+            <Card>
+              <CardContent className="p-5 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="text-lg font-bold">{title}</h4>
+                    <p className="text-sm text-muted-foreground mt-0.5">{DEPARTMENT_LABELS[department]}</p>
                   </div>
-                  <p className="text-lg font-semibold pl-6">{cleanedLinks.length}</p>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      ${formatCurrency(parseFloat(amount) || 0)}
+                    </p>
+                    <Badge variant="secondary" className="mt-1">
+                      {CATEGORY_LABELS[category]}
+                    </Badge>
+                  </div>
                 </div>
-              </div>
-            </div>
+
+                <div className="border-t pt-4">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">
+                    Purpose
+                  </span>
+                  <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{purpose}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <LinkIcon className="w-4 h-4 text-primary" />
+                        <span className="text-xs font-medium text-muted-foreground uppercase">
+                          Items / Links
+                        </span>
+                      </div>
+                      <p className="text-lg font-semibold pl-6">{cleanedLinks.length}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
       }
@@ -457,29 +469,34 @@ export function FundRequestFormModal({
         </DialogHeader>
 
         {/* Stepper */}
-        <div className="relative mt-4 mb-2">
-          <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -translate-y-1/2 z-0" />
-          <div
-            className="absolute top-1/2 left-0 h-0.5 bg-primary transition-all duration-300 -translate-y-1/2 z-0"
-            style={{ width: `${((currentStep - 1) / (STEPS.length - 1)) * 100}%` }}
-          />
-          <div className="flex justify-between relative z-10">
-            {STEPS.map((step) => {
+        <div className="relative mt-6 mb-4">
+          <div className="flex items-center justify-between gap-2">
+            {STEPS.map((step, index) => {
               const isCompleted = currentStep > step.id;
               const isCurrent = currentStep === step.id;
 
               return (
-                <div key={step.id} className="flex flex-col items-center gap-2 bg-background px-2">
-                  <div
-                    className={`
-                      w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 border-2
-                      ${isCompleted || isCurrent ? "border-primary bg-primary text-primary-foreground" : "border-muted bg-background text-muted-foreground"}
-                    `}
-                  >
-                    {isCompleted ? <Check className="w-4 h-4" /> : step.id}
+                <div key={step.id} className="flex-1 flex flex-col items-center">
+                  <div className="w-full flex items-center">
+                    <div
+                      className={`
+                        w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 border-2 relative z-10
+                        ${isCompleted || isCurrent ? "border-primary bg-primary text-primary-foreground" : "border-muted bg-background text-muted-foreground"}
+                      `}
+                    >
+                      {isCompleted ? <Check className="w-4 h-4" /> : step.id}
+                    </div>
+                    {index < STEPS.length - 1 && (
+                      <div
+                        className={`
+                          flex-1 h-0.5 transition-all duration-300 -mx-2
+                          ${isCompleted || (isCurrent && index < currentStep - 1) ? "bg-primary" : "bg-muted"}
+                        `}
+                      />
+                    )}
                   </div>
                   <span
-                    className={`hidden sm:block text-xs font-semibold ${
+                    className={`hidden sm:block text-xs font-semibold mt-2 ${
                       isCurrent ? "text-primary" : "text-muted-foreground"
                     }`}
                   >
@@ -493,22 +510,35 @@ export function FundRequestFormModal({
 
         <div className="flex-1 overflow-y-auto py-4">{renderStepContent()}</div>
 
-        <DialogFooter className="flex justify-between pt-4 border-t">
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+        <DialogFooter className="flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="w-full sm:w-auto"
+          >
             Cancel
           </Button>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 w-full sm:w-auto">
             {currentStep > 1 && (
-              <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePrevStep}
+                disabled={isSubmitting}
+                className="flex-1 sm:flex-none"
+              >
                 Back
               </Button>
             )}
 
             {currentStep < STEPS.length ? (
-              <Button onClick={handleNextStep}>Next Step</Button>
+              <Button onClick={handleNextStep} className="flex-1 sm:flex-none">
+                Next Step
+              </Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={isSubmitting}>
+              <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1 sm:flex-none">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditMode ? "Update Request" : "Submit Request"}
               </Button>

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { CheckCircle } from "lucide-react";
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
 import {
   Dialog,
   DialogContent,
@@ -67,27 +69,38 @@ const defaultFormData: EventFormData = {
 };
 
 function buildFormDataFromInitial(initialData?: Partial<EventRequest>): EventFormData {
+  if (!initialData) return { ...defaultFormData };
   return {
-    ...defaultFormData,
-    ...initialData,
-    startDate: initialData?.startDate || Date.now(),
-    endDate: initialData?.endDate || Date.now() + 3600000,
-    invoices: initialData?.invoices || [],
-    files: initialData?.files || [],
-    willOrHaveRoomBooking: initialData?.willOrHaveRoomBooking ?? false,
-    roomBookingFiles: initialData?.roomBookingFiles || [],
-    foodDrinksBeingServed: initialData?.foodDrinksBeingServed ?? false,
-    asFundingRequired: initialData?.asFundingRequired ?? false,
-    flyerType: initialData?.flyerType || [],
-    otherFlyerType: initialData?.otherFlyerType || "",
-    flyerAdvertisingStartDate: initialData?.flyerAdvertisingStartDate || 0,
-    flyerAdditionalRequests: initialData?.flyerAdditionalRequests || "",
-    photographyNeeded: initialData?.photographyNeeded ?? false,
-    requiredLogos: initialData?.requiredLogos || [],
-    otherLogos: initialData?.otherLogos || [],
-    advertisingFormat: initialData?.advertisingFormat || "",
-    additionalSpecifications: initialData?.additionalSpecifications || "",
-    flyersCompleted: initialData?.flyersCompleted ?? false,
+    eventName: initialData.eventName || defaultFormData.eventName,
+    eventDescription: initialData.eventDescription || defaultFormData.eventDescription,
+    eventType: initialData.eventType || defaultFormData.eventType,
+    department: initialData.department ?? defaultFormData.department,
+    location: initialData.location || defaultFormData.location,
+    startDate: initialData.startDate || Date.now(),
+    endDate: initialData.endDate || Date.now() + 3600000,
+    capacity: initialData.capacity ?? defaultFormData.capacity,
+    eventCode: initialData.eventCode || defaultFormData.eventCode,
+    hasFood: initialData.hasFood ?? initialData.foodDrinksBeingServed ?? defaultFormData.hasFood,
+    needsFlyers: initialData.needsFlyers ?? defaultFormData.needsFlyers,
+    needsGraphics: initialData.needsGraphics ?? defaultFormData.needsGraphics,
+    needsASFunding: initialData.needsASFunding ?? defaultFormData.needsASFunding,
+    estimatedAttendance: initialData.estimatedAttendance ?? defaultFormData.estimatedAttendance,
+    files: initialData.files || [],
+    invoices: initialData.invoices || [],
+    willOrHaveRoomBooking: initialData.willOrHaveRoomBooking ?? defaultFormData.willOrHaveRoomBooking,
+    roomBookingFiles: initialData.roomBookingFiles || [],
+    foodDrinksBeingServed: initialData.foodDrinksBeingServed ?? initialData.hasFood ?? defaultFormData.foodDrinksBeingServed,
+    asFundingRequired: initialData.asFundingRequired ?? initialData.needsASFunding ?? defaultFormData.asFundingRequired,
+    flyerType: initialData.flyerType || [],
+    otherFlyerType: initialData.otherFlyerType || "",
+    flyerAdvertisingStartDate: initialData.flyerAdvertisingStartDate || 0,
+    flyerAdditionalRequests: initialData.flyerAdditionalRequests || "",
+    photographyNeeded: initialData.photographyNeeded ?? defaultFormData.photographyNeeded,
+    requiredLogos: initialData.requiredLogos || [],
+    otherLogos: initialData.otherLogos || [],
+    advertisingFormat: initialData.advertisingFormat || "",
+    additionalSpecifications: initialData.additionalSpecifications || "",
+    flyersCompleted: initialData.flyersCompleted ?? defaultFormData.flyersCompleted,
   };
 }
 
@@ -98,6 +111,7 @@ export function EventRequestWizardModal({
   initialData,
 }: EventRequestWizardModalProps) {
   const isEditing = !!initialData;
+  const generateUploadUrl = useMutation(api.eventRequests.generateUploadUrl);
   const [currentStep, setCurrentStep] = useState(isEditing ? 2 : 1);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(isEditing);
   const [formData, setFormData] = useState<EventFormData>(
@@ -199,6 +213,30 @@ export function EventRequestWizardModal({
               foodDrinksBeingServed: formData.foodDrinksBeingServed,
             }}
             onChange={(data) => updateFormData(data)}
+            onUploadRoomBooking={async (files) => {
+              const urls: string[] = [];
+              for (const file of files) {
+                try {
+                  const uploadUrl = await generateUploadUrl();
+                  const res = await fetch(uploadUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": file.type },
+                    body: file,
+                  });
+                  if (res.ok) {
+                    const { storageId } = await res.json();
+                    urls.push(storageId);
+                  }
+                } catch (err) {
+                  console.error("Failed to upload room booking file:", err);
+                }
+              }
+              if (urls.length > 0) {
+                updateFormData({
+                  roomBookingFiles: [...formData.roomBookingFiles, ...urls],
+                });
+              }
+            }}
           />
         );
       case 4:
@@ -230,10 +268,13 @@ export function EventRequestWizardModal({
               invoices: formData.invoices,
             }}
             onChange={(data) => updateFormData(data)}
+            generateUploadUrl={async () => {
+              return await generateUploadUrl();
+            }}
           />
         );
       case 6:
-        return <EventReviewSection data={formData} />;
+        return <EventReviewSection data={formData} originalData={initialData} />;
       default:
         return null;
     }

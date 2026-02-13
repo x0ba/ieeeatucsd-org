@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
 import { Trash2, Loader2, DollarSign, Calendar, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 
@@ -221,19 +222,19 @@ export default function BudgetManagementModal({
             </div>
 
             <div className="border-t pt-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold">Manual Adjustments</h3>
-                  <p className="text-xs text-muted-foreground">
-                    External expenses counting against budget
-                  </p>
-                </div>
-                {totalAdjustments > 0 && (
-                  <span className="text-sm font-semibold text-warning-foreground">
-                    Total: {formatCurrency(totalAdjustments)}
-                  </span>
-                )}
-              </div>
+               <div className="flex items-center justify-between">
+                 <div>
+                   <h3 className="text-sm font-semibold">Manual Adjustments</h3>
+                   <p className="text-xs text-muted-foreground">
+                     External expenses counting against budget
+                   </p>
+                 </div>
+                 {totalAdjustments > 0 && (
+                   <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                     Total: {formatCurrency(totalAdjustments)}
+                   </span>
+                 )}
+               </div>
 
               <div className="flex gap-2 items-start">
                 <div className="relative w-32">
@@ -272,33 +273,32 @@ export default function BudgetManagementModal({
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {budgetAdjustments && budgetAdjustments.length > 0 ? (
                   budgetAdjustments.map((adj) => (
-                    <div
-                      key={adj._id}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{adj.description}</p>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                          <span className="bg-muted px-2 py-0.5 rounded">
-                            {formatDateForInput(adj.createdAt)}
+                    <Card key={adj._id} className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{adj.description}</p>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                            <span className="bg-muted px-2 py-0.5 rounded">
+                              {formatDateForInput(adj.createdAt)}
+                            </span>
+                            <span>by {adj.createdByName || "Unknown"}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 ml-4">
+                          <span className="font-semibold text-orange-600 dark:text-orange-400">
+                            {formatCurrency(adj.amount)}
                           </span>
-                          <span>by {adj.createdByName || "Unknown"}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteAdjustment(adj._id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 ml-4">
-                        <span className="font-semibold text-warning-foreground">
-                          {formatCurrency(adj.amount)}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteAdjustment(adj._id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+                    </Card>
                   ))
                 ) : (
                   <p className="text-center text-sm text-muted-foreground py-4">

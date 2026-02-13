@@ -1,6 +1,6 @@
 import type { Id } from "@convex/_generated/dataModel";
 
-export type EventStatus = "draft" | "pending" | "approved" | "declined" | "published";
+export type EventStatus = "draft" | "submitted" | "pending" | "needs_review" | "approved" | "declined" | "published";
 
 export interface InvoiceItem {
   description: string;

@@ -1,12 +1,16 @@
 import { format } from "date-fns";
-import { MapPin, Calendar, Users, Utensils, Printer, Image, Camera, DoorOpen } from "lucide-react";
-import type { EventFormData } from "../types";
+import { MapPin, Calendar, Users, Utensils, Printer, Image, Camera, DoorOpen, ArrowRight } from "lucide-react";
+import type { EventFormData, EventRequest } from "../types";
+import { BudgetCalculation } from "./BudgetCalculation";
 
 interface EventReviewSectionProps {
   data: EventFormData;
+  originalData?: Partial<EventRequest>;
 }
 
-export function EventReviewSection({ data }: EventReviewSectionProps) {
+export function EventReviewSection({ data, originalData }: EventReviewSectionProps) {
+  const isEditing = !!originalData;
+
   const formatDate = (timestamp: number) => {
     return format(new Date(timestamp), "MMMM d, yyyy 'at' h:mm a");
   };
@@ -26,14 +30,86 @@ export function EventReviewSection({ data }: EventReviewSectionProps) {
     0
   );
 
+  // Build list of changes when editing
+  const changes: { label: string; before: string; after: string }[] = [];
+  if (isEditing && originalData) {
+    const o = originalData;
+    if (o.eventName && o.eventName !== data.eventName)
+      changes.push({ label: "Event Name", before: o.eventName, after: data.eventName });
+    if (o.eventDescription !== undefined && o.eventDescription !== data.eventDescription)
+      changes.push({ label: "Description", before: o.eventDescription || "(empty)", after: data.eventDescription || "(empty)" });
+    if (o.eventType && o.eventType !== data.eventType)
+      changes.push({ label: "Event Type", before: o.eventType, after: data.eventType });
+    if (o.department !== data.department)
+      changes.push({ label: "Department", before: o.department || "(none)", after: data.department || "(none)" });
+    if (o.location && o.location !== data.location)
+      changes.push({ label: "Location", before: o.location, after: data.location });
+    if (o.startDate && o.startDate !== data.startDate)
+      changes.push({ label: "Start Date", before: formatDate(o.startDate), after: formatDate(data.startDate) });
+    if (o.endDate && o.endDate !== data.endDate)
+      changes.push({ label: "End Date", before: formatDate(o.endDate), after: formatDate(data.endDate) });
+    if (o.capacity !== data.capacity)
+      changes.push({ label: "Capacity", before: String(o.capacity ?? "(none)"), after: String(data.capacity ?? "(none)") });
+    if (o.eventCode && o.eventCode !== data.eventCode)
+      changes.push({ label: "Event Code", before: o.eventCode, after: data.eventCode });
+    if ((o.foodDrinksBeingServed ?? o.hasFood) !== data.foodDrinksBeingServed)
+      changes.push({ label: "Food/Drinks", before: (o.foodDrinksBeingServed ?? o.hasFood) ? "Yes" : "No", after: data.foodDrinksBeingServed ? "Yes" : "No" });
+    if (o.willOrHaveRoomBooking !== data.willOrHaveRoomBooking)
+      changes.push({ label: "Room Booking", before: o.willOrHaveRoomBooking ? "Yes" : "No", after: data.willOrHaveRoomBooking ? "Yes" : "No" });
+    if ((o.needsASFunding ?? o.asFundingRequired) !== data.needsASFunding)
+      changes.push({ label: "AS Funding", before: (o.needsASFunding ?? o.asFundingRequired) ? "Yes" : "No", after: data.needsASFunding ? "Yes" : "No" });
+    if (o.needsFlyers !== data.needsFlyers)
+      changes.push({ label: "Needs Flyers", before: o.needsFlyers ? "Yes" : "No", after: data.needsFlyers ? "Yes" : "No" });
+    if (o.needsGraphics !== data.needsGraphics)
+      changes.push({ label: "Needs Graphics", before: o.needsGraphics ? "Yes" : "No", after: data.needsGraphics ? "Yes" : "No" });
+    if (o.photographyNeeded !== data.photographyNeeded)
+      changes.push({ label: "Photography", before: o.photographyNeeded ? "Yes" : "No", after: data.photographyNeeded ? "Yes" : "No" });
+    if (o.estimatedAttendance !== data.estimatedAttendance)
+      changes.push({ label: "Est. Attendance", before: String(o.estimatedAttendance ?? 0), after: String(data.estimatedAttendance) });
+
+    const origInvoiceTotal = (o.invoices || []).reduce((s: number, inv) => s + (inv.total || inv.amount || 0), 0);
+    if (Math.abs(origInvoiceTotal - totalInvoiceAmount) > 0.01)
+      changes.push({ label: "Invoice Total", before: `$${origInvoiceTotal.toFixed(2)}`, after: `$${totalInvoiceAmount.toFixed(2)}` });
+  }
+
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <p className="text-sm text-blue-700 dark:text-blue-300">
-          Please review all information before submitting. Once submitted, your
-          event request will be reviewed by officers.
-        </p>
-      </div>
+      {isEditing && changes.length > 0 ? (
+        <div className="border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-3">
+            Changes Summary ({changes.length} field{changes.length !== 1 ? "s" : ""} modified)
+          </h4>
+          <div className="space-y-2">
+            {changes.map((change) => (
+              <div key={change.label} className="flex items-start gap-2 text-sm">
+                <span className="text-amber-700 dark:text-amber-300 font-medium min-w-30 shrink-0">
+                  {change.label}:
+                </span>
+                <span className="text-red-600 dark:text-red-400 line-through wrap-break-word">
+                  {change.before}
+                </span>
+                <ArrowRight className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                <span className="text-green-600 dark:text-green-400 font-medium wrap-break-word">
+                  {change.after}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : isEditing ? (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+          <p className="text-sm text-green-700 dark:text-green-300">
+            No changes detected. The event request is unchanged.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            Please review all information before submitting. Once submitted, your
+            event request will be reviewed by officers.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-6">
         <ReviewSection title="Basic Information">
@@ -98,6 +174,7 @@ export function EventReviewSection({ data }: EventReviewSectionProps) {
             value={data.estimatedAttendance.toString()}
             icon={<Users className="h-4 w-4" />}
           />
+          <BudgetCalculation estimatedAttendance={data.estimatedAttendance} compact />
           {data.needsFlyers && data.flyerType.length > 0 && (
             <ReviewItem label="Flyer Type" value={data.flyerType.join(", ")} />
           )}
