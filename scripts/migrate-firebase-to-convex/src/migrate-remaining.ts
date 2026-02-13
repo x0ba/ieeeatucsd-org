@@ -25,6 +25,7 @@ export async function migrateLinks(ctx: MigrationContext): Promise<MigrationResu
         shortUrl: data.shortUrl || undefined,
         publishDate: data.publishDate ? toEpochMs(data.publishDate) : undefined,
         expireDate: data.expireDate ? toEpochMs(data.expireDate) : undefined,
+        createdAt: data.createdAt ? toEpochMs(data.createdAt) : (doc.createTime ? toEpochMs(doc.createTime) : undefined),
         createdBy,
         lastModified: data.lastModified ? toEpochMs(data.lastModified) : undefined,
         lastModifiedBy: data.lastModifiedBy || undefined,
@@ -121,6 +122,8 @@ export async function migrateConstitutions(ctx: MigrationContext): Promise<Migra
         version: data.version || 1,
         status,
         lastModifiedBy: data.lastModifiedBy || "",
+        createdAt: data.createdAt ? toEpochMs(data.createdAt) : (doc.createTime ? toEpochMs(doc.createTime) : undefined),
+        lastModified: data.lastModified ? toEpochMs(data.lastModified) : undefined,
         collaborators: Array.isArray(data.collaborators) ? data.collaborators : [],
         isTemplate: data.isTemplate || undefined,
       };
@@ -272,7 +275,9 @@ export async function migrateSponsorDomains(ctx: MigrationContext): Promise<Migr
         domain: data.domain || "",
         organizationName: data.organizationName || "",
         sponsorTier,
+        createdAt: data.createdAt ? toEpochMs(data.createdAt) : (doc.createTime ? toEpochMs(doc.createTime) : undefined),
         createdBy: data.createdBy || "",
+        lastModified: data.lastModified ? toEpochMs(data.lastModified) : undefined,
         lastModifiedBy: data.lastModifiedBy || undefined,
       };
 
@@ -360,6 +365,7 @@ export async function migrateNotifications(ctx: MigrationContext): Promise<Migra
         message: data.message || "",
         data: data.data || undefined,
         read: data.read ?? false,
+        createdAt: data.createdAt ? toEpochMs(data.createdAt) : (doc.createTime ? toEpochMs(doc.createTime) : undefined),
         expiresAt: data.expiresAt ? toEpochMs(data.expiresAt) : undefined,
       };
 

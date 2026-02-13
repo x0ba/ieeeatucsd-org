@@ -32,6 +32,11 @@ export async function migrateEvents(ctx: MigrationContext): Promise<MigrationRes
         createdAt: data.createdAt ? toEpochMs(data.createdAt) : (doc.createTime ? toEpochMs(doc.createTime) : undefined),
       };
 
+      // Remove undefined values
+      for (const key of Object.keys(convexData)) {
+        if (convexData[key] === undefined) delete convexData[key];
+      }
+
       if (ctx.dryRun) {
         console.log(`    [DRY RUN] Would upsert event: ${data.eventName} (code: ${eventCode})`);
         result.skipped++;
