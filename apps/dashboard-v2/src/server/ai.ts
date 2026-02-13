@@ -1,5 +1,10 @@
 import { ConvexHttpClient } from "convex/browser";
 import type { FunctionReference } from "convex/server";
+import {
+	TOOL_DEFINITIONS,
+	executeToolCallsParallel,
+	type ToolCallRequest,
+} from "./ai-tools";
 
 type ChatMessage = { role: string; content: string };
 
@@ -48,7 +53,7 @@ type TimeHint = {
 	timeZoneAbbr: string;
 };
 
-type ChatMeta = {
+export type ChatMeta = {
 	status: string;
 	locale: string;
 	timeZone: string;
@@ -56,12 +61,13 @@ type ChatMeta = {
 	currentUser: CurrentUserContext;
 	totalMatches: number;
 	scannedTables: number;
+	toolCallCount?: number;
 };
 
 type BuiltContext = {
 	config: ReturnType<typeof getOpenRouterConfig>;
 	steps: string[];
-	conversationMessages: Array<{ role: string; content: string }>;
+	conversationMessages: Array<{ role: string; content: string; tool_call_id?: string; tool_calls?: unknown[] }>;
 	meta: ChatMeta;
 };
 
@@ -72,7 +78,10 @@ type SearchBatch = {
 
 export type AIStreamEvent =
 	| { type: "status"; message: string }
+	| { type: "reasoning"; content: string }
 	| { type: "token"; content: string }
+	| { type: "tool_start"; tools: Array<{ id: string; name: string; args: Record<string, unknown> }> }
+	| { type: "tool_result"; id: string; name: string; summary: string; durationMs: number }
 	| { type: "done"; reply: string; steps: string[]; meta: ChatMeta }
 	| { type: "error"; error: string };
 
@@ -84,6 +93,7 @@ const MAX_AGENTIC_SEARCH_ROUNDS = 3;
 const AGENTIC_MIN_UNIQUE_MATCHES = 12;
 const AGENTIC_MIN_SCANNED_TABLES = 3;
 const AGENTIC_MIN_QUERY_LENGTH = 4;
+const MAX_TOOL_CALL_ROUNDS = 5;
 const DASHBOARD_TIME_ZONE = "America/Los_Angeles";
 const FALLBACK_LOCALE = "en-US";
 const TIMESTAMP_FIELD_REGEX =
@@ -621,21 +631,145 @@ export async function chatWithAI(params: {
 	const { config, steps, conversationMessages, meta } =
 		await buildContext(params);
 
-	addStep(steps, "Generating answer with Grok...");
+	addStep(steps, "Generating answer with Grok (with tools)...");
+
+	let messages: Array<Record<string, unknown>> = [...conversationMessages];
+	let totalToolCalls = 0;
+
+	for (let round = 0; round < MAX_TOOL_CALL_ROUNDS; round++) {
+		const response = await fetch(config.baseUrl, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${config.apiKey}`,
+				"Content-Type": "application/json",
+				"HTTP-Referer": "https://ieeeatucsd.org",
+				"X-Title": "IEEE UCSD Officer Assistant",
+			},
+			body: JSON.stringify({
+				model: config.model,
+				messages,
+				temperature: 0.1,
+				reasoning: { effort: "high", exclude: false },
+				tools: TOOL_DEFINITIONS,
+				tool_choice: "auto",
+			}),
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error("OpenRouter API Error:", errorText);
+			throw new Error("AI Chat API Failed");
+		}
+
+		const data = await response.json();
+		const choice = data.choices?.[0];
+		const assistantMessage = choice?.message;
+
+		if (!assistantMessage) throw new Error("No response from AI");
+
+		const toolCalls = assistantMessage.tool_calls as ToolCallRequest[] | undefined;
+
+		if (!toolCalls || toolCalls.length === 0) {
+			const reply = assistantMessage.content;
+			if (!reply) throw new Error("No response from AI");
+			addStep(steps, `Response generated with model ${config.model} (${totalToolCalls} tool calls).`);
+			meta.toolCallCount = totalToolCalls;
+			return { success: true, reply, steps, meta };
+		}
+
+		messages.push(assistantMessage);
+		totalToolCalls += toolCalls.length;
+		addStep(steps, `Model requested ${toolCalls.length} tool call(s): ${toolCalls.map((tc) => tc.function.name).join(", ")}`);
+
+		const results = await executeToolCallsParallel(toolCalls, params.logtoId);
+		for (const result of results) {
+			addStep(steps, `Tool ${result.name}: ${result.summary} (${result.durationMs}ms)`);
+			messages.push({
+				role: "tool",
+				tool_call_id: result.id,
+				content: JSON.stringify(result.result),
+			});
+		}
+	}
+
+	throw new Error("Max tool call rounds exceeded");
+}
+
+type StreamDelta = {
+	content: string;
+	reasoning: string;
+	toolCalls: Array<{
+		index: number;
+		id?: string;
+		type?: string;
+		function?: { name?: string; arguments?: string };
+	}>;
+	finishReason: string | null;
+};
+
+function extractStreamDelta(payload: unknown): StreamDelta {
+	const data = payload as {
+		choices?: Array<{
+			text?: string;
+			finish_reason?: string | null;
+			delta?: {
+				content?: string | null;
+				reasoning_content?: string | null;
+				reasoning?: string | null;
+				tool_calls?: Array<{
+					index: number;
+					id?: string;
+					type?: string;
+					function?: { name?: string; arguments?: string };
+				}>;
+			};
+		}>;
+	};
+
+	const firstChoice = data.choices?.[0];
+	const delta = firstChoice?.delta;
+
+	let content = "";
+	if (typeof firstChoice?.text === "string") content = firstChoice.text;
+	else if (typeof delta?.content === "string") content = delta.content;
+
+	let reasoning = "";
+	if (typeof delta?.reasoning_content === "string") reasoning = delta.reasoning_content;
+	else if (typeof delta?.reasoning === "string") reasoning = delta.reasoning;
+
+	const toolCalls = delta?.tool_calls || [];
+	const finishReason = firstChoice?.finish_reason || null;
+
+	return { content, reasoning, toolCalls, finishReason };
+}
+
+async function* streamOpenRouterResponse(
+	config: ReturnType<typeof getOpenRouterConfig>,
+	messages: Array<Record<string, unknown>>,
+	withTools: boolean,
+): AsyncGenerator<{ type: "delta"; delta: StreamDelta } | { type: "line_raw"; line: string }> {
+	const body: Record<string, unknown> = {
+		model: config.model,
+		messages,
+		temperature: 0.1,
+		reasoning: { effort: "high", exclude: false },
+		stream: true,
+	};
+	if (withTools) {
+		body.tools = TOOL_DEFINITIONS;
+		body.tool_choice = "auto";
+	}
+
 	const response = await fetch(config.baseUrl, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${config.apiKey}`,
 			"Content-Type": "application/json",
+			Accept: "text/event-stream",
 			"HTTP-Referer": "https://ieeeatucsd.org",
 			"X-Title": "IEEE UCSD Officer Assistant",
 		},
-		body: JSON.stringify({
-			model: config.model,
-			messages: conversationMessages,
-			temperature: 0.1,
-			reasoning: { effort: "high", exclude: true },
-		}),
+		body: JSON.stringify(body),
 	});
 
 	if (!response.ok) {
@@ -644,62 +778,51 @@ export async function chatWithAI(params: {
 		throw new Error("AI Chat API Failed");
 	}
 
-	const data = await response.json();
-	const reply = data.choices?.[0]?.message?.content;
-	if (!reply) throw new Error("No response from AI");
-
-	addStep(steps, `Response generated with model ${config.model}.`);
-
-	return {
-		success: true,
-		reply,
-		steps,
-		meta,
-	};
-}
-
-function extractDeltaContent(payload: unknown): string {
-	const data = payload as {
-		choices?: Array<{
-			text?: string;
-			delta?: {
-				content?: string | Array<{ text?: string }>;
-			};
-			message?: {
-				content?:
-				| string
-				| Array<{
-					type?: string;
-					text?: string;
-				}>;
-			};
-		}>;
-	};
-
-	const firstChoice = data.choices?.[0];
-	if (typeof firstChoice?.text === "string") {
-		return firstChoice.text;
+	if (!response.body) {
+		throw new Error("Streaming response not available");
 	}
 
-	const content = firstChoice?.delta?.content;
-	if (typeof content === "string") return content;
-	if (Array.isArray(content)) {
-		return content
-			.map((part) => (typeof part?.text === "string" ? part.text : ""))
-			.join("");
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = "";
+	let done = false;
+
+	while (!done) {
+		const result = await reader.read();
+		done = result.done;
+		if (result.value) {
+			buffer += decoder.decode(result.value, { stream: true });
+			let lineBreakIndex = buffer.indexOf("\n");
+			while (lineBreakIndex >= 0) {
+				const line = buffer.slice(0, lineBreakIndex).trim();
+				buffer = buffer.slice(lineBreakIndex + 1);
+				if (line.startsWith("data:")) {
+					const payload = line.slice(5).trim();
+					if (payload && payload !== "[DONE]") {
+						try {
+							const parsed = JSON.parse(payload);
+							yield { type: "delta", delta: extractStreamDelta(parsed) };
+						} catch {
+							// Ignore malformed chunks
+						}
+					}
+				}
+				lineBreakIndex = buffer.indexOf("\n");
+			}
+		}
 	}
 
-	const messageContent = firstChoice?.message?.content;
-	if (typeof messageContent === "string") {
-		return messageContent;
+	if (buffer.trim().startsWith("data:")) {
+		const payload = buffer.trim().slice(5).trim();
+		if (payload && payload !== "[DONE]") {
+			try {
+				const parsed = JSON.parse(payload);
+				yield { type: "delta", delta: extractStreamDelta(parsed) };
+			} catch {
+				// Ignore
+			}
+		}
 	}
-	if (Array.isArray(messageContent)) {
-		return messageContent
-			.map((part) => (typeof part?.text === "string" ? part.text : ""))
-			.join("");
-	}
-
-	return "";
 }
 
 export async function* chatWithAIStream(params: {
@@ -752,91 +875,121 @@ export async function* chatWithAIStream(params: {
 		executedQueries: gathered.executedQueries,
 	});
 
-	const streamingStep = "Generating answer with Grok...";
+	const streamingStep = "Generating answer with Grok (with tools)...";
 	streamedSteps.push(streamingStep);
 	yield { type: "status", message: streamingStep };
 
-	const response = await fetch(config.baseUrl, {
-		method: "POST",
-		headers: {
-			Authorization: `Bearer ${config.apiKey}`,
-			"Content-Type": "application/json",
-			Accept: "text/event-stream",
-			"HTTP-Referer": "https://ieeeatucsd.org",
-			"X-Title": "IEEE UCSD Officer Assistant",
-		},
-		body: JSON.stringify({
-			model: config.model,
-			messages: conversationMessages,
-			temperature: 0.1,
-			reasoning: { effort: "medium", exclude: true },
-			stream: true,
-		}),
-	});
-
-	if (!response.ok) {
-		const errorText = await response.text();
-		console.error("OpenRouter API Error:", errorText);
-		throw new Error("AI Chat API Failed");
-	}
-
-	if (!response.body) {
-		throw new Error("Streaming response not available");
-	}
-
-	const reader = response.body.getReader();
-	const decoder = new TextDecoder();
-	let buffer = "";
-	let done = false;
+	let allMessages: Array<Record<string, unknown>> = [...conversationMessages];
+	let totalToolCalls = 0;
 	let reply = "";
 
-	const processDataLine = (line: string): string => {
-		if (!line.startsWith("data:")) return "";
-		const data = line.slice(5).trim();
-		if (!data || data === "[DONE]") return "";
+	for (let round = 0; round < MAX_TOOL_CALL_ROUNDS; round++) {
+		let roundContent = "";
+		let roundReasoning = "";
+		let finishReason: string | null = null;
+		const accumulatedToolCalls = new Map<
+			number,
+			{ id: string; type: string; function: { name: string; arguments: string } }
+		>();
 
-		try {
-			const parsed = JSON.parse(data);
-			return extractDeltaContent(parsed);
-		} catch {
-			// Ignore malformed stream chunks.
-			return "";
-		}
-	};
+		for await (const event of streamOpenRouterResponse(config, allMessages, true)) {
+			if (event.type === "delta") {
+				const d = event.delta;
 
-	while (!done) {
-		const result = await reader.read();
-		done = result.done;
-		if (result.value) {
-			buffer += decoder.decode(result.value, { stream: true });
-
-			let lineBreakIndex = buffer.indexOf("\n");
-			while (lineBreakIndex >= 0) {
-				const line = buffer.slice(0, lineBreakIndex).trim();
-				buffer = buffer.slice(lineBreakIndex + 1);
-				const deltaContent = processDataLine(line);
-				if (deltaContent) {
-					reply += deltaContent;
-					yield { type: "token", content: deltaContent };
+				if (d.reasoning) {
+					roundReasoning += d.reasoning;
+					yield { type: "reasoning", content: d.reasoning };
 				}
 
-				lineBreakIndex = buffer.indexOf("\n");
+				if (d.content) {
+					roundContent += d.content;
+					yield { type: "token", content: d.content };
+				}
+
+				for (const tc of d.toolCalls) {
+					const existing = accumulatedToolCalls.get(tc.index);
+					if (!existing) {
+						accumulatedToolCalls.set(tc.index, {
+							id: tc.id || "",
+							type: tc.type || "function",
+							function: {
+								name: tc.function?.name || "",
+								arguments: tc.function?.arguments || "",
+							},
+						});
+					} else {
+						if (tc.id) existing.id = tc.id;
+						if (tc.function?.name) existing.function.name += tc.function.name;
+						if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
+					}
+				}
+
+				if (d.finishReason) {
+					finishReason = d.finishReason;
+				}
 			}
 		}
-	}
 
-	const remaining = buffer.trim();
-	if (remaining) {
-		const deltaContent = processDataLine(remaining);
-		if (deltaContent) {
-			reply += deltaContent;
-			yield { type: "token", content: deltaContent };
+		if (finishReason === "tool_calls" && accumulatedToolCalls.size > 0) {
+			const toolCallsList = Array.from(accumulatedToolCalls.values());
+			totalToolCalls += toolCallsList.length;
+
+			const toolStartInfo = toolCallsList.map((tc) => {
+				let args: Record<string, unknown> = {};
+				try { args = JSON.parse(tc.function.arguments); } catch { /* ignore */ }
+				return { id: tc.id, name: tc.function.name, args };
+			});
+
+			yield { type: "tool_start", tools: toolStartInfo };
+
+			const stepMsg = `Executing ${toolCallsList.length} tool(s): ${toolCallsList.map((tc) => tc.function.name).join(", ")}`;
+			streamedSteps.push(stepMsg);
+			yield { type: "status", message: stepMsg };
+
+			const toolCallRequests: ToolCallRequest[] = toolCallsList.map((tc) => ({
+				id: tc.id,
+				type: "function" as const,
+				function: { name: tc.function.name, arguments: tc.function.arguments },
+			}));
+
+			const results = await executeToolCallsParallel(toolCallRequests, params.logtoId);
+
+			allMessages.push({
+				role: "assistant",
+				content: roundContent || null,
+				tool_calls: toolCallsList,
+			});
+
+			for (const result of results) {
+				yield {
+					type: "tool_result",
+					id: result.id,
+					name: result.name,
+					summary: result.summary,
+					durationMs: result.durationMs,
+				};
+				streamedSteps.push(`Tool ${result.name}: ${result.summary} (${result.durationMs}ms)`);
+				allMessages.push({
+					role: "tool",
+					tool_call_id: result.id,
+					content: JSON.stringify(result.result),
+				});
+			}
+
+			yield { type: "status", message: "Continuing generation..." };
+			streamedSteps.push("Continuing generation...");
+			continue;
 		}
+
+		reply = roundContent;
+		break;
 	}
 
-	const doneStep = `Response generated with model ${config.model}.`;
+	const doneStep = `Response generated with model ${config.model} (${totalToolCalls} tool calls).`;
 	streamedSteps.push(doneStep);
 	yield { type: "status", message: doneStep };
+
+	meta.toolCallCount = totalToolCalls;
 
 	yield {
 		type: "done",

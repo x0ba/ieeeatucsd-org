@@ -537,3 +537,20 @@ export const getEventByCode = mutation({
       .first();
   },
 });
+
+export const backfillFundSource = mutation({
+  args: { defaultSource: v.union(v.literal("ece"), v.literal("ieee"), v.literal("other")) },
+  handler: async (ctx, args) => {
+    const requests = await ctx.db.query("fundRequests").collect();
+    let updated = 0;
+
+    for (const request of requests) {
+      if (!request.fundSource) {
+        await ctx.db.patch(request._id, { fundSource: args.defaultSource });
+        updated++;
+      }
+    }
+
+    return { updated, total: requests.length };
+  },
+});

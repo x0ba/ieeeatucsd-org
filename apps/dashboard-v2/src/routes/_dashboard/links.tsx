@@ -49,7 +49,7 @@ function getCategoryColor(category: string) {
 
 function LinksPage() {
   const { hasOfficerAccess, logtoId } = usePermissions();
-  const links = useQuery(api.links.list);
+  const links = useQuery(api.links.list, logtoId ? { logtoId } : "skip");
   const createLink = useMutation(api.links.create);
   const updateLink = useMutation(api.links.update);
   const removeLink = useMutation(api.links.remove);

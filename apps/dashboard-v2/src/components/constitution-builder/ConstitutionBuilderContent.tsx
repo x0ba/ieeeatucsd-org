@@ -8,6 +8,7 @@ import ConstitutionPreview from "./ConstitutionPreview";
 import { ConstitutionAuditLog } from "./ConstitutionAuditLog";
 import ConstitutionSearch from "./ConstitutionSearch";
 import { Button } from "@/components/ui/button";
+import { exportConstitutionToPdf } from "./utils/pdfExport";
 
 const ConstitutionBuilderContent = () => {
   const {
@@ -25,6 +26,8 @@ const ConstitutionBuilderContent = () => {
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [highlightedSectionId, setHighlightedSectionId] = useState<string>("");
 
   const saveStatus: SaveStatus = isLoading ? "idle" : "saved";
 
@@ -57,10 +60,16 @@ const ConstitutionBuilderContent = () => {
     setSelectedSection(sectionId);
 
     if (pageNumber && currentView === "preview") {
-      // Handle page change in preview mode
+      // If we're in preview mode and have a page number, navigate to that page
+      setCurrentPage(pageNumber);
+      // Highlight the selected section temporarily
+      setHighlightedSectionId(sectionId);
+      setTimeout(() => setHighlightedSectionId(""), 3000); // Clear after 3 seconds
     } else {
+      // Otherwise, switch to editor view
       setCurrentView("editor");
 
+      // Auto-expand parent sections in sidebar
       const section = sections.find((s) => s.id === sectionId);
       if (section) {
         const newExpandedSections = new Set(expandedSections);
@@ -78,7 +87,7 @@ const ConstitutionBuilderContent = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    exportConstitutionToPdf(constitution || null, sections);
   };
 
   if (isLoading) {
@@ -242,11 +251,14 @@ const ConstitutionBuilderContent = () => {
                   constitution={constitution || null}
                   sections={sections}
                   onPrint={handlePrint}
+                  currentPage={currentPage}
+                  onPageChange={setCurrentPage}
+                  highlightedSectionId={highlightedSectionId}
                 />
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
-                <ConstitutionAuditLog constitutionId={constitutionId} />
+                <ConstitutionAuditLog constitutionId={constitutionId || ""} />
               </div>
             )}
           </div>

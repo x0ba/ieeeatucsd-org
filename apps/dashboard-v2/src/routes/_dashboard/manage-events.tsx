@@ -18,6 +18,7 @@ import {
   EventCalendar,
   EventRequestWizardModal,
   EventViewModal,
+  DraftViewModal,
   DraftEventModal,
   FileManagerModal,
   type EventRequest,
@@ -184,6 +185,7 @@ function ManageEventsPage() {
   );
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isDraftViewModalOpen, setIsDraftViewModalOpen] = useState(false);
   const [isDraftModalOpen, setIsDraftModalOpen] = useState(false);
   const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<EventRequest | null>(
@@ -569,7 +571,11 @@ function ManageEventsPage() {
   // Event click handler for calendar
   const handleCalendarEventClick = (event: EventRequest) => {
     setSelectedRequest(event);
-    setIsViewModalOpen(true);
+    if (event.status === "draft") {
+      setIsDraftViewModalOpen(true);
+    } else {
+      setIsViewModalOpen(true);
+    }
   };
 
   // Edit handler from view modal
@@ -705,7 +711,11 @@ function ManageEventsPage() {
               onSort={handleSort}
               onView={(event) => {
                 setSelectedRequest(event);
-                setIsViewModalOpen(true);
+                if (event.status === "draft") {
+                  setIsDraftViewModalOpen(true);
+                } else {
+                  setIsViewModalOpen(true);
+                }
               }}
               onEdit={(event) => {
                 if (event.status === "draft") {
@@ -760,6 +770,31 @@ function ManageEventsPage() {
         onTogglePublish={hasAdminAccess ? handleTogglePublish : undefined}
         canManageStatus={hasAdminAccess}
         onUpdateGraphics={handleUpdateGraphics}
+      />
+
+      {/* Draft View Modal */}
+      <DraftViewModal
+        isOpen={isDraftViewModalOpen}
+        onClose={() => {
+          setIsDraftViewModalOpen(false);
+          setSelectedRequest(null);
+        }}
+        event={selectedRequest}
+        onEdit={(event) => {
+          setIsDraftViewModalOpen(false);
+          setEditingDraft(event);
+          setIsDraftModalOpen(true);
+        }}
+        onDelete={handleDelete}
+        onConvertToRequest={(event) => {
+          setIsDraftViewModalOpen(false);
+          setSelectedRequest(null);
+          setEditingRequest({
+            ...event,
+            status: "draft",
+          } as EventRequest);
+          setIsWizardOpen(true);
+        }}
       />
 
       {/* Draft Event Modal */}

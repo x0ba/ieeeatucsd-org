@@ -144,3 +144,32 @@ export const getSubsectionDisplayTitle = (
     ? `Subsection ${subsectionNumber} - ${section.title}`
     : `Subsection ${subsectionNumber}`;
 };
+
+export const getSubsectionIndentLevel = (
+  section: ConstitutionSection,
+  allSections: ConstitutionSection[],
+): number => {
+  if (section.type === "preamble") return 0;
+  if (section.type === "article") return 0;
+  if (section.type === "amendment") return 0;
+  if (section.type === "section") return 1;
+
+  if (section.type === "subsection") {
+    // Calculate nesting depth for subsections
+    let depth = 2;
+    let currentParentId = section.parentId;
+
+    while (currentParentId) {
+      const parent = allSections.find((s) => s.id === currentParentId);
+      if (parent && parent.type === "subsection") {
+        depth++;
+        currentParentId = parent.parentId;
+      } else {
+        break;
+      }
+    }
+    return depth;
+  }
+
+  return 0;
+};

@@ -113,6 +113,7 @@ export const create = mutation({
       v.literal("other"),
     ),
     amount: v.number(),
+    fundSource: v.optional(v.union(v.literal("ece"), v.literal("ieee"), v.literal("other"))),
     vendorLinks: v.optional(
       v.array(
         v.object({
@@ -191,6 +192,7 @@ export const update = mutation({
       v.literal("other"),
     ),
     amount: v.optional(v.number()),
+    fundSource: v.optional(v.union(v.literal("ece"), v.literal("ieee"), v.literal("other"))),
     vendorLinks: v.optional(
       v.array(
         v.object({
@@ -223,6 +225,11 @@ export const update = mutation({
     const existingRequest = await ctx.db.get(id);
     if (!existingRequest) {
       throw new Error("Fund request not found");
+    }
+
+    // Only the request owner can update their own fund request
+    if (existingRequest.requestedBy !== userId) {
+      throw new Error("You can only edit your own fund requests");
     }
 
     const now = Date.now();
@@ -297,6 +304,31 @@ export const updateStatus = mutation({
       reviewNotes,
       infoRequestNotes,
       auditLogs: auditLogs as any,
+    });
+
+    return id;
+  },
+});
+
+export const updateFundSource = mutation({
+  args: {
+    logtoId: v.string(),
+    id: v.id("fundRequests"),
+    fundSource: v.union(v.literal("ece"), v.literal("ieee"), v.literal("other")),
+  },
+  handler: async (ctx, args) => {
+    await requireOfficerAccess(ctx, args.logtoId);
+    const { id, fundSource } = args;
+
+    const existingRequest = await ctx.db.get(id);
+    if (!existingRequest) {
+      throw new Error("Fund request not found");
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(id, {
+      fundSource,
+      updatedAt: now,
     });
 
     return id;

@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -110,6 +111,9 @@ export function EditUserModal({
             <User className="h-5 w-5" />
             {editingUser ? "Edit User" : "Add New User"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {editingUser ? "Edit user details, role, permissions, and account status" : "Add a new user to the system"}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">

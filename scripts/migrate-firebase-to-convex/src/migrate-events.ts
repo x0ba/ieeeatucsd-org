@@ -29,6 +29,7 @@ export async function migrateEvents(ctx: MigrationContext): Promise<MigrationRes
         published: data.published ?? false,
         eventType,
         hasFood: data.hasFood ?? false,
+        createdAt: data.createdAt ? toEpochMs(data.createdAt) : (doc.createTime ? toEpochMs(doc.createTime) : undefined),
       };
 
       if (ctx.dryRun) {

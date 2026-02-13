@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,9 @@ export function BudgetLogModal({
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{DEPARTMENT_LABELS[department]} Budget Log</DialogTitle>
+          <DialogDescription className="sr-only">
+            View budget history, approved requests, and manual adjustments
+          </DialogDescription>
           {budgetStartDate && (
             <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
               <Calendar className="w-3.5 h-3.5" />
@@ -214,14 +218,14 @@ export function BudgetLogModal({
                           <p>No manual adjustments for this period.</p>
                         </div>
                       ) : (
-                        <>
-                          {selectedTab === "all" && adjustments.length > 0 && (
-                            <div className="bg-muted px-4 py-2 border-b flex items-center gap-2 rounded-t-xl">
+                        <div className="space-y-4">
+                          {selectedTab === "all" && (
+                            <div className="flex items-center gap-2">
                               <Wrench className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
                               <span className="text-sm font-semibold text-foreground">Manual Adjustments</span>
                             </div>
                           )}
-                          <div className="rounded-xl border overflow-hidden bg-card mt-0">
+                          <div className="rounded-xl border overflow-hidden bg-card">
                             <Table>
                               <TableHeader>
                                 <TableRow>
@@ -256,7 +260,7 @@ export function BudgetLogModal({
                               </TableBody>
                             </Table>
                           </div>
-                        </>
+                        </div>
                       )}
                     </TabsContent>
                   )}

@@ -134,6 +134,20 @@ export const updatePaymentDetails = mutation({
   },
 });
 
+export const remove = mutation({
+  args: {
+    logtoId: v.string(),
+    id: v.id("reimbursements"),
+  },
+  handler: async (ctx, args) => {
+    await requireAdminAccess(ctx, args.logtoId);
+    const reimbursement = await ctx.db.get(args.id);
+    if (!reimbursement) throw new Error("Reimbursement not found");
+    await ctx.db.delete(args.id);
+    return args.id;
+  },
+});
+
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {

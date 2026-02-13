@@ -3,16 +3,18 @@ import { mutation, query } from "./_generated/server";
 import { requireAdminAccess } from "./permissions";
 
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { logtoId: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdminAccess(ctx, args.logtoId);
     const domains = await ctx.db.query("sponsorDomains").collect();
     return domains;
   },
 });
 
 export const getStats = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { logtoId: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdminAccess(ctx, args.logtoId);
     const domains = await ctx.db.query("sponsorDomains").collect();
 
     const goldSponsors = domains.filter((d) => d.sponsorTier === "Gold").length;

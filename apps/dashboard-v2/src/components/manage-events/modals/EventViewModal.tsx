@@ -30,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -231,7 +232,7 @@ export function EventViewModal({
     const reqs = [];
     if (event.hasFood) reqs.push({ icon: Utensils, label: "Food" });
     if (event.needsFlyers) reqs.push({ icon: Printer, label: "Flyers" });
-    if (event.needsGraphics) reqs.push({ icon: ImageIcon, label: "Graphics" });
+    if (event.needsGraphics) reqs.push({ icon: ImageIcon, label: "Graphics", completed: Boolean(event.flyersCompleted) });
     return reqs;
   };
 
@@ -370,6 +371,9 @@ export function EventViewModal({
           <div className="flex items-start justify-between">
             <div>
               <DialogTitle className="text-2xl font-bold tracking-tight">{event.eventName}</DialogTitle>
+              <DialogDescription className="sr-only">
+                View and manage event details, files, graphics, funding, attendees, and history
+              </DialogDescription>
               <div className="flex items-center gap-2 mt-2">
                 <StatusBadge status={event.status} />
                 <span className="text-sm text-muted-foreground border-l pl-2 ml-1">
@@ -500,6 +504,7 @@ export function EventViewModal({
                       >
                         <req.icon className="h-3.5 w-3.5" />
                         {req.label}
+                        {req.completed && <Check className="h-3 w-3.5 text-green-600 dark:text-green-400 ml-0.5" />}
                       </span>
                     ))}
                   </div>

@@ -6,10 +6,15 @@ import {
 	Link as LinkIcon,
 	ListChecks,
 	Loader2,
+	Plus,
 	Tags,
+	Trash2,
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,9 +57,12 @@ interface FundRequestFormModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	onSuccess: () => void;
-	initialData?: Partial<FundRequestFormData> & { amount?: string | number };
+	initialData?: Partial<FundRequestFormData> & { amount?: string | number; _id?: string };
 	isEditMode?: boolean;
 	showHeader?: boolean;
+	logtoId?: string;
+	editRequestId?: string;
+	className?: string; // Add className prop
 }
 
 const STEPS = [
@@ -70,7 +78,12 @@ export function FundRequestFormModal({
 	initialData,
 	isEditMode = false,
 	showHeader = true,
+	logtoId,
+	editRequestId,
+	className,
 }: FundRequestFormModalProps) {
+	const createFundRequest = useMutation(api.fundRequests.create);
+	const updateFundRequest = useMutation(api.fundRequests.update);
 	const [currentStep, setCurrentStep] = useState(1);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const stepTrackInset = `${100 / (STEPS.length * 2)}%`;
@@ -154,26 +167,21 @@ export function FundRequestFormModal({
 		setCurrentStep((prev) => Math.max(prev - 1, 1));
 	};
 
-	// Initialize with one empty row if needed
+	// Initialize with one empty row if list is empty
 	useEffect(() => {
-		if (!isOpen) return;
+		if (isOpen && vendorLinks.length === 0) {
+			setVendorLinks([
+				{ id: crypto.randomUUID(), url: "", itemName: "", quantity: 1 },
+			]);
+		}
+	}, [isOpen, vendorLinks.length]);
 
-		setVendorLinks((prev) => {
-			if (prev.length === 0) {
-				return [
-					{ id: crypto.randomUUID(), url: "", itemName: "", quantity: 1 },
-				];
-			}
-			const lastLink = prev[prev.length - 1];
-			if (lastLink.url?.trim() || lastLink.itemName?.trim()) {
-				return [
-					...prev,
-					{ id: crypto.randomUUID(), url: "", itemName: "", quantity: 1 },
-				];
-			}
-			return prev;
-		});
-	}, [isOpen]);
+	const addEmptyLink = () => {
+		setVendorLinks((prev) => [
+			...prev,
+			{ id: crypto.randomUUID(), url: "", itemName: "", quantity: 1 },
+		]);
+	};
 
 	const handleLinkChange = (
 		id: string,
@@ -190,18 +198,6 @@ export function FundRequestFormModal({
 				[field]:
 					field === "quantity" ? Number(value as number) : (value as string),
 			};
-
-			if (index === prev.length - 1) {
-				const currentLink = updated[index];
-				if (currentLink.itemName?.trim() || currentLink.url?.trim()) {
-					updated.push({
-						id: crypto.randomUUID(),
-						url: "",
-						itemName: "",
-						quantity: 1,
-					});
-				}
-			}
 
 			return updated;
 		});
@@ -260,17 +256,42 @@ export function FundRequestFormModal({
 			return;
 		}
 
+		if (!logtoId) {
+			console.error("Cannot submit: no logtoId");
+			return;
+		}
+
 		setIsSubmitting(true);
 
 		try {
-			// Remove empty vendor links
 			const cleanedVendorLinks = vendorLinks.filter(
 				(link) => link.url?.trim() || link.itemName?.trim(),
 			);
-			void cleanedVendorLinks;
 
-			// Here you would call the Convex mutation to create/update the fund request
-			// await createFundRequestMutation({ ... });
+			const parsedAmount = parseFloat(amount) || 0;
+
+			if (isEditMode && editRequestId) {
+				await updateFundRequest({
+					logtoId,
+					id: editRequestId as Id<"fundRequests">,
+					title,
+					purpose,
+					category,
+					department,
+					amount: parsedAmount,
+					vendorLinks: cleanedVendorLinks.length > 0 ? cleanedVendorLinks : undefined,
+				});
+			} else {
+				await createFundRequest({
+					logtoId,
+					title,
+					purpose,
+					category,
+					department,
+					amount: parsedAmount,
+					vendorLinks: cleanedVendorLinks.length > 0 ? cleanedVendorLinks : undefined,
+				});
+			}
 
 			onSuccess();
 			resetForm();
@@ -415,24 +436,167 @@ export function FundRequestFormModal({
 
 			case 2:
 				return (
-					<div className="space-y-4">
-						<div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
+					<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+						{/* Left Column: Line Items */}
+						<div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
+							<Card className="border-border/60 shadow-sm flex-1 flex flex-col overflow-hidden">
+								<CardContent className="p-0 flex-1 flex flex-col relative bg-muted/10">
+									<div className="px-5 py-4 border-b bg-background flex items-center justify-between sticky top-0 z-10">
+										<div className="space-y-1">
+											<div className="flex items-center gap-2">
+												<ListChecks className="h-4 w-4 text-primary" />
+												<h3 className="text-sm font-semibold tracking-wide">
+													Purchase Links & Items
+												</h3>
+											</div>
+											<p className="text-xs text-muted-foreground hidden sm:block">
+												Add items you intend to purchase.
+											</p>
+										</div>
+										<Button
+											size="sm"
+											onClick={addEmptyLink}
+											variant="secondary"
+											className="h-8 shadow-sm"
+										>
+											<Plus className="w-3.5 h-3.5 mr-1.5" />
+											Add Item
+										</Button>
+									</div>
+
+									<ScrollArea className="flex-1 bg-muted/10">
+										<div className="p-4 space-y-3">
+											{vendorLinks.map((link) => (
+												<div
+													key={link.id}
+													className="group relative bg-background border border-border/60 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-200"
+												>
+													<div className="flex flex-col gap-3">
+														<div className="flex gap-3 items-start">
+															<div className="flex-1 space-y-1.5 min-w-0">
+																<Label
+																	className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+																	htmlFor={`item-${link.id}`}
+																>
+																	Item Name
+																</Label>
+																<Input
+																	id={`item-${link.id}`}
+																	placeholder="e.g. 500x Arduino Uno Rev3"
+																	value={link.itemName || ""}
+																	onChange={(e) =>
+																		handleLinkChange(
+																			link.id,
+																			"itemName",
+																			e.target.value,
+																		)
+																	}
+																	className="h-9 font-medium bg-transparent border-border/60 focus:bg-background"
+																/>
+															</div>
+
+															<div className="w-24 space-y-1.5 flex-shrink-0">
+																<Label
+																	className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+																	htmlFor={`qty-${link.id}`}
+																>
+																	Qty
+																</Label>
+																<Input
+																	id={`qty-${link.id}`}
+																	type="number"
+																	min={1}
+																	placeholder="1"
+																	value={link.quantity ?? 1}
+																	onChange={(e) => {
+																		const num =
+																			parseInt(e.target.value, 10) || 1;
+																		handleLinkChange(
+																			link.id,
+																			"quantity",
+																			Math.max(1, num),
+																		);
+																	}}
+																	className="h-9 text-center bg-transparent border-border/60 focus:bg-background"
+																/>
+															</div>
+
+															<Button
+																variant="ghost"
+																size="icon"
+																onClick={() => handleRemoveLink(link.id)}
+																className="h-9 w-9 mt-[22px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+																title="Remove item"
+															>
+																<Trash2 className="w-4 h-4" />
+															</Button>
+														</div>
+
+														<div className="space-y-1.5">
+															<Label
+																className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"
+																htmlFor={`url-${link.id}`}
+															>
+																<LinkIcon className="w-3 h-3" />
+																URL / Source
+															</Label>
+															<Input
+																id={`url-${link.id}`}
+																placeholder="https://..."
+																value={link.url || ""}
+																onChange={(e) =>
+																	handleLinkChange(
+																		link.id,
+																		"url",
+																		e.target.value,
+																	)
+																}
+																onBlur={() => handleLinkBlur(link.id)}
+																className="h-8 text-sm bg-muted/20 border-transparent focus:bg-background focus:border-input focus:shadow-sm"
+															/>
+															{errors[`link_${link.id}`] && (
+																<p className="text-xs text-destructive mt-1">
+																	{errors[`link_${link.id}`]}
+																</p>
+															)}
+														</div>
+													</div>
+												</div>
+											))}
+
+											{vendorLinks.length === 0 && (
+												<div className="flex flex-col items-center justify-center py-10 text-muted-foreground bg-background/50 border border-dashed rounded-xl">
+													<p className="text-sm">No items added yet</p>
+													<Button
+														variant="link"
+														size="sm"
+														onClick={addEmptyLink}
+														className="text-primary"
+													>
+														Add your first item
+													</Button>
+												</div>
+											)}
+										</div>
+									</ScrollArea>
+								</CardContent>
+							</Card>
+						</div>
+
+						{/* Right Column: Budget & Snapshot */}
+						<div className="flex flex-col gap-4 min-h-0">
 							<Card className="border-border/60 shadow-sm">
 								<CardContent className="space-y-5 p-5">
 									<div className="flex items-center gap-2">
 										<DollarSign className="h-4 w-4 text-primary" />
 										<h3 className="text-sm font-semibold tracking-wide">
-											Budget
+											Total Budget
 										</h3>
 									</div>
 
 									<div className="space-y-2">
-										<Label htmlFor={amountId}>
-											Total Budget Amount{" "}
-											<span className="text-destructive">*</span>
-										</Label>
 										<div className="relative">
-											<span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+											<span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
 												$
 											</span>
 											<Input
@@ -459,56 +623,45 @@ export function FundRequestFormModal({
 														setAmount(num ? num.toFixed(2) : "");
 													}
 												}}
-												className="pl-7"
+												className="pl-7 text-lg font-bold h-12"
 											/>
 										</div>
 										{errors.amount && (
-											<p className="text-sm text-destructive">
+											<p className="text-sm text-destructive font-medium">
 												{errors.amount}
 											</p>
 										)}
 										<p className="text-xs text-muted-foreground">
-											Enter the total amount requested in USD.
+											Total requested amount in USD
 										</p>
-									</div>
-
-									<div className="rounded-lg border bg-muted/20 p-3">
-										<div className="flex items-center justify-between">
-											<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-												Requested total
-											</p>
-											<p className="text-lg font-semibold">
-												${formatCurrency(parseFloat(amount) || 0)}
-											</p>
-										</div>
 									</div>
 								</CardContent>
 							</Card>
 
-							<Card className="border-border/60 shadow-sm">
-								<CardContent className="space-y-3 p-5">
+							<Card className="border-border/60 shadow-sm flex-1">
+								<CardContent className="space-y-4 p-5">
 									<div className="flex items-center gap-2">
 										<Landmark className="h-4 w-4 text-primary" />
 										<h3 className="text-sm font-semibold tracking-wide">
-											Request Snapshot
+											Overview
 										</h3>
 									</div>
-									<div className="space-y-2 text-sm">
-										<div className="flex items-center justify-between">
+									<div className="space-y-3 text-sm">
+										<div className="flex items-center justify-between py-2 border-b border-border/40">
 											<span className="text-muted-foreground">Department</span>
-											<span className="font-medium">
+											<Badge variant="outline" className="font-normal">
 												{DEPARTMENT_LABELS[department]}
-											</span>
+											</Badge>
 										</div>
-										<div className="flex items-center justify-between">
+										<div className="flex items-center justify-between py-2 border-b border-border/40">
 											<span className="text-muted-foreground">Category</span>
-											<span className="font-medium">
+											<Badge variant="outline" className="font-normal">
 												{CATEGORY_LABELS[category]}
-											</span>
+											</Badge>
 										</div>
-										<div className="flex items-center justify-between">
+										<div className="flex items-center justify-between py-2">
 											<span className="text-muted-foreground">Line Items</span>
-											<span className="font-medium">
+											<span className="font-mono font-medium">
 												{
 													vendorLinks.filter(
 														(l) => l.url?.trim() || l.itemName?.trim(),
@@ -517,93 +670,20 @@ export function FundRequestFormModal({
 											</span>
 										</div>
 									</div>
+
+									<div className="pt-2">
+										<div className="rounded-lg bg-primary/5 p-3 border border-primary/10">
+											<p className="text-xs text-primary/80 font-medium mb-1">
+												Estimated Total
+											</p>
+											<p className="text-xl font-bold text-primary">
+												{formatCurrency(parseFloat(amount) || 0)}
+											</p>
+										</div>
+									</div>
 								</CardContent>
 							</Card>
 						</div>
-
-						<Card className="border-border/60 shadow-sm">
-							<CardContent className="space-y-4 p-5">
-								<div className="flex items-center gap-2">
-									<ListChecks className="h-4 w-4 text-primary" />
-									<div>
-										<Label>Purchase Links / Line Items</Label>
-										<p className="text-xs text-muted-foreground">
-											Add item details and URLs. A blank row appears
-											automatically.
-										</p>
-									</div>
-								</div>
-
-								<div className="rounded-lg border bg-background">
-									<ScrollArea className="max-h-64">
-										<div className="space-y-3 p-3">
-											{vendorLinks.length > 0 && (
-												<div className="flex gap-2 px-1 text-xs text-muted-foreground font-medium uppercase tracking-wide">
-													<span className="flex-1">Item Name</span>
-													<span className="w-20">Qty</span>
-													<span className="flex-[2]">URL</span>
-													<span className="w-8"></span>
-												</div>
-											)}
-
-											{vendorLinks.map((link) => (
-												<div
-													key={link.id}
-													className="group flex gap-2 items-center"
-												>
-													<Input
-														placeholder="Item name"
-														value={link.itemName || ""}
-														onChange={(e) =>
-															handleLinkChange(
-																link.id,
-																"itemName",
-																e.target.value,
-															)
-														}
-														onBlur={() => handleLinkBlur(link.id)}
-														className="flex-1 h-8 text-sm"
-													/>
-													<Input
-														placeholder="1"
-														type="number"
-														min={1}
-														value={link.quantity ?? 1}
-														onChange={(e) => {
-															const num = parseInt(e.target.value, 10) || 1;
-															handleLinkChange(
-																link.id,
-																"quantity",
-																Math.max(1, num),
-															);
-														}}
-														className="w-20 h-8 text-sm"
-													/>
-													<Input
-														placeholder="https://..."
-														value={link.url || ""}
-														onChange={(e) =>
-															handleLinkChange(link.id, "url", e.target.value)
-														}
-														onBlur={() => handleLinkBlur(link.id)}
-														className="flex-[2] h-8 text-sm"
-													/>
-													<Button
-														type="button"
-														variant="ghost"
-														size="icon"
-														onClick={() => handleRemoveLink(link.id)}
-														className="opacity-0 group-hover:opacity-100 w-8 h-8 p-0"
-													>
-														<X className="w-4 h-4 text-destructive" />
-													</Button>
-												</div>
-											))}
-										</div>
-									</ScrollArea>
-								</div>
-							</CardContent>
-						</Card>
 					</div>
 				);
 
@@ -631,7 +711,7 @@ export function FundRequestFormModal({
 										</div>
 									</div>
 									<p className="text-2xl font-bold text-green-600 dark:text-green-400">
-										${formatCurrency(parseFloat(amount) || 0)}
+										{formatCurrency(parseFloat(amount) || 0)}
 									</p>
 								</div>
 
@@ -692,20 +772,25 @@ export function FundRequestFormModal({
 	if (!isOpen) return null;
 
 	return (
-		<Card className="border-border/60 shadow-sm overflow-hidden">
+		<Card className={`border-0 shadow-none overflow-hidden flex flex-col h-full w-full bg-transparent ${className || ""}`}>
 			{showHeader && (
-				<div className="border-b bg-muted/20 px-6 py-4">
-					<h2 className="text-xl font-semibold">
-						{isEditMode ? "Edit Fund Request" : "New Fund Request"}
-					</h2>
-					<p className="text-sm text-muted-foreground">
-						Complete each step to submit a clear, review-ready request.
-					</p>
+				<div className="border-b bg-muted/10 px-4 py-3 flex-shrink-0 flex items-center justify-between">
+					<div>
+						<h2 className="text-lg font-semibold tracking-tight">
+							{isEditMode ? "Edit Fund Request" : "New Fund Request"}
+						</h2>
+						<p className="text-xs text-muted-foreground">
+							Complete each step to submit a clear, review-ready request.
+						</p>
+					</div>
+					<Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+						<X className="w-4 h-4" />
+					</Button>
 				</div>
 			)}
 
 			{/* Stepper */}
-			<div className="px-6 pt-4">
+			<div className="px-4 pt-3 pb-1 bg-background/50 backdrop-blur-sm z-10 w-full max-w-3xl mx-auto">
 				<div className="relative">
 					<div
 						className="absolute top-4 h-0.5 bg-muted"
@@ -751,21 +836,21 @@ export function FundRequestFormModal({
 				</div>
 			</div>
 
-			<ScrollArea className="max-h-[70vh] px-6">
-				<div className="py-4">{renderStepContent()}</div>
+			<ScrollArea className="flex-1 min-h-0 bg-muted/5">
+				<div className="py-4 px-4 h-full max-w-[1800px] mx-auto w-full">{renderStepContent()}</div>
 			</ScrollArea>
 
-			<div className="flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-6 py-4 border-t bg-background flex">
+			<div className="flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-4 py-3 border-t bg-background flex flex-shrink-0 z-20 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
 				<Button
-					variant="outline"
+					variant="ghost"
 					onClick={onClose}
 					disabled={isSubmitting}
-					className="w-full sm:w-auto"
+					className="w-full sm:w-auto text-muted-foreground hover:bg-muted"
 				>
 					Cancel
 				</Button>
 
-				<div className="flex gap-3 w-full sm:w-auto">
+				<div className="flex gap-2 w-full sm:w-auto">
 					{currentStep > 1 && (
 						<Button
 							type="button"

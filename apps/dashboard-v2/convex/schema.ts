@@ -223,6 +223,7 @@ export default defineSchema({
       v.literal("other"),
     ),
     hasFood: v.boolean(),
+    createdAt: v.optional(v.number()),
   })
     .index("by_eventCode", ["eventCode"])
     .index("by_startDate", ["startDate"])
@@ -299,6 +300,8 @@ export default defineSchema({
     graphicsCompleted: v.optional(v.boolean()),
     graphicsFiles: v.optional(v.array(v.string())),
     published: v.optional(v.boolean()),
+    createdAt: v.optional(v.number()),
+    submittedAt: v.optional(v.number()),
   })
     .index("by_status", ["status"])
     .index("by_requestedUser", ["requestedUser"]),
@@ -371,6 +374,8 @@ export default defineSchema({
     ),
     receipts: v.optional(v.array(receipt)),
     dateOfPurchase: v.optional(v.number()),
+    submittedAt: v.optional(v.number()),
+    createdAt: v.optional(v.number()),
   })
     .index("by_status", ["status"])
     .index("by_submittedBy", ["submittedBy"]),
@@ -384,6 +389,7 @@ export default defineSchema({
     shortUrl: v.optional(v.string()),
     publishDate: v.optional(v.number()),
     expireDate: v.optional(v.number()),
+    createdAt: v.optional(v.number()),
     createdBy: v.string(),
     lastModified: v.optional(v.number()),
     lastModifiedBy: v.optional(v.string()),
@@ -403,6 +409,8 @@ export default defineSchema({
       v.literal("archived"),
     ),
     lastModifiedBy: v.string(),
+    createdAt: v.optional(v.number()),
+    lastModified: v.optional(v.number()),
     collaborators: v.array(v.string()),
     isTemplate: v.optional(v.boolean()),
   }).index("by_status", ["status"]),
@@ -467,7 +475,9 @@ export default defineSchema({
     domain: v.string(),
     organizationName: v.string(),
     sponsorTier: sponsorTier,
+    createdAt: v.optional(v.number()),
     createdBy: v.string(),
+    lastModified: v.optional(v.number()),
     lastModifiedBy: v.optional(v.string()),
     _updatedAt: v.optional(v.number()),
   }).index("by_domain", ["domain"]),
@@ -491,6 +501,11 @@ export default defineSchema({
       v.literal("internal"),
       v.literal("other"),
     ),
+    fundSource: v.optional(v.union(
+      v.literal("ece"),
+      v.literal("ieee"),
+      v.literal("other"),
+    )),
     status: v.union(
       v.literal("draft"),
       v.literal("submitted"),
@@ -655,6 +670,7 @@ export default defineSchema({
     message: v.string(),
     data: v.optional(v.any()),
     read: v.boolean(),
+    createdAt: v.optional(v.number()),
     expiresAt: v.optional(v.number()),
   }).index("by_userId", ["userId"]),
 

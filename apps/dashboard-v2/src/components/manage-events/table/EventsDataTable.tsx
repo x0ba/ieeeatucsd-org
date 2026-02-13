@@ -179,10 +179,6 @@ export function EventsDataTable({
                     <div className="text-sm font-medium text-foreground tabular-nums">
                       {format(event.startDate, "MMM d, yyyy")}
                     </div>
-                    <div className="text-xs text-muted-foreground tabular-nums">
-                      {format(event.startDate, "h:mm a")} -
-                      {format(event.endDate, "h:mm a")}
-                    </div>
                   </TableCell>
                   <TableCell className="py-3 px-4 pr-6 text-right">
                     <div

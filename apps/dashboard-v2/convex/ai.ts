@@ -165,6 +165,230 @@ function toCurrentUserContext(user: OfficerUser) {
   };
 }
 
+const TABLES_WITH_STATUS = [
+  "users",
+  "eventRequests",
+  "reimbursements",
+  "officerInvitations",
+  "fundRequests",
+  "fundDeposits",
+  "constitutions",
+  "invites",
+] as const;
+
+const TABLES_WITH_AMOUNT = [
+  "reimbursements",
+  "fundRequests",
+  "fundDeposits",
+  "budgetConfigs",
+  "budgetAdjustments",
+] as const;
+
+export const getRecordById = query({
+  args: {
+    logtoId: v.string(),
+    table: v.string(),
+    recordId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireOfficerAccess(ctx, args.logtoId);
+
+    if (!ALL_TABLES.includes(args.table as TableName)) {
+      return { error: `Unknown table: ${args.table}`, record: null };
+    }
+
+    try {
+      const doc = await ctx.db.get(args.recordId as any);
+      if (!doc) return { error: "Record not found", record: null };
+      return { error: null, record: sanitizeValue(doc) };
+    } catch {
+      return { error: "Invalid record ID", record: null };
+    }
+  },
+});
+
+export const listRecords = query({
+  args: {
+    logtoId: v.string(),
+    table: v.string(),
+    status: v.optional(v.string()),
+    limit: v.optional(v.number()),
+    sortBy: v.optional(v.string()),
+    sortOrder: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
+  },
+  handler: async (ctx, args) => {
+    await requireOfficerAccess(ctx, args.logtoId);
+
+    if (!ALL_TABLES.includes(args.table as TableName)) {
+      return { error: `Unknown table: ${args.table}`, records: [], total: 0 };
+    }
+
+    const limit = clamp(args.limit ?? 25, 1, 100);
+    const tableName = args.table as TableName;
+
+    let docs: any[];
+    if (
+      args.status &&
+      (TABLES_WITH_STATUS as readonly string[]).includes(tableName)
+    ) {
+      docs = await (ctx.db.query(tableName) as any)
+        .withIndex("by_status", (q: any) => q.eq("status", args.status))
+        .take(limit);
+    } else {
+      docs = await ctx.db.query(tableName).order("desc").take(limit);
+    }
+
+    return {
+      error: null,
+      records: docs.map((doc: any) => sanitizeValue(doc)),
+      total: docs.length,
+    };
+  },
+});
+
+export const getStatistics = query({
+  args: {
+    logtoId: v.string(),
+    table: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireOfficerAccess(ctx, args.logtoId);
+
+    if (!ALL_TABLES.includes(args.table as TableName)) {
+      return { error: `Unknown table: ${args.table}` };
+    }
+
+    const tableName = args.table as TableName;
+    const docs = await ctx.db.query(tableName).take(MAX_DOCS_PER_TABLE);
+    const totalCount = docs.length;
+
+    const statusCounts: Record<string, number> = {};
+    let totalAmount = 0;
+    let hasAmount = false;
+
+    for (const doc of docs) {
+      const record = doc as Record<string, unknown>;
+      if (typeof record.status === "string") {
+        statusCounts[record.status] = (statusCounts[record.status] || 0) + 1;
+      }
+      if (
+        (TABLES_WITH_AMOUNT as readonly string[]).includes(tableName) &&
+        typeof record.amount === "number"
+      ) {
+        totalAmount += record.amount;
+        hasAmount = true;
+      }
+      if (
+        tableName === "reimbursements" &&
+        typeof record.totalAmount === "number"
+      ) {
+        totalAmount += record.totalAmount;
+        hasAmount = true;
+      }
+    }
+
+    return {
+      error: null,
+      table: tableName,
+      totalCount,
+      statusCounts: Object.keys(statusCounts).length > 0 ? statusCounts : undefined,
+      totalAmount: hasAmount ? totalAmount : undefined,
+    };
+  },
+});
+
+export const getUserByNameOrEmail = query({
+  args: {
+    logtoId: v.string(),
+    searchTerm: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireOfficerAccess(ctx, args.logtoId);
+
+    const term = args.searchTerm.toLowerCase().trim();
+    if (!term) return { error: "Empty search term", users: [] };
+
+    const byEmail = await ctx.db
+      .query("users")
+      .withIndex("by_email")
+      .take(MAX_DOCS_PER_TABLE);
+
+    const matches = byEmail.filter((u) => {
+      const nameMatch = u.name?.toLowerCase().includes(term);
+      const emailMatch = u.email?.toLowerCase().includes(term);
+      return nameMatch || emailMatch;
+    });
+
+    return {
+      error: null,
+      users: matches.slice(0, 20).map((u) => sanitizeValue(u)),
+    };
+  },
+});
+
+export const getBudgetOverview = query({
+  args: {
+    logtoId: v.string(),
+    department: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireOfficerAccess(ctx, args.logtoId);
+
+    const configs = await ctx.db.query("budgetConfigs").take(100);
+    const adjustments = await ctx.db.query("budgetAdjustments").take(500);
+    const fundRequests = await ctx.db
+      .query("fundRequests")
+      .withIndex("by_status", (q) => q.eq("status", "approved"))
+      .take(500);
+    const deposits = await ctx.db
+      .query("fundDeposits")
+      .withIndex("by_status", (q) => q.eq("status", "verified"))
+      .take(500);
+    const reimbursements = await ctx.db
+      .query("reimbursements")
+      .take(500);
+
+    const departments = ["events", "projects", "internal", "other"] as const;
+    const overview = departments.map((dept) => {
+      const config = configs.find((c) => c.department === dept);
+      const deptAdjustments = adjustments
+        .filter((a) => a.department === dept)
+        .reduce((sum, a) => sum + a.amount, 0);
+      const deptApproved = fundRequests
+        .filter((f) => f.department === dept)
+        .reduce((sum, f) => sum + f.amount, 0);
+      const deptDeposits = deposits
+        .filter((d: any) => d.source === dept || d.department === dept)
+        .reduce((sum, d) => sum + d.amount, 0);
+      const deptReimbursements = reimbursements
+        .filter((r) => r.department === dept && (r.status === "approved" || r.status === "paid"))
+        .reduce((sum, r) => sum + r.totalAmount, 0);
+
+      return {
+        department: dept,
+        totalBudget: config?.totalBudget ?? 0,
+        adjustments: deptAdjustments,
+        approvedFundRequests: deptApproved,
+        verifiedDeposits: deptDeposits,
+        approvedReimbursements: deptReimbursements,
+        remaining:
+          (config?.totalBudget ?? 0) +
+          deptAdjustments +
+          deptDeposits -
+          deptApproved -
+          deptReimbursements,
+      };
+    });
+
+    if (args.department) {
+      const filtered = overview.find((o) => o.department === args.department);
+      return { error: null, departments: filtered ? [filtered] : [] };
+    }
+
+    return { error: null, departments: overview };
+  },
+});
+
 export const searchEverything = query({
   args: {
     logtoId: v.string(),

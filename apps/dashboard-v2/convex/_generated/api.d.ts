@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as ai from "../ai.js";
 import type * as constitutions from "../constitutions.js";
+import type * as directOnboardings from "../directOnboardings.js";
 import type * as eventRequests from "../eventRequests.js";
 import type * as events from "../events.js";
 import type * as fundDeposits from "../fundDeposits.js";
@@ -22,6 +23,7 @@ import type * as fundRequests from "../fundRequests.js";
 import type * as links from "../links.js";
 import type * as migrations from "../migrations.js";
 import type * as officerInvitations from "../officerInvitations.js";
+import type * as organizationSettings from "../organizationSettings.js";
 import type * as permissions from "../permissions.js";
 import type * as reimbursements from "../reimbursements.js";
 import type * as sponsorDomains from "../sponsorDomains.js";
@@ -38,6 +40,7 @@ import type * as users from "../users.js";
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   constitutions: typeof constitutions;
+  directOnboardings: typeof directOnboardings;
   eventRequests: typeof eventRequests;
   events: typeof events;
   fundDeposits: typeof fundDeposits;
@@ -45,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   links: typeof links;
   migrations: typeof migrations;
   officerInvitations: typeof officerInvitations;
+  organizationSettings: typeof organizationSettings;
   permissions: typeof permissions;
   reimbursements: typeof reimbursements;
   sponsorDomains: typeof sponsorDomains;

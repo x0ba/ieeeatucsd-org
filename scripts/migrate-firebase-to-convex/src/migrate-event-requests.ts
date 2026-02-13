@@ -98,6 +98,8 @@ export async function migrateEventRequests(ctx: MigrationContext): Promise<Migra
         graphicsCompleted: data.graphicsCompleted ?? undefined,
         graphicsFiles,
         published: data.published ?? undefined,
+        createdAt: data.createdAt ? toEpochMs(data.createdAt) : (doc.createTime ? toEpochMs(doc.createTime) : undefined),
+        submittedAt: data.submittedAt ? toEpochMs(data.submittedAt) : undefined,
       };
 
       // Map audit logs — Firebase stores "undefined" as a literal string in many fields

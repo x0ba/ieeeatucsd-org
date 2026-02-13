@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -117,6 +118,9 @@ export function AddMemberModal({
             <UserPlus className="h-5 w-5" />
             Promote User to Officer
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Search and select a user to promote to an officer role
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-5 py-4">

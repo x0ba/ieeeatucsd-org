@@ -12,20 +12,16 @@ import {
   ChevronRight,
   Receipt,
   FileText,
-  Image as ImageIcon,
   CheckCircle,
   Calendar,
   ExternalLink,
-  RotateCw,
-  ZoomIn,
-  ZoomOut,
-  RefreshCw,
   AlertTriangle,
   ArrowRight,
   Search,
   Upload,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import ReceiptViewer from "@/components/reimbursement/ReceiptViewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -295,8 +291,6 @@ function ReimbursementDetailView({
   userName?: string;
 }) {
   const [activeReceiptIndex, setActiveReceiptIndex] = useState(0);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [rotation, setRotation] = useState(0);
 
   const receipts = reimbursement.receipts || [];
   const currentReceipt = receipts[activeReceiptIndex] || {};
@@ -304,19 +298,6 @@ function ReimbursementDetailView({
   const currentLineItems = currentReceipt.lineItems || [];
 
   const receiptFileUrl = currentReceipt.receiptFile;
-  const receiptFileName = receiptFileUrl?.split("/").pop() || "Receipt";
-
-  const isPdf =
-    receiptFileUrl?.toLowerCase().endsWith(".pdf") ||
-    receiptFileUrl?.toLowerCase().includes(".pdf?");
-
-  const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 0.25, 3));
-  const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 0.25, 0.5));
-  const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
-  const resetView = () => {
-    setZoomLevel(1);
-    setRotation(0);
-  };
 
   const formatDate = (dateVal: number | undefined) => {
     if (!dateVal) return "N/A";
@@ -635,96 +616,12 @@ function ReimbursementDetailView({
         </div>
 
         {/* Right Panel: Receipt Viewer (7/12) */}
-        <div className="lg:col-span-7 bg-muted/20 min-h-[500px] lg:min-h-0 overflow-hidden flex flex-col">
-          {receiptFileUrl ? (
-            <div className="flex flex-col h-full">
-              {/* Toolbar */}
-              <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shrink-0">
-                <div className="flex items-center gap-2 overflow-hidden">
-                  {isPdf ? (
-                    <FileText className="w-4 h-4 text-red-400 flex-shrink-0" />
-                  ) : (
-                    <ImageIcon className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                  )}
-                  <span
-                    className="text-xs font-medium truncate max-w-[200px]"
-                    title={receiptFileName}
-                  >
-                    {receiptFileName}
-                  </span>
-                  <Badge variant="secondary" className="text-[10px] h-5">
-                    {isPdf ? "PDF" : "Image"}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-1">
-                  {!isPdf && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleZoomOut}
-                      >
-                        <ZoomOut className="w-4 h-4" />
-                      </Button>
-                      <span className="text-xs w-10 text-center">{Math.round(zoomLevel * 100)}%</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleZoomIn}
-                      >
-                        <ZoomIn className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleRotate}
-                      >
-                        <RotateCw className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={resetView}>
-                        <RefreshCw className="w-3 h-3" />
-                      </Button>
-                    </>
-                  )}
-                  <div className="w-px h-4 bg-gray-300 mx-1" />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => window.open(receiptFileUrl, "_blank")}
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Viewer */}
-              <div className="flex-1 overflow-hidden relative bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-                {isPdf ? (
-                  <iframe src={receiptFileUrl} className="w-full h-full border-0" title="PDF Receipt" />
-                ) : (
-                  <div className="w-full h-full overflow-auto flex items-center justify-center p-4">
-                    <img
-                      src={receiptFileUrl}
-                      alt="Receipt"
-                      className="max-w-full max-h-full object-contain shadow-lg transition-transform duration-200 ease-out origin-center block"
-                      style={{
-                        transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
-              <FileText className="w-12 h-12 mb-3 opacity-50" />
-              <p>No receipt file available</p>
-            </div>
-          )}
+        <div className="lg:col-span-7 bg-gray-50 min-h-[500px] lg:min-h-0 overflow-hidden flex flex-col p-4">
+          <ReceiptViewer
+            receiptUrl={receiptFileUrl || ""}
+            receiptName={`Receipt ${activeReceiptIndex + 1}`}
+            className="h-full"
+          />
         </div>
       </div>
     </div>

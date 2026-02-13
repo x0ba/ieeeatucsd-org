@@ -46,6 +46,26 @@ bun run build
 bun run start
 ```
 
+### Docker Deployment
+
+The project includes Docker support for all services:
+
+```bash
+# Start all services
+docker-compose up
+
+# Start specific service
+docker-compose up website       # Port 4321
+docker-compose up dashboard     # Port 4322
+docker-compose up dashboard-v2  # Port 4323
+
+# Build and run a specific service
+docker build -t dashboard-v2 . --target dashboard_v2
+docker run -p 4323:4323 --env-file .env dashboard-v2
+```
+
+See [`apps/dashboard-v2/DEPLOYMENT.md`](apps/dashboard-v2/DEPLOYMENT.md) for detailed dashboard-v2 deployment instructions.
+
 ## Built with:
 
 - [Astro](https://astro.build) - Web framework for content-driven websites

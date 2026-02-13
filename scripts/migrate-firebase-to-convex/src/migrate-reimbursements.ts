@@ -33,6 +33,8 @@ export async function migrateReimbursements(ctx: MigrationContext): Promise<Migr
         department,
         dateOfPurchase: data.dateOfPurchase ? toEpochMs(data.dateOfPurchase) : undefined,
         requiresExecutiveOverride: data.requiresExecutiveOverride || undefined,
+        submittedAt: data.submittedAt ? toEpochMs(data.submittedAt) : (doc.createTime ? toEpochMs(doc.createTime) : undefined),
+        createdAt: data.createdAt ? toEpochMs(data.createdAt) : (doc.createTime ? toEpochMs(doc.createTime) : undefined),
       };
 
       if (Array.isArray(data.auditNotes)) {

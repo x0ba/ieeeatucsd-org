@@ -4,6 +4,7 @@ import {
   requireCurrentUser,
   requireOfficerAccess,
   requireAdminAccess,
+  hasAdminAccess,
 } from "./permissions";
 
 export const listMine = query({
@@ -203,7 +204,25 @@ export const update = mutation({
     needsAsFunding: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const userId = user.logtoId ?? user.authUserId ?? "";
+
+    const request = await ctx.db.get(args.id);
+    if (!request) throw new Error("Event request not found");
+
+    // Admins and Executive Officers can edit any request
+    if (!hasAdminAccess(user.role)) {
+      // Non-admin users can only edit their own requests
+      if (request.requestedUser !== userId) {
+        throw new Error("You can only edit your own event requests");
+      }
+      // Non-admin users can only edit requests in editable statuses
+      const editableStatuses = ["draft", "submitted", "pending", "needs_review"];
+      if (!editableStatuses.includes(request.status)) {
+        throw new Error("Cannot edit an event request that has already been approved or declined");
+      }
+    }
+
     const { logtoId, id, ...updates } = args;
     const cleanUpdates: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(updates)) {
@@ -227,6 +246,38 @@ export const getStorageUrl = mutation({
   args: { storageId: v.string() },
   handler: async (ctx, args) => {
     return await ctx.storage.getUrl(args.storageId as any);
+  },
+});
+
+export const remove = mutation({
+  args: {
+    logtoId: v.string(),
+    id: v.id("eventRequests"),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const userId = user.logtoId ?? user.authUserId ?? "";
+
+    const request = await ctx.db.get(args.id);
+    if (!request) throw new Error("Event request not found");
+
+    // Admins and Executive Officers can delete any request
+    if (hasAdminAccess(user.role)) {
+      await ctx.db.delete(args.id);
+      return args.id;
+    }
+
+    // Non-admin users can only delete their own requests if not approved
+    if (request.requestedUser !== userId) {
+      throw new Error("You can only delete your own event requests");
+    }
+    const deletableStatuses = ["draft", "submitted", "pending", "needs_review"];
+    if (!deletableStatuses.includes(request.status)) {
+      throw new Error("Cannot delete an event request that has already been approved or declined");
+    }
+
+    await ctx.db.delete(args.id);
+    return args.id;
   },
 });
 

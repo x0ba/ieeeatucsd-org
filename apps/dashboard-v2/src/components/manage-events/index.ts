@@ -29,6 +29,7 @@ export { EventCalendar } from "./calendar/EventCalendar";
 // Modals
 export { EventRequestWizardModal } from "./modals/EventRequestWizardModal";
 export { EventViewModal } from "./modals/EventViewModal";
+export { DraftViewModal } from "./modals/DraftViewModal";
 export { DraftEventModal } from "./modals/DraftEventModal";
 export { FileManagerModal } from "./modals/FileManagerModal";
 

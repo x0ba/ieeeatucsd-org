@@ -1,17 +1,19 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireOfficerAccess } from "./permissions";
+import { requireCurrentUser, requireOfficerAccess } from "./permissions";
 
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { logtoId: v.string() },
+  handler: async (ctx, args) => {
+    await requireCurrentUser(ctx, args.logtoId);
     return await ctx.db.query("links").collect();
   },
 });
 
 export const getByCategory = query({
-  args: { category: v.string() },
+  args: { logtoId: v.string(), category: v.string() },
   handler: async (ctx, args) => {
+    await requireCurrentUser(ctx, args.logtoId);
     return await ctx.db
       .query("links")
       .withIndex("by_category", (q) => q.eq("category", args.category))

@@ -1,28 +1,31 @@
-Welcome to your new TanStack app! 
+# Dashboard-v2
 
-# Getting Started
+TanStack Start application for IEEE UCSD dashboard management.
 
-To run this application:
+## Quick Start
 
 ```bash
 bun install
-bun --bun run dev
+bun run dev
 ```
 
-# Building For Production
-
-To build this application for production:
+## Building For Production
 
 ```bash
-bun --bun run build
+bun run build
+bun run start
 ```
+
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for Docker deployment instructions, environment variables, and production configuration.
 
 ## Testing
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+This project uses [Vitest](https://vitest.dev/) for testing:
 
 ```bash
-bun --bun run test
+bun run test
 ```
 
 ## Styling
@@ -32,20 +35,23 @@ This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
 
 ## Linting & Formatting
 
-This project uses [Biome](https://biomejs.dev/) for linting and formatting. The following scripts are available:
-
+This project uses [Biome](https://biomejs.dev/) for linting and formatting:
 
 ```bash
-bun --bun run lint
-bun --bun run format
-bun --bun run check
+bun run lint
+bun run format
+bun run check
 ```
 
 
 ## Setting up Convex
 
-- Set the `VITE_CONVEX_URL` and `CONVEX_DEPLOYMENT` environment variables in your `.env.local`. (Or run `npx convex init` to set them automatically.)
-- Run `npx convex dev` to start the Convex server.
+Set `VITE_CONVEX_URL` and `CONVEX_DEPLOYMENT` environment variables in `.env.local` or pass them via Docker.
+
+```bash
+# Development only
+bunx convex dev
+```
 
 
 ## Shadcn
@@ -53,7 +59,7 @@ bun --bun run check
 Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
 
 ```bash
-pnpm dlx shadcn@latest add button
+bunx shadcn@latest add button
 ```
 
 
@@ -175,10 +181,10 @@ Loaders simplify your data fetching logic dramatically. Check out more informati
 
 React-Query is an excellent addition or alternative to route loading and integrating it into you application is a breeze.
 
-First add your dependencies:
+Add dependencies:
 
 ```bash
-bun install @tanstack/react-query @tanstack/react-query-devtools
+bun add @tanstack/react-query @tanstack/react-query-devtools
 ```
 
 Next we'll need to create a query client and provider. We recommend putting those in `main.tsx`.
@@ -256,10 +262,10 @@ You can find out everything you need to know on how to use React-Query in the [R
 
 Another common requirement for React applications is state management. There are many options for state management in React. TanStack Store provides a great starting point for your project.
 
-First you need to add TanStack Store as a dependency:
+Add TanStack Store:
 
 ```bash
-bun install @tanstack/store
+bun add @tanstack/store
 ```
 
 Now let's create a simple counter in the `src/App.tsx` file as a demonstration.

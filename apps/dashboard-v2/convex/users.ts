@@ -358,6 +358,25 @@ export const updateRole = mutation({
   handler: async (ctx, args) => {
     const admin = await requireAdminAccess(ctx, args.logtoId);
 
+    const targetUser = await ctx.db.get(args.userId);
+    if (!targetUser) throw new Error("Target user not found");
+
+    // Nuanced restrictions for Executive Officers (non-Admin)
+    if (admin.role === "Executive Officer") {
+      // Executive Officers cannot change Administrator users
+      if (targetUser.role === "Administrator") {
+        throw new Error("Executive Officers cannot modify Administrator accounts");
+      }
+      // Executive Officers cannot change their own role
+      if (targetUser._id === admin._id) {
+        throw new Error("Executive Officers cannot change their own role");
+      }
+      // Executive Officers cannot assign the Administrator role
+      if (args.role === "Administrator") {
+        throw new Error("Only Administrators can assign the Administrator role");
+      }
+    }
+
     await ctx.db.patch(args.userId, {
       role: args.role,
       ...(args.position !== undefined && { position: args.position }),

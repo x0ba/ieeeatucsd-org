@@ -35,8 +35,8 @@ function ManageSponsorsPage() {
     direction: "asc",
   });
 
-  const domains = useQuery(api.sponsorDomains.list);
-  const stats = useQuery(api.sponsorDomains.getStats);
+  const domains = useQuery(api.sponsorDomains.list, logtoId ? { logtoId } : "skip");
+  const stats = useQuery(api.sponsorDomains.getStats, logtoId ? { logtoId } : "skip");
   const createDomain = useMutation(api.sponsorDomains.create);
   const updateDomain = useMutation(api.sponsorDomains.update);
   const removeDomain = useMutation(api.sponsorDomains.remove);

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -9,20 +9,33 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Eye,
-  ChevronUp,
+  ArrowLeft,
   ChevronDown,
+  ChevronUp,
   DollarSign,
+  ExternalLink,
+  FileText,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { type ReactElement } from "react";
 import { Pagination } from "@/components/ui/pagination";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import BudgetManagementModal from "@/components/fund-requests/BudgetManagementModal";
-import FundRequestActionModal from "@/components/fund-requests/FundRequestActionModal";
 
 export const Route = createFileRoute("/_dashboard/manage-fund-requests")({
   component: ManageFundRequestsPage,
@@ -61,6 +74,417 @@ const STATUS_ICONS: Record<string, ReactElement> = {
   completed: <CheckCircle className="w-3.5 h-3.5" />,
 };
 
+const FUND_SOURCE_LABELS: Record<string, string> = {
+  ece: "ECE Department",
+  ieee: "IEEE Funding",
+  other: "Other",
+};
+
+interface FundRequestData {
+  _id: string;
+  title: string;
+  purpose: string;
+  amount: number;
+  category: string;
+  department: string;
+  status: string;
+  fundSource?: "ece" | "ieee" | "other";
+  submittedByName?: string;
+  submittedByEmail?: string;
+  createdAt?: number;
+  submittedAt?: number;
+  vendorLinks?: Array<{ id: string; url: string; itemName?: string }>;
+  attachments?: Array<{ id: string; url: string; name: string; size: number }>;
+  reviewNotes?: string;
+  infoRequestNotes?: string;
+  auditLogs?: Array<{
+    id: string;
+    action: string;
+    performedBy: string;
+    performedByName?: string;
+    timestamp: number;
+    newStatus?: string;
+    notes?: string;
+  }>;
+}
+
+// Detail View Component
+function FundRequestDetailView({
+  request,
+  onBack,
+  logtoId,
+}: {
+  request: FundRequestData;
+  onBack: () => void;
+  logtoId: string;
+}) {
+  const updateStatus = useMutation(api.fundRequests.updateStatus);
+  const updateFundSource = useMutation(api.fundRequests.updateFundSource);
+
+  const [selectedStatus, setSelectedStatus] = useState<string>("approve");
+  const [selectedFundSource, setSelectedFundSource] = useState<string>(
+    request.fundSource || "other",
+  );
+  const [reviewNotes, setReviewNotes] = useState(request.reviewNotes || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const formatDate = (dateVal: number | undefined) => {
+    if (!dateVal) return "N/A";
+    return new Date(dateVal).toLocaleDateString();
+  };
+
+  const formatDateTime = (dateVal: number | undefined) => {
+    if (!dateVal) return "N/A";
+    return new Date(dateVal).toLocaleString();
+  };
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
+
+  const handleSave = async () => {
+    if (!logtoId) return;
+
+    setIsSubmitting(true);
+    try {
+      const statusToSet =
+        selectedStatus === "approve"
+          ? "approved"
+          : selectedStatus === "deny"
+            ? "denied"
+            : "needs_info";
+
+      // Update status if changed
+      const statusChanged = statusToSet !== request.status;
+      const fundSourceChanged = selectedFundSource !== request.fundSource;
+      const notesChanged = reviewNotes !== request.reviewNotes;
+
+      if (!statusChanged && !fundSourceChanged && !notesChanged) {
+        toast.info("No changes to save");
+        return;
+      }
+
+      // Update fund source first if changed
+      if (fundSourceChanged) {
+        await updateFundSource({
+          logtoId,
+          id: request._id as any,
+          fundSource: selectedFundSource as "ece" | "ieee" | "other",
+        });
+      }
+
+      // Update status and notes if status changed
+      if (statusChanged || notesChanged) {
+        await updateStatus({
+          logtoId,
+          id: request._id as any,
+          status: statusToSet as any,
+          reviewNotes: notesChanged ? reviewNotes : undefined,
+        });
+      }
+
+      toast.success("Request updated successfully");
+      onBack();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update request");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="h-[calc(100vh-3rem)] flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="bg-muted/30 border-b px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4 min-w-0">
+          <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2 shrink-0">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h2 className="text-lg font-bold truncate" title={request.title}>
+                {request.title}
+              </h2>
+              <Badge
+                className={cn("shrink-0", STATUS_COLORS[request.status] || "")}
+                variant="secondary"
+              >
+                <span className="mr-1">{STATUS_ICONS[request.status]}</span>
+                {STATUS_LABELS[request.status]}
+              </Badge>
+              {request.fundSource && (
+                <Badge variant="outline" className="shrink-0">
+                  {FUND_SOURCE_LABELS[request.fundSource]}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground flex-wrap">
+              {request.submittedByName && (
+                <>
+                  <span className="font-medium text-foreground">{request.submittedByName}</span>
+                  <span className="text-muted-foreground/40">·</span>
+                </>
+              )}
+              <span className="capitalize">{DEPARTMENT_LABELS[request.department] || request.department}</span>
+              <span className="text-muted-foreground/40">·</span>
+              <span>{formatDateTime(request.createdAt || Date.now())}</span>
+            </div>
+          </div>
+        </div>
+        <div className="text-right shrink-0 ml-4">
+          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+            Requested Amount
+          </p>
+          <p className="text-xl font-bold tabular-nums">{formatCurrency(request.amount)}</p>
+        </div>
+      </div>
+
+      {/* Content - Split Pane */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 flex-1 min-h-0 overflow-hidden">
+        {/* Left Panel: Details & Actions (5/12) */}
+        <div className="lg:col-span-5 border-r border-gray-200 dark:border-gray-800 overflow-y-auto">
+          <div className="p-5 space-y-5">
+            {/* Officer Actions Section */}
+            <section className="space-y-4">
+              <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
+                Officer Actions
+              </h3>
+
+              {/* Fund Source Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="fundSource">Fund Source</Label>
+                <Select value={selectedFundSource} onValueChange={setSelectedFundSource}>
+                  <SelectTrigger id="fundSource">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ece">ECE Department</SelectItem>
+                    <SelectItem value="ieee">IEEE Funding</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Status Actions */}
+              <div className="space-y-2">
+                <Label>Status Action</Label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-900 dark:text-green-400 dark:hover:bg-green-950/20",
+                      selectedStatus === "approve" &&
+                        "bg-green-100 border-green-300 dark:bg-green-950/40 dark:border-green-700"
+                    )}
+                    onClick={() => setSelectedStatus("approve")}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Approve
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 border-yellow-200 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-900 dark:text-yellow-400 dark:hover:bg-yellow-950/20",
+                      selectedStatus === "needs_info" &&
+                        "bg-yellow-100 border-yellow-300 dark:bg-yellow-950/40 dark:border-yellow-700"
+                    )}
+                    onClick={() => setSelectedStatus("needs_info")}
+                  >
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    Needs Info
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/20",
+                      selectedStatus === "deny" &&
+                        "bg-red-100 border-red-300 dark:bg-red-950/40 dark:border-red-700"
+                    )}
+                    onClick={() => setSelectedStatus("deny")}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Deny
+                  </Button>
+                </div>
+              </div>
+
+              {/* Review Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="reviewNotes">Review Notes</Label>
+                <Textarea
+                  id="reviewNotes"
+                  placeholder="Add comments or notes for the requester..."
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  rows={4}
+                />
+              </div>
+
+              {/* Save Button */}
+              <Button
+                onClick={handleSave}
+                disabled={isSubmitting}
+                className="w-full"
+                size="lg"
+              >
+                {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save Changes
+              </Button>
+            </section>
+
+            {/* Request Details */}
+            <section className="space-y-3">
+              <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
+                Request Details
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Title</p>
+                  <p className="font-medium">{request.title}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Purpose</p>
+                  <p className="text-sm">{request.purpose}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-muted-foreground text-xs">Category</p>
+                    <p className="font-medium capitalize">{request.category}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Department</p>
+                    <p className="font-medium">{DEPARTMENT_LABELS[request.department] || request.department}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Amount</p>
+                    <p className="font-medium">{formatCurrency(request.amount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Submitted On</p>
+                    <p className="font-medium">{formatDate(request.submittedAt || request.createdAt)}</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Vendor Links */}
+            {request.vendorLinks && request.vendorLinks.length > 0 && (
+              <section className="space-y-3">
+                <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
+                  Purchase Links
+                </h3>
+                <div className="space-y-2">
+                  {request.vendorLinks.map((link) => (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 text-sm text-primary hover:underline p-2 rounded hover:bg-muted/50 transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{link.itemName || link.url}</span>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Existing Review Notes */}
+            {(request.reviewNotes || request.infoRequestNotes) && (
+              <section className="space-y-3">
+                <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
+                  Previous Review Notes
+                </h3>
+                <div className="text-sm bg-muted/50 p-3 rounded-lg">
+                  <p>{request.reviewNotes || request.infoRequestNotes}</p>
+                </div>
+              </section>
+            )}
+
+            {/* Audit Log */}
+            {request.auditLogs && request.auditLogs.length > 0 && (
+              <section className="space-y-4">
+                <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
+                  Audit Log
+                </h3>
+                <div className="space-y-2">
+                  {request.auditLogs.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="text-sm p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium capitalize">{entry.action.replace(/_/g, " ")}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDateTime(entry.timestamp)}
+                        </span>
+                      </div>
+                      {entry.performedByName && (
+                        <p className="text-xs text-muted-foreground mt-1">by {entry.performedByName}</p>
+                      )}
+                      {entry.newStatus && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Status: {STATUS_LABELS[entry.newStatus] || entry.newStatus}
+                        </p>
+                      )}
+                      {entry.notes && (
+                        <p className="text-xs text-muted-foreground mt-1">{entry.notes}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        </div>
+
+        {/* Right Panel: Attachments/Documents (7/12) */}
+        <div className="lg:col-span-7 bg-muted/20 min-h-[500px] lg:min-h-0 overflow-y-auto">
+          <div className="p-5">
+            {/* Attachments Section */}
+            <section className="space-y-3">
+              <h3 className="text-xs font-bold border-b pb-2 uppercase tracking-wide text-muted-foreground">
+                Attachments
+              </h3>
+              {request.attachments && request.attachments.length > 0 ? (
+                <div className="space-y-2">
+                  {request.attachments.map((file) => (
+                    <a
+                      key={file.id}
+                      href={file.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-3 p-3 bg-card border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(file.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p className="text-sm">No attachments</p>
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ManageFundRequestsPage() {
   const { hasOfficerAccess, hasAdminAccess, logtoId } = usePermissions();
   const allRequests = useQuery(
@@ -68,18 +492,44 @@ function ManageFundRequestsPage() {
     logtoId ? { logtoId } : "skip",
   );
 
+  const [view, setView] = useState<"list" | "detail">("list");
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
-  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
+  const [expandedRequestId] = useState<string | null>(null);
+
+  const selectedRequest = (allRequests || []).find((r) => r._id === selectedRequestId);
+
+  const handleViewDetail = (request: FundRequestData) => {
+    setSelectedRequestId(request._id);
+    setView("detail");
+  };
+
+  const handleBackToList = () => {
+    setView("list");
+    setSelectedRequestId(null);
+  };
 
   if (!hasOfficerAccess) {
     return (
       <div className="p-6 text-center text-muted-foreground">
         You don't have permission to access this page.
+      </div>
+    );
+  }
+
+  // Detail view
+  if (view === "detail" && selectedRequest && logtoId) {
+    return (
+      <div className="w-full h-full">
+        <FundRequestDetailView
+          request={selectedRequest}
+          onBack={handleBackToList}
+          logtoId={logtoId}
+        />
       </div>
     );
   }
@@ -346,7 +796,7 @@ function ManageFundRequestsPage() {
                 <div key={request._id}>
                   <div
                     className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => setExpandedRequestId(isExpanded ? null : request._id)}
+                    onClick={() => handleViewDetail(request as FundRequestData)}
                   >
                     <div className="grid grid-cols-12 gap-4 items-center">
                       {/* Request Info */}
@@ -395,10 +845,10 @@ function ManageFundRequestsPage() {
                             variant="ghost"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedRequestId(request._id);
+                              handleViewDetail(request as FundRequestData);
                             }}
                           >
-                            <Eye className="h-4 w-4" />
+                            <ArrowLeft className="h-4 w-4 rotate-180" />
                           </Button>
                           {isExpanded ? (
                             <ChevronUp className="h-4 w-4 text-muted-foreground mt-2" />
@@ -499,15 +949,6 @@ function ManageFundRequestsPage() {
       </div>
 
       {/* Modals */}
-      {selectedRequestId && logtoId && (
-        <FundRequestActionModal
-          isOpen={!!selectedRequestId}
-          onClose={() => setSelectedRequestId(null)}
-          requestId={selectedRequestId}
-          logtoId={logtoId}
-        />
-      )}
-
       {logtoId && (
         <BudgetManagementModal
           isOpen={isBudgetModalOpen}

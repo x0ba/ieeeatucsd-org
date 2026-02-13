@@ -38,6 +38,9 @@ import { Route as DashboardExecutiveAnalyticsRouteImport } from './routes/_dashb
 import { Route as DashboardEventsRouteImport } from './routes/_dashboard/events'
 import { Route as DashboardConstitutionBuilderRouteImport } from './routes/_dashboard/constitution-builder'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
+import { Route as ApiOnboardingSendInvitationRouteImport } from './routes/api/onboarding/send-invitation'
+import { Route as ApiOnboardingSendDirectOnboardingRouteImport } from './routes/api/onboarding/send-direct-onboarding'
+import { Route as ApiOnboardingResendInvitationRouteImport } from './routes/api/onboarding/resend-invitation'
 import { Route as ApiEmailSendRouteImport } from './routes/api/email/send'
 import { Route as ApiAiQueryRouteImport } from './routes/api/ai/query'
 import { Route as DashboardSponsorsResumeDatabaseRouteImport } from './routes/_dashboard/sponsors/resume-database'
@@ -192,6 +195,24 @@ const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
   path: '/api/rpc/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOnboardingSendInvitationRoute =
+  ApiOnboardingSendInvitationRouteImport.update({
+    id: '/api/onboarding/send-invitation',
+    path: '/api/onboarding/send-invitation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiOnboardingSendDirectOnboardingRoute =
+  ApiOnboardingSendDirectOnboardingRouteImport.update({
+    id: '/api/onboarding/send-direct-onboarding',
+    path: '/api/onboarding/send-direct-onboarding',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiOnboardingResendInvitationRoute =
+  ApiOnboardingResendInvitationRouteImport.update({
+    id: '/api/onboarding/resend-invitation',
+    path: '/api/onboarding/resend-invitation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiEmailSendRoute = ApiEmailSendRouteImport.update({
   id: '/api/email/send',
   path: '/api/email/send',
@@ -247,6 +268,9 @@ export interface FileRoutesByFullPath {
   '/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
   '/api/ai/query': typeof ApiAiQueryRoute
   '/api/email/send': typeof ApiEmailSendRoute
+  '/api/onboarding/resend-invitation': typeof ApiOnboardingResendInvitationRoute
+  '/api/onboarding/send-direct-onboarding': typeof ApiOnboardingSendDirectOnboardingRoute
+  '/api/onboarding/send-invitation': typeof ApiOnboardingSendInvitationRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRoutesByTo {
@@ -281,6 +305,9 @@ export interface FileRoutesByTo {
   '/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
   '/api/ai/query': typeof ApiAiQueryRoute
   '/api/email/send': typeof ApiEmailSendRoute
+  '/api/onboarding/resend-invitation': typeof ApiOnboardingResendInvitationRoute
+  '/api/onboarding/send-direct-onboarding': typeof ApiOnboardingSendDirectOnboardingRoute
+  '/api/onboarding/send-invitation': typeof ApiOnboardingSendInvitationRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRoutesById {
@@ -317,6 +344,9 @@ export interface FileRoutesById {
   '/_dashboard/sponsors/resume-database': typeof DashboardSponsorsResumeDatabaseRoute
   '/api/ai/query': typeof ApiAiQueryRoute
   '/api/email/send': typeof ApiEmailSendRoute
+  '/api/onboarding/resend-invitation': typeof ApiOnboardingResendInvitationRoute
+  '/api/onboarding/send-direct-onboarding': typeof ApiOnboardingSendDirectOnboardingRoute
+  '/api/onboarding/send-invitation': typeof ApiOnboardingSendInvitationRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRouteTypes {
@@ -353,6 +383,9 @@ export interface FileRouteTypes {
     | '/sponsors/resume-database'
     | '/api/ai/query'
     | '/api/email/send'
+    | '/api/onboarding/resend-invitation'
+    | '/api/onboarding/send-direct-onboarding'
+    | '/api/onboarding/send-invitation'
     | '/api/rpc/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -387,6 +420,9 @@ export interface FileRouteTypes {
     | '/sponsors/resume-database'
     | '/api/ai/query'
     | '/api/email/send'
+    | '/api/onboarding/resend-invitation'
+    | '/api/onboarding/send-direct-onboarding'
+    | '/api/onboarding/send-invitation'
     | '/api/rpc/$'
   id:
     | '__root__'
@@ -422,6 +458,9 @@ export interface FileRouteTypes {
     | '/_dashboard/sponsors/resume-database'
     | '/api/ai/query'
     | '/api/email/send'
+    | '/api/onboarding/resend-invitation'
+    | '/api/onboarding/send-direct-onboarding'
+    | '/api/onboarding/send-invitation'
     | '/api/rpc/$'
   fileRoutesById: FileRoutesById
 }
@@ -439,6 +478,9 @@ export interface RootRouteChildren {
   ApiResetEmailPasswordRoute: typeof ApiResetEmailPasswordRoute
   ApiAiQueryRoute: typeof ApiAiQueryRoute
   ApiEmailSendRoute: typeof ApiEmailSendRoute
+  ApiOnboardingResendInvitationRoute: typeof ApiOnboardingResendInvitationRoute
+  ApiOnboardingSendDirectOnboardingRoute: typeof ApiOnboardingSendDirectOnboardingRoute
+  ApiOnboardingSendInvitationRoute: typeof ApiOnboardingSendInvitationRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
 }
 
@@ -647,6 +689,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRpcSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/onboarding/send-invitation': {
+      id: '/api/onboarding/send-invitation'
+      path: '/api/onboarding/send-invitation'
+      fullPath: '/api/onboarding/send-invitation'
+      preLoaderRoute: typeof ApiOnboardingSendInvitationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/onboarding/send-direct-onboarding': {
+      id: '/api/onboarding/send-direct-onboarding'
+      path: '/api/onboarding/send-direct-onboarding'
+      fullPath: '/api/onboarding/send-direct-onboarding'
+      preLoaderRoute: typeof ApiOnboardingSendDirectOnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/onboarding/resend-invitation': {
+      id: '/api/onboarding/resend-invitation'
+      path: '/api/onboarding/resend-invitation'
+      fullPath: '/api/onboarding/resend-invitation'
+      preLoaderRoute: typeof ApiOnboardingResendInvitationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/email/send': {
       id: '/api/email/send'
       path: '/api/email/send'
@@ -740,6 +803,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiResetEmailPasswordRoute: ApiResetEmailPasswordRoute,
   ApiAiQueryRoute: ApiAiQueryRoute,
   ApiEmailSendRoute: ApiEmailSendRoute,
+  ApiOnboardingResendInvitationRoute: ApiOnboardingResendInvitationRoute,
+  ApiOnboardingSendDirectOnboardingRoute:
+    ApiOnboardingSendDirectOnboardingRoute,
+  ApiOnboardingSendInvitationRoute: ApiOnboardingSendInvitationRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
 }
 export const routeTree = rootRouteImport

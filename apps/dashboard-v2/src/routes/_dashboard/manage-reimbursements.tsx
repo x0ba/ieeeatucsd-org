@@ -756,18 +756,11 @@ function ManageReimbursementsPage() {
                   value="image"
                   className="flex-1 p-4 m-0 overflow-hidden"
                 >
-                  <div className="h-full rounded-xl overflow-hidden border bg-gray-900">
-                    <ReceiptViewer
-                      receiptUrl={currentReceipt.receiptFile || ""}
-                      receiptName={`Receipt ${activeReceiptIndex + 1}`}
-                      receiptType={
-                        currentReceipt.receiptFile?.toLowerCase().endsWith(".pdf")
-                          ? "pdf"
-                          : "image"
-                      }
-                      className="h-full"
-                    />
-                  </div>
+                  <ReceiptViewer
+                    receiptUrl={currentReceipt.receiptFile || ""}
+                    receiptName={`Receipt ${activeReceiptIndex + 1}`}
+                    className="h-full"
+                  />
                 </TabsContent>
                 <TabsContent
                   value="invoice"
