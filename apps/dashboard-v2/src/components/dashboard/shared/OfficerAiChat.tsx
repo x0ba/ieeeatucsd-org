@@ -917,34 +917,15 @@ export function OfficerAiChat() {
 
 			<Sheet open={isOpen} onOpenChange={setIsOpen}>
 				<SheetContent
-					side="right"
+					side="left"
 					showCloseButton={false}
 					className="w-full sm:max-w-[520px] p-0 flex flex-col gap-0"
 				>
 					<SheetTitle className="sr-only">Officer AI Assistant</SheetTitle>
-
+	
 					{/* Header */}
 					<div className="flex items-center justify-between px-4 py-3 border-b bg-sidebar-accent/50">
-						<div className="flex items-center gap-2">
-							<Bot className="w-5 h-5 text-blue-500" />
-							<span className="font-semibold text-sm">Officer Assistant</span>
-							<Badge
-								variant="secondary"
-								className="h-5 px-1.5 text-[10px] tracking-wider font-bold"
-							>
-								BETA
-							</Badge>
-						</div>
 						<div className="flex items-center gap-1">
-							<Button
-								variant="ghost"
-								size="icon"
-								className="h-7 w-7"
-								onClick={handleClearChat}
-								title="Clear chat"
-							>
-								<Trash2 className="w-3.5 h-3.5" />
-							</Button>
 							<Button
 								variant="ghost"
 								size="icon"
@@ -953,7 +934,26 @@ export function OfficerAiChat() {
 							>
 								<X className="w-4 h-4" />
 							</Button>
+							<div className="flex items-center gap-2">
+								<Bot className="w-5 h-5 text-blue-500" />
+								<span className="font-semibold text-sm">Officer Assistant</span>
+								<Badge
+									variant="secondary"
+									className="h-5 px-1.5 text-[10px] tracking-wider font-bold"
+								>
+									BETA
+								</Badge>
+							</div>
 						</div>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-7 w-7"
+							onClick={handleClearChat}
+							title="Clear chat"
+						>
+							<Trash2 className="w-3.5 h-3.5" />
+						</Button>
 					</div>
 
 					{/* Beta notice */}

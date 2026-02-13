@@ -161,14 +161,6 @@ export function AppSidebar({ currentPath = "" }: AppSidebarProps) {
 
       <SidebarFooter className="border-t p-2">
         <div className="flex flex-col group-data-[collapsible=icon]:flex-col gap-1">
-          {/* AI Chat - Only for officers */}
-          {["General Officer", "Executive Officer", "Administrator"].includes(
-            userRole || "",
-          ) && (
-            <div className="group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-              <OfficerAiChat />
-            </div>
-          )}
           <div className="flex items-center gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -223,6 +215,15 @@ export function AppSidebar({ currentPath = "" }: AppSidebarProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* AI Chat - Only for officers */}
+            {["General Officer", "Executive Officer", "Administrator"].includes(
+              userRole || "",
+            ) && (
+              <div className="group-data-[collapsible=icon]:hidden">
+                <OfficerAiChat />
+              </div>
+            )}
           </div>
         </div>
       </SidebarFooter>
