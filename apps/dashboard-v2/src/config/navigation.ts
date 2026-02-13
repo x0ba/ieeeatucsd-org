@@ -50,7 +50,6 @@ export const NAVIGATION_PATHS = {
   SETTINGS: "/settings",
   SIGNOUT: "/signout",
   GET_STARTED: "/get-started",
-  OFFICER_LEADERBOARD: "/officer-leaderboard",
 } as const;
 
 export type NavigationPath =
@@ -98,11 +97,6 @@ export const navigationCategories: NavigationCategory[] = [
         icon: MessageSquare,
         label: "Slack Access",
         href: NAVIGATION_PATHS.SLACK_ACCESS,
-      },
-      {
-        icon: Trophy,
-        label: "Officer Leaderboard",
-        href: NAVIGATION_PATHS.OFFICER_LEADERBOARD,
       },
     ],
   },

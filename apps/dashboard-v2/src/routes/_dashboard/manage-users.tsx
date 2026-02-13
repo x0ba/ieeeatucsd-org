@@ -483,6 +483,7 @@ function ManageUsersPage() {
               currentUserId={currentUser?._id}
               canEditUser={() => true}
               canDeleteUser={() => true}
+              onRowClick={handleEditUser}
             />
 
             {/* Pagination Controls */}

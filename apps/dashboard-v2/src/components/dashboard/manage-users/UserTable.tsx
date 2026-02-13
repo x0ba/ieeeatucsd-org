@@ -1,6 +1,5 @@
-import { Pencil, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserAvatarFallback } from "@/components/dashboard/UserAvatarFallback";
 import type { Id } from "@convex/_generated/dataModel";
@@ -34,6 +33,7 @@ interface UserTableProps {
   currentUserId?: Id<"users">;
   canEditUser?: (user: User) => boolean;
   canDeleteUser?: (user: User) => boolean;
+  onRowClick?: (user: User) => void;
 }
 
 const roleColors: Record<UserRole, string> = {
@@ -69,6 +69,7 @@ export function UserTable({
   currentUserId,
   canEditUser = () => true,
   canDeleteUser = () => true,
+  onRowClick,
 }: UserTableProps) {
   const getSortIcon = (field: string) => {
     if (sortConfig.field === field) {
@@ -123,12 +124,17 @@ export function UserTable({
               <th className="text-left p-4 font-medium text-gray-500 dark:text-gray-400 hidden xl:table-cell cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => onSort("lastLogin")}>
                 <span className="flex items-center gap-1">Last Active {getSortIcon("lastLogin")}</span>
               </th>
-              <th className="text-right p-4 font-medium text-gray-500 dark:text-gray-400">Actions</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user, idx) => (
-              <tr key={user._id} className={`border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${idx % 2 === 1 ? "bg-gray-50/30 dark:bg-gray-800/20" : ""}`}>
+              <tr
+                key={user._id}
+                className={`border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer ${
+                  idx % 2 === 1 ? "bg-gray-50/30 dark:bg-gray-800/20" : ""
+                }`}
+                onClick={() => onRowClick?.(user)}
+              >
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     <Avatar size="sm">
@@ -176,20 +182,6 @@ export function UserTable({
                 </td>
                 <td className="p-4 hidden xl:table-cell text-gray-600 dark:text-gray-400">
                   {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : "Never"}
-                </td>
-                <td className="p-4 text-right">
-                  <div className="flex items-center gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                    {canEditUser(user) && (
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => onEditUser(user)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {canDeleteUser(user) && (
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => onDeleteUser(user._id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
                 </td>
               </tr>
             ))}

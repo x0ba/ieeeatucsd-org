@@ -111,16 +111,7 @@ export function EventViewModal({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {event.status === "draft" && onPublish && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onPublish(event)}
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  Submit
-                </Button>
-              )}
+              {/* No submit button for drafts - drafts should only be edited */}
             </div>
           </div>
 

@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
-import { Search, FileText, Users, GraduationCap, Briefcase, Filter, Download, AlertCircle } from "lucide-react";
+import { Search, FileText, Users, GraduationCap, Briefcase, Filter, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
 	normalizeMajorName,
 	getUniqueNormalizedMajors,
@@ -413,11 +412,10 @@ export default function ResumeDatabaseContent() {
 						</div>
 					</div>
 				) : error ? (
-					<Alert variant="destructive">
-						<AlertCircle className="h-6 w-6" />
-						<AlertTitle>Error</AlertTitle>
-						<AlertDescription>{error}</AlertDescription>
-					</Alert>
+					<div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+						<p className="text-red-800 dark:text-red-200 font-semibold">Error</p>
+						<p className="text-red-600 dark:text-red-400">{error}</p>
+					</div>
 				) : filteredUsers.length === 0 ? (
 					<div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-12 text-center">
 						<FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />

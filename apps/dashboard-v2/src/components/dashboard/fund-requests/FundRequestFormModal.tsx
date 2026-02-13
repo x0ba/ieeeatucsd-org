@@ -463,13 +463,13 @@ export function FundRequestFormModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[95vh] flex flex-col p-6">
+        <DialogHeader className="pb-2">
           <DialogTitle>{isEditMode ? "Edit Fund Request" : "New Fund Request"}</DialogTitle>
         </DialogHeader>
 
         {/* Stepper */}
-        <div className="relative mt-6 mb-4">
+        <div className="relative mt-4 mb-4">
           <div className="flex items-center justify-between gap-2">
             {STEPS.map((step, index) => {
               const isCompleted = currentStep > step.id;
@@ -508,7 +508,9 @@ export function FundRequestFormModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4">{renderStepContent()}</div>
+        <ScrollArea className="flex-1 overflow-y-auto -mx-6 px-6">
+          <div className="py-2">{renderStepContent()}</div>
+        </ScrollArea>
 
         <DialogFooter className="flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-4 border-t">
           <Button

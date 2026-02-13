@@ -40,7 +40,6 @@ import {
   Plus,
   Loader2,
   Search,
-  Eye,
   Trash2,
   Check,
   X,
@@ -54,8 +53,6 @@ import {
   ChevronsUpDown,
   Receipt,
   User,
-  Wallet,
-  TrendingUp,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
@@ -836,9 +833,9 @@ function DepositDetailView({
   const StatusIcon = STATUS_ICONS[deposit.status];
 
   return (
-    <div className="mt-6 border rounded-xl overflow-hidden bg-white dark:bg-gray-900">
+    <div className="flex flex-col h-screen bg-muted/50 absolute inset-0 z-10 overflow-hidden">
       {/* Header */}
-      <div className="bg-gray-50 dark:bg-gray-800/50 border-b px-6 py-4 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-800 border-b px-6 py-4 flex items-center justify-between shrink-0 h-16 box-border">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2">
             <ArrowLeft className="w-5 h-5" />
@@ -870,9 +867,9 @@ function DepositDetailView({
       </div>
 
       {/* Content - Split Pane */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+      <div className="flex-1 flex overflow-hidden">
         {/* Left Panel: Info (5/12) */}
-        <div className="lg:col-span-5 border-r border-gray-200 dark:border-gray-800">
+        <div className="w-5/12 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-y-auto">
           {/* Receipt Navigation */}
           {receiptFiles.length > 0 && (
             <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
@@ -1025,7 +1022,7 @@ function DepositDetailView({
         </div>
 
         {/* Right Panel: Receipt Viewer (7/12) */}
-        <div className="lg:col-span-7 bg-gray-100 dark:bg-gray-900/50 min-h-[500px] lg:min-h-0">
+        <div className="w-7/12 bg-gray-100 dark:bg-gray-900/50 flex flex-col border-l border-gray-200 dark:border-gray-800 overflow-hidden">
           {currentFile ? (
             <div className="flex flex-col h-full">
               {/* Toolbar */}
@@ -1124,10 +1121,6 @@ function FundDepositsPage() {
     api.fundDeposits.listAll,
     hasOfficerAccess && logtoId ? { logtoId } : "skip"
   );
-  const stats = useQuery(
-    api.fundDeposits.getStats,
-    hasOfficerAccess && logtoId ? { logtoId } : "skip"
-  );
   const createDeposit = useMutation(api.fundDeposits.create);
   const updateStatus = useMutation(api.fundDeposits.updateStatus);
   const deleteDeposit = useMutation(api.fundDeposits.deleteRequest);
@@ -1157,7 +1150,6 @@ function FundDepositsPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // List view state
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<FundDepositStatus | "all">("all");
@@ -1209,7 +1201,7 @@ function FundDepositsPage() {
 
   const handleViewDeposit = (deposit: FundDeposit) => {
     setSelectedDeposit(deposit);
-    setIsDetailModalOpen(true);
+    setView("detail");
   };
 
   const handleStepChange = (newStep: number) => {
@@ -1459,10 +1451,6 @@ function FundDepositsPage() {
     return new Date(timestamp).toLocaleDateString();
   };
 
-  const canViewDeposit = (deposit: FundDeposit) => {
-    return deposit.depositedBy === logtoId || userRole === "Administrator";
-  };
-
   const canDeleteDeposit = (deposit: FundDeposit) => {
     if (deposit.depositedBy === logtoId && deposit.status === "pending") {
       return true;
@@ -1513,15 +1501,13 @@ function FundDepositsPage() {
   // Detail View
   if (view === "detail" && selectedDeposit) {
     return (
-      <div className="p-6 w-full">
-        <DepositDetailView
-          deposit={selectedDeposit}
-          onBack={() => {
-            setView("list");
-            setSelectedDeposit(null);
-          }}
-        />
-      </div>
+      <DepositDetailView
+        deposit={selectedDeposit}
+        onBack={() => {
+          setView("list");
+          setSelectedDeposit(null);
+        }}
+      />
     );
   }
 
@@ -1620,82 +1606,6 @@ function FundDepositsPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="relative overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
-                <Wallet className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Deposits</p>
-                <p className="text-2xl font-bold">{stats?.total || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 text-white shadow-lg">
-                <Clock className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold">{stats?.pending || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg">
-                <Check className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Verified</p>
-                <p className="text-2xl font-bold">{stats?.verified || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg">
-                <X className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Rejected</p>
-                <p className="text-2xl font-bold">{stats?.rejected || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30 border-emerald-100 dark:border-emerald-900/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                  Total Amount
-                </p>
-                <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">
-                  {formatCurrency(stats?.totalAmount || 0)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -1785,91 +1695,84 @@ function FundDepositsPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden border-none shadow-sm">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <SortableHeader field="title" className="w-[35%]">
+              <TableRow className="bg-muted/30 hover:bg-muted/30 border-b">
+                <SortableHeader field="title" className="w-[30%] py-3 px-4 pl-6">
                   Deposit Info
                 </SortableHeader>
-                <SortableHeader field="amount" className="text-right">
-                  Amount
-                </SortableHeader>
-                <SortableHeader field="depositMethod" className="text-center">
+                <SortableHeader field="depositMethod" className="text-left py-3 px-4">
                   Method
                 </SortableHeader>
-                <SortableHeader field="status" className="text-center">
+                <SortableHeader field="status" className="text-left py-3 px-4">
                   Status
                 </SortableHeader>
-                <SortableHeader field="depositDate" className="text-center">
+                <SortableHeader field="amount" className="text-right py-3 px-4">
+                  Amount
+                </SortableHeader>
+                <SortableHeader field="depositDate" className="text-right py-3 px-4">
                   Date
                 </SortableHeader>
-                <SortableHeader field="submittedAt" className="text-center">
+                <SortableHeader field="submittedAt" className="text-right py-3 px-4">
                   Submitted
                 </SortableHeader>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right py-3 px-4 w-[100px] pr-6">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedDeposits.map((deposit) => {
                 const StatusIcon = STATUS_ICONS[deposit.status];
                 return (
-                  <TableRow key={deposit._id} className="group">
-                    <TableCell>
+                  <TableRow
+                    key={deposit._id}
+                    className="group cursor-pointer hover:bg-muted/30 transition-colors border-b border-border/50"
+                    onClick={() => handleViewDeposit(deposit)}
+                  >
+                    <TableCell className="py-3 px-4 pl-6">
                       <div className="space-y-1">
-                        <p className="font-semibold text-sm">{deposit.title}</p>
-                        <p className="text-xs text-muted-foreground">{deposit.purpose || "-"}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          {deposit.depositedByName || deposit.depositedByEmail || "Unknown"}
-                        </p>
+                        <p className="font-medium text-sm leading-none truncate">{deposit.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">{deposit.purpose || "-"}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(deposit.amount)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="text-xs px-2 py-1 bg-muted rounded-lg capitalize">
+                    <TableCell className="py-3 px-4 text-left">
+                      <span className="text-xs px-2 py-1 bg-muted/50 rounded-md capitalize font-medium border">
                         {deposit.depositMethod === "other" && deposit.otherDepositMethod
                           ? deposit.otherDepositMethod
                           : deposit.depositMethod?.replace("_", " ") || "N/A"}
                       </span>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="py-3 px-4 text-left">
                       <Badge
-                        className={`${STATUS_COLORS[deposit.status]} border`}
+                        className={`${STATUS_COLORS[deposit.status]} border px-2 py-0.5 text-xs font-medium inline-flex items-center gap-1`}
                         variant="secondary"
                       >
-                        <StatusIcon className="w-3 h-3 mr-1" />
+                        <StatusIcon className="w-3 h-3" />
                         {STATUS_LABELS[deposit.status]}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-center text-sm text-muted-foreground">
+                    <TableCell className="py-3 px-4 text-right font-semibold text-sm font-mono">
+                      {formatCurrency(deposit.amount)}
+                    </TableCell>
+                    <TableCell className="py-3 px-4 text-right text-xs text-muted-foreground font-medium tabular-nums">
                       {formatDate(deposit.depositDate)}
                     </TableCell>
-                    <TableCell className="text-center text-sm text-muted-foreground">
+                    <TableCell className="py-3 px-4 text-right text-xs text-muted-foreground tabular-nums">
                       {formatDate(deposit.submittedAt)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="py-3 px-4 pr-6 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {canViewDeposit(deposit) && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleViewDeposit(deposit)}
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        )}
                         {canDeleteDeposit(deposit) && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDeleteDeposit(deposit)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteDeposit(deposit);
+                            }}
                             disabled={isDeleting}
                             title="Delete"
-                            className="text-destructive hover:text-destructive"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -1879,24 +1782,28 @@ function FundDepositsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() =>
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 updateStatus({
                                   logtoId: logtoId!,
                                   id: deposit._id,
                                   status: "verified",
-                                })
-                              }
+                                });
+                              }}
                               title="Verify"
-                              className="text-emerald-600 hover:text-emerald-600 hover:bg-emerald-50"
+                              className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 h-8 w-8 transition-colors"
                             >
                               <Check className="w-4 h-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleRejectDeposit(deposit)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRejectDeposit(deposit);
+                              }}
                               title="Reject"
-                              className="text-red-600 hover:text-red-600 hover:bg-red-50"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 transition-colors"
                             >
                               <X className="w-4 h-4" />
                             </Button>
@@ -1940,21 +1847,6 @@ function FundDepositsPage() {
           </div>
         </div>
       )}
-
-      {/* Detail View Modal */}
-      <Dialog open={isDetailModalOpen} onOpenChange={() => setIsDetailModalOpen(false)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Deposit Details</DialogTitle>
-          </DialogHeader>
-          {selectedDeposit && (
-            <DepositDetailView
-              deposit={selectedDeposit}
-              onBack={() => setIsDetailModalOpen(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Reject Modal */}
       <Dialog open={isRejectionModalOpen} onOpenChange={() => setIsRejectionModalOpen(false)}>

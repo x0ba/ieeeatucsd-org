@@ -5,7 +5,6 @@ import {
   Eye,
   Pencil,
   Trash2,
-  FileEdit,
   MapPin,
   Users,
   Utensils,
@@ -48,7 +47,6 @@ export function EventsDataTable({
   onView,
   onEdit,
   onDelete,
-  onConvertToDraft,
   pagination,
 }: EventsDataTableProps) {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
@@ -93,9 +91,9 @@ export function EventsDataTable({
       <div className="overflow-x-auto scrollbar-thin">
         <Table className="w-full">
           <TableHeader>
-            <TableRow className="border-b bg-gray-50/50 dark:bg-gray-700/50">
+            <TableRow className="border-b bg-muted/40 hover:bg-muted/40">
               <TableHead
-                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="cursor-pointer hover:bg-muted/50 transition-colors w-[30%] py-3 px-4 pl-6"
                 onClick={() => onSort("eventName")}
               >
                 <span className="flex items-center gap-1">
@@ -103,24 +101,24 @@ export function EventsDataTable({
                 </span>
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                onClick={() => onSort("startDate")}
-              >
-                <span className="flex items-center gap-1">
-                  Date {getSortIcon("startDate")}
-                </span>
-              </TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead
-                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="cursor-pointer hover:bg-muted/50 transition-colors py-3 px-4"
                 onClick={() => onSort("status")}
               >
                 <span className="flex items-center gap-1">
                   Status {getSortIcon("status")}
                 </span>
               </TableHead>
-              <TableHead>Requirements</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="py-3 px-4">Location</TableHead>
+              <TableHead className="py-3 px-4">Requirements</TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 transition-colors text-right py-3 px-4"
+                onClick={() => onSort("startDate")}
+              >
+                <span className="flex items-center justify-end gap-1">
+                  Date {getSortIcon("startDate")}
+                </span>
+              </TableHead>
+              <TableHead className="text-right py-3 px-4 pr-6">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -131,51 +129,43 @@ export function EventsDataTable({
               return (
                 <TableRow
                   key={event._id}
-                  className="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                  className="border-b last:border-b-0 hover:bg-muted/40 transition-colors cursor-pointer"
                   onMouseEnter={() => setHoveredRow(event._id)}
                   onMouseLeave={() => setHoveredRow(null)}
+                  onClick={() => onView(event)}
                 >
-                  <TableCell className="min-w-[180px]">
-                    <div className="font-medium text-gray-900 dark:text-gray-100 truncate max-w-[200px]">
+                  <TableCell className="min-w-[180px] py-3 px-4 pl-6">
+                    <div className="font-medium text-foreground truncate max-w-[200px]">
                       {event.eventName}
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                    <div className="text-xs text-muted-foreground">
                       {event.eventType}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-gray-900 dark:text-gray-100">
-                      {format(event.startDate, "MMM d, yyyy")}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {format(event.startDate, "h:mm a")} -
-                      {format(event.endDate, "h:mm a")}
-                    </div>
+                  <TableCell className="py-3 px-4">
+                    <StatusBadge status={event.status} />
                   </TableCell>
-                  <TableCell className="min-w-[120px]">
-                    <div className="flex items-center gap-1 text-sm text-gray-900 dark:text-gray-100">
-                      <MapPin className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                      <span className="truncate">{event.location}</span>
+                  <TableCell className="min-w-[120px] py-3 px-4">
+                    <div className="flex items-center gap-1.5 text-sm text-foreground">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate max-w-[150px]">{event.location}</span>
                     </div>
                     {event.capacity && (
-                      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                         <Users className="h-3 w-3" />
-                        Capacity: {event.capacity}
+                        Cap: {event.capacity}
                       </div>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <StatusBadge status={event.status} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
+                  <TableCell className="py-3 px-4">
+                    <div className="flex flex-wrap gap-1.5">
                       {requirements.length === 0 ? (
-                        <span className="text-xs text-gray-400">-</span>
+                        <span className="text-xs text-muted-foreground">-</span>
                       ) : (
                         requirements.map((req) => (
                           <span
                             key={req.label}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] uppercase font-medium bg-muted text-muted-foreground border border-border"
                           >
                             <req.icon className="h-3 w-3" />
                             {req.label}
@@ -184,50 +174,57 @@ export function EventsDataTable({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="py-3 px-4 text-right">
+                    <div className="text-sm font-medium text-foreground tabular-nums">
+                      {format(event.startDate, "MMM d, yyyy")}
+                    </div>
+                    <div className="text-xs text-muted-foreground tabular-nums">
+                      {format(event.startDate, "h:mm a")} -
+                      {format(event.endDate, "h:mm a")}
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3 px-4 pr-6 text-right">
                     <div
-                      className={`flex items-center gap-1 justify-end transition-opacity duration-200 ${
-                        isHovered ? "opacity-100" : "opacity-0"
-                      }`}
+                      className={`flex items-center gap-1 justify-end transition-opacity duration-200 ${isHovered ? "opacity-100" : "opacity-0"
+                        }`}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => onView(event)}
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onView(event);
+                        }}
                         title="View"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => onEdit(event)}
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(event);
+                        }}
                         title="Edit"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => onDelete(event)}
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(event);
+                        }}
                         title="Delete"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                      {event.status !== "draft" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => onConvertToDraft(event)}
-                          title="Convert to Draft"
-                        >
-                          <FileEdit className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>
