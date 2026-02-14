@@ -43,7 +43,10 @@ export interface EventFile {
 }
 
 export interface EventRequest {
-	_id: Id<"eventRequests">;
+	_id: string;
+	sourceType?: "request" | "event" | "merged_published";
+	requestId?: Id<"eventRequests">;
+	eventId?: Id<"events">;
 	_creationTime: number;
 	eventName: string;
 	eventDescription: string;

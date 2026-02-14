@@ -134,6 +134,7 @@ function EventsPage() {
     published: event.published,
     eventType: event.eventType,
     hasFood: event.hasFood,
+    attendeeCount: event.attendeeCount,
   });
 
   return (
@@ -251,6 +252,7 @@ function EventsPage() {
         onClose={() => setIsEventDetailOpen(false)}
         onCheckIn={selectedEvent && getEventStatus(selectedEvent) === "live" ? handleCheckInFromDetail : undefined}
         userHasAttended={selectedEvent ? attendedEventIds.has(selectedEvent._id) : false}
+        attendeeCount={selectedEvent?.attendeeCount ?? 0}
       />
 
       {/* Check In Modal */}

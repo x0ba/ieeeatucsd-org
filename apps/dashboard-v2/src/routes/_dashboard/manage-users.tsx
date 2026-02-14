@@ -33,9 +33,8 @@ function ManageUsersPage() {
   const users = useQuery(api.users.list, logtoId ? { logtoId } : "skip");
 
   // Mutations
-  const updateUserMutation = useMutation(api.users.updateRole);
   const updateStatusMutation = useMutation(api.users.updateStatus);
-  const updateProfileMutation = useMutation(api.users.updateProfile);
+  const updateProfileForAdminMutation = useMutation(api.users.updateProfileForAdmin);
 
   // State
   const [filters, setFilters] = useState<UserFilters>({
@@ -154,18 +153,40 @@ function ManageUsersPage() {
         status: userData.status,
       });
 
-      // Update role, position, team if changed
-      await updateUserMutation({
-        logtoId,
-        userId: userData.id,
-        role: userData.role,
-        position: userData.position || undefined,
-        team: userData.team,
-      });
+      const roleChanged =
+        userData.role !== editingUser?.role ||
+        (userData.position || "") !== (editingUser?.position || "") ||
+        (userData.team || undefined) !== (editingUser?.team || undefined);
+
+      // Update role, position, team and sync with Logto only when role-related fields changed.
+      if (roleChanged) {
+        const roleResponse = await fetch("/api/users/update-role", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            logtoId,
+            userId: userData.id,
+            role: userData.role,
+            position: userData.position || undefined,
+            team: userData.team,
+            source: "manage-users",
+          }),
+        });
+
+        const roleResult = await roleResponse.json();
+        if (!roleResponse.ok) {
+          throw new Error(roleResult.error || "Failed to update role");
+        }
+
+        if (Array.isArray(roleResult.warnings) && roleResult.warnings.length > 0) {
+          toast.warning(roleResult.warnings.join(" | "));
+        }
+      }
 
       // Update additional fields
-      await updateProfileMutation({
+      await updateProfileForAdminMutation({
         logtoId,
+        userId: userData.id,
         name: userData.name,
         pid: userData.pid,
         memberId: userData.memberId,
@@ -193,13 +214,27 @@ function ManageUsersPage() {
     setSaving(true);
 
     try {
-      await updateUserMutation({
-        logtoId,
-        userId: userId as any,
-        role: newRole,
-        position: newPosition || undefined,
-        team: newTeam,
+      const roleResponse = await fetch("/api/users/update-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          logtoId,
+          userId,
+          role: newRole,
+          position: newPosition || undefined,
+          team: newTeam,
+          source: "manage-users",
+        }),
       });
+
+      const roleResult = await roleResponse.json();
+      if (!roleResponse.ok) {
+        throw new Error(roleResult.error || "Failed to promote user");
+      }
+
+      if (Array.isArray(roleResult.warnings) && roleResult.warnings.length > 0) {
+        toast.warning(roleResult.warnings.join(" | "));
+      }
 
       toast.success("User promoted successfully");
       setShowAddMemberModal(false);

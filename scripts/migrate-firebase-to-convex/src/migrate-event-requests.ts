@@ -20,7 +20,13 @@ export async function migrateEventRequests(ctx: MigrationContext): Promise<Migra
       const requestedUser = userMapping?.logtoId || userMapping?.firebaseUid || firebaseUserId;
 
       const validStatuses = ["draft", "submitted", "pending", "completed", "approved", "declined", "needs_review"];
-      const status = validStatuses.includes(data.status) ? data.status : "submitted";
+      const parsedStatus = validStatuses.includes(data.status) ? data.status : "submitted";
+      // If a request was already published in Firebase, keep it in a published-equivalent
+      // terminal status in Convex.
+      const status =
+        data.published === true && parsedStatus !== "declined"
+          ? "completed"
+          : parsedStatus;
 
       // Map invoices (with inline file migration)
       const invoices: any[] = [];

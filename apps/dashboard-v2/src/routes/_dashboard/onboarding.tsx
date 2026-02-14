@@ -550,6 +550,35 @@ function DirectOnboardingTab({ logtoId }: { logtoId: string | null }) {
         googleGroup: undefined,
       });
 
+      // Best-effort role sync to Convex user + Logto by email
+      try {
+        const roleSyncResp = await fetch("/api/users/update-role", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            logtoId,
+            email,
+            role,
+            position,
+            team: team && team !== "none" ? team : undefined,
+            source: "onboarding",
+          }),
+        });
+
+        const roleSyncResult = await roleSyncResp.json();
+        if (!roleSyncResp.ok) {
+          toast.warning(roleSyncResult.error || "Onboarding succeeded but role sync failed");
+        } else if (
+          Array.isArray(roleSyncResult.warnings) &&
+          roleSyncResult.warnings.length > 0
+        ) {
+          toast.warning(roleSyncResult.warnings.join(" | "));
+        }
+      } catch (roleSyncError) {
+        console.error("Error syncing onboarding role:", roleSyncError);
+        toast.warning("Onboarding succeeded, but role sync could not be completed.");
+      }
+
       toast.success(`${name} has been onboarded successfully!`);
       resetForm();
     } catch (error: any) {

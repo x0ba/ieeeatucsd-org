@@ -11,6 +11,7 @@ export interface Event {
   published: boolean;
   eventType: "social" | "technical" | "outreach" | "professional" | "projects" | "other";
   hasFood: boolean;
+  attendeeCount?: number;
 }
 
 export type EventStatus = "live" | "upcoming" | "ended";

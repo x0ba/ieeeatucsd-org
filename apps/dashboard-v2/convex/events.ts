@@ -6,13 +6,38 @@ import {
   requireAdminAccess,
 } from "./permissions";
 
+function getLegacyAttendeeIds(event: Record<string, unknown>): string[] {
+  const legacy = (event as { attendees?: unknown }).attendees;
+  if (!Array.isArray(legacy)) return [];
+  return legacy.filter((id): id is string => typeof id === "string");
+}
+
 export const listPublished = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db
+    const events = await ctx.db
       .query("events")
       .withIndex("by_published", (q) => q.eq("published", true))
       .collect();
+
+    return await Promise.all(
+      events.map(async (event) => {
+        const attendees = await ctx.db
+          .query("attendees")
+          .withIndex("by_eventId", (q) => q.eq("eventId", event._id))
+          .collect();
+        const legacyAttendeeIds = getLegacyAttendeeIds(event as Record<string, unknown>);
+        const attendeeCount =
+          attendees.length > 0
+            ? new Set(attendees.map((a) => a.userId)).size
+            : new Set(legacyAttendeeIds).size;
+
+        return {
+          ...event,
+          attendeeCount,
+        };
+      }),
+    );
   },
 });
 
@@ -24,28 +49,61 @@ export const listAll = query({
 
     return await Promise.all(
       events.map(async (event) => {
-        const attendees = await ctx.db
+        const attendeeDocs = await ctx.db
           .query("attendees")
           .withIndex("by_eventId", (q) => q.eq("eventId", event._id))
           .collect();
+        const legacyAttendeeIds = getLegacyAttendeeIds(event as Record<string, unknown>);
 
-        const enrichedAttendees = await Promise.all(
-          attendees.map(async (attendee) => {
-            const user = await ctx.db
-              .query("users")
-              .withIndex("by_logtoId", (q) => q.eq("logtoId", attendee.userId))
-              .first();
+        const attendeeByUserId = new Map<
+          string,
+          {
+            userId: string;
+            name: string;
+            email: string;
+            timeCheckedIn: number;
+            food: string;
+            pointsEarned: number;
+          }
+        >();
 
-            return {
-              userId: attendee.userId,
-              name: user?.name || attendee.userId,
-              email: user?.email || "",
-              timeCheckedIn: attendee.timeCheckedIn,
-              food: attendee.food,
-              pointsEarned: attendee.pointsEarned,
-            };
-          })
-        );
+        for (const attendee of attendeeDocs) {
+          const user = await ctx.db
+            .query("users")
+            .withIndex("by_logtoId", (q) => q.eq("logtoId", attendee.userId))
+            .first();
+
+          attendeeByUserId.set(attendee.userId, {
+            userId: attendee.userId,
+            name: user?.name || attendee.userId,
+            email: user?.email || "",
+            timeCheckedIn: attendee.timeCheckedIn,
+            food: attendee.food,
+            pointsEarned: attendee.pointsEarned,
+          });
+        }
+
+        if (attendeeByUserId.size === 0 && legacyAttendeeIds.length > 0) {
+          await Promise.all(
+            [...new Set(legacyAttendeeIds)].map(async (userId) => {
+              const user = await ctx.db
+                .query("users")
+                .withIndex("by_logtoId", (q) => q.eq("logtoId", userId))
+                .first();
+
+              attendeeByUserId.set(userId, {
+                userId,
+                name: user?.name || userId,
+                email: user?.email || "",
+                timeCheckedIn: 0,
+                food: "unknown",
+                pointsEarned: 0,
+              });
+            }),
+          );
+        }
+
+        const enrichedAttendees = [...attendeeByUserId.values()];
 
         return {
           ...event,

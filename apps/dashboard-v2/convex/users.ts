@@ -60,6 +60,25 @@ export const getByLogtoId = query({
   },
 });
 
+export const getByEmailForAdmin = query({
+  args: { logtoId: v.string(), email: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdminAccess(ctx, args.logtoId);
+    return await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+  },
+});
+
+export const getByIdForAdmin = query({
+  args: { logtoId: v.string(), userId: v.id("users") },
+  handler: async (ctx, args) => {
+    await requireAdminAccess(ctx, args.logtoId);
+    return await ctx.db.get(args.userId);
+  },
+});
+
 export const upsertFromAuth = mutation({
   args: {
     logtoId: v.string(),
@@ -430,6 +449,71 @@ export const updateStatus = mutation({
       lastUpdated: Date.now(),
       lastUpdatedBy: admin.logtoId,
     });
+
+    return args.userId;
+  },
+});
+
+export const updateProfileForAdmin = mutation({
+  args: {
+    logtoId: v.string(),
+    userId: v.id("users"),
+    name: v.optional(v.string()),
+    major: v.optional(v.string()),
+    graduationYear: v.optional(v.number()),
+    memberId: v.optional(v.string()),
+    pid: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const targetUser = await ctx.db.get(args.userId);
+    if (!targetUser) throw new Error("Target user not found");
+
+    const updateData: Record<string, unknown> = {
+      lastUpdated: Date.now(),
+      lastUpdatedBy: admin.logtoId,
+    };
+
+    for (const [key, value] of Object.entries(args)) {
+      if (key !== "logtoId" && key !== "userId" && value !== undefined) {
+        updateData[key] = value;
+      }
+    }
+
+    await ctx.db.patch(args.userId, updateData);
+
+    const existingProfile = await ctx.db
+      .query("publicProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first();
+
+    const nextName =
+      typeof updateData.name === "string" ? updateData.name : targetUser.name;
+    const nextMajor =
+      typeof updateData.major === "string" ? updateData.major : targetUser.major;
+    const nextGraduationYear =
+      typeof updateData.graduationYear === "number"
+        ? updateData.graduationYear
+        : targetUser.graduationYear;
+
+    const profileData = {
+      name: nextName,
+      major: nextMajor,
+      points: targetUser.points || 0,
+      eventsAttended: targetUser.eventsAttended || 0,
+      position: targetUser.position || targetUser.role,
+      graduationYear: nextGraduationYear,
+      joinDate: targetUser.joinDate || targetUser._creationTime,
+    };
+
+    if (existingProfile) {
+      await ctx.db.patch(existingProfile._id, profileData);
+    } else {
+      await ctx.db.insert("publicProfiles", {
+        ...profileData,
+        userId: args.userId,
+      });
+    }
 
     return args.userId;
   },

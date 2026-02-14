@@ -1,19 +1,41 @@
-import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useAuth } from "@/hooks/useAuth";
-import { Search, FileText, Users, GraduationCap, Briefcase, Filter, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { useQuery } from "convex/react";
 import {
-	normalizeMajorName,
-	getUniqueNormalizedMajors,
+	ArrowLeft,
+	Briefcase,
+	Download,
+	FileText,
+	Filter,
+	GraduationCap,
+	Search,
+	Users,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { useAuth } from "@/hooks/useAuth";
+import {
 	getMajorNormalizationMap,
+	getUniqueNormalizedMajors,
+	normalizeMajorName,
 } from "@/lib/majorNormalization";
 import type { UserWithResume } from "./types";
 
@@ -25,29 +47,23 @@ export default function ResumeDatabaseContent() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedMajors, setSelectedMajors] = useState<Set<string>>(new Set());
 	const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
-	const [selectedOfficerStatus, setSelectedOfficerStatus] = useState<string>("all");
+	const [selectedOfficerStatus, setSelectedOfficerStatus] =
+		useState<string>("all");
 	const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
-	const [showResumeModal, setShowResumeModal] = useState(false);
-	const [selectedUserForModal, setSelectedUserForModal] = useState<UserWithResume | null>(null);
+	const [view, setView] = useState<"list" | "detail">("list");
+	const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(10);
 
-	// Fetch all users from Convex - requires logtoId for admin access
-	const allUsers = useQuery(
-		api.users.list,
-		logtoId ? { logtoId } : "skip",
-	);
+	const allUsers = useQuery(api.users.list, logtoId ? { logtoId } : "skip");
 
-	// Convert Convex users to UserWithResume format
 	useEffect(() => {
 		if (!allUsers) return;
 
 		setLoading(true);
 		setError(null);
 
-		// Filter users to include only those with resumes
 		const usersWithResumes: UserWithResume[] = allUsers
 			.filter((u) => u.resume)
 			.map((u) => ({
@@ -59,24 +75,23 @@ export default function ResumeDatabaseContent() {
 		setLoading(false);
 	}, [allUsers]);
 
-	// Memoize major normalization map for efficient lookups
 	const majorNormalizationMap = useMemo(() => {
 		const allMajors = users.map((u) => u.major).filter((m): m is string => !!m);
 		return getMajorNormalizationMap(allMajors, 0.8);
 	}, [users]);
 
-	// Get normalized major for a user
-	const getNormalizedMajor = (major: string | undefined): string => {
-		if (!major) return "";
-		const normalized = normalizeMajorName(major);
-		return majorNormalizationMap.get(normalized) || normalized;
-	};
+	const getNormalizedMajor = useCallback(
+		(major: string | undefined): string => {
+			if (!major) return "";
+			const normalized = normalizeMajorName(major);
+			return majorNormalizationMap.get(normalized) || normalized;
+		},
+		[majorNormalizationMap],
+	);
 
-	// Filter users based on search and filters
 	const filteredUsers = useMemo(() => {
 		let filtered = [...users];
 
-		// Search filter - search against normalized major names
 		if (searchTerm) {
 			filtered = filtered.filter((u) => {
 				const normalizedMajor = getNormalizedMajor(u.major);
@@ -88,7 +103,6 @@ export default function ResumeDatabaseContent() {
 			});
 		}
 
-		// Major filter - compare normalized major names (multi-select)
 		if (selectedMajors.size > 0) {
 			filtered = filtered.filter((u) => {
 				const normalizedMajor = getNormalizedMajor(u.major);
@@ -96,14 +110,14 @@ export default function ResumeDatabaseContent() {
 			});
 		}
 
-		// Graduation year filter (multi-select)
 		if (selectedYears.size > 0) {
 			filtered = filtered.filter((u) => {
-				return u.graduationYear && selectedYears.has(u.graduationYear.toString());
+				return (
+					u.graduationYear && selectedYears.has(u.graduationYear.toString())
+				);
 			});
 		}
 
-		// Officer status filter
 		if (selectedOfficerStatus === "officers") {
 			filtered = filtered.filter(
 				(u) => u.role !== "Member" && u.role !== "Sponsor",
@@ -113,35 +127,44 @@ export default function ResumeDatabaseContent() {
 		}
 
 		return filtered;
-	}, [searchTerm, selectedMajors, selectedYears, selectedOfficerStatus, users, majorNormalizationMap]);
+	}, [
+		searchTerm,
+		selectedMajors,
+		selectedYears,
+		selectedOfficerStatus,
+		users,
+		getNormalizedMajor,
+	]);
 
-	// Get unique normalized majors for filter dropdown
 	const uniqueMajors = useMemo(() => {
-		return getUniqueNormalizedMajors(users.map((u) => u.major), 0.8);
+		return getUniqueNormalizedMajors(
+			users.map((u) => u.major),
+			0.8,
+		);
 	}, [users]);
 
-	// Get unique graduation years for filter dropdown
 	const uniqueYears = useMemo(() => {
 		const years = users
 			.map((u) => u.graduationYear)
 			.filter((year): year is number => !!year)
-			.sort((a, b) => b - a); // Sort descending (most recent first)
-		// Remove duplicates by converting to Set and back to array
+			.sort((a, b) => b - a);
 		return Array.from(new Set(years));
 	}, [users]);
 
-	// Pagination calculations
 	const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 	const startIndex = (currentPage - 1) * itemsPerPage;
 	const endIndex = startIndex + itemsPerPage;
 	const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
-	// Reset to first page when filters change
-	useEffect(() => {
-		setCurrentPage(1);
-	}, [searchTerm, selectedMajors, selectedYears, selectedOfficerStatus]);
+	const selectedUser = users.find((u) => u.id === selectedUserId) || null;
 
-	// Pagination handlers
+	useEffect(() => {
+		if (selectedUserId && !users.some((u) => u.id === selectedUserId)) {
+			setSelectedUserId(null);
+			setView("list");
+		}
+	}, [users, selectedUserId]);
+
 	const handlePageChange = (page: number) => {
 		setCurrentPage(page);
 	};
@@ -151,17 +174,18 @@ export default function ResumeDatabaseContent() {
 		setCurrentPage(1);
 	};
 
-	// Selection handlers
 	const handleSelectAll = (isSelected: boolean) => {
 		if (isSelected) {
-			// Select all on current page
 			const newSelected = new Set(selectedUsers);
-			paginatedUsers.forEach((u) => newSelected.add(u.id));
+			paginatedUsers.forEach((u) => {
+				newSelected.add(u.id);
+			});
 			setSelectedUsers(newSelected);
 		} else {
-			// Deselect all on current page
 			const newSelected = new Set(selectedUsers);
-			paginatedUsers.forEach((u) => newSelected.delete(u.id));
+			paginatedUsers.forEach((u) => {
+				newSelected.delete(u.id);
+			});
 			setSelectedUsers(newSelected);
 		}
 	};
@@ -177,17 +201,22 @@ export default function ResumeDatabaseContent() {
 	};
 
 	const handleRowClick = (user: UserWithResume) => {
-		setSelectedUserForModal(user);
-		setShowResumeModal(true);
+		setSelectedUserId(user.id);
+		setView("detail");
 	};
 
-	const handleCloseModal = () => {
-		setShowResumeModal(false);
-		setSelectedUserForModal(null);
+	const handleBackToList = () => {
+		setView("list");
 	};
 
 	const generateCSV = (usersToExport: UserWithResume[]): string => {
-		const headers = ["Name", "Email", "Major", "Year Graduating", "Firebase Resume Link"];
+		const headers = [
+			"Name",
+			"Email",
+			"Major",
+			"Year Graduating",
+			"Firebase Resume Link",
+		];
 
 		const csvData = usersToExport.map((user) => {
 			const name = user.name || "";
@@ -196,9 +225,12 @@ export default function ResumeDatabaseContent() {
 			const year = user.graduationYear?.toString() || "";
 			const resumeLink = user.resume || "";
 
-			// Escape CSV fields by wrapping in quotes if they contain commas, quotes, or newlines
 			const escapeField = (field: string): string => {
-				if (field.includes(",") || field.includes('"') || field.includes("\n")) {
+				if (
+					field.includes(",") ||
+					field.includes('"') ||
+					field.includes("\n")
+				) {
 					return `"${field.replace(/"/g, '""')}"`;
 				}
 				return field;
@@ -230,12 +262,13 @@ export default function ResumeDatabaseContent() {
 	};
 
 	const handleDownloadSelected = () => {
-		const selectedUsersList = filteredUsers.filter((u) => selectedUsers.has(u.id));
+		const selectedUsersList = filteredUsers.filter((u) =>
+			selectedUsers.has(u.id),
+		);
 
 		if (selectedUsersList.length === 0) return;
 
 		if (selectedUsersList.length === 1) {
-			// Download single PDF
 			const user = selectedUsersList[0];
 			if (user.resume) {
 				const link = document.createElement("a");
@@ -247,7 +280,6 @@ export default function ResumeDatabaseContent() {
 				document.body.removeChild(link);
 			}
 		} else {
-			// Download CSV for 2+ users
 			try {
 				const csvContent = generateCSV(selectedUsersList);
 				const filename = `Resume_Database_${selectedUsersList.length}_users.csv`;
@@ -258,7 +290,17 @@ export default function ResumeDatabaseContent() {
 		}
 	};
 
-	const getRoleBadgeVariant = (role: string): "default" | "secondary" | "destructive" | "outline" => {
+	const clearFilters = () => {
+		setSearchTerm("");
+		setSelectedMajors(new Set());
+		setSelectedYears(new Set());
+		setSelectedOfficerStatus("all");
+		setCurrentPage(1);
+	};
+
+	const getRoleBadgeVariant = (
+		role: string,
+	): "default" | "secondary" | "destructive" | "outline" => {
 		switch (role) {
 			case "Member":
 				return "secondary";
@@ -273,168 +315,284 @@ export default function ResumeDatabaseContent() {
 		}
 	};
 
+	const currentYear = new Date().getFullYear();
+	const graduatingSoonCount = users.filter(
+		(u) => (u.graduationYear || Number.POSITIVE_INFINITY) <= currentYear + 1,
+	).length;
+	const officerCount = users.filter(
+		(u) => u.role !== "Member" && u.role !== "Sponsor",
+	).length;
+
+	if (view === "detail" && selectedUser) {
+		return (
+			<div className="w-full bg-slate-50 min-h-full">
+				<div className="mx-auto max-w-7xl p-4 md:p-6 space-y-5">
+					<div className="flex flex-wrap items-center gap-3">
+						<Button variant="ghost" size="sm" onClick={handleBackToList}>
+							<ArrowLeft className="h-4 w-4 mr-1" />
+							Back to resume list
+						</Button>
+						<Badge variant={getRoleBadgeVariant(selectedUser.role)}>
+							{selectedUser.position || selectedUser.role}
+						</Badge>
+					</div>
+
+					<Card className="bg-white border-slate-200 shadow-sm">
+						<CardContent className="p-6 md:p-7">
+							<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+								<div className="space-y-2">
+									<h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+										{selectedUser.name}
+									</h1>
+									<p className="text-sm text-slate-600">{selectedUser.email}</p>
+									<div className="flex flex-wrap gap-2 text-sm text-slate-700">
+										<Badge variant="outline">
+											{getNormalizedMajor(selectedUser.major) ||
+												"Major not listed"}
+										</Badge>
+										<Badge variant="outline">
+											Class of {selectedUser.graduationYear || "N/A"}
+										</Badge>
+									</div>
+								</div>
+								<div className="flex items-center gap-2">
+									<Button asChild>
+										<a
+											href={selectedUser.resume}
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											Open in New Tab
+										</a>
+									</Button>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+
+					<Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
+						<CardHeader className="border-b border-slate-100">
+							<CardTitle className="text-base text-slate-900">
+								Resume Preview
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="p-0">
+							<iframe
+								src={selectedUser.resume}
+								className="w-full h-[72vh]"
+								title={`${selectedUser.name}'s Resume`}
+							/>
+						</CardContent>
+					</Card>
+				</div>
+			</div>
+		);
+	}
+
 	return (
-		<div className="flex-1 overflow-auto">
-			<div className="p-6 space-y-6">
-				{/* Stats Cards */}
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					<div className="bg-white rounded-2xl shadow p-6">
-						<div className="flex items-center">
-							<div className="p-3 bg-blue-100 rounded-xl">
-								<FileText className="w-6 h-6 text-blue-600" />
+		<div className="w-full bg-slate-50 min-h-full">
+			<div className="mx-auto max-w-7xl p-4 md:p-6 space-y-5">
+				<div className="space-y-1">
+					<h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+						Resume Database
+					</h1>
+					<p className="text-sm text-slate-600">
+						Browse member resumes with consistent filters and quick in-page
+						review.
+					</p>
+				</div>
+
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+					<Card className="bg-white border-slate-200 shadow-sm">
+						<CardContent className="p-5 flex items-center gap-3">
+							<div className="rounded-xl p-2.5 bg-blue-50 text-blue-700">
+								<FileText className="h-5 w-5" />
 							</div>
-							<div className="ml-4">
-								<p className="text-sm text-gray-600">Total Resumes</p>
-								<p className="text-2xl font-bold text-gray-900">{users.length}</p>
-							</div>
-						</div>
-					</div>
-					<div className="bg-white rounded-2xl shadow p-6">
-						<div className="flex items-center">
-							<div className="p-3 bg-green-100 rounded-lg">
-								<GraduationCap className="w-6 h-6 text-green-600" />
-							</div>
-							<div className="ml-4">
-								<p className="text-sm text-gray-600">Unique Majors</p>
-								<p className="text-2xl font-bold text-gray-900">{uniqueMajors.length}</p>
-							</div>
-						</div>
-					</div>
-					<div className="bg-white rounded-2xl shadow p-6">
-						<div className="flex items-center">
-							<div className="p-3 bg-purple-100 rounded-lg">
-								<Briefcase className="w-6 h-6 text-purple-600" />
-							</div>
-							<div className="ml-4">
-								<p className="text-sm text-gray-600">Officers</p>
-								<p className="text-2xl font-bold text-gray-900">
-									{users.filter((u) => u.role !== "Member" && u.role !== "Sponsor").length}
+							<div>
+								<p className="text-xs text-slate-500">Total Resumes</p>
+								<p className="text-2xl font-semibold text-slate-900">
+									{users.length}
 								</p>
 							</div>
-						</div>
-					</div>
+						</CardContent>
+					</Card>
+					<Card className="bg-white border-slate-200 shadow-sm">
+						<CardContent className="p-5 flex items-center gap-3">
+							<div className="rounded-xl p-2.5 bg-emerald-50 text-emerald-700">
+								<Filter className="h-5 w-5" />
+							</div>
+							<div>
+								<p className="text-xs text-slate-500">Filtered Results</p>
+								<p className="text-2xl font-semibold text-slate-900">
+									{filteredUsers.length}
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+					<Card className="bg-white border-slate-200 shadow-sm">
+						<CardContent className="p-5 flex items-center gap-3">
+							<div className="rounded-xl p-2.5 bg-indigo-50 text-indigo-700">
+								<Briefcase className="h-5 w-5" />
+							</div>
+							<div>
+								<p className="text-xs text-slate-500">Officer Resumes</p>
+								<p className="text-2xl font-semibold text-slate-900">
+									{officerCount}
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+					<Card className="bg-white border-slate-200 shadow-sm">
+						<CardContent className="p-5 flex items-center gap-3">
+							<div className="rounded-xl p-2.5 bg-amber-50 text-amber-700">
+								<GraduationCap className="h-5 w-5" />
+							</div>
+							<div>
+								<p className="text-xs text-slate-500">
+									Graduating by {currentYear + 1}
+								</p>
+								<p className="text-2xl font-semibold text-slate-900">
+									{graduatingSoonCount}
+								</p>
+							</div>
+						</CardContent>
+					</Card>
 				</div>
 
-				{/* Search and Filters */}
-				<div className="bg-white rounded-2xl shadow p-6">
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-						{/* Search */}
-						<div className="relative">
-							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-							<Input
-								type="text"
-								placeholder="Search by name, email, or major..."
-								value={searchTerm}
-								onChange={(e) => setSearchTerm(e.target.value)}
-								className="w-full h-12 pl-10"
-							/>
+				<Card className="bg-white border-slate-200 shadow-sm">
+					<CardContent className="p-4 md:p-5">
+						<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+							<div className="relative xl:col-span-2">
+								<Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+								<Input
+									type="text"
+									placeholder="Search by name, email, or major"
+									value={searchTerm}
+									onChange={(e) => {
+										setSearchTerm(e.target.value);
+										setCurrentPage(1);
+									}}
+									className="pl-9 h-10"
+								/>
+							</div>
+							<Select
+								value={Array.from(selectedMajors)[0] || "all_majors"}
+								onValueChange={(value) => {
+									if (value === "all_majors") {
+										setSelectedMajors(new Set());
+									} else {
+										setSelectedMajors(new Set([value]));
+									}
+									setCurrentPage(1);
+								}}
+							>
+								<SelectTrigger className="h-10">
+									<SelectValue placeholder="All majors" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all_majors">All majors</SelectItem>
+									{uniqueMajors.map((major) => (
+										<SelectItem key={major} value={major}>
+											{major}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<Select
+								value={Array.from(selectedYears)[0] || "all_years"}
+								onValueChange={(value) => {
+									if (value === "all_years") {
+										setSelectedYears(new Set());
+									} else {
+										setSelectedYears(new Set([value]));
+									}
+									setCurrentPage(1);
+								}}
+							>
+								<SelectTrigger className="h-10">
+									<SelectValue placeholder="All years" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all_years">All years</SelectItem>
+									{uniqueYears.map((year) => (
+										<SelectItem key={year.toString()} value={year.toString()}>
+											Class of {year}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<Select
+								value={selectedOfficerStatus}
+								onValueChange={(value) => {
+									setSelectedOfficerStatus(value);
+									setCurrentPage(1);
+								}}
+							>
+								<SelectTrigger className="h-10">
+									<div className="flex items-center gap-2 flex-1">
+										<Users className="w-4 h-4 text-slate-400" />
+										<SelectValue placeholder="All members" />
+									</div>
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">All members</SelectItem>
+									<SelectItem value="officers">Officers only</SelectItem>
+									<SelectItem value="members">General members</SelectItem>
+								</SelectContent>
+							</Select>
 						</div>
+						<div className="mt-3 flex items-center justify-between">
+							<p className="text-xs text-slate-500">
+								Click any user row to view their resume in-page.
+							</p>
+							<Button variant="outline" size="sm" onClick={clearFilters}>
+								Clear filters
+							</Button>
+						</div>
+					</CardContent>
+				</Card>
 
-						{/* Major Filter */}
-						<Select
-							value={Array.from(selectedMajors)[0] || ""}
-							onValueChange={(value) => {
-								if (value === "") {
-									setSelectedMajors(new Set());
-								} else {
-									setSelectedMajors(new Set([value]));
-								}
-							}}
-						>
-							<SelectTrigger className="h-12">
-								<div className="flex items-center gap-2 flex-1">
-									<Filter className="w-4 h-4 text-gray-400" />
-									<SelectValue placeholder="Select majors..." />
-								</div>
-							</SelectTrigger>
-							<SelectContent>
-								{uniqueMajors.map((major) => (
-									<SelectItem key={major} value={major}>
-										{major}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-
-						{/* Graduation Year Filter */}
-						<Select
-							value={Array.from(selectedYears)[0] || ""}
-							onValueChange={(value) => {
-								if (value === "") {
-									setSelectedYears(new Set());
-								} else {
-									setSelectedYears(new Set([value]));
-								}
-							}}
-						>
-							<SelectTrigger className="h-12">
-								<div className="flex items-center gap-2 flex-1">
-									<GraduationCap className="w-4 h-4 text-gray-400" />
-									<SelectValue placeholder="Select years..." />
-								</div>
-							</SelectTrigger>
-							<SelectContent>
-								{uniqueYears.map((year) => (
-									<SelectItem key={year.toString()} value={year.toString()}>
-										Class of {year}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-
-						{/* Officer Status Filter */}
-						<Select
-							value={selectedOfficerStatus}
-							onValueChange={setSelectedOfficerStatus}
-						>
-							<SelectTrigger className="h-12">
-								<div className="flex items-center gap-2 flex-1">
-									<Users className="w-4 h-4 text-gray-400" />
-									<SelectValue placeholder="Select member type..." />
-								</div>
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">All Members</SelectItem>
-								<SelectItem value="officers">Officers Only</SelectItem>
-								<SelectItem value="members">General Members</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-				</div>
-
-				{/* Results */}
 				{loading ? (
-					<div className="bg-white rounded-2xl shadow p-12 text-center">
-						<div className="flex flex-col items-center justify-center space-y-4">
-							<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-							<p className="text-gray-600">Loading resumes...</p>
-						</div>
-					</div>
+					<Card className="bg-white border-slate-200 shadow-sm">
+						<CardContent className="p-12 text-center space-y-3">
+							<div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto" />
+							<p className="text-slate-600">Loading resumes...</p>
+						</CardContent>
+					</Card>
 				) : error ? (
-					<div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-						<p className="text-red-800 font-semibold">Error</p>
-						<p className="text-red-600">{error}</p>
-					</div>
+					<Card className="border-rose-200 bg-rose-50">
+						<CardContent className="p-6">
+							<p className="text-rose-800 font-medium">Error</p>
+							<p className="text-rose-700 text-sm">{error}</p>
+						</CardContent>
+					</Card>
 				) : filteredUsers.length === 0 ? (
-					<div className="bg-white rounded-2xl shadow p-12 text-center">
-						<FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-						<h3 className="text-lg font-semibold text-gray-900 mb-2">No Resumes Found</h3>
-						<p className="text-gray-600">
-							{searchTerm || selectedMajors.size > 0 || selectedYears.size > 0 || selectedOfficerStatus !== "all"
-								? "Try adjusting your filters"
-								: "No members have opted in to share their resumes yet"}
-						</p>
-					</div>
+					<Card className="bg-white border-slate-200 shadow-sm">
+						<CardContent className="p-12 text-center">
+							<FileText className="w-14 h-14 text-slate-300 mx-auto mb-3" />
+							<h3 className="text-base font-semibold text-slate-900">
+								No resumes found
+							</h3>
+							<p className="text-sm text-slate-600 mt-1">
+								{searchTerm ||
+								selectedMajors.size > 0 ||
+								selectedYears.size > 0 ||
+								selectedOfficerStatus !== "all"
+									? "Try adjusting your filters."
+									: "No members have opted in to share resumes yet."}
+							</p>
+						</CardContent>
+					</Card>
 				) : (
 					<>
-						{/* Selection Actions */}
 						{selectedUsers.size > 0 && (
-							<div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-								<div className="flex items-center justify-between">
-									<p className="text-sm text-blue-700">
-										<strong>{selectedUsers.size}</strong> user{selectedUsers.size !== 1 ? "s" : ""} selected
+							<Card className="border-blue-200 bg-blue-50">
+								<CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+									<p className="text-sm text-blue-800">
+										<strong>{selectedUsers.size}</strong> user
+										{selectedUsers.size !== 1 ? "s" : ""} selected
 									</p>
-									<div className="flex items-center gap-3">
+									<div className="flex items-center gap-2">
 										<Button
 											onClick={handleDownloadSelected}
 											size="sm"
@@ -451,81 +609,90 @@ export default function ResumeDatabaseContent() {
 											Clear Selection
 										</Button>
 									</div>
-								</div>
-							</div>
+								</CardContent>
+							</Card>
 						)}
 
-						<div className="bg-white rounded-2xl shadow overflow-hidden">
+						<Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
 							<div className="overflow-x-auto">
 								<Table>
 									<TableHeader>
-										<TableRow className="bg-gray-50 hover:bg-gray-50">
-											<TableHead className="px-6 py-3">
+										<TableRow className="bg-slate-50 hover:bg-slate-50">
+											<TableHead className="px-5 py-3 w-12">
 												<Checkbox
-													checked={paginatedUsers.length > 0 && paginatedUsers.every((u) => selectedUsers.has(u.id))}
-													onCheckedChange={handleSelectAll}
+													checked={
+														paginatedUsers.length > 0 &&
+														paginatedUsers.every((u) => selectedUsers.has(u.id))
+													}
+													onCheckedChange={(checked) =>
+														handleSelectAll(Boolean(checked))
+													}
 													aria-label="Select all users"
 												/>
 											</TableHead>
-											<TableHead className="px-6 py-3">Name</TableHead>
-											<TableHead className="px-6 py-3">Email</TableHead>
-											<TableHead className="px-6 py-3">Major</TableHead>
-											<TableHead className="px-6 py-3">Graduation Year</TableHead>
-											<TableHead className="px-6 py-3">Role</TableHead>
+											<TableHead className="px-5 py-3">Name</TableHead>
+											<TableHead className="px-5 py-3">Email</TableHead>
+											<TableHead className="px-5 py-3">Major</TableHead>
+											<TableHead className="px-5 py-3">Grad Year</TableHead>
+											<TableHead className="px-5 py-3">Role</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
 										{paginatedUsers.map((user) => (
 											<TableRow
 												key={user.id}
-												className="hover:bg-gray-50 cursor-pointer transition-colors"
+												className="hover:bg-slate-50 cursor-pointer transition-colors"
 											>
 												<TableCell
-													className="px-6 py-4 whitespace-nowrap cursor-pointer"
+													className="px-5 py-4"
 													onClick={(e) => {
 														e.stopPropagation();
 														handleSelectUser(user.id);
 													}}
 												>
-													<div className="flex items-center justify-center">
-														<Checkbox
-															checked={selectedUsers.has(user.id)}
-															onCheckedChange={() => handleSelectUser(user.id)}
-															aria-label={`Select ${user.name}`}
-														/>
+													<Checkbox
+														checked={selectedUsers.has(user.id)}
+														onCheckedChange={() => handleSelectUser(user.id)}
+														aria-label={`Select ${user.name}`}
+													/>
+												</TableCell>
+												<TableCell
+													className="px-5 py-4"
+													onClick={() => handleRowClick(user)}
+												>
+													<div className="text-sm font-medium text-slate-900">
+														{user.name}
 													</div>
 												</TableCell>
 												<TableCell
-													className="px-6 py-4 whitespace-nowrap"
+													className="px-5 py-4"
 													onClick={() => handleRowClick(user)}
 												>
-													<div className="text-sm font-medium text-gray-900">{user.name}</div>
+													<div className="text-sm text-slate-600">
+														{user.email}
+													</div>
 												</TableCell>
 												<TableCell
-													className="px-6 py-4 whitespace-nowrap"
-													onClick={() => handleRowClick(user)}
-												>
-													<div className="text-sm text-gray-600">{user.email}</div>
-												</TableCell>
-												<TableCell
-													className="px-6 py-4 whitespace-nowrap"
+													className="px-5 py-4"
 													onClick={() => handleRowClick(user)}
 												>
 													<div
-														className="text-sm text-gray-900 max-w-[200px] truncate"
+														className="text-sm text-slate-900 max-w-[230px] truncate"
 														title={getNormalizedMajor(user.major) || "N/A"}
 													>
 														{getNormalizedMajor(user.major) || "N/A"}
 													</div>
 												</TableCell>
 												<TableCell
-													className="px-6 py-4 whitespace-nowrap"
+													className="px-5 py-4"
 													onClick={() => handleRowClick(user)}
 												>
-													<div className="text-sm text-gray-900">{user.graduationYear || "N/A"}</div>
+													<div className="text-sm text-slate-900">
+														{user.graduationYear || "N/A"}
+													</div>
 												</TableCell>
 												<TableCell
-													className="px-6 py-4 whitespace-nowrap"
+													className="px-5 py-4"
 													onClick={() => handleRowClick(user)}
 												>
 													<Badge variant={getRoleBadgeVariant(user.role)}>
@@ -538,28 +705,30 @@ export default function ResumeDatabaseContent() {
 								</Table>
 							</div>
 
-							{/* Pagination Controls */}
 							{totalPages > 1 && (
-								<div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-									<div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-										{/* Results info and items per page selector */}
+								<div className="bg-slate-50 px-5 py-4 border-t border-slate-200">
+									<div className="flex flex-col lg:flex-row items-center justify-between gap-4">
 										<div className="flex flex-col sm:flex-row items-center gap-4">
-											<p className="text-sm text-gray-700">
-												Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
-												<span className="font-medium">{Math.min(endIndex, filteredUsers.length)}</span> of{" "}
-												<span className="font-medium">{filteredUsers.length}</span> results
+											<p className="text-sm text-slate-700">
+												Showing{" "}
+												<span className="font-medium">{startIndex + 1}</span> to{" "}
+												<span className="font-medium">
+													{Math.min(endIndex, filteredUsers.length)}
+												</span>{" "}
+												of{" "}
+												<span className="font-medium">
+													{filteredUsers.length}
+												</span>
 											</p>
-
-											{/* Items per page selector */}
 											<div className="flex items-center gap-2">
-												<label className="text-sm text-gray-700">
+												<span className="text-sm text-slate-700">
 													Per page:
-												</label>
+												</span>
 												<Select
 													value={itemsPerPage.toString()}
 													onValueChange={handleItemsPerPageChange}
 												>
-													<SelectTrigger className="w-20 h-8">
+													<SelectTrigger className="w-20 h-8 bg-white">
 														<SelectValue />
 													</SelectTrigger>
 													<SelectContent>
@@ -572,7 +741,6 @@ export default function ResumeDatabaseContent() {
 											</div>
 										</div>
 
-										{/* Pagination */}
 										<div className="flex items-center gap-2">
 											<Button
 												variant="outline"
@@ -582,7 +750,7 @@ export default function ResumeDatabaseContent() {
 											>
 												Previous
 											</Button>
-											<span className="text-sm text-gray-700">
+											<span className="text-sm text-slate-700">
 												Page {currentPage} of {totalPages}
 											</span>
 											<Button
@@ -597,77 +765,9 @@ export default function ResumeDatabaseContent() {
 									</div>
 								</div>
 							)}
-						</div>
+						</Card>
 					</>
 				)}
-
-				{/* Resume Modal */}
-				<Dialog open={showResumeModal} onOpenChange={(open) => !open && handleCloseModal()}>
-					<DialogContent className="max-w-6xl max-h-[90vh]">
-						{selectedUserForModal && (
-							<>
-								{/* Modal Header */}
-								<DialogHeader>
-									<DialogTitle className="text-2xl font-bold text-gray-900">
-										{selectedUserForModal.name}
-									</DialogTitle>
-									<DialogDescription className="sr-only">
-										View {selectedUserForModal.name}'s resume and download it
-									</DialogDescription>
-									<p className="text-sm text-gray-600">
-										{selectedUserForModal.email} • {getNormalizedMajor(selectedUserForModal.major) || "N/A"} • Class of{" "}
-										{selectedUserForModal.graduationYear || "N/A"}
-									</p>
-								</DialogHeader>
-
-								{/* Modal Body - Resume Viewer */}
-								<div className="py-6">
-									{selectedUserForModal.resume ? (
-										<iframe
-											src={selectedUserForModal.resume}
-											className="w-full h-[600px] border border-gray-300 rounded-xl"
-											title={`${selectedUserForModal.name}'s Resume`}
-										/>
-									) : (
-										<div className="flex items-center justify-center h-64">
-											<div className="text-center">
-												<FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-												<p className="text-gray-600">No resume available</p>
-											</div>
-										</div>
-									)}
-								</div>
-
-								{/* Modal Footer */}
-								<DialogFooter>
-									<div className="flex items-center justify-between w-full">
-										<div className="flex items-center gap-2">
-											<Badge variant={getRoleBadgeVariant(selectedUserForModal.role)}>
-												{selectedUserForModal.position || selectedUserForModal.role}
-											</Badge>
-										</div>
-										<div className="flex items-center gap-3">
-											{selectedUserForModal.resume && (
-												<Button asChild>
-													<a
-														href={selectedUserForModal.resume}
-														target="_blank"
-														rel="noopener noreferrer"
-													>
-														Open in New Tab
-													</a>
-												</Button>
-											)}
-											<Button variant="outline" onClick={handleCloseModal}>
-												Close
-											</Button>
-										</div>
-									</div>
-								</DialogFooter>
-							</>
-						)}
-					</DialogContent>
-				</Dialog>
 			</div>
 		</div>
 	);

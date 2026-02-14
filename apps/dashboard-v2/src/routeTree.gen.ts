@@ -40,6 +40,7 @@ import { Route as DashboardExecutiveAnalyticsRouteImport } from './routes/_dashb
 import { Route as DashboardEventsRouteImport } from './routes/_dashboard/events'
 import { Route as DashboardConstitutionPreviewRouteImport } from './routes/_dashboard/constitution-preview'
 import { Route as DashboardConstitutionBuilderRouteImport } from './routes/_dashboard/constitution-builder'
+import { Route as ApiUsersUpdateRoleRouteImport } from './routes/api/users/update-role'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 import { Route as ApiOnboardingSendInvitationRouteImport } from './routes/api/onboarding/send-invitation'
 import { Route as ApiOnboardingSendDirectOnboardingRouteImport } from './routes/api/onboarding/send-direct-onboarding'
@@ -212,6 +213,11 @@ const DashboardConstitutionBuilderRoute =
     path: '/constitution-builder',
     getParentRoute: () => DashboardRoute,
   } as any)
+const ApiUsersUpdateRoleRoute = ApiUsersUpdateRoleRouteImport.update({
+  id: '/api/users/update-role',
+  path: '/api/users/update-role',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
   id: '/api/rpc/$',
   path: '/api/rpc/$',
@@ -316,6 +322,7 @@ export interface FileRoutesByFullPath {
   '/api/onboarding/send-direct-onboarding': typeof ApiOnboardingSendDirectOnboardingRoute
   '/api/onboarding/send-invitation': typeof ApiOnboardingSendInvitationRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/api/users/update-role': typeof ApiUsersUpdateRoleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -359,6 +366,7 @@ export interface FileRoutesByTo {
   '/api/onboarding/send-direct-onboarding': typeof ApiOnboardingSendDirectOnboardingRoute
   '/api/onboarding/send-invitation': typeof ApiOnboardingSendInvitationRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/api/users/update-role': typeof ApiUsersUpdateRoleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -404,6 +412,7 @@ export interface FileRoutesById {
   '/api/onboarding/send-direct-onboarding': typeof ApiOnboardingSendDirectOnboardingRoute
   '/api/onboarding/send-invitation': typeof ApiOnboardingSendInvitationRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/api/users/update-role': typeof ApiUsersUpdateRoleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -449,6 +458,7 @@ export interface FileRouteTypes {
     | '/api/onboarding/send-direct-onboarding'
     | '/api/onboarding/send-invitation'
     | '/api/rpc/$'
+    | '/api/users/update-role'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -492,6 +502,7 @@ export interface FileRouteTypes {
     | '/api/onboarding/send-direct-onboarding'
     | '/api/onboarding/send-invitation'
     | '/api/rpc/$'
+    | '/api/users/update-role'
   id:
     | '__root__'
     | '/'
@@ -536,6 +547,7 @@ export interface FileRouteTypes {
     | '/api/onboarding/send-direct-onboarding'
     | '/api/onboarding/send-invitation'
     | '/api/rpc/$'
+    | '/api/users/update-role'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -561,6 +573,7 @@ export interface RootRouteChildren {
   ApiOnboardingSendDirectOnboardingRoute: typeof ApiOnboardingSendDirectOnboardingRoute
   ApiOnboardingSendInvitationRoute: typeof ApiOnboardingSendInvitationRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
+  ApiUsersUpdateRoleRoute: typeof ApiUsersUpdateRoleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -782,6 +795,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardConstitutionBuilderRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/api/users/update-role': {
+      id: '/api/users/update-role'
+      path: '/api/users/update-role'
+      fullPath: '/api/users/update-role'
+      preLoaderRoute: typeof ApiUsersUpdateRoleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/rpc/$': {
       id: '/api/rpc/$'
       path: '/api/rpc/$'
@@ -936,6 +956,7 @@ const rootRouteChildren: RootRouteChildren = {
     ApiOnboardingSendDirectOnboardingRoute,
   ApiOnboardingSendInvitationRoute: ApiOnboardingSendInvitationRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
+  ApiUsersUpdateRoleRoute: ApiUsersUpdateRoleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
