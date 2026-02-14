@@ -71,9 +71,6 @@ ARG FIREBASE_TOKEN_URL
 ARG FIREBASE_AUTH_CERT_URL
 ARG FIREBASE_CLIENT_CERT_URL
 
-# Dashboard Specific
-ARG PUBLIC_DASHBOARD_URL
-
 # Website Specific (API, Calendar, Email, AI)
 ARG API_BASE_URL
 ARG CALENDAR_API_KEY
@@ -118,8 +115,6 @@ ENV FIREBASE_AUTH_URL=$FIREBASE_AUTH_URL
 ENV FIREBASE_TOKEN_URL=$FIREBASE_TOKEN_URL
 ENV FIREBASE_AUTH_CERT_URL=$FIREBASE_AUTH_CERT_URL
 ENV FIREBASE_CLIENT_CERT_URL=$FIREBASE_CLIENT_CERT_URL
-ENV PUBLIC_DASHBOARD_URL=$PUBLIC_DASHBOARD_URL
-
 # Website Env Vars
 ENV API_BASE_URL=$API_BASE_URL
 ENV CALENDAR_API_KEY=$CALENDAR_API_KEY
@@ -154,23 +149,11 @@ FROM base as website_builder
 WORKDIR /app/apps/website
 RUN bun run build
 
-# --- Dashboard Builder ---
-FROM base as dashboard_builder
-WORKDIR /app/apps/dashboard
-RUN bun run build
-
 # --- Website Runner ---
 FROM base as website
 COPY --from=website_builder /app/apps/website/dist /app/apps/website/dist
 WORKDIR /app/apps/website
 EXPOSE 4321
-CMD ["bun", "run", "start"]
-
-# --- Dashboard Runner ---
-FROM base as dashboard
-COPY --from=dashboard_builder /app/apps/dashboard/dist /app/apps/dashboard/dist
-WORKDIR /app/apps/dashboard
-EXPOSE 4322
 CMD ["bun", "run", "start"]
 
 # --- Dashboard-v2 Builder ---
