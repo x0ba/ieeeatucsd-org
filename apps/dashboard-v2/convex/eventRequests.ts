@@ -298,9 +298,23 @@ export const updateStatus = mutation({
     reviewFeedback: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const request = await ctx.db.get(args.id);
+    if (!request) throw new Error("Event request not found");
+
+    const userId = user.logtoId ?? user.authUserId ?? "";
+    const canSubmitOwnDraft =
+      args.status === "submitted" &&
+      request.status === "draft" &&
+      request.requestedUser === userId;
+
+    if (!hasAdminAccess(user.role) && !canSubmitOwnDraft) {
+      throw new Error("Only admins can change this status");
+    }
+
     await ctx.db.patch(args.id, {
       status: args.status,
+      isDraft: args.status === "submitted" ? false : request.isDraft,
       ...(args.declinedReason && { declinedReason: args.declinedReason }),
       ...(args.reviewFeedback && { reviewFeedback: args.reviewFeedback }),
     });

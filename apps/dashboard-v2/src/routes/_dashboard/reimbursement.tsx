@@ -211,6 +211,14 @@ const CATEGORIES = [
 	"Other",
 ];
 
+export function isAiFeatureEnabled(aiFeaturesEnabled?: boolean) {
+	return aiFeaturesEnabled !== false;
+}
+
+export function shouldAutoParseReceipt(aiEnabled: boolean) {
+	return aiEnabled;
+}
+
 function emptyLineItem(): LineItem {
 	return {
 		id: crypto.randomUUID(),
@@ -823,7 +831,13 @@ function ReimbursementDetailView({
 }
 
 // Step 1: AI Warning
-function AIWarningStep({ onNext }: { onNext: () => void }) {
+function AIWarningStep({
+	onNext,
+	aiEnabled,
+}: {
+	onNext: () => void;
+	aiEnabled: boolean;
+}) {
 	return (
 		<div className="flex flex-col items-center justify-center flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500 p-6">
 			<div className="bg-card border shadow-sm rounded-2xl p-8 text-center space-y-6 max-w-lg w-full">
@@ -833,13 +847,13 @@ function AIWarningStep({ onNext }: { onNext: () => void }) {
 				<div>
 					<h2 className="text-2xl font-bold mb-2">Before you start</h2>
 					<p className="text-muted-foreground leading-relaxed">
-						Our system uses AI to automatically parse details from your
-						receipts. Please review all extracted information carefully before
-						submitting.
+						{aiEnabled
+							? "Our system uses AI to automatically parse details from your receipts. Please review all extracted information carefully before submitting."
+							: "AI features are disabled for your account. Upload receipts and enter details manually before submitting."}
 					</p>
 				</div>
 				<Button onClick={onNext} size="lg" className="w-full font-semibold">
-					I Understand, Continue
+					{aiEnabled ? "I Understand, Continue" : "Continue in Manual Mode"}
 					<ArrowRight className="w-4 h-4 ml-2" />
 				</Button>
 			</div>
@@ -981,6 +995,7 @@ function ReceiptsStep({
 	onBack,
 	onNext,
 	logtoId,
+	aiEnabled,
 }: {
 	receipts: ReceiptEntry[];
 	setReceipts: React.Dispatch<React.SetStateAction<ReceiptEntry[]>>;
@@ -991,6 +1006,7 @@ function ReceiptsStep({
 	onBack: () => void;
 	onNext: () => void;
 	logtoId: string | null;
+	aiEnabled: boolean;
 }) {
 	const [activeReceiptId, setActiveReceiptId] = useState<string | null>(
 		receipts[0]?.id ?? null,
@@ -1235,7 +1251,9 @@ function ReceiptsStep({
 				receiptFile: fileUrl,
 				receiptFileType: file.type,
 			});
-			await parseReceipt(receiptId, fileUrl);
+			if (shouldAutoParseReceipt(aiEnabled)) {
+				await parseReceipt(receiptId, fileUrl);
+			}
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Unknown error";
 			console.error("Upload error:", error);
@@ -1296,7 +1314,9 @@ function ReceiptsStep({
 				<div>
 					<h2 className="text-xl font-bold">Upload Receipts</h2>
 					<p className="text-xs text-muted-foreground">
-						Use tabs to organize each receipt, then verify AI-filled details
+						{aiEnabled
+							? "Use tabs to organize each receipt, then verify AI-filled details"
+							: "Use tabs to organize each receipt and fill in details manually"}
 					</p>
 				</div>
 				<Button variant="outline" size="sm" onClick={addReceipt}>
@@ -1400,7 +1420,7 @@ function ReceiptsStep({
 											</span>
 										</Button>
 									</label>
-									{activeReceipt.receiptFile && (
+									{aiEnabled && activeReceipt.receiptFile && (
 										<Button
 											variant="outline"
 											size="sm"
@@ -1753,7 +1773,9 @@ function ReceiptsStep({
 									<Loader2 className="h-3.5 w-3.5 animate-spin" />
 									{isActiveUploading
 										? "Uploading receipt..."
-										: "AI is parsing receipt..."}
+										: aiEnabled
+											? "AI is parsing receipt..."
+											: "Ready for manual entry."}
 								</div>
 							)}
 							{parseResults[activeReceipt.id] && (
@@ -1987,6 +2009,7 @@ function ReviewStep({
 
 function ReimbursementPage() {
 	const { logtoId, user } = useAuth();
+	const aiEnabled = isAiFeatureEnabled(user?.aiFeaturesEnabled);
 	const reimbursements = useQuery(
 		api.reimbursements.listMine,
 		logtoId ? { logtoId } : "skip",
@@ -2186,7 +2209,7 @@ function ReimbursementPage() {
 				</div>
 
 				{/* Step Content */}
-				{step === 1 && <AIWarningStep onNext={handleNext} />}
+				{step === 1 && <AIWarningStep onNext={handleNext} aiEnabled={aiEnabled} />}
 				{step === 2 && (
 					<BasicInfoStep
 						formData={formData}
@@ -2204,6 +2227,7 @@ function ReimbursementPage() {
 						onBack={handleBack}
 						onNext={handleNext}
 						logtoId={logtoId}
+						aiEnabled={aiEnabled}
 					/>
 				)}
 				{step === 4 && (

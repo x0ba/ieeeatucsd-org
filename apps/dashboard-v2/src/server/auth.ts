@@ -28,13 +28,33 @@ export async function validateLogtoId(logtoId: string | undefined | null) {
   }
 }
 
+export function isAiEnabledForUser(
+  user: { aiFeaturesEnabled?: boolean } | null | undefined,
+) {
+  return user?.aiFeaturesEnabled !== false;
+}
+
+export function createAiDisabledResponse() {
+  return new Response(
+    JSON.stringify({
+      error: "AI features are disabled for this account",
+      code: "AI_DISABLED_BY_USER",
+    }),
+    { status: 403, headers: { "Content-Type": "application/json" } },
+  );
+}
+
 /**
  * Returns a 401 JSON Response if logtoId is missing or invalid.
  * Use at the top of API route handlers.
  */
 export async function requireApiAuth(
   request: Request,
-): Promise<{ logtoId: string; body: Record<string, unknown> } | Response> {
+): Promise<{
+  logtoId: string;
+  body: Record<string, unknown>;
+  user: { aiFeaturesEnabled?: boolean } & Record<string, unknown>;
+} | Response> {
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -61,5 +81,9 @@ export async function requireApiAuth(
     );
   }
 
-  return { logtoId, body };
+  return {
+    logtoId,
+    body,
+    user: user as { aiFeaturesEnabled?: boolean } & Record<string, unknown>,
+  };
 }

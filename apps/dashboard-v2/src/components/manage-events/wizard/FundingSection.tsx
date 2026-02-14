@@ -16,9 +16,20 @@ interface FundingSectionProps {
   onChange: (data: Partial<FundingSectionProps["data"]>) => void;
   generateUploadUrl?: () => Promise<string>;
   logtoId?: string | null;
+  aiEnabled?: boolean;
 }
 
-export function FundingSection({ data, onChange, generateUploadUrl, logtoId }: FundingSectionProps) {
+export function shouldParseInvoiceWithAI(aiEnabled: boolean) {
+  return aiEnabled;
+}
+
+export function FundingSection({
+  data,
+  onChange,
+  generateUploadUrl,
+  logtoId,
+  aiEnabled = true,
+}: FundingSectionProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,45 +77,49 @@ export function FundingSection({ data, onChange, generateUploadUrl, logtoId }: F
     }
 
     // AI parse
-    try {
-      const response = await fetch("/api/parse-invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Use local data URL for parsing. Convex storage IDs are not fetchable URLs.
-        body: JSON.stringify({ imageUrl: parseDataUrl, logtoId }),
-      });
+    if (shouldParseInvoiceWithAI(aiEnabled)) {
+      try {
+        const response = await fetch("/api/parse-invoice", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          // Use local data URL for parsing. Convex storage IDs are not fetchable URLs.
+          body: JSON.stringify({ imageUrl: parseDataUrl, logtoId }),
+        });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          const parsed = result.data;
-          const newInvoice: Invoice = {
-            _id: newInvoiceId,
-            vendor: parsed.vendor || "",
-            items: (parsed.items || []).map((item: any) => ({
-              description: item.description || "",
-              quantity: item.quantity || 1,
-              unitPrice: item.unitPrice || 0,
-              total: item.total || 0,
-            })),
-            tax: parsed.tax || 0,
-            tip: parsed.tip || 0,
-            invoiceFile: fileUrl || undefined,
-            additionalFiles: [],
-            subtotal: parsed.subtotal || 0,
-            total: parsed.total || 0,
-            amount: parsed.total || 0,
-            description: "",
-          };
-          onChange({ invoices: [...data.invoices, newInvoice] });
-          setIsUploading(false);
-          return;
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            const parsed = result.data;
+            const newInvoice: Invoice = {
+              _id: newInvoiceId,
+              vendor: parsed.vendor || "",
+              items: (parsed.items || []).map((item: any) => ({
+                description: item.description || "",
+                quantity: item.quantity || 1,
+                unitPrice: item.unitPrice || 0,
+                total: item.total || 0,
+              })),
+              tax: parsed.tax || 0,
+              tip: parsed.tip || 0,
+              invoiceFile: fileUrl || undefined,
+              additionalFiles: [],
+              subtotal: parsed.subtotal || 0,
+              total: parsed.total || 0,
+              amount: parsed.total || 0,
+              description: "",
+            };
+            onChange({ invoices: [...data.invoices, newInvoice] });
+            setIsUploading(false);
+            return;
+          }
         }
+        // AI failed — create empty invoice with file attached
+        setUploadError("AI parsing failed. Please enter invoice details manually.");
+      } catch {
+        setUploadError("AI parsing failed. Please enter invoice details manually.");
       }
-      // AI failed — create empty invoice with file attached
-      setUploadError("AI parsing failed. Please enter invoice details manually.");
-    } catch {
-      setUploadError("AI parsing failed. Please enter invoice details manually.");
+    } else {
+      setUploadError("AI is disabled. Please enter invoice details manually.");
     }
 
     // Fallback: create invoice with file but no parsed data
@@ -266,7 +281,7 @@ export function FundingSection({ data, onChange, generateUploadUrl, logtoId }: F
                 {isUploading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Scanning...
+                    {aiEnabled ? "Scanning..." : "Uploading..."}
                   </>
                 ) : (
                   <>
@@ -308,7 +323,9 @@ export function FundingSection({ data, onChange, generateUploadUrl, logtoId }: F
               <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
               <p className="text-sm text-gray-500 font-medium">Upload an invoice to get started</p>
               <p className="text-xs text-gray-400 mt-1">
-                AI will automatically scan and extract line items
+                {aiEnabled
+                  ? "AI will automatically scan and extract line items"
+                  : "AI is disabled for this account; enter invoice details manually"}
               </p>
               <p className="text-xs text-gray-400 mt-0.5">
                 PDF, JPG, PNG supported · or use Manual Entry above
@@ -351,7 +368,9 @@ export function FundingSection({ data, onChange, generateUploadUrl, logtoId }: F
                   {invoice.invoiceFile && (
                     <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                       <FileText className="h-3.5 w-3.5 shrink-0" />
-                      <span>Invoice file attached (AI-scanned)</span>
+                      <span>
+                        {aiEnabled ? "Invoice file attached (AI-scanned)" : "Invoice file attached"}
+                      </span>
                     </div>
                   )}
 

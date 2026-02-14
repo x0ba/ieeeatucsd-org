@@ -169,6 +169,7 @@ export const upsertFromAuth = mutation({
       notificationPreferences: {},
       displayPreferences: {},
       accessibilitySettings: {},
+      aiFeaturesEnabled: true,
       signedUp: false,
       requestedEmail: false,
       role: role as any,
@@ -266,6 +267,7 @@ export const updateProfile = mutation({
     notificationPreferences: v.optional(v.any()),
     displayPreferences: v.optional(v.any()),
     accessibilitySettings: v.optional(v.any()),
+    aiFeaturesEnabled: v.optional(v.boolean()),
     syncPublicProfile: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {

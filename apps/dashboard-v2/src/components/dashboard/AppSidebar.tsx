@@ -219,7 +219,8 @@ export function AppSidebar({ currentPath = "" }: AppSidebarProps) {
             {/* AI Chat - Only for officers */}
             {["General Officer", "Executive Officer", "Administrator"].includes(
               userRole || "",
-            ) && (
+            ) &&
+              user?.aiFeaturesEnabled !== false && (
               <div className="group-data-[collapsible=icon]:hidden">
                 <OfficerAiChat />
               </div>

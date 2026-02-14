@@ -35,6 +35,7 @@ import { MultiFileUpload } from "./MultiFileUpload";
 import type { DepositMethod, IeeeDepositSource } from "./types";
 import { cn } from "@/lib/utils";
 import { useGlobalImagePaste } from "@/hooks/useGlobalImagePaste";
+import { useAuth } from "@/hooks/useAuth";
 
 interface FundDepositWizardProps {
     isOpen: boolean;
@@ -49,6 +50,8 @@ const DEPOSIT_STEPS = [
 ];
 
 export function FundDepositWizard({ isOpen, onClose, logtoId }: FundDepositWizardProps) {
+    const { user } = useAuth();
+    const aiEnabled = user?.aiFeaturesEnabled !== false;
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const createDeposit = useMutation(api.fundDeposits.create);
@@ -137,7 +140,7 @@ export function FundDepositWizard({ isOpen, onClose, logtoId }: FundDepositWizar
         const latestFile = nextFiles[nextFiles.length - 1];
         const prevCount = receiptFiles.length;
         setReceiptFiles(nextFiles);
-        if (latestFile && nextFiles.length > prevCount) {
+        if (aiEnabled && latestFile && nextFiles.length > prevCount) {
             void parseReceiptWithAI(latestFile);
         }
     };
@@ -479,12 +482,12 @@ export function FundDepositWizard({ isOpen, onClose, logtoId }: FundDepositWizar
                                 <div className="flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-2 text-sm font-medium">
                                         <Sparkles className="h-4 w-4 text-primary" />
-                                        AI Receipt Parsing
+                                        {aiEnabled ? "AI Receipt Parsing" : "Manual Receipt Entry"}
                                     </div>
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        disabled={isAiParsing || receiptFiles.length === 0}
+                                        disabled={!aiEnabled || isAiParsing || receiptFiles.length === 0}
                                         onClick={() => {
                                             if (receiptFiles.length > 0) {
                                                 void parseReceiptWithAI(receiptFiles[receiptFiles.length - 1]);
@@ -496,7 +499,9 @@ export function FundDepositWizard({ isOpen, onClose, logtoId }: FundDepositWizar
                                     </Button>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    The latest uploaded receipt will auto-fill amount/title when possible.
+                                    {aiEnabled
+                                        ? "The latest uploaded receipt will auto-fill amount/title when possible."
+                                        : "AI is disabled for this account. Enter details manually after uploading receipts."}
                                 </p>
                                 {aiParseMessage && (
                                     <p className="text-xs mt-2 text-muted-foreground">{aiParseMessage}</p>

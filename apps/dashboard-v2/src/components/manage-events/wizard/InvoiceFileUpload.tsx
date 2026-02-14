@@ -19,6 +19,11 @@ interface InvoiceFileUploadProps {
   onFileUploaded: (fileUrl: string) => void;
   generateUploadUrl?: () => Promise<string>;
   logtoId?: string | null;
+  aiEnabled?: boolean;
+}
+
+export function shouldParseUploadedInvoiceWithAI(aiEnabled: boolean) {
+  return aiEnabled;
 }
 
 export function InvoiceFileUpload({
@@ -27,6 +32,7 @@ export function InvoiceFileUpload({
   onFileUploaded,
   generateUploadUrl,
   logtoId,
+  aiEnabled = true,
 }: InvoiceFileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
@@ -92,45 +98,49 @@ export function InvoiceFileUpload({
     }
 
     // Parse with AI
-    setIsParsing(true);
-    try {
-      const response = await fetch("/api/parse-invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Parse the actual file bytes via data URL, not Convex storage ID.
-        body: JSON.stringify({ imageUrl: parseDataUrl, logtoId }),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || "AI parsing failed");
-      }
-
-      const result = await response.json();
-      if (result.success && result.data) {
-        onParsed({
-          vendor: result.data.vendor,
-          items: result.data.items.map((item: any) => ({
-            description: item.description,
-            quantity: item.quantity || 1,
-            unitPrice: item.unitPrice || 0,
-            total: item.total || 0,
-          })),
-          tax: result.data.tax || 0,
-          tip: result.data.tip || 0,
-          subtotal: result.data.subtotal || 0,
-          total: result.data.total || 0,
+    if (shouldParseUploadedInvoiceWithAI(aiEnabled)) {
+      setIsParsing(true);
+      try {
+        const response = await fetch("/api/parse-invoice", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          // Parse the actual file bytes via data URL, not Convex storage ID.
+          body: JSON.stringify({ imageUrl: parseDataUrl, logtoId }),
         });
-        setParseSuccess(true);
-      } else {
-        throw new Error("No data returned from AI");
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || "AI parsing failed");
+        }
+
+        const result = await response.json();
+        if (result.success && result.data) {
+          onParsed({
+            vendor: result.data.vendor,
+            items: result.data.items.map((item: any) => ({
+              description: item.description,
+              quantity: item.quantity || 1,
+              unitPrice: item.unitPrice || 0,
+              total: item.total || 0,
+            })),
+            tax: result.data.tax || 0,
+            tip: result.data.tip || 0,
+            subtotal: result.data.subtotal || 0,
+            total: result.data.total || 0,
+          });
+          setParseSuccess(true);
+        } else {
+          throw new Error("No data returned from AI");
+        }
+      } catch (err) {
+        setError(
+          `AI parsing failed: ${err instanceof Error ? err.message : "Unknown error"}. You can still enter items manually.`
+        );
+      } finally {
+        setIsParsing(false);
       }
-    } catch (err) {
-      setError(
-        `AI parsing failed: ${err instanceof Error ? err.message : "Unknown error"}. You can still enter items manually.`
-      );
-    } finally {
-      setIsParsing(false);
+    } else {
+      setError("AI is disabled for this account. Enter invoice details manually.");
     }
   };
 
@@ -192,7 +202,11 @@ export function InvoiceFileUpload({
           ) : (
             <>
               <Upload className="h-3 w-3 mr-1" />
-              {uploadedFileUrl ? "Replace Invoice File" : "Upload & Scan Invoice"}
+              {uploadedFileUrl
+                ? "Replace Invoice File"
+                : aiEnabled
+                  ? "Upload & Scan Invoice"
+                  : "Upload Invoice"}
             </>
           )}
         </Button>

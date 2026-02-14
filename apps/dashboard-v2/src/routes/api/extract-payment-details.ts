@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { requireApiAuth } from "@/server/auth";
+import {
+	createAiDisabledResponse,
+	isAiEnabledForUser,
+	requireApiAuth,
+} from "@/server/auth";
 
 type PaymentDetailsResponse = {
 	confirmationNumber: string;
@@ -13,8 +17,12 @@ async function handle({ request }: { request: Request }) {
 	try {
 		const authResult = await requireApiAuth(request);
 		if (authResult instanceof Response) return authResult;
-		const { body } = authResult;
+		const { body, user } = authResult;
 		const { imageUrl } = body as { imageUrl?: string };
+
+		if (!isAiEnabledForUser(user)) {
+			return createAiDisabledResponse();
+		}
 
 		if (!imageUrl) {
 			return new Response(JSON.stringify({ error: "Missing image URL" }), {

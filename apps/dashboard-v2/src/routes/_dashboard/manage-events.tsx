@@ -182,6 +182,7 @@ function getMatchKeys(event: Pick<EventRequest, "eventCode" | "eventName" | "loc
 
 function ManageEventsPage() {
 	const { hasOfficerAccess, hasAdminAccess, logtoId, user } = usePermissions();
+	const aiEnabled = user?.aiFeaturesEnabled !== false;
 
 	// Convex queries
 	const eventRequestsData = useQuery(
@@ -496,6 +497,8 @@ function ManageEventsPage() {
 		setIsProcessing(true);
 		try {
 			if (editingRequest.requestId) {
+				const convertingDraft = editingRequest.status === "draft";
+
 				await updateEventRequest({
 					logtoId,
 					id: editingRequest.requestId,
@@ -547,7 +550,33 @@ function ManageEventsPage() {
 					flyersCompleted: data.flyersCompleted,
 					graphicsUploadNote: data.graphicsUploadNote || undefined,
 				});
-				toast.success("Event request updated successfully!");
+				if (convertingDraft) {
+					await updateEventRequestStatus({
+						logtoId,
+						id: editingRequest.requestId,
+						status: "submitted",
+					});
+					toast.success("Event request submitted successfully!");
+
+					sendNotification(logtoId, "event_request_submitted", {
+						eventRequestId: editingRequest.requestId,
+						name: data.eventName,
+						location: data.location,
+						startDateTime: data.startDate,
+						endDateTime: data.endDate,
+						eventDescription: data.eventDescription,
+						department: data.department,
+						expectedAttendance: data.estimatedAttendance,
+						needsGraphics: data.needsGraphics,
+						needsAsFunding: data.needsASFunding,
+						flyersNeeded: data.needsFlyers,
+						photographyNeeded: data.photographyNeeded,
+						submitterName: user?.name || "Unknown",
+						submitterEmail: user?.email || "",
+					});
+				} else {
+					toast.success("Event request updated successfully!");
+				}
 			} else if (editingRequest.eventId) {
 				await updateEvent({
 					logtoId,
@@ -1082,6 +1111,8 @@ function ManageEventsPage() {
 				}}
 				onSubmit={editingRequest ? handleUpdateRequest : handleCreateRequest}
 				initialData={editingRequest || undefined}
+				logtoId={logtoId}
+				aiEnabled={aiEnabled}
 			/>
 
 			{/* Event View Modal */}

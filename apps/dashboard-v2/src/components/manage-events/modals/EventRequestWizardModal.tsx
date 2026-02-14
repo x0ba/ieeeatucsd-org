@@ -25,6 +25,8 @@ interface EventRequestWizardModalProps {
 	onClose: () => void;
 	onSubmit: (data: EventFormData) => void;
 	initialData?: Partial<EventRequest>;
+	logtoId?: string | null;
+	aiEnabled?: boolean;
 }
 
 const steps = [
@@ -131,8 +133,11 @@ export function EventRequestWizardModal({
 	onClose,
 	onSubmit,
 	initialData,
+	logtoId,
+	aiEnabled = true,
 }: EventRequestWizardModalProps) {
 	const isEditing = !!initialData;
+	const isConvertingDraft = initialData?.status === "draft";
 	const generateUploadUrl = useMutation(api.eventRequests.generateUploadUrl);
 	const [currentStep, setCurrentStep] = useState(isEditing ? 2 : 1);
 	const [disclaimerAccepted, setDisclaimerAccepted] = useState(isEditing);
@@ -291,6 +296,8 @@ export function EventRequestWizardModal({
 						generateUploadUrl={async () => {
 							return await generateUploadUrl();
 						}}
+						logtoId={logtoId}
+						aiEnabled={aiEnabled}
 					/>
 				);
 			case 6:
@@ -308,7 +315,11 @@ export function EventRequestWizardModal({
 				<div className="flex max-h-[90vh] min-h-0 flex-col">
 					<DialogHeader className="shrink-0">
 						<DialogTitle>
-							{isEditing ? "Edit Event Request" : "Create Event Request"}
+							{isConvertingDraft
+								? "Convert Draft to Event Request"
+								: isEditing
+									? "Edit Event Request"
+									: "Create Event Request"}
 						</DialogTitle>
 					</DialogHeader>
 
@@ -365,7 +376,11 @@ export function EventRequestWizardModal({
 							) : (
 								<Button onClick={handleSubmit}>
 									<CheckCircle className="h-4 w-4 mr-2" />
-									{isEditing ? "Update Request" : "Submit Request"}
+									{isConvertingDraft
+										? "Submit Request"
+										: isEditing
+											? "Update Request"
+											: "Submit Request"}
 								</Button>
 							)}
 						</div>

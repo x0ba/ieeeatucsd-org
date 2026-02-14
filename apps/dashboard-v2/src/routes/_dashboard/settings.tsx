@@ -10,11 +10,13 @@ import {
   FileText,
   AlertCircle,
   CheckCircle,
+  Sparkles,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -26,6 +28,7 @@ function SettingsPage() {
   const { user, isLoading, logtoId } = useAuth();
   const updateProfile = useMutation(api.users.updateProfile);
   const [saving, setSaving] = useState(false);
+  const [savingAiPreference, setSavingAiPreference] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -39,6 +42,7 @@ function SettingsPage() {
     memberId: "",
     zelleInformation: "",
   });
+  const [aiFeaturesEnabled, setAiFeaturesEnabled] = useState(true);
 
   // Resume state
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -55,6 +59,7 @@ function SettingsPage() {
         memberId: user.memberId || "",
         zelleInformation: user.zelleInformation || "",
       });
+      setAiFeaturesEnabled(user.aiFeaturesEnabled !== false);
     }
   }, [user]);
 
@@ -146,6 +151,29 @@ function SettingsPage() {
     }
   };
 
+  const handleAiPreferenceUpdate = async () => {
+    if (!logtoId) return;
+
+    setSavingAiPreference(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await updateProfile({
+        logtoId,
+        aiFeaturesEnabled,
+        syncPublicProfile: false,
+      });
+      setSuccess("AI preferences updated successfully!");
+      toast.success("AI preferences updated");
+    } catch (err: any) {
+      setError(err.message || "Failed to update AI preferences");
+      toast.error("Failed to update AI preferences");
+    } finally {
+      setSavingAiPreference(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 overflow-auto p-6">
@@ -154,6 +182,42 @@ function SettingsPage() {
           <div className="mb-8">
             <Skeleton className="h-8 w-48 mb-2" />
             <Skeleton className="h-4 w-96" />
+          </div>
+
+          {/* AI Features Settings */}
+          <div className="rounded-xl border bg-card p-4 md:p-6">
+            <div className="flex items-center space-x-3 mb-4 md:mb-6">
+              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-amber-600" />
+              </div>
+              <h2 className="text-base md:text-lg font-semibold">AI Features</h2>
+            </div>
+
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium">Enable AI assistant and auto parsing</p>
+                  <p className="text-sm text-muted-foreground">
+                    Controls Officer AI chat, receipt parsing, invoice parsing, and payment detail extraction.
+                  </p>
+                </div>
+                <Switch
+                  checked={aiFeaturesEnabled}
+                  onCheckedChange={setAiFeaturesEnabled}
+                  aria-label="Enable AI features"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <Button
+                onClick={handleAiPreferenceUpdate}
+                disabled={savingAiPreference}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {savingAiPreference ? "Saving..." : "Save AI Preferences"}
+              </Button>
+            </div>
           </div>
 
           {/* Profile Settings Card */}

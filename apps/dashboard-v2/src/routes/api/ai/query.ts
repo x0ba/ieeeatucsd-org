@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { chatWithAI, chatWithAIStream, OfficerAccessError } from "@/server/ai";
-import { validateLogtoId } from "@/server/auth";
+import {
+	createAiDisabledResponse,
+	isAiEnabledForUser,
+	validateLogtoId,
+} from "@/server/auth";
 
 async function handle({ request }: { request: Request }) {
 	try {
@@ -26,6 +30,10 @@ async function handle({ request }: { request: Request }) {
 				status: 401,
 				headers: { "Content-Type": "application/json" },
 			});
+		}
+
+		if (!isAiEnabledForUser(user)) {
+			return createAiDisabledResponse();
 		}
 
 		const wantsStream = Boolean(stream);

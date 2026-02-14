@@ -158,6 +158,7 @@ export default defineSchema({
     notificationPreferences: v.optional(v.any()),
     displayPreferences: v.optional(v.any()),
     accessibilitySettings: v.optional(v.any()),
+    aiFeaturesEnabled: v.optional(v.boolean()),
     resume: v.optional(v.string()),
     signedUp: v.boolean(),
     requestedEmail: v.boolean(),

@@ -164,6 +164,7 @@ const getStatusIcon = (status: ReimbursementStatus) => {
 
 function ManageReimbursementsPage() {
 	const { hasAdminAccess, logtoId, user } = usePermissions();
+	const aiEnabled = user?.aiFeaturesEnabled !== false;
 	const reimbursements = useQuery(
 		api.reimbursements.listAll,
 		logtoId ? { logtoId } : "skip",
@@ -508,6 +509,16 @@ function ManageReimbursementsPage() {
 				throw new Error("Could not resolve uploaded proof file URL");
 			}
 			setUploadedProofUrl(proofUrl);
+
+			if (!aiEnabled) {
+				setPaymentReviewData({ manual: true });
+				setPaymentDate(new Date().toISOString().split("T")[0]);
+				setPaymentAmount(calculateTotalAmount(selectedReimbursement).toFixed(2));
+				toast.success("Proof uploaded", {
+					description: "AI is disabled. Please enter payment details manually.",
+				});
+				return;
+			}
 
 			const response = await fetch("/api/extract-payment-details", {
 				method: "POST",
@@ -1141,15 +1152,19 @@ function ManageReimbursementsPage() {
 								<div className="flex gap-6">
 									{/* Left: Inputs */}
 									<div className="flex-1 space-y-4">
-										<div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-start gap-3">
-											<Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
-											<div className="text-sm text-blue-800">
-												<p className="font-semibold">AI Extraction Complete</p>
-												<p className="opacity-80">
-													Please verify the details below match the proof.
-												</p>
-											</div>
+									<div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-start gap-3">
+										<Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
+										<div className="text-sm text-blue-800">
+											<p className="font-semibold">
+												{aiEnabled ? "AI Extraction Complete" : "Manual Entry Mode"}
+											</p>
+											<p className="opacity-80">
+												{aiEnabled
+													? "Please verify the details below match the proof."
+													: "AI is disabled for this account. Enter and verify payment details manually."}
+											</p>
 										</div>
+									</div>
 
 										<div className="grid grid-cols-2 gap-4">
 											<div className="space-y-2">
@@ -1298,12 +1313,12 @@ function ManageReimbursementsPage() {
 										<Sparkles className="w-5 h-5 text-purple-500 shrink-0 mt-0.5" />
 										<div className="text-xs text-muted-foreground">
 											<p className="font-semibold text-foreground">
-												AI-Powered Extraction
+												{aiEnabled ? "AI-Powered Extraction" : "Manual Mode"}
 											</p>
 											<p>
-												Upload a screenshot and our AI will automatically
-												extract the confirmation number, date, and amount for
-												you to review.
+												{aiEnabled
+													? "Upload a screenshot and our AI will automatically extract the confirmation number, date, and amount for you to review."
+													: "Upload a screenshot, then fill payment details manually after upload."}
 											</p>
 										</div>
 									</div>
@@ -1330,7 +1345,11 @@ function ManageReimbursementsPage() {
 								{processingId === selectedReimbursement?._id || aiProcessing ? (
 									<Loader2 className="h-4 w-4 animate-spin mr-1" />
 								) : null}
-								{paymentReviewData ? "Confirm Payment" : "Process & Analyze"}
+								{paymentReviewData
+									? "Confirm Payment"
+									: aiEnabled
+										? "Process & Analyze"
+										: "Process & Continue"}
 							</Button>
 						</DialogFooter>
 					</DialogContent>
