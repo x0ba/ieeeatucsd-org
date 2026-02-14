@@ -223,9 +223,8 @@ Categories must be one of: Food & Beverages, Transportation, Materials & Supplie
           ...(plugins ? { plugins } : {}),
           response_format: { type: "json_object" },
           temperature: 0.0,
-          max_tokens: 2000,
           reasoning: {
-            effort: "medium",
+            effort: "high",
             exclude: true,
           },
         }),

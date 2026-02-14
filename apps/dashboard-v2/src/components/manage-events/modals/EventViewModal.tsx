@@ -150,8 +150,8 @@ export function EventViewModal({
 	onUpdateGraphics,
 	canManageStatus,
 }: EventViewModalProps) {
-	const getStorageUrl = useMutation(api.eventRequests.getStorageUrl);
-	const generateUploadUrl = useMutation(api.eventRequests.generateUploadUrl);
+	const getStorageUrl = useMutation(api.events.getStorageUrl);
+	const generateUploadUrl = useMutation(api.events.generateUploadUrl);
 	const [activeTab, setActiveTab] = useState("details");
 	const [copiedInvoice, setCopiedInvoice] = useState(false);
 	const [graphicsCompleted, setGraphicsCompleted] = useState(false);

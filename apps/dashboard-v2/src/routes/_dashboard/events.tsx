@@ -63,8 +63,13 @@ function EventsPage() {
     );
   }, [events, search]);
 
+  const liveEvents = useMemo(() =>
+    (filteredEvents?.filter((e) => e.startDate <= now && e.endDate >= now) ?? []).sort((a, b) => a.startDate - b.startDate),
+    [filteredEvents, now],
+  );
+
   const upcomingEvents = useMemo(() =>
-    (filteredEvents?.filter((e) => e.endDate >= now && e.startDate > now) ?? []).sort((a, b) => a.startDate - b.startDate),
+    (filteredEvents?.filter((e) => e.startDate > now) ?? []).sort((a, b) => a.startDate - b.startDate),
     [filteredEvents, now],
   );
 
@@ -75,11 +80,6 @@ function EventsPage() {
 
   const pastTotalPages = Math.ceil(pastEvents.length / PAST_EVENTS_PER_PAGE);
   const paginatedPast = pastEvents.slice((pastPage - 1) * PAST_EVENTS_PER_PAGE, pastPage * PAST_EVENTS_PER_PAGE);
-
-  // Get events happening today (live events)
-  const todayEvents = useMemo(() => {
-    return upcomingEvents.filter((e) => e.startDate <= now && e.endDate >= now);
-  }, [upcomingEvents, now]);
 
   const handleEventClick = (event: EventType) => {
     setSelectedEvent(event);
@@ -106,7 +106,8 @@ function EventsPage() {
       setIsCheckInModalOpen(false);
       setCheckInEvent(null);
     } catch (error: any) {
-      toast.error(error.message || "Failed to check in");
+      const msg = error?.data ?? error?.message ?? "Failed to check in";
+      toast.error(typeof msg === "string" ? msg : "Failed to check in");
     } finally {
       setIsCheckingIn(false);
     }
@@ -148,9 +149,9 @@ function EventsPage() {
       </div>
 
       {/* Happening Today */}
-      {todayEvents.length > 0 && (
+      {liveEvents.length > 0 && (
         <HappeningToday
-          events={todayEvents.map(toEventType)}
+          events={liveEvents.map(toEventType)}
           onEventClick={handleEventClick}
           onCheckIn={handleCheckInClick}
           checkedInEventIds={attendedEventIds}

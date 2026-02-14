@@ -206,42 +206,16 @@ export default defineSchema({
   }).index("by_userId", ["userId"]),
 
   events: defineTable({
+    // Core event fields
     eventName: v.string(),
     eventDescription: v.string(),
-    eventCode: v.string(),
+    eventCode: v.optional(v.string()),
     location: v.string(),
-    files: v.array(v.string()),
-    pointsToReward: v.number(),
+    files: v.optional(v.array(v.string())),
+    pointsToReward: v.optional(v.number()),
     startDate: v.number(),
     endDate: v.number(),
-    published: v.boolean(),
-    eventType: v.union(
-      v.literal("social"),
-      v.literal("technical"),
-      v.literal("outreach"),
-      v.literal("professional"),
-      v.literal("projects"),
-      v.literal("other"),
-    ),
-    hasFood: v.boolean(),
-    createdAt: v.optional(v.number()),
-  })
-    .index("by_eventCode", ["eventCode"])
-    .index("by_startDate", ["startDate"])
-    .index("by_published", ["published"]),
-
-  attendees: defineTable({
-    eventId: v.id("events"),
-    userId: v.string(),
-    timeCheckedIn: v.number(),
-    food: v.string(),
-    pointsEarned: v.number(),
-  })
-    .index("by_eventId", ["eventId"])
-    .index("by_userId", ["userId"]),
-
-  eventRequests: defineTable({
-    name: v.string(),
+    published: v.optional(v.boolean()),
     eventType: v.optional(
       v.union(
         v.literal("social"),
@@ -252,6 +226,9 @@ export default defineSchema({
         v.literal("other"),
       ),
     ),
+    hasFood: v.optional(v.boolean()),
+    createdAt: v.optional(v.number()),
+    // Request workflow fields (merged from eventRequests)
     department: v.optional(
       v.union(
         v.literal("events"),
@@ -260,52 +237,61 @@ export default defineSchema({
         v.literal("other"),
       ),
     ),
-    location: v.string(),
-    startDateTime: v.number(),
-    endDateTime: v.number(),
-    eventDescription: v.string(),
-    flyersNeeded: v.boolean(),
-    flyerType: v.array(v.string()),
+    flyersNeeded: v.optional(v.boolean()),
+    flyerType: v.optional(v.array(v.string())),
     otherFlyerType: v.optional(v.string()),
     flyerAdvertisingStartDate: v.optional(v.number()),
     flyerAdditionalRequests: v.optional(v.string()),
-    flyersCompleted: v.boolean(),
-    photographyNeeded: v.boolean(),
-    requiredLogos: v.array(v.string()),
+    flyersCompleted: v.optional(v.boolean()),
+    photographyNeeded: v.optional(v.boolean()),
+    requiredLogos: v.optional(v.array(v.string())),
     otherLogos: v.optional(v.array(v.string())),
     advertisingFormat: v.optional(v.string()),
     additionalSpecifications: v.optional(v.string()),
     graphicsUploadNote: v.optional(v.string()),
-    willOrHaveRoomBooking: v.boolean(),
+    willOrHaveRoomBooking: v.optional(v.boolean()),
     expectedAttendance: v.optional(v.number()),
-    roomBookingFiles: v.array(v.string()),
-    asFundingRequired: v.boolean(),
-    foodDrinksBeingServed: v.boolean(),
-    invoices: v.array(invoice),
-    needsGraphics: v.boolean(),
-    needsAsFunding: v.boolean(),
-    status: v.union(
-      v.literal("draft"),
-      v.literal("submitted"),
-      v.literal("pending"),
-      v.literal("completed"),
-      v.literal("approved"),
-      v.literal("declined"),
-      v.literal("needs_review"),
+    roomBookingFiles: v.optional(v.array(v.string())),
+    asFundingRequired: v.optional(v.boolean()),
+    foodDrinksBeingServed: v.optional(v.boolean()),
+    invoices: v.optional(v.array(invoice)),
+    needsGraphics: v.optional(v.boolean()),
+    needsAsFunding: v.optional(v.boolean()),
+    status: v.optional(
+      v.union(
+        v.literal("draft"),
+        v.literal("submitted"),
+        v.literal("pending"),
+        v.literal("completed"),
+        v.literal("approved"),
+        v.literal("declined"),
+        v.literal("needs_review"),
+      ),
     ),
     declinedReason: v.optional(v.string()),
     reviewFeedback: v.optional(v.string()),
-    requestedUser: v.string(),
+    requestedUser: v.optional(v.string()),
     auditLogs: v.optional(v.array(eventAuditLog)),
     isDraft: v.optional(v.boolean()),
     graphicsCompleted: v.optional(v.boolean()),
     graphicsFiles: v.optional(v.array(v.string())),
-    published: v.optional(v.boolean()),
-    createdAt: v.optional(v.number()),
     submittedAt: v.optional(v.number()),
   })
+    .index("by_eventCode", ["eventCode"])
+    .index("by_startDate", ["startDate"])
+    .index("by_published", ["published"])
     .index("by_status", ["status"])
     .index("by_requestedUser", ["requestedUser"]),
+
+  attendees: defineTable({
+    eventId: v.id("events"),
+    userId: v.string(),
+    timeCheckedIn: v.number(),
+    food: v.string(),
+    pointsEarned: v.number(),
+  })
+    .index("by_eventId", ["eventId"])
+    .index("by_userId", ["userId"]),
 
   reimbursements: defineTable({
     title: v.string(),

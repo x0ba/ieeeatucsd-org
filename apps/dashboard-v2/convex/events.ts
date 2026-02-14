@@ -1,9 +1,9 @@
 import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import {
   requireCurrentUser,
   requireOfficerAccess,
-  requireAdminAccess,
+  hasAdminAccess,
 } from "./permissions";
 
 function getLegacyAttendeeIds(event: Record<string, unknown>): string[] {
@@ -11,6 +11,8 @@ function getLegacyAttendeeIds(event: Record<string, unknown>): string[] {
   if (!Array.isArray(legacy)) return [];
   return legacy.filter((id): id is string => typeof id === "string");
 }
+
+// ── Queries ──────────────────────────────────────────────────────────────────
 
 export const listPublished = query({
   args: {},
@@ -41,11 +43,45 @@ export const listPublished = query({
   },
 });
 
+export const listMine = query({
+  args: { logtoId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const userId = user.logtoId ?? user.authUserId ?? "";
+    return await ctx.db
+      .query("events")
+      .withIndex("by_requestedUser", (q) => q.eq("requestedUser", userId))
+      .collect();
+  },
+});
+
 export const listAll = query({
   args: { logtoId: v.string() },
   handler: async (ctx, args) => {
     await requireOfficerAccess(ctx, args.logtoId);
     const events = await ctx.db.query("events").collect();
+
+    // Collect unique requestedUser IDs for submitter name lookup
+    const uniqueUserIds = [
+      ...new Set(
+        events
+          .map((e) => e.requestedUser)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const userNameMap = new Map<string, string>();
+
+    await Promise.all(
+      uniqueUserIds.map(async (userId) => {
+        const user = await ctx.db
+          .query("users")
+          .withIndex("by_logtoId", (q) => q.eq("logtoId", userId))
+          .first();
+        if (user) {
+          userNameMap.set(userId, user.name || user.email || userId);
+        }
+      }),
+    );
 
     return await Promise.all(
       events.map(async (event) => {
@@ -107,6 +143,9 @@ export const listAll = query({
 
         return {
           ...event,
+          submitterName: event.requestedUser
+            ? userNameMap.get(event.requestedUser) || event.requestedUser
+            : undefined,
           attendeeCount: enrichedAttendees.length,
           attendees: enrichedAttendees.sort(
             (a, b) => b.timeCheckedIn - a.timeCheckedIn
@@ -129,40 +168,117 @@ export const getByCode = query({
 });
 
 export const get = query({
-  args: { logtoId: v.string(), id: v.id("events") },
+  args: { logtoId: v.optional(v.string()), id: v.id("events") },
   handler: async (ctx, args) => {
-    await requireCurrentUser(ctx, args.logtoId);
+    if (args.logtoId) {
+      await requireCurrentUser(ctx, args.logtoId);
+    }
     return await ctx.db.get(args.id);
   },
 });
+
+export const getAttendedEventIds = query({
+  args: { logtoId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const userId = user.logtoId ?? user.authUserId ?? "";
+
+    const attendees = await ctx.db
+      .query("attendees")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+
+    return attendees.map((a) => a.eventId);
+  },
+});
+
+// ── Mutations ────────────────────────────────────────────────────────────────
 
 export const create = mutation({
   args: {
     logtoId: v.string(),
     eventName: v.string(),
     eventDescription: v.string(),
-    eventCode: v.string(),
+    eventCode: v.optional(v.string()),
     location: v.string(),
-    pointsToReward: v.number(),
+    pointsToReward: v.optional(v.number()),
     startDate: v.number(),
     endDate: v.number(),
-    eventType: v.union(
-      v.literal("social"),
-      v.literal("technical"),
-      v.literal("outreach"),
-      v.literal("professional"),
-      v.literal("projects"),
-      v.literal("other"),
+    eventType: v.optional(
+      v.union(
+        v.literal("social"),
+        v.literal("technical"),
+        v.literal("outreach"),
+        v.literal("professional"),
+        v.literal("projects"),
+        v.literal("other"),
+      ),
     ),
-    hasFood: v.boolean(),
-    published: v.boolean(),
+    hasFood: v.optional(v.boolean()),
+    published: v.optional(v.boolean()),
+    // Request workflow fields
+    department: v.optional(
+      v.union(
+        v.literal("events"),
+        v.literal("projects"),
+        v.literal("internal"),
+        v.literal("other"),
+      ),
+    ),
+    flyersNeeded: v.optional(v.boolean()),
+    flyerType: v.optional(v.array(v.string())),
+    otherFlyerType: v.optional(v.string()),
+    flyerAdvertisingStartDate: v.optional(v.number()),
+    flyerAdditionalRequests: v.optional(v.string()),
+    flyersCompleted: v.optional(v.boolean()),
+    photographyNeeded: v.optional(v.boolean()),
+    requiredLogos: v.optional(v.array(v.string())),
+    otherLogos: v.optional(v.array(v.string())),
+    advertisingFormat: v.optional(v.string()),
+    additionalSpecifications: v.optional(v.string()),
+    graphicsUploadNote: v.optional(v.string()),
+    willOrHaveRoomBooking: v.optional(v.boolean()),
+    expectedAttendance: v.optional(v.number()),
+    roomBookingFiles: v.optional(v.array(v.string())),
+    asFundingRequired: v.optional(v.boolean()),
+    foodDrinksBeingServed: v.optional(v.boolean()),
+    invoices: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          vendor: v.string(),
+          items: v.array(
+            v.object({
+              description: v.string(),
+              quantity: v.number(),
+              unitPrice: v.number(),
+              total: v.number(),
+            }),
+          ),
+          tax: v.number(),
+          tip: v.number(),
+          invoiceFile: v.optional(v.string()),
+          additionalFiles: v.array(v.string()),
+          subtotal: v.number(),
+          total: v.number(),
+        }),
+      ),
+    ),
+    needsGraphics: v.optional(v.boolean()),
+    needsAsFunding: v.optional(v.boolean()),
+    isDraft: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
-    const { logtoId, ...eventData } = args;
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const userId = user.logtoId ?? user.authUserId ?? "";
+    const { logtoId, isDraft, ...data } = args;
     return await ctx.db.insert("events", {
-      ...eventData,
-      files: [],
+      ...data,
+      status: isDraft ? "draft" : (data.published ? "approved" : "submitted"),
+      requestedUser: userId,
+      flyersCompleted: data.flyersCompleted ?? false,
+      isDraft: isDraft ?? false,
+      createdAt: Date.now(),
     });
   },
 });
@@ -190,10 +306,78 @@ export const update = mutation({
     ),
     hasFood: v.optional(v.boolean()),
     published: v.optional(v.boolean()),
+    // Request workflow fields
+    department: v.optional(
+      v.union(
+        v.literal("events"),
+        v.literal("projects"),
+        v.literal("internal"),
+        v.literal("other"),
+      ),
+    ),
+    flyersNeeded: v.optional(v.boolean()),
+    flyerType: v.optional(v.array(v.string())),
+    otherFlyerType: v.optional(v.string()),
+    flyerAdvertisingStartDate: v.optional(v.number()),
+    flyerAdditionalRequests: v.optional(v.string()),
+    flyersCompleted: v.optional(v.boolean()),
+    photographyNeeded: v.optional(v.boolean()),
+    requiredLogos: v.optional(v.array(v.string())),
+    otherLogos: v.optional(v.array(v.string())),
+    advertisingFormat: v.optional(v.string()),
+    additionalSpecifications: v.optional(v.string()),
+    graphicsUploadNote: v.optional(v.string()),
+    willOrHaveRoomBooking: v.optional(v.boolean()),
+    expectedAttendance: v.optional(v.number()),
+    roomBookingFiles: v.optional(v.array(v.string())),
+    asFundingRequired: v.optional(v.boolean()),
+    foodDrinksBeingServed: v.optional(v.boolean()),
+    invoices: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          vendor: v.string(),
+          items: v.array(
+            v.object({
+              description: v.string(),
+              quantity: v.number(),
+              unitPrice: v.number(),
+              total: v.number(),
+            }),
+          ),
+          tax: v.number(),
+          tip: v.number(),
+          invoiceFile: v.optional(v.string()),
+          additionalFiles: v.array(v.string()),
+          subtotal: v.number(),
+          total: v.number(),
+        }),
+      ),
+    ),
+    needsGraphics: v.optional(v.boolean()),
+    needsAsFunding: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
-    const { id, logtoId, ...updates } = args;
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const userId = user.logtoId ?? user.authUserId ?? "";
+
+    const event = await ctx.db.get(args.id);
+    if (!event) throw new Error("Event not found");
+
+    // Admins and Executive Officers can edit any event
+    if (!hasAdminAccess(user.role)) {
+      // Non-admin users can only edit their own events
+      if (event.requestedUser && event.requestedUser !== userId) {
+        throw new Error("You can only edit your own events");
+      }
+      // Non-admin users can only edit events in editable statuses
+      const editableStatuses = ["draft", "submitted", "pending", "needs_review"];
+      if (event.status && !editableStatuses.includes(event.status)) {
+        throw new Error("Cannot edit an event that has already been approved or declined");
+      }
+    }
+
+    const { logtoId, id, ...updates } = args;
     const cleanUpdates: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(updates)) {
       if (value !== undefined) {
@@ -208,23 +392,84 @@ export const update = mutation({
 export const remove = mutation({
   args: { logtoId: v.string(), id: v.id("events") },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
-    await ctx.db.delete(args.id);
-  },
-});
-
-export const getAttendedEventIds = query({
-  args: { logtoId: v.string() },
-  handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx, args.logtoId);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
-    const attendees = await ctx.db
-      .query("attendees")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .collect();
+    const event = await ctx.db.get(args.id);
+    if (!event) throw new Error("Event not found");
 
-    return attendees.map((a) => a.eventId);
+    // Admins and Executive Officers can delete any event
+    if (hasAdminAccess(user.role)) {
+      await ctx.db.delete(args.id);
+      return args.id;
+    }
+
+    // Non-admin users can only delete their own events if not approved
+    if (event.requestedUser && event.requestedUser !== userId) {
+      throw new Error("You can only delete your own events");
+    }
+    const deletableStatuses = ["draft", "submitted", "pending", "needs_review"];
+    if (event.status && !deletableStatuses.includes(event.status)) {
+      throw new Error("Cannot delete an event that has already been approved or declined");
+    }
+
+    await ctx.db.delete(args.id);
+    return args.id;
+  },
+});
+
+export const updateStatus = mutation({
+  args: {
+    logtoId: v.string(),
+    id: v.id("events"),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("submitted"),
+      v.literal("pending"),
+      v.literal("completed"),
+      v.literal("approved"),
+      v.literal("declined"),
+      v.literal("needs_review"),
+    ),
+    declinedReason: v.optional(v.string()),
+    reviewFeedback: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireCurrentUser(ctx, args.logtoId);
+    const event = await ctx.db.get(args.id);
+    if (!event) throw new Error("Event not found");
+
+    const userId = user.logtoId ?? user.authUserId ?? "";
+    const canSubmitOwnDraft =
+      args.status === "submitted" &&
+      event.status === "draft" &&
+      event.requestedUser === userId;
+
+    if (!hasAdminAccess(user.role) && !canSubmitOwnDraft) {
+      throw new Error("Only admins can change this status");
+    }
+
+    await ctx.db.patch(args.id, {
+      status: args.status,
+      isDraft: args.status === "submitted" ? false : event.isDraft,
+      ...(args.declinedReason && { declinedReason: args.declinedReason }),
+      ...(args.reviewFeedback && { reviewFeedback: args.reviewFeedback }),
+    });
+    return args.id;
+  },
+});
+
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const getStorageUrl = mutation({
+  args: { storageId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId as any);
   },
 });
 
@@ -254,11 +499,11 @@ export const checkIn = mutation({
     }
 
     if (!event) {
-      throw new Error("Event not found");
+      throw new ConvexError("Invalid event code. Please check the code and try again.");
     }
 
     if (!event.published) {
-      throw new Error("Event is not published");
+      throw new ConvexError("This event is not currently published for check-in.");
     }
 
     // Check if already checked in
@@ -269,7 +514,7 @@ export const checkIn = mutation({
       .first();
 
     if (existing) {
-      throw new Error("Already checked in to this event");
+      throw new ConvexError("You have already checked in to this event.");
     }
 
     const userId = user.logtoId ?? user.authUserId ?? "";
@@ -279,15 +524,16 @@ export const checkIn = mutation({
       userId,
       timeCheckedIn: Date.now(),
       food: args.food || "none",
-      pointsEarned: event.pointsToReward,
+      pointsEarned: event.pointsToReward ?? 0,
     });
 
     // Update user points and events attended
+    const pts = event.pointsToReward ?? 0;
     await ctx.db.patch(user._id, {
-      points: (user.points || 0) + event.pointsToReward,
+      points: (user.points || 0) + pts,
       eventsAttended: (user.eventsAttended || 0) + 1,
     });
 
-    return { points: event.pointsToReward };
+    return { points: pts };
   },
 });

@@ -37,30 +37,33 @@ export const Route = createFileRoute("/_dashboard/manage-events")({
 	component: ManageEventsPage,
 });
 
-// Map from Convex eventRequests to EventRequest type
-function mapEventRequestToType(er: any): EventRequest {
+// Map from unified Convex events table to EventRequest UI type
+function mapEventToType(event: any): EventRequest {
+	const status: EventRequest["status"] = event.published
+		? "published"
+		: event.status === "completed"
+			? "published"
+			: event.status || "draft";
+
 	return {
-		_id: er._id,
-		sourceType: "request",
-		requestId: er._id,
-		eventId: er.eventId,
-		_creationTime: er._creationTime,
-		eventName: er.name || "Untitled Event",
-		eventDescription: er.eventDescription || "",
-		eventType: normalizeEventType(er.eventType),
-		department: normalizeDepartment(er.department),
-		location: er.location || "TBD",
-		startDate: er.startDateTime || Date.now(),
-		endDate: er.endDateTime || Date.now() + 3600000,
-		eventCode: er.eventCode || `EVENT-${er._id.slice(-6)}`,
-		hasFood: er.foodDrinksBeingServed || false,
-		needsFlyers: er.flyersNeeded || false,
-		needsGraphics: er.needsGraphics || false,
-		needsASFunding: er.needsAsFunding || er.asFundingRequired || false,
-		estimatedAttendance: er.expectedAttendance || 0,
-		status: mapStatus(er.status),
-		files: er.files || [],
-		invoices: (er.invoices || []).map((inv: any) => ({
+		_id: event._id,
+		_creationTime: event._creationTime,
+		eventName: event.eventName || "Untitled Event",
+		eventDescription: event.eventDescription || "",
+		eventType: normalizeEventType(event.eventType),
+		department: normalizeDepartment(event.department),
+		location: event.location || "TBD",
+		startDate: event.startDate || Date.now(),
+		endDate: event.endDate || Date.now() + 3600000,
+		eventCode: event.eventCode || `EVENT-${event._id.slice(-6)}`,
+		hasFood: event.hasFood || event.foodDrinksBeingServed || false,
+		needsFlyers: event.flyersNeeded || false,
+		needsGraphics: event.needsGraphics || false,
+		needsASFunding: event.needsAsFunding || event.asFundingRequired || false,
+		estimatedAttendance: event.expectedAttendance || 0,
+		status,
+		files: event.files || [],
+		invoices: (event.invoices || []).map((inv: any) => ({
 			_id: inv.id || crypto.randomUUID(),
 			vendor: inv.vendor || "Unknown",
 			items: inv.items || [],
@@ -75,132 +78,44 @@ function mapEventRequestToType(er: any): EventRequest {
 			fileUrl: inv.invoiceFile,
 		})),
 		createdBy:
-			er.submitterName || er.requestedUser || er.createdBy || "Unknown",
-		requestedUser: er.requestedUser,
-		_updatedAt: er._updatedAt,
-		attendeeCount: 0,
-		attendees: [],
-		// Preserve all Convex fields for editing
-		willOrHaveRoomBooking: er.willOrHaveRoomBooking || false,
-		roomBookingFiles: er.roomBookingFiles || [],
-		foodDrinksBeingServed: er.foodDrinksBeingServed || false,
-		asFundingRequired: er.asFundingRequired || false,
-		flyerType: er.flyerType || [],
-		otherFlyerType: er.otherFlyerType || "",
-		flyerAdvertisingStartDate: er.flyerAdvertisingStartDate || 0,
-		flyerAdditionalRequests: er.flyerAdditionalRequests || "",
-		photographyNeeded: er.photographyNeeded || false,
-		requiredLogos: er.requiredLogos || [],
-		otherLogos: er.otherLogos || [],
-		advertisingFormat: er.advertisingFormat || "",
-		additionalSpecifications: er.additionalSpecifications || "",
-		flyersCompleted: er.flyersCompleted || false,
-		graphicsUploadNote: er.graphicsUploadNote || "",
-	};
-}
-
-// Map from Convex events to EventRequest type (published events)
-function mapEventToType(event: any): EventRequest {
-	return {
-		_id: event._id,
-		sourceType: "event",
-		eventId: event._id,
-		_creationTime: event._creationTime,
-		eventName: event.eventName || "Untitled Event",
-		eventDescription: event.eventDescription || "",
-		eventType: normalizeEventType(event.eventType),
-		department: normalizeDepartment(event.department),
-		location: event.location || "TBD",
-		startDate: event.startDate || Date.now(),
-		endDate: event.endDate || Date.now() + 3600000,
-		eventCode: event.eventCode || `EVENT-${event._id.slice(-6)}`,
-		hasFood: event.hasFood || false,
-		needsFlyers: event.needsFlyers || false,
-		needsGraphics: event.needsGraphics || false,
-		needsASFunding: event.needsASFunding || false,
-		estimatedAttendance: event.estimatedAttendance || 0,
-		status: event.published ? "published" : "draft",
-		files: event.files || [],
-		invoices: event.invoices || [],
-		createdBy: event.createdBy || "Unknown",
+			event.submitterName || event.requestedUser || event.createdBy || "Unknown",
+		requestedUser: event.requestedUser,
 		_updatedAt: event._updatedAt,
 		attendeeCount: event.attendeeCount || 0,
 		attendees: event.attendees || [],
+		willOrHaveRoomBooking: event.willOrHaveRoomBooking || false,
+		roomBookingFiles: event.roomBookingFiles || [],
+		foodDrinksBeingServed: event.foodDrinksBeingServed || false,
+		asFundingRequired: event.asFundingRequired || false,
+		flyerType: event.flyerType || [],
+		otherFlyerType: event.otherFlyerType || "",
+		flyerAdvertisingStartDate: event.flyerAdvertisingStartDate || 0,
+		flyerAdditionalRequests: event.flyerAdditionalRequests || "",
+		photographyNeeded: event.photographyNeeded || false,
+		requiredLogos: event.requiredLogos || [],
+		otherLogos: event.otherLogos || [],
+		advertisingFormat: event.advertisingFormat || "",
+		additionalSpecifications: event.additionalSpecifications || "",
+		flyersCompleted: event.flyersCompleted || false,
+		graphicsUploadNote: event.graphicsUploadNote || "",
 	};
-}
-
-// Map Convex status to EventRequest status
-function mapStatus(status: string): EventRequest["status"] {
-	switch (status) {
-		case "draft":
-			return "draft";
-		case "submitted":
-			return "submitted";
-		case "pending":
-			return "pending";
-		case "needs_review":
-			return "needs_review";
-		case "approved":
-			return "approved";
-		case "declined":
-			return "declined";
-		case "completed":
-		case "published":
-			return "published";
-		default:
-			return "draft";
-	}
-}
-
-function normalizeMatchText(value?: string) {
-	return (value || "").trim().toLowerCase();
-}
-
-function normalizeMatchTime(value?: number) {
-	if (!value) return 0;
-	// Tolerate small timestamp drifts by matching at minute precision.
-	return Math.floor(value / 60000);
-}
-
-function getMatchKeys(event: Pick<EventRequest, "eventCode" | "eventName" | "location" | "startDate" | "endDate">) {
-	const keys: string[] = [];
-	const code = normalizeMatchText(event.eventCode);
-	if (code) {
-		keys.push(`code:${code}`);
-	}
-
-	keys.push(
-		`meta:${normalizeMatchText(event.eventName)}|${normalizeMatchText(
-			event.location,
-		)}|${normalizeMatchTime(event.startDate)}|${normalizeMatchTime(
-			event.endDate,
-		)}`,
-	);
-
-	return keys;
 }
 
 function ManageEventsPage() {
 	const { hasOfficerAccess, hasAdminAccess, logtoId, user } = usePermissions();
 	const aiEnabled = user?.aiFeaturesEnabled !== false;
 
-	// Convex queries
-	const eventRequestsData = useQuery(
-		api.eventRequests.listAll,
-		logtoId ? { logtoId } : "skip",
-	);
+	// Single unified query — events and eventRequests are now one table
 	const eventsData = useQuery(
 		api.events.listAll,
 		logtoId ? { logtoId } : "skip",
 	);
 
-	// Convex mutations
-	const createEventRequest = useMutation(api.eventRequests.create);
-	const updateEventRequest = useMutation(api.eventRequests.update);
-	const updateEventRequestStatus = useMutation(api.eventRequests.updateStatus);
-	const removeEventRequest = useMutation(api.eventRequests.remove);
-	const removeEvent = useMutation(api.events.remove);
+	// Convex mutations (all unified under api.events)
+	const createEvent = useMutation(api.events.create);
 	const updateEvent = useMutation(api.events.update);
+	const updateEventStatus = useMutation(api.events.updateStatus);
+	const removeEvent = useMutation(api.events.remove);
 
 	// View mode state
 	const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
@@ -239,91 +154,10 @@ function ManageEventsPage() {
 	// Loading state
 	const [isProcessing, setIsProcessing] = useState(false);
 
-	// Transform data to EventRequest type
+	// Transform data to EventRequest type — single query, no merge needed
 	const allEvents: EventRequest[] = useMemo(() => {
-		const requests = (eventRequestsData || []).map(mapEventRequestToType);
-		const events = (eventsData || []).map(mapEventToType);
-		const eventsById = new Map(events.map((event) => [event._id, event]));
-
-		const eventBuckets = new Map<string, EventRequest[]>();
-		for (const event of events) {
-			for (const key of getMatchKeys(event)) {
-				const bucket = eventBuckets.get(key);
-				if (bucket) {
-					bucket.push(event);
-				} else {
-					eventBuckets.set(key, [event]);
-				}
-			}
-		}
-
-		const consumedEventIds = new Set<string>();
-		const mergedRows: EventRequest[] = requests.map((request) => {
-			const linkedEvent =
-				request.eventId && eventsById.get(request.eventId as string);
-
-			if (linkedEvent && !consumedEventIds.has(linkedEvent._id)) {
-				consumedEventIds.add(linkedEvent._id);
-				return {
-					...request,
-					sourceType: "merged_published",
-					eventId: linkedEvent.eventId,
-					status:
-						linkedEvent.status === "published"
-							? "published"
-							: request.status,
-					attendeeCount: linkedEvent.attendeeCount || 0,
-					attendees: linkedEvent.attendees || [],
-				};
-			}
-
-			const candidateEvents = getMatchKeys(request).flatMap(
-				(key) => eventBuckets.get(key) || [],
-			);
-			let matchedEvent = candidateEvents.find(
-				(event) => !consumedEventIds.has(event._id),
-			);
-			if (!matchedEvent) {
-				const requestName = normalizeMatchText(request.eventName);
-				const requestCode = normalizeMatchText(request.eventCode);
-				matchedEvent = events.find((event) => {
-					if (consumedEventIds.has(event._id)) return false;
-					const eventCode = normalizeMatchText(event.eventCode);
-					if (requestCode && eventCode && requestCode === eventCode) return true;
-					const eventName = normalizeMatchText(event.eventName);
-					const startsWithinOneDay =
-						Math.abs((event.startDate || 0) - (request.startDate || 0)) <=
-						24 * 60 * 60 * 1000;
-					return requestName && eventName === requestName && startsWithinOneDay;
-				});
-			}
-
-			if (!matchedEvent) {
-				// Published/completed items should be rendered from the canonical
-				// events table row so attendee counts stay accurate.
-				if (request.status === "published") {
-					return null;
-				}
-				return request;
-			}
-
-			consumedEventIds.add(matchedEvent._id);
-			return {
-				...request,
-				sourceType: "merged_published",
-				eventId: matchedEvent.eventId,
-				status: matchedEvent.status === "published" ? "published" : request.status,
-				attendeeCount: matchedEvent.attendeeCount || 0,
-				attendees: matchedEvent.attendees || [],
-			};
-		});
-
-		const unmatchedEvents = events.filter(
-			(event) => !consumedEventIds.has(event._id),
-		);
-
-		return [...mergedRows.filter(Boolean), ...unmatchedEvents] as EventRequest[];
-	}, [eventRequestsData, eventsData]);
+		return (eventsData || []).map(mapEventToType);
+	}, [eventsData]);
 
 	// Filter events
 	const filteredEvents = useMemo(() => {
@@ -410,12 +244,12 @@ function ManageEventsPage() {
 		if (!logtoId) return;
 		setIsProcessing(true);
 		try {
-			await createEventRequest({
+			await createEvent({
 				logtoId,
-				name: data.eventName,
+				eventName: data.eventName,
 				location: data.location,
-				startDateTime: data.startDate,
-				endDateTime: data.endDate,
+				startDate: data.startDate,
+				endDate: data.endDate,
 				eventDescription: data.eventDescription,
 				eventType: normalizeEventType(data.eventType),
 				department: data.department,
@@ -496,108 +330,95 @@ function ManageEventsPage() {
 		if (!logtoId || !editingRequest) return;
 		setIsProcessing(true);
 		try {
-			if (editingRequest.requestId) {
-				const convertingDraft = editingRequest.status === "draft";
+			const convertingDraft = editingRequest.status === "draft";
+			const eventId = editingRequest._id as any;
 
-				await updateEventRequest({
+			await updateEvent({
+				logtoId,
+				id: eventId,
+				eventName: data.eventName,
+				location: data.location,
+				startDate: data.startDate,
+				endDate: data.endDate,
+				eventDescription: data.eventDescription,
+				eventType: normalizeEventType(data.eventType),
+				department: data.department,
+				expectedAttendance: data.estimatedAttendance,
+				flyersNeeded: data.needsFlyers,
+				needsGraphics: data.needsGraphics,
+				needsAsFunding: data.needsASFunding,
+				hasFood: data.hasFood,
+				eventCode: data.eventCode,
+				invoices: data.invoices.map((inv) => ({
+					id: inv._id,
+					vendor: inv.vendor,
+					items:
+						inv.items.length > 0
+							? inv.items
+							: [
+									{
+										description: inv.description,
+										quantity: 1,
+										unitPrice: inv.amount,
+										total: inv.amount,
+									},
+								],
+					tax: inv.tax || 0,
+					tip: inv.tip || 0,
+					subtotal: inv.subtotal || inv.amount,
+					total: inv.total || inv.amount,
+					additionalFiles: inv.additionalFiles || [],
+					invoiceFile: inv.invoiceFile,
+				})),
+				flyerType: data.flyerType,
+				otherFlyerType: data.otherFlyerType,
+				flyerAdvertisingStartDate: data.flyerAdvertisingStartDate,
+				flyerAdditionalRequests: data.flyerAdditionalRequests,
+				photographyNeeded: data.photographyNeeded,
+				requiredLogos: data.requiredLogos,
+				otherLogos: data.otherLogos,
+				advertisingFormat: data.advertisingFormat,
+				willOrHaveRoomBooking: data.willOrHaveRoomBooking,
+				roomBookingFiles: data.roomBookingFiles,
+				asFundingRequired: data.asFundingRequired,
+				foodDrinksBeingServed: data.foodDrinksBeingServed,
+				additionalSpecifications: data.additionalSpecifications,
+				flyersCompleted: data.flyersCompleted,
+				graphicsUploadNote: data.graphicsUploadNote || undefined,
+			});
+
+			if (convertingDraft) {
+				await updateEventStatus({
 					logtoId,
-					id: editingRequest.requestId,
+					id: eventId,
+					status: "submitted",
+				});
+				toast.success("Event request submitted successfully!");
+
+				sendNotification(logtoId, "event_request_submitted", {
+					eventRequestId: editingRequest._id,
 					name: data.eventName,
 					location: data.location,
 					startDateTime: data.startDate,
 					endDateTime: data.endDate,
 					eventDescription: data.eventDescription,
-					eventType: normalizeEventType(data.eventType),
 					department: data.department,
 					expectedAttendance: data.estimatedAttendance,
-					flyersNeeded: data.needsFlyers,
 					needsGraphics: data.needsGraphics,
 					needsAsFunding: data.needsASFunding,
-					invoices: data.invoices.map((inv) => ({
-						id: inv._id,
-						vendor: inv.vendor,
-						items:
-							inv.items.length > 0
-								? inv.items
-								: [
-										{
-											description: inv.description,
-											quantity: 1,
-											unitPrice: inv.amount,
-											total: inv.amount,
-										},
-									],
-						tax: inv.tax || 0,
-						tip: inv.tip || 0,
-						subtotal: inv.subtotal || inv.amount,
-						total: inv.total || inv.amount,
-						additionalFiles: inv.additionalFiles || [],
-						invoiceFile: inv.invoiceFile,
-					})),
-					flyerType: data.flyerType,
-					otherFlyerType: data.otherFlyerType,
-					flyerAdvertisingStartDate: data.flyerAdvertisingStartDate,
-					flyerAdditionalRequests: data.flyerAdditionalRequests,
+					flyersNeeded: data.needsFlyers,
 					photographyNeeded: data.photographyNeeded,
-					requiredLogos: data.requiredLogos,
-					otherLogos: data.otherLogos,
-					advertisingFormat: data.advertisingFormat,
-					willOrHaveRoomBooking: data.willOrHaveRoomBooking,
-					roomBookingFiles: data.roomBookingFiles,
-					asFundingRequired: data.asFundingRequired,
-					foodDrinksBeingServed: data.foodDrinksBeingServed,
-					additionalSpecifications: data.additionalSpecifications,
-					flyersCompleted: data.flyersCompleted,
-					graphicsUploadNote: data.graphicsUploadNote || undefined,
+					submitterName: user?.name || "Unknown",
+					submitterEmail: user?.email || "",
 				});
-				if (convertingDraft) {
-					await updateEventRequestStatus({
-						logtoId,
-						id: editingRequest.requestId,
-						status: "submitted",
-					});
-					toast.success("Event request submitted successfully!");
-
-					sendNotification(logtoId, "event_request_submitted", {
-						eventRequestId: editingRequest.requestId,
-						name: data.eventName,
-						location: data.location,
-						startDateTime: data.startDate,
-						endDateTime: data.endDate,
-						eventDescription: data.eventDescription,
-						department: data.department,
-						expectedAttendance: data.estimatedAttendance,
-						needsGraphics: data.needsGraphics,
-						needsAsFunding: data.needsASFunding,
-						flyersNeeded: data.needsFlyers,
-						photographyNeeded: data.photographyNeeded,
-						submitterName: user?.name || "Unknown",
-						submitterEmail: user?.email || "",
-					});
-				} else {
-					toast.success("Event request updated successfully!");
-				}
-			} else if (editingRequest.eventId) {
-				await updateEvent({
-					logtoId,
-					id: editingRequest.eventId,
-					eventName: data.eventName,
-					eventDescription: data.eventDescription,
-					eventCode: data.eventCode,
-					location: data.location,
-					startDate: data.startDate,
-					endDate: data.endDate,
-					eventType: normalizeEventType(data.eventType),
-					hasFood: data.hasFood,
-				});
-				toast.success("Event updated successfully!");
 			} else {
-				throw new Error("Could not determine whether this row is a request or event.");
+				toast.success("Event updated successfully!");
 			}
+
 			setIsWizardOpen(false);
 			setEditingRequest(null);
 		} catch (error: any) {
-			toast.error(error.message || "Failed to update event request");
+			toast.error(error.message || "Failed to update event");
 		} finally {
 			setIsProcessing(false);
 		}
@@ -609,29 +430,11 @@ function ManageEventsPage() {
 		if (!confirm("Are you sure you want to delete this event?")) return;
 		setIsProcessing(true);
 		try {
-			if (event.eventId) {
-				await removeEvent({
-					logtoId,
-					id: event.eventId,
-				});
-				// If this row is tied to a request, keep the request but move it out of published state.
-				if (event.requestId) {
-					await updateEventRequestStatus({
-						logtoId,
-						id: event.requestId,
-						status: "approved",
-					});
-				}
-				toast.success("Event deleted successfully!");
-			} else if (event.requestId) {
-				await removeEventRequest({
-					logtoId,
-					id: event.requestId,
-				});
-				toast.success("Event request deleted successfully!");
-			} else {
-				throw new Error("Unable to determine what to delete");
-			}
+			await removeEvent({
+				logtoId,
+				id: event._id as any,
+			});
+			toast.success("Event deleted successfully!");
 			setIsViewModalOpen(false);
 			setSelectedRequest(null);
 		} catch (error: any) {
@@ -646,20 +449,11 @@ function ManageEventsPage() {
 		if (!logtoId) return;
 		setIsProcessing(true);
 		try {
-			if (event.requestId) {
-				await updateEventRequestStatus({
-					logtoId,
-					id: event.requestId,
-					status: "draft",
-				});
-			}
-			if (event.eventId && !event.requestId) {
-				await updateEvent({
-					logtoId,
-					id: event.eventId,
-					published: false,
-				});
-			}
+			await updateEventStatus({
+				logtoId,
+				id: event._id as any,
+				status: "draft",
+			});
 			toast.success("Event converted to draft!");
 		} catch (error: any) {
 			toast.error(error.message || "Failed to convert to draft");
@@ -671,24 +465,20 @@ function ManageEventsPage() {
 	// Decline handler
 	const handleDecline = async (event: EventRequest) => {
 		if (!logtoId) return;
-		if (!event.requestId) {
-			toast.error("Only event requests can be declined");
-			return;
-		}
 		const reason = prompt("Enter reason for declining:");
 		if (!reason) return;
 		setIsProcessing(true);
 		try {
-			await updateEventRequestStatus({
+			await updateEventStatus({
 				logtoId,
-				id: event.requestId,
+				id: event._id as any,
 				status: "declined",
 				declinedReason: reason,
 			});
 			toast.success("Event declined");
 
 			sendNotification(logtoId, "event_request_status_changed", {
-				eventRequestId: event.requestId,
+				eventRequestId: event._id,
 				name: event.eventName,
 				location: event.location,
 				startDateTime: event.startDate,
@@ -719,51 +509,46 @@ function ManageEventsPage() {
 		}
 		setIsProcessing(true);
 		try {
-			let statusUpdated = false;
-			if (event.requestId) {
-				await updateEventRequestStatus({
-					logtoId,
-					id: event.requestId,
-					status:
-						newStatus === "needs_review" ? "needs_review" : (newStatus as any),
-				});
-				statusUpdated = true;
-			}
+			const eventId = event._id as any;
 
-			if (event.eventId) {
-				if (newStatus === "published") {
+			if (newStatus === "published") {
+				await updateEvent({
+					logtoId,
+					id: eventId,
+					published: true,
+				});
+				await updateEventStatus({
+					logtoId,
+					id: eventId,
+					status: "completed",
+				});
+			} else {
+				await updateEventStatus({
+					logtoId,
+					id: eventId,
+					status: newStatus === "needs_review" ? "needs_review" : (newStatus as any),
+				});
+				if (newStatus === "approved" || newStatus === "draft") {
 					await updateEvent({
 						logtoId,
-						id: event.eventId,
-						published: true,
-					});
-				} else if (newStatus === "approved" || newStatus === "draft") {
-					await updateEvent({
-						logtoId,
-						id: event.eventId,
+						id: eventId,
 						published: false,
 					});
-				} else if (!statusUpdated) {
-					throw new Error("Selected status is not valid for a published event");
 				}
-			} else if (!statusUpdated) {
-				throw new Error("Unable to update status for this item");
 			}
 
 			toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
 
-			if (event.requestId) {
-				sendNotification(logtoId, "event_request_status_changed", {
-					eventRequestId: event.requestId,
-					name: event.eventName,
-					location: event.location,
-					startDateTime: event.startDate,
-					newStatus,
-					previousStatus: event.status,
-					changedByName: user?.name || "Admin",
-					requestedUser: event.requestedUser,
-				});
-			}
+			sendNotification(logtoId, "event_request_status_changed", {
+				eventRequestId: event._id,
+				name: event.eventName,
+				location: event.location,
+				startDateTime: event.startDate,
+				newStatus,
+				previousStatus: event.status,
+				changedByName: user?.name || "Admin",
+				requestedUser: event.requestedUser,
+			});
 
 			// Update local state so the modal reflects the change
 			setSelectedRequest((prev) =>
@@ -784,18 +569,23 @@ function ManageEventsPage() {
 		if (!logtoId) return;
 		setIsProcessing(true);
 		try {
-			if (event.requestId) {
-				await updateEventRequestStatus({
+			const eventId = event._id as any;
+			await updateEvent({
+				logtoId,
+				id: eventId,
+				published: shouldPublish,
+			});
+			if (shouldPublish) {
+				await updateEventStatus({
 					logtoId,
-					id: event.requestId,
-					status: shouldPublish ? ("completed" as any) : "approved",
+					id: eventId,
+					status: "completed",
 				});
-			}
-			if (event.eventId) {
-				await updateEvent({
+			} else {
+				await updateEventStatus({
 					logtoId,
-					id: event.eventId,
-					published: shouldPublish,
+					id: eventId,
+					status: "approved",
 				});
 			}
 			toast.success(shouldPublish ? "Event published!" : "Event unpublished");
@@ -816,20 +606,11 @@ function ManageEventsPage() {
 		updates: { flyersCompleted: boolean; graphicsUploadNote?: string },
 	) => {
 		if (!logtoId) return;
-		if (!event.requestId) {
-			toast.error("Graphics updates are only available for event requests.");
-			return;
-		}
-		if (event.status === "published") {
-			toast.error("Graphics updates are only available for event requests.");
-			return;
-		}
-
 		setIsProcessing(true);
 		try {
-			await updateEventRequest({
+			await updateEvent({
 				logtoId,
-				id: event.requestId,
+				id: event._id as any,
 				flyersCompleted: updates.flyersCompleted,
 				graphicsUploadNote: updates.graphicsUploadNote,
 			});
@@ -849,12 +630,12 @@ function ManageEventsPage() {
 		if (!logtoId) return;
 		setIsProcessing(true);
 		try {
-			await createEventRequest({
+			await createEvent({
 				logtoId,
-				name: data.eventName || "Draft Event",
+				eventName: data.eventName || "Draft Event",
 				location: data.location || "TBD",
-				startDateTime: data.startDate || Date.now(),
-				endDateTime: data.endDate || Date.now() + 3600000,
+				startDate: data.startDate || Date.now(),
+				endDate: data.endDate || Date.now() + 3600000,
 				eventDescription: data.eventDescription || "",
 				eventType: normalizeEventType(
 					(data.eventType as string | undefined) || "other",
@@ -922,61 +703,42 @@ function ManageEventsPage() {
 		if (!logtoId || !editingDraft) return;
 		setIsProcessing(true);
 		try {
-			if (editingDraft.requestId) {
-				await updateEventRequest({
-					logtoId,
-					id: editingDraft.requestId,
-					name: data.eventName || editingDraft.eventName,
-					location: data.location || editingDraft.location,
-					startDateTime: data.startDate || editingDraft.startDate,
-					endDateTime: data.endDate || editingDraft.endDate,
-					eventDescription:
-						data.eventDescription || editingDraft.eventDescription,
-					eventType: normalizeEventType(
-						(data.eventType as string | undefined) || editingDraft.eventType,
-					),
-					department: normalizeDepartment(
-						data.department || editingDraft.department,
-					),
-					expectedAttendance: data.estimatedAttendance,
-					flyersNeeded: data.needsFlyers ?? false,
-					needsGraphics: data.needsGraphics ?? false,
-					needsAsFunding: data.needsASFunding ?? false,
-					flyerType: data.flyerType || [],
-					willOrHaveRoomBooking: data.willOrHaveRoomBooking ?? false,
-					roomBookingFiles: data.roomBookingFiles || [],
-					asFundingRequired: data.asFundingRequired ?? false,
-					foodDrinksBeingServed: data.foodDrinksBeingServed ?? false,
-					photographyNeeded: data.photographyNeeded ?? false,
-					requiredLogos: data.requiredLogos || [],
-					graphicsUploadNote:
-						data.graphicsUploadNote || editingDraft.graphicsUploadNote || "",
-				});
-				toast.success("Draft updated successfully!");
-			} else if (editingDraft.eventId) {
-				await updateEvent({
-					logtoId,
-					id: editingDraft.eventId,
-					eventName: data.eventName || editingDraft.eventName,
-					eventDescription:
-						data.eventDescription || editingDraft.eventDescription,
-					eventCode: data.eventCode || editingDraft.eventCode,
-					location: data.location || editingDraft.location,
-					startDate: data.startDate || editingDraft.startDate,
-					endDate: data.endDate || editingDraft.endDate,
-					eventType: normalizeEventType(
-						(data.eventType as string | undefined) || editingDraft.eventType,
-					),
-					hasFood:
-						data.hasFood ??
-						data.foodDrinksBeingServed ??
-						editingDraft.hasFood ??
-						false,
-				});
-				toast.success("Event updated successfully!");
-			} else {
-				throw new Error("Could not determine whether this draft is request-backed or event-backed.");
-			}
+			const eventId = editingDraft._id as any;
+			await updateEvent({
+				logtoId,
+				id: eventId,
+				eventName: data.eventName || editingDraft.eventName,
+				location: data.location || editingDraft.location,
+				startDate: data.startDate || editingDraft.startDate,
+				endDate: data.endDate || editingDraft.endDate,
+				eventDescription:
+					data.eventDescription || editingDraft.eventDescription,
+				eventType: normalizeEventType(
+					(data.eventType as string | undefined) || editingDraft.eventType,
+				),
+				department: normalizeDepartment(
+					data.department || editingDraft.department,
+				),
+				expectedAttendance: data.estimatedAttendance,
+				flyersNeeded: data.needsFlyers ?? false,
+				needsGraphics: data.needsGraphics ?? false,
+				needsAsFunding: data.needsASFunding ?? false,
+				hasFood:
+					data.hasFood ??
+					data.foodDrinksBeingServed ??
+					editingDraft.hasFood ??
+					false,
+				flyerType: data.flyerType || [],
+				willOrHaveRoomBooking: data.willOrHaveRoomBooking ?? false,
+				roomBookingFiles: data.roomBookingFiles || [],
+				asFundingRequired: data.asFundingRequired ?? false,
+				foodDrinksBeingServed: data.foodDrinksBeingServed ?? false,
+				photographyNeeded: data.photographyNeeded ?? false,
+				requiredLogos: data.requiredLogos || [],
+				graphicsUploadNote:
+					data.graphicsUploadNote || editingDraft.graphicsUploadNote || "",
+			});
+			toast.success("Draft updated successfully!");
 			setIsDraftModalOpen(false);
 			setEditingDraft(null);
 		} catch (error: any) {
@@ -1052,7 +814,7 @@ function ManageEventsPage() {
 			/>
 
 			{/* Loading State */}
-			{(!eventRequestsData || !eventsData) && (
+			{!eventsData && (
 				<div className="space-y-4">
 					<div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
 					<div className="h-64 bg-gray-200 rounded animate-pulse" />
@@ -1060,7 +822,7 @@ function ManageEventsPage() {
 			)}
 
 			{/* Content */}
-			{eventRequestsData && eventsData && (
+			{eventsData && (
 				<>
 					{viewMode === "list" ? (
 						<EventsDataTable

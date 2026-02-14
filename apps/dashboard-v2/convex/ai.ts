@@ -7,7 +7,6 @@ const ALL_TABLES = [
   "publicProfiles",
   "events",
   "attendees",
-  "eventRequests",
   "reimbursements",
   "links",
   "constitutions",
@@ -167,7 +166,7 @@ function toCurrentUserContext(user: OfficerUser) {
 
 const TABLES_WITH_STATUS = [
   "users",
-  "eventRequests",
+  "events",
   "reimbursements",
   "officerInvitations",
   "fundRequests",

@@ -138,7 +138,7 @@ export function EventRequestWizardModal({
 }: EventRequestWizardModalProps) {
 	const isEditing = !!initialData;
 	const isConvertingDraft = initialData?.status === "draft";
-	const generateUploadUrl = useMutation(api.eventRequests.generateUploadUrl);
+	const generateUploadUrl = useMutation(api.events.generateUploadUrl);
 	const [currentStep, setCurrentStep] = useState(isEditing ? 2 : 1);
 	const [disclaimerAccepted, setDisclaimerAccepted] = useState(isEditing);
 	const [formData, setFormData] = useState<EventFormData>(

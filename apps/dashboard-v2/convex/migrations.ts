@@ -76,9 +76,10 @@ export const upsertEventRequest = mutation({
     data: v.any(),
   },
   handler: async (ctx, args) => {
-    // Dedup by name + requestedUser + startDateTime
+    // Dedup by eventName + requestedUser + startDate
+    // eventRequests merged into events table
     const all = await ctx.db
-      .query("eventRequests")
+      .query("events")
       .withIndex("by_requestedUser", (q) =>
         q.eq("requestedUser", args.data.requestedUser),
       )
@@ -86,8 +87,8 @@ export const upsertEventRequest = mutation({
 
     const existing = all.find(
       (r) =>
-        r.name === args.data.name &&
-        r.startDateTime === args.data.startDateTime,
+        r.eventName === args.data.eventName &&
+        r.startDate === args.data.startDate,
     );
 
     if (existing) {
@@ -95,7 +96,7 @@ export const upsertEventRequest = mutation({
       return { id: existing._id, action: "updated" as const };
     }
 
-    const id = await ctx.db.insert("eventRequests", args.data);
+    const id = await ctx.db.insert("events", args.data);
     return { id, action: "inserted" as const };
   },
 });
@@ -535,6 +536,216 @@ export const getEventByCode = mutation({
       .query("events")
       .withIndex("by_eventCode", (q) => q.eq("eventCode", args.eventCode))
       .first();
+  },
+});
+
+// Migration: move eventRequests rows into the unified events table.
+// Run once after deploying the merged schema. Safe to re-run (deduplicates).
+export const migrateEventRequestsToEvents = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Query the old eventRequests table via system table (schema no longer defines it)
+    const oldRequests = await (ctx.db as any).query("eventRequests").collect();
+    let migrated = 0;
+    let skipped = 0;
+
+    for (const req of oldRequests) {
+      // Dedup: check if an event with same name + requestedUser + startDate already exists
+      const existing = await ctx.db
+        .query("events")
+        .withIndex("by_requestedUser", (q: any) =>
+          q.eq("requestedUser", req.requestedUser),
+        )
+        .collect();
+
+      const alreadyMigrated = existing.some(
+        (e: any) =>
+          e.eventName === (req.name || req.eventName) &&
+          e.startDate === (req.startDateTime || req.startDate),
+      );
+
+      if (alreadyMigrated) {
+        skipped++;
+        continue;
+      }
+
+      // Map old eventRequests fields to new events fields
+      await ctx.db.insert("events", {
+        eventName: req.name || req.eventName || "Untitled Event",
+        eventDescription: req.eventDescription || "",
+        location: req.location || "TBD",
+        startDate: req.startDateTime || req.startDate || Date.now(),
+        endDate: req.endDateTime || req.endDate || Date.now() + 3600000,
+        eventType: req.eventType || "other",
+        eventCode: req.eventCode,
+        hasFood: req.foodDrinksBeingServed || req.hasFood || false,
+        published: req.published || false,
+        createdAt: req.createdAt || req._creationTime,
+        // Request workflow fields
+        department: req.department,
+        flyersNeeded: req.flyersNeeded,
+        flyerType: req.flyerType,
+        otherFlyerType: req.otherFlyerType,
+        flyerAdvertisingStartDate: req.flyerAdvertisingStartDate,
+        flyerAdditionalRequests: req.flyerAdditionalRequests,
+        flyersCompleted: req.flyersCompleted || false,
+        photographyNeeded: req.photographyNeeded,
+        requiredLogos: req.requiredLogos,
+        otherLogos: req.otherLogos,
+        advertisingFormat: req.advertisingFormat,
+        additionalSpecifications: req.additionalSpecifications,
+        graphicsUploadNote: req.graphicsUploadNote,
+        willOrHaveRoomBooking: req.willOrHaveRoomBooking,
+        expectedAttendance: req.expectedAttendance,
+        roomBookingFiles: req.roomBookingFiles,
+        asFundingRequired: req.asFundingRequired,
+        foodDrinksBeingServed: req.foodDrinksBeingServed,
+        invoices: req.invoices,
+        needsGraphics: req.needsGraphics,
+        needsAsFunding: req.needsAsFunding,
+        status: req.status || "draft",
+        declinedReason: req.declinedReason,
+        reviewFeedback: req.reviewFeedback,
+        requestedUser: req.requestedUser,
+        auditLogs: req.auditLogs,
+        isDraft: req.isDraft,
+        graphicsCompleted: req.graphicsCompleted,
+        graphicsFiles: req.graphicsFiles,
+        submittedAt: req.submittedAt,
+      });
+      migrated++;
+    }
+
+    return { migrated, skipped, total: oldRequests.length };
+  },
+});
+
+// Dedup: remove duplicate events created by migration.
+// Original events (pre-merge) lack requestedUser/status fields.
+// Migrated eventRequests have those fields. Keep the richer record,
+// reassign attendees, then delete the duplicate.
+export const deduplicateEvents = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const allEvents = await ctx.db.query("events").collect();
+
+    // Group by normalized eventName + approximate startDate (within 1 day)
+    const groups = new Map<string, typeof allEvents>();
+    for (const event of allEvents) {
+      const name = (event.eventName || "").trim().toLowerCase();
+      // Round startDate to the nearest day for fuzzy matching
+      const dayBucket = Math.floor((event.startDate || 0) / 86400000);
+      const key = `${name}|${dayBucket}`;
+
+      const group = groups.get(key);
+      if (group) {
+        group.push(event);
+      } else {
+        groups.set(key, [event]);
+      }
+    }
+
+    let deleted = 0;
+    let attendeesReassigned = 0;
+    const duplicateGroups: string[] = [];
+
+    for (const [key, group] of groups) {
+      if (group.length <= 1) continue;
+
+      duplicateGroups.push(`${key} (${group.length} items)`);
+
+      // Sort: prefer records with requestedUser (migrated from eventRequests),
+      // then prefer records with status field, then prefer newer _creationTime
+      group.sort((a: any, b: any) => {
+        const aHasRequest = a.requestedUser ? 1 : 0;
+        const bHasRequest = b.requestedUser ? 1 : 0;
+        if (aHasRequest !== bHasRequest) return bHasRequest - aHasRequest;
+
+        const aHasStatus = a.status ? 1 : 0;
+        const bHasStatus = b.status ? 1 : 0;
+        if (aHasStatus !== bHasStatus) return bHasStatus - aHasStatus;
+
+        // Keep the one with more fields populated
+        const aFields = Object.values(a).filter((v) => v != null).length;
+        const bFields = Object.values(b).filter((v) => v != null).length;
+        if (aFields !== bFields) return bFields - aFields;
+
+        return (b._creationTime || 0) - (a._creationTime || 0);
+      });
+
+      const keeper = group[0];
+      const duplicates = group.slice(1);
+
+      for (const dup of duplicates) {
+        // Reassign attendees from the duplicate to the keeper
+        const attendees = await ctx.db
+          .query("attendees")
+          .withIndex("by_eventId", (q: any) => q.eq("eventId", dup._id))
+          .collect();
+
+        for (const att of attendees) {
+          // Check if this attendee already exists on the keeper
+          const existingAtt = await ctx.db
+            .query("attendees")
+            .withIndex("by_eventId", (q: any) => q.eq("eventId", keeper._id))
+            .collect();
+          const alreadyExists = existingAtt.some(
+            (ea: any) => ea.userId === att.userId,
+          );
+
+          if (alreadyExists) {
+            await ctx.db.delete(att._id);
+          } else {
+            await ctx.db.patch(att._id, { eventId: keeper._id });
+            attendeesReassigned++;
+          }
+        }
+
+        // Merge useful fields from dup into keeper if keeper is missing them
+        const mergeFields: Record<string, any> = {};
+        if (!keeper.eventCode && dup.eventCode) mergeFields.eventCode = dup.eventCode;
+        if (!keeper.pointsToReward && (dup as any).pointsToReward) mergeFields.pointsToReward = (dup as any).pointsToReward;
+        if (!keeper.files && (dup as any).files) mergeFields.files = (dup as any).files;
+        if (keeper.published !== true && (dup as any).published === true) mergeFields.published = true;
+
+        if (Object.keys(mergeFields).length > 0) {
+          await ctx.db.patch(keeper._id, mergeFields);
+        }
+
+        await ctx.db.delete(dup._id);
+        deleted++;
+      }
+    }
+
+    return {
+      deleted,
+      attendeesReassigned,
+      duplicateGroups: duplicateGroups.length,
+      details: duplicateGroups.slice(0, 20),
+    };
+  },
+});
+
+// Diagnostic: check events health after migration
+export const diagnoseEvents = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const allEvents = await ctx.db.query("events").collect();
+    const missingCode = allEvents.filter((e: any) => !e.eventCode);
+    const missingPublished = allEvents.filter((e: any) => e.published === undefined);
+    const publishedEvents = allEvents.filter((e: any) => e.published === true);
+    const withStatus = allEvents.filter((e: any) => e.status);
+    const withRequestedUser = allEvents.filter((e: any) => e.requestedUser);
+
+    return {
+      total: allEvents.length,
+      missingEventCode: missingCode.length,
+      missingEventCodeNames: missingCode.slice(0, 10).map((e: any) => e.eventName),
+      missingPublished: missingPublished.length,
+      publishedCount: publishedEvents.length,
+      withStatus: withStatus.length,
+      withRequestedUser: withRequestedUser.length,
+    };
   },
 });
 

@@ -1,4 +1,3 @@
-import type { Id } from "@convex/_generated/dataModel";
 import type { EventDepartmentValue, EventTypeValue } from "./constants";
 
 export type EventStatus =
@@ -44,9 +43,6 @@ export interface EventFile {
 
 export interface EventRequest {
 	_id: string;
-	sourceType?: "request" | "event" | "merged_published";
-	requestId?: Id<"eventRequests">;
-	eventId?: Id<"events">;
 	_creationTime: number;
 	eventName: string;
 	eventDescription: string;

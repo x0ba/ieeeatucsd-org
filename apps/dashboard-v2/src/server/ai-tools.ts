@@ -32,7 +32,6 @@ const ALL_TABLE_NAMES = [
 	"publicProfiles",
 	"events",
 	"attendees",
-	"eventRequests",
 	"reimbursements",
 	"links",
 	"constitutions",

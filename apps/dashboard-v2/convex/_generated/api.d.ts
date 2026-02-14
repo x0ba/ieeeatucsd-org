@@ -16,7 +16,6 @@ import type {
 import type * as ai from "../ai.js";
 import type * as constitutions from "../constitutions.js";
 import type * as directOnboardings from "../directOnboardings.js";
-import type * as eventRequests from "../eventRequests.js";
 import type * as events from "../events.js";
 import type * as fundDeposits from "../fundDeposits.js";
 import type * as fundRequests from "../fundRequests.js";
@@ -43,7 +42,6 @@ declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   constitutions: typeof constitutions;
   directOnboardings: typeof directOnboardings;
-  eventRequests: typeof eventRequests;
   events: typeof events;
   fundDeposits: typeof fundDeposits;
   fundRequests: typeof fundRequests;

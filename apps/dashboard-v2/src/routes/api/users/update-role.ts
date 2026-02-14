@@ -129,7 +129,7 @@ async function handle({ request }: { request: Request }) {
       targetUser = (await convex.query(getByEmailFn, {
         logtoId,
         email: resolvedEmail,
-      })) as typeof targetUser;
+      })) as { _id: string; email: string; logtoId?: string } | null;
 
       if (targetUser?._id) {
         await convex.mutation(updateRoleFn, {

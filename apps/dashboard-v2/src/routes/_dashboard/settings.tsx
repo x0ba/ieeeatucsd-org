@@ -309,6 +309,42 @@ function SettingsPage() {
             </div>
           )}
 
+          {/* AI Features Settings */}
+          <div className="rounded-xl border bg-card p-4 md:p-6">
+            <div className="flex items-center space-x-3 mb-4 md:mb-6">
+              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-amber-600" />
+              </div>
+              <h2 className="text-base md:text-lg font-semibold">AI Features</h2>
+            </div>
+
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium">Enable AI assistant and auto parsing</p>
+                  <p className="text-sm text-muted-foreground">
+                    Controls Officer AI chat, receipt parsing, invoice parsing, and payment detail extraction.
+                  </p>
+                </div>
+                <Switch
+                  checked={aiFeaturesEnabled}
+                  onCheckedChange={setAiFeaturesEnabled}
+                  aria-label="Enable AI features"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <Button
+                onClick={handleAiPreferenceUpdate}
+                disabled={savingAiPreference}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {savingAiPreference ? "Saving..." : "Save AI Preferences"}
+              </Button>
+            </div>
+          </div>
+
           {/* Profile Settings */}
           <div className="rounded-xl border bg-card p-4 md:p-6">
             <div className="flex items-center space-x-3 mb-4 md:mb-6">
