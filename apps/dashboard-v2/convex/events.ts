@@ -18,6 +18,41 @@ function normalizeEventCode(eventCode?: string): string | undefined {
   return normalized.length > 0 ? normalized : undefined;
 }
 
+function canonicalizeEventCode(eventCode?: string): string | undefined {
+  const normalized = normalizeEventCode(eventCode);
+  if (!normalized) return undefined;
+  const canonical = normalized.replace(/[^A-Z0-9]/g, "");
+  return canonical.length > 0 ? canonical : undefined;
+}
+
+function eventMatchesCode(
+  event: { _id: string; eventCode?: string },
+  normalizedInputCode: string,
+  canonicalInputCode?: string,
+): boolean {
+  const candidateCode = normalizeEventCode(event.eventCode);
+  if (candidateCode && candidateCode === normalizedInputCode) {
+    return true;
+  }
+
+  if (canonicalInputCode) {
+    const candidateCanonicalCode = canonicalizeEventCode(event.eventCode);
+    if (candidateCanonicalCode && candidateCanonicalCode === canonicalInputCode) {
+      return true;
+    }
+  }
+
+  // Some legacy rows displayed this fallback code without persisting eventCode.
+  if (!candidateCode) {
+    const generatedCode = normalizeEventCode(`EVENT-${event._id.slice(-6)}`);
+    if (generatedCode && generatedCode === normalizedInputCode) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // ── Queries ──────────────────────────────────────────────────────────────────
 
 export const listPublished = query({
@@ -168,11 +203,26 @@ export const getByCode = query({
     await requireCurrentUser(ctx, args.logtoId);
     const normalizedCode = normalizeEventCode(args.eventCode);
     if (!normalizedCode) return null;
+    const canonicalCode = canonicalizeEventCode(normalizedCode);
 
-    return await ctx.db
+    let event = await ctx.db
       .query("events")
       .withIndex("by_eventCode", (q) => q.eq("eventCode", normalizedCode))
       .first();
+
+    if (!event) {
+      const allEvents = await ctx.db.query("events").collect();
+      event =
+        allEvents.find((candidate) =>
+          eventMatchesCode(
+            { _id: candidate._id as string, eventCode: candidate.eventCode },
+            normalizedCode,
+            canonicalCode,
+          ),
+        ) ?? null;
+    }
+
+    return event;
   },
 });
 
@@ -504,6 +554,7 @@ export const checkIn = mutation({
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx, args.logtoId);
     const normalizedInputCode = normalizeEventCode(args.eventCode);
+    const canonicalInputCode = canonicalizeEventCode(args.eventCode);
 
     if (!normalizedInputCode) {
       throw new ConvexError("Invalid event code. Please check the code and try again.");
@@ -516,27 +567,16 @@ export const checkIn = mutation({
       .first();
 
     if (!event) {
-      // Backward-compat fallback for legacy events with mixed-case/untrimmed/missing code.
-      const publishedEvents = await ctx.db
-        .query("events")
-        .withIndex("by_published", (q) => q.eq("published", true))
-        .collect();
-
+      // Backward-compat fallback for legacy events with mixed formatting.
+      const allEvents = await ctx.db.query("events").collect();
       event =
-        publishedEvents.find((candidate) => {
-          const candidateCode = normalizeEventCode(candidate.eventCode);
-          if (candidateCode && candidateCode === normalizedInputCode) {
-            return true;
-          }
-
-          // Some UI flows displayed this fallback code without persisting it.
-          if (!candidateCode) {
-            const generatedCode = normalizeEventCode(`EVENT-${candidate._id.slice(-6)}`);
-            return generatedCode === normalizedInputCode;
-          }
-
-          return false;
-        }) ?? null;
+        allEvents.find((candidate) =>
+          eventMatchesCode(
+            { _id: candidate._id as string, eventCode: candidate.eventCode },
+            normalizedInputCode,
+            canonicalInputCode,
+          ),
+        ) ?? null;
     }
 
     if (!event) {
