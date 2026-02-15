@@ -34,6 +34,19 @@ export interface Constitution {
   isTemplate?: boolean;
 }
 
+export interface ConstitutionVersion {
+  _id: string;
+  constitutionId: string;
+  versionNumber: number;
+  label: string;
+  note?: string;
+  source: "manual" | "auto_backup";
+  createdBy: string;
+  createdByName: string;
+  createdAt: number;
+  restoredFromVersionNumber?: number;
+}
+
 export interface ConstitutionAuditEntry {
   id: string;
   constitutionId: string;

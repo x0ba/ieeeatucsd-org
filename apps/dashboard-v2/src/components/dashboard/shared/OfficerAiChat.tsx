@@ -46,6 +46,7 @@ type ToolStartInfo = {
 	id: string;
 	name: string;
 	args: Record<string, unknown>;
+	round?: number;
 };
 
 type ToolResultInfo = {
@@ -78,6 +79,8 @@ interface Message {
 	meta?: ChatMeta;
 	error?: boolean;
 	createdAt: number;
+	isReasoning?: boolean;
+	currentToolRound?: number;
 }
 
 let messageCounter = 0;
@@ -450,7 +453,25 @@ function appendStep(existing: string[] | undefined, next: string) {
 }
 
 function ReasoningBlock({ content, isStreaming }: { content: string; isStreaming: boolean }) {
-	const [isExpanded, setIsExpanded] = useState(true);
+	const [userToggled, setUserToggled] = useState(false);
+	const [userExpandState, setUserExpandState] = useState(false);
+	const wasStreamingRef = useRef(isStreaming);
+
+	const autoExpanded = isStreaming;
+	const isExpanded = userToggled ? userExpandState : autoExpanded;
+
+	useEffect(() => {
+		if (wasStreamingRef.current && !isStreaming && !userToggled) {
+			setUserToggled(false);
+		}
+		wasStreamingRef.current = isStreaming;
+	}, [isStreaming, userToggled]);
+
+	const handleToggle = () => {
+		setUserToggled(true);
+		setUserExpandState(!isExpanded);
+	};
+
 	const lines = content.split("\n").filter((l) => l.trim());
 	const preview = lines.slice(0, 2).join(" ").slice(0, 120);
 
@@ -458,11 +479,13 @@ function ReasoningBlock({ content, isStreaming }: { content: string; isStreaming
 		<div className="mb-2 rounded-md border border-purple-200 bg-purple-50/50 overflow-hidden">
 			<button
 				type="button"
-				onClick={() => setIsExpanded(!isExpanded)}
+				onClick={handleToggle}
 				className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-purple-700 hover:bg-purple-100/50 transition-colors"
 			>
 				<Brain className="w-3 h-3 flex-shrink-0" />
-				<span className="font-medium flex-shrink-0">Thinking</span>
+				<span className="font-medium flex-shrink-0">
+					{isStreaming ? "AI is thinking..." : "Thought process"}
+				</span>
 				{isStreaming && (
 					<span className="flex-shrink-0">
 						<span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
@@ -503,48 +526,71 @@ function ToolCallCards({
 }) {
 	const resultMap = new Map(toolResults.map((r) => [r.id, r]));
 
+	const hasRounds = toolCalls.some((tc) => (tc.round ?? 1) > 1);
+	const grouped = hasRounds
+		? toolCalls.reduce<Map<number, ToolStartInfo[]>>((acc, tc) => {
+				const round = tc.round ?? 1;
+				if (!acc.has(round)) acc.set(round, []);
+				acc.get(round)!.push(tc);
+				return acc;
+			}, new Map())
+		: new Map([[1, toolCalls]]);
+
+	const roundEntries = Array.from(grouped.entries()).sort(([a], [b]) => a - b);
+
 	return (
 		<div className="mb-2 flex flex-col gap-1.5">
-			{toolCalls.map((tc) => {
-				const result = resultMap.get(tc.id);
-				const isDone = !!result;
-				return (
-					<div
-						key={tc.id}
-						className={cn(
-							"rounded-md border px-3 py-1.5 text-xs flex items-center gap-2",
-							isDone
-								? "border-green-200 bg-green-50/50"
-								: "border-amber-200 bg-amber-50/50",
-						)}
-					>
-						<Wrench
-							className={cn(
-								"w-3 h-3 flex-shrink-0",
-								isDone
-									? "text-green-600"
-									: "text-amber-600",
-							)}
-						/>
-						<span className="font-medium text-gray-700">
-							{tc.name.replace(/_/g, " ")}
-						</span>
-						{isDone ? (
-							<>
-								<Check className="w-3 h-3 text-green-500 flex-shrink-0" />
-								<span className="text-gray-500 truncate">
-									{result.summary}
+			{roundEntries.map(([round, calls]) => (
+				<React.Fragment key={`round-${round}`}>
+					{hasRounds && (
+						<div className="flex items-center gap-2 text-[10px] text-gray-400 mt-1 first:mt-0">
+							<div className="flex-1 border-t border-gray-200" />
+							<span className="font-medium uppercase tracking-wider">Round {round}</span>
+							<div className="flex-1 border-t border-gray-200" />
+						</div>
+					)}
+					{calls.map((tc) => {
+						const result = resultMap.get(tc.id);
+						const isDone = !!result;
+						return (
+							<div
+								key={tc.id}
+								className={cn(
+									"rounded-md border px-3 py-1.5 text-xs flex items-center gap-2",
+									isDone
+										? "border-green-200 bg-green-50/50"
+										: "border-amber-200 bg-amber-50/50",
+								)}
+							>
+								<Wrench
+									className={cn(
+										"w-3 h-3 flex-shrink-0",
+										isDone
+											? "text-green-600"
+											: "text-amber-600",
+									)}
+								/>
+								<span className="font-medium text-gray-700">
+									{tc.name.replace(/_/g, " ")}
 								</span>
-								<span className="text-gray-400 ml-auto flex-shrink-0">
-									{result.durationMs}ms
-								</span>
-							</>
-						) : isActive ? (
-							<Loader2 className="w-3 h-3 animate-spin text-amber-500 flex-shrink-0" />
-						) : null}
-					</div>
-				);
-			})}
+								{isDone ? (
+									<>
+										<Check className="w-3 h-3 text-green-500 flex-shrink-0" />
+										<span className="text-gray-500 truncate">
+											{result.summary}
+										</span>
+										<span className="text-gray-400 ml-auto flex-shrink-0">
+											{result.durationMs}ms
+										</span>
+									</>
+								) : isActive ? (
+									<Loader2 className="w-3 h-3 animate-spin text-amber-500 flex-shrink-0" />
+								) : null}
+							</div>
+						);
+					})}
+				</React.Fragment>
+			))}
 		</div>
 	);
 }
@@ -754,6 +800,7 @@ export function OfficerAiChat() {
 			const decoder = new TextDecoder();
 			let buffer = "";
 			let sawFirstToken = false;
+			let currentToolRound = 0;
 
 			while (true) {
 				const { done, value } = await reader.read();
@@ -788,17 +835,26 @@ export function OfficerAiChat() {
 					}
 
 					if (event.type === "reasoning") {
+						setLoadingStep("AI is thinking...");
 						updateAssistantMessage(assistantId, (msg) => ({
 							...msg,
 							reasoning: (msg.reasoning || "") + event.content,
+							isReasoning: true,
 						}));
 						continue;
 					}
 
 					if (event.type === "tool_start") {
+						currentToolRound += 1;
+						const round = currentToolRound;
 						updateAssistantMessage(assistantId, (msg) => ({
 							...msg,
-							toolCalls: [...(msg.toolCalls || []), ...event.tools],
+							isReasoning: false,
+							currentToolRound: round,
+							toolCalls: [
+								...(msg.toolCalls || []),
+								...event.tools.map((t) => ({ ...t, round })),
+							],
 						}));
 						continue;
 					}
@@ -826,12 +882,14 @@ export function OfficerAiChat() {
 							updateAssistantMessage(assistantId, (msg) => ({
 								...msg,
 								content: event.content,
+								isReasoning: false,
 							}));
 							continue;
 						}
 						updateAssistantMessage(assistantId, (msg) => ({
 							...msg,
 							content: msg.content + event.content,
+							isReasoning: false,
 						}));
 						continue;
 					}
@@ -842,6 +900,7 @@ export function OfficerAiChat() {
 							content: event.reply || msg.content,
 							steps: event.steps,
 							meta: event.meta,
+							isReasoning: false,
 						}));
 						setLastMeta(event.meta);
 						setLoadingStep("Ready");
@@ -1012,19 +1071,9 @@ export function OfficerAiChat() {
 										{msg.role === "assistant" && msg.reasoning && (
 											<ReasoningBlock
 												content={msg.reasoning}
-												isStreaming={isLoading && !msg.content && msg.id === messages[messages.length - 1]?.id}
+												isStreaming={isLoading && msg.id === messages[messages.length - 1]?.id && (msg.isReasoning ?? false)}
 											/>
 										)}
-
-										{msg.role === "assistant" &&
-											msg.toolCalls &&
-											msg.toolCalls.length > 0 && (
-												<ToolCallCards
-													toolCalls={msg.toolCalls}
-													toolResults={msg.toolResults || []}
-													isActive={isLoading && msg.id === messages[messages.length - 1]?.id}
-												/>
-											)}
 
 										{msg.content ? (
 											<MarkdownRenderer content={msg.content} />
@@ -1046,16 +1095,17 @@ export function OfficerAiChat() {
 								{/* Execution trace + retry */}
 								{msg.role === "assistant" && (
 									<div className="ml-10 flex items-center gap-2">
-										{msg.steps && msg.steps.length > 0 && (
+										{(msg.steps && msg.steps.length > 0) || (msg.toolCalls && msg.toolCalls.length > 0) ? (
 											<details className="text-xs text-gray-500 cursor-pointer group">
 												<summary className="flex items-center gap-1 hover:text-gray-700 select-none">
 													<span className="font-medium">
-														Trace ({msg.steps.length})
+														Trace {msg.steps?.length ? `(${msg.steps.length})` : ""}
+														{msg.toolCalls && msg.toolCalls.length > 0 && ` • Tools (${msg.toolCalls.length})`}
 													</span>
 													<ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
 												</summary>
 												<div className="mt-1 pl-2 border-l-2 border-gray-200 flex flex-col gap-0.5 py-1">
-													{msg.steps.map((step, idx) => (
+													{msg.steps?.map((step, idx) => (
 														<span
 															key={`${msg.id}-step-${idx}`}
 															className="text-[11px] leading-tight"
@@ -1063,9 +1113,19 @@ export function OfficerAiChat() {
 															{step}
 														</span>
 													))}
+													{msg.toolCalls && msg.toolCalls.length > 0 && (
+														<div className="mt-2 pt-2 border-t border-gray-200">
+															<div className="text-[11px] font-medium text-gray-600 mb-1">Tool Calls:</div>
+															<ToolCallCards
+																toolCalls={msg.toolCalls}
+																toolResults={msg.toolResults || []}
+																isActive={false}
+															/>
+														</div>
+													)}
 												</div>
 											</details>
-										)}
+										) : null}
 										{msg.error && !isLoading && (
 											<button
 												type="button"

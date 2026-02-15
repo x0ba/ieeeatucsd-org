@@ -586,6 +586,215 @@ export const syncDocumentSections = mutation({
   },
 });
 
+type VersionSnapshotSource = "manual" | "auto_backup";
+
+async function getNextVersionNumber(
+  ctx: any,
+  constitutionId: any,
+): Promise<number> {
+  const latestVersion = await ctx.db
+    .query("constitutionVersions")
+    .withIndex("by_constitutionId_versionNumber", (q: any) =>
+      q.eq("constitutionId", constitutionId)
+    )
+    .order("desc")
+    .first();
+
+  return (latestVersion?.versionNumber ?? 0) + 1;
+}
+
+async function createVersionSnapshotInternal(
+  ctx: any,
+  args: {
+    constitutionId: any;
+    source: VersionSnapshotSource;
+    note?: string;
+    restoredFromVersionNumber?: number;
+    createdBy: string;
+    createdByName: string;
+    constitutionSnapshot: {
+      title: string;
+      organizationName: string;
+      status: "draft" | "published" | "archived";
+      sections: any[];
+    };
+  },
+) {
+  const versionNumber = await getNextVersionNumber(ctx, args.constitutionId);
+  const label = `V${versionNumber}`;
+  const now = Date.now();
+  const cleanNote = args.note?.trim();
+
+  const versionId = await ctx.db.insert("constitutionVersions", {
+    constitutionId: args.constitutionId,
+    versionNumber,
+    label,
+    note: cleanNote ? cleanNote : undefined,
+    source: args.source,
+    snapshotTitle: args.constitutionSnapshot.title,
+    snapshotOrganizationName: args.constitutionSnapshot.organizationName,
+    snapshotStatus: args.constitutionSnapshot.status,
+    snapshotSections: args.constitutionSnapshot.sections,
+    createdBy: args.createdBy,
+    createdByName: args.createdByName,
+    createdAt: now,
+    restoredFromVersionNumber: args.restoredFromVersionNumber,
+  });
+
+  return {
+    versionId,
+    versionNumber,
+    label,
+  };
+}
+
+export const listVersions = query({
+  args: {
+    logtoId: v.string(),
+    constitutionId: v.id("constitutions"),
+  },
+  handler: async (ctx, args) => {
+    await requireAdminAccess(ctx, args.logtoId);
+
+    const versions = await ctx.db
+      .query("constitutionVersions")
+      .withIndex("by_constitutionId_createdAt", (q: any) =>
+        q.eq("constitutionId", args.constitutionId)
+      )
+      .order("desc")
+      .collect();
+
+    return versions.map((version) => ({
+      _id: version._id,
+      constitutionId: version.constitutionId,
+      versionNumber: version.versionNumber,
+      label: version.label,
+      note: version.note,
+      source: version.source,
+      createdBy: version.createdBy,
+      createdByName: version.createdByName,
+      createdAt: version.createdAt,
+      restoredFromVersionNumber: version.restoredFromVersionNumber,
+    }));
+  },
+});
+
+export const saveVersion = mutation({
+  args: {
+    logtoId: v.string(),
+    constitutionId: v.id("constitutions"),
+    note: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const adminUser = await requireAdminAccess(ctx, args.logtoId);
+    const user = await ctx.auth.getUserIdentity();
+    const userId = user?.subject || args.logtoId;
+    const userName = user?.name || user?.email || adminUser.name || "Unknown User";
+
+    const constitution = await ctx.db.get(args.constitutionId);
+    if (!constitution) {
+      throw new Error("Constitution not found");
+    }
+
+    const snapshot = await createVersionSnapshotInternal(ctx, {
+      constitutionId: args.constitutionId,
+      source: "manual",
+      note: args.note,
+      createdBy: userId,
+      createdByName: userName,
+      constitutionSnapshot: {
+        title: constitution.title,
+        organizationName: constitution.organizationName,
+        status: constitution.status,
+        sections: constitution.sections || [],
+      },
+    });
+
+    await ctx.db.patch(args.constitutionId, {
+      version: snapshot.versionNumber,
+      lastModifiedBy: userId,
+      lastModified: Date.now(),
+    });
+
+    return snapshot;
+  },
+});
+
+export const restoreVersion = mutation({
+  args: {
+    logtoId: v.string(),
+    constitutionId: v.id("constitutions"),
+    versionId: v.id("constitutionVersions"),
+  },
+  handler: async (ctx, args) => {
+    const adminUser = await requireAdminAccess(ctx, args.logtoId);
+    const user = await ctx.auth.getUserIdentity();
+    const userId = user?.subject || args.logtoId;
+    const userName = user?.name || user?.email || adminUser.name || "Unknown User";
+
+    const constitution = await ctx.db.get(args.constitutionId);
+    if (!constitution) {
+      throw new Error("Constitution not found");
+    }
+
+    const targetVersion = await ctx.db.get(args.versionId);
+    if (!targetVersion) {
+      throw new Error("Target version not found");
+    }
+    if (targetVersion.constitutionId !== args.constitutionId) {
+      throw new Error("Version does not belong to this constitution");
+    }
+
+    const backupSnapshot = await createVersionSnapshotInternal(ctx, {
+      constitutionId: args.constitutionId,
+      source: "auto_backup",
+      note: `Auto backup before restoring ${targetVersion.label}`,
+      restoredFromVersionNumber: targetVersion.versionNumber,
+      createdBy: userId,
+      createdByName: userName,
+      constitutionSnapshot: {
+        title: constitution.title,
+        organizationName: constitution.organizationName,
+        status: constitution.status,
+        sections: constitution.sections || [],
+      },
+    });
+
+    await ctx.db.patch(args.constitutionId, {
+      title: targetVersion.snapshotTitle,
+      organizationName: targetVersion.snapshotOrganizationName,
+      status: targetVersion.snapshotStatus,
+      sections: targetVersion.snapshotSections,
+      version: targetVersion.versionNumber,
+      lastModifiedBy: userId,
+      lastModified: Date.now(),
+    });
+
+    await createAuditEntryInternal(ctx, {
+      constitutionId: args.constitutionId,
+      changeType: "update",
+      changeDescription: `Restored constitution to ${targetVersion.label} (auto backup created as ${backupSnapshot.label})`,
+      beforeValue: {
+        title: `Current version: V${constitution.version}`,
+        version: constitution.version,
+        sectionCount: constitution.sections?.length ?? 0,
+      },
+      afterValue: {
+        title: `Restored to ${targetVersion.label} (backup ${backupSnapshot.label})`,
+        version: targetVersion.versionNumber,
+        sectionCount: targetVersion.snapshotSections?.length ?? 0,
+      },
+      userId,
+      userName,
+    });
+
+    return {
+      restoredVersionNumber: targetVersion.versionNumber,
+      backupVersionNumber: backupSnapshot.versionNumber,
+    };
+  },
+});
+
 // Maximum number of audit entries to keep per constitution (prevents 1 MiB limit)
 const MAX_AUDIT_ENTRIES = 200;
 

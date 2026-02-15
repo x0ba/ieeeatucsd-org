@@ -55,7 +55,7 @@ function mapEventToType(event: any): EventRequest {
 		location: event.location || "TBD",
 		startDate: event.startDate || Date.now(),
 		endDate: event.endDate || Date.now() + 3600000,
-		eventCode: event.eventCode || `EVENT-${event._id.slice(-6)}`,
+		eventCode: event.eventCode || "",
 		hasFood: event.hasFood || event.foodDrinksBeingServed || false,
 		needsFlyers: event.flyersNeeded || false,
 		needsGraphics: event.needsGraphics || false,
@@ -251,6 +251,7 @@ function ManageEventsPage() {
 				startDate: data.startDate,
 				endDate: data.endDate,
 				eventDescription: data.eventDescription,
+				eventCode: data.eventCode,
 				eventType: normalizeEventType(data.eventType),
 				department: data.department,
 				expectedAttendance: data.estimatedAttendance,
@@ -637,6 +638,7 @@ function ManageEventsPage() {
 				startDate: data.startDate || Date.now(),
 				endDate: data.endDate || Date.now() + 3600000,
 				eventDescription: data.eventDescription || "",
+				eventCode: data.eventCode || `EVENT-${Date.now()}`,
 				eventType: normalizeEventType(
 					(data.eventType as string | undefined) || "other",
 				),
@@ -713,6 +715,10 @@ function ManageEventsPage() {
 				endDate: data.endDate || editingDraft.endDate,
 				eventDescription:
 					data.eventDescription || editingDraft.eventDescription,
+				eventCode:
+					data.eventCode ||
+					editingDraft.eventCode ||
+					`EVENT-${Date.now()}`,
 				eventType: normalizeEventType(
 					(data.eventType as string | undefined) || editingDraft.eventType,
 				),

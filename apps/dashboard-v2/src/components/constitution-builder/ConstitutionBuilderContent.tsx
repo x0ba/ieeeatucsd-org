@@ -1,20 +1,25 @@
 import { useState, useEffect, useCallback } from "react";
-import { FileText, Check, Edit3, ExternalLink, History } from "lucide-react";
+import { FileText, Check, Edit3, ExternalLink, History, RotateCcw } from "lucide-react";
 import type { SaveStatus } from "./types";
 import { useConstitutionData } from "./hooks/useConstitutionData";
 import ConstitutionDocumentEditor from "./ConstitutionDocumentEditor";
 import { ConstitutionAuditLog } from "./ConstitutionAuditLog";
+import ConstitutionVersionHistory from "./ConstitutionVersionHistory";
 import ConstitutionSearch from "./ConstitutionSearch";
 import { Button } from "@/components/ui/button";
 
-type BuilderView = "editor" | "audit";
+type BuilderView = "editor" | "audit" | "versions";
 
 const ConstitutionBuilderContent = () => {
   const {
     sections,
+    versions,
     isLoading,
     saveDocumentSections,
+    saveVersion,
+    restoreVersion,
     initializeConstitution,
+    constitution,
     constitutionId,
   } = useConstitutionData();
 
@@ -106,6 +111,18 @@ const ConstitutionBuilderContent = () => {
                   Editor
                 </Button>
                 <Button
+                  onClick={() => setCurrentView("versions")}
+                  className={`px-3 py-2 rounded-md text-sm font-medium min-h-[44px] ${
+                    currentView === "versions"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                  variant="ghost"
+                >
+                  <RotateCcw className="h-4 w-4 inline mr-2" />
+                  Versions
+                </Button>
+                <Button
                   onClick={() => setCurrentView("audit")}
                   className={`px-3 py-2 rounded-md text-sm font-medium min-h-[44px] ${
                     currentView === "audit"
@@ -129,7 +146,16 @@ const ConstitutionBuilderContent = () => {
           <ConstitutionDocumentEditor
             sections={sections}
             onSaveDocument={saveDocumentSections}
+            onSaveVersion={saveVersion}
           />
+        ) : currentView === "versions" ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
+            <ConstitutionVersionHistory
+              versions={versions}
+              currentVersion={constitution?.version}
+              onRestoreVersion={restoreVersion}
+            />
+          </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-6">
             <ConstitutionAuditLog constitutionId={constitutionId || ""} />

@@ -465,17 +465,31 @@ function buildConversationPayload(params: {
 
 	const systemPrompt =
 		params.systemPrompt ||
-		`You are the IEEE at UC San Diego dashboard assistant.
-You answer using only the provided Convex search results and user context.
-Rules:
+		`You are the IEEE at UC San Diego dashboard assistant. You are fully autonomous like Kilo Code - you execute tool calls automatically and provide direct results.
+
+BEHAVIOR:
+- NEVER ask clarifying questions or follow-up questions. EVER.
+- Execute tool calls immediately to get any information needed.
+- Use multiple tools in parallel when helpful.
+- Provide direct, actionable answers based on tool results.
+
+TOOL USAGE STRATEGY:
+- For general queries: start with search_data to find relevant records
+- For specific entities: use get_record with IDs found in search
+- For summaries: use get_statistics for counts and totals
+- For financial questions: use get_budget_overview
+- For people: use get_user_info
+- Execute multiple tool calls in parallel when possible
+
+RULES:
 - Do not invent records or values.
-- If data is missing, clearly say what you could and could not find.
-- Do NOT reveal internal database IDs (user IDs, event IDs, record IDs, etc.) unless the user explicitly requests them.
+- If data is missing, clearly state what you could and could not find.
+- Do NOT reveal internal database IDs unless explicitly requested.
 - Format dates and times clearly and include at least one absolute date.
 - Always present times in Pacific time (${params.timeZone}, PST/PDT), never UTC.
-- Prefer concise markdown (headings, bullets, short tables) when it improves readability.
-- Synthesize across all retrieval passes when multiple lookup queries were used.
+- Prefer concise markdown (headings, bullets, short tables).
 - Keep responses concise and actionable.
+
 Current Date/Time (${params.timeZone}, ${params.requestTime.timeZoneAbbr}): ${params.requestTime.local}`;
 
 	const contextPayload = {
@@ -631,7 +645,7 @@ export async function chatWithAI(params: {
 	const { config, steps, conversationMessages, meta } =
 		await buildContext(params);
 
-	addStep(steps, "Generating answer with Grok (with tools)...");
+	addStep(steps, "Generating AI response...");
 
 	let messages: Array<Record<string, unknown>> = [...conversationMessages];
 	let totalToolCalls = 0;
@@ -648,8 +662,8 @@ export async function chatWithAI(params: {
 			body: JSON.stringify({
 				model: config.model,
 				messages,
-				temperature: 0.1,
-				reasoning: { effort: "high", exclude: false },
+				temperature: 0,
+				reasoning: { effort: "low", exclude: false },
 				tools: TOOL_DEFINITIONS,
 				tool_choice: "auto",
 			}),
@@ -751,8 +765,8 @@ async function* streamOpenRouterResponse(
 	const body: Record<string, unknown> = {
 		model: config.model,
 		messages,
-		temperature: 0.1,
-		reasoning: { effort: "high", exclude: false },
+		temperature: 0,
+		reasoning: { effort: "low", exclude: false },
 		stream: true,
 	};
 	if (withTools) {
@@ -875,7 +889,7 @@ export async function* chatWithAIStream(params: {
 		executedQueries: gathered.executedQueries,
 	});
 
-	const streamingStep = "Generating answer with Grok (with tools)...";
+	const streamingStep = "Generating AI response...";
 	streamedSteps.push(streamingStep);
 	yield { type: "status", message: streamingStep };
 

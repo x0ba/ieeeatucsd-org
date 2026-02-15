@@ -26,8 +26,19 @@ import {
   RotateCcw,
   Type,
   Minus,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 import {
   sectionsToHtml,
   htmlToDocumentSections,
@@ -46,6 +57,9 @@ interface ConstitutionDocumentEditorProps {
   onSaveDocument: (
     parsedSections: ConstitutionDocumentSectionInput[],
   ) => Promise<ConstitutionDocumentSaveResult>;
+  onSaveVersion: (
+    note?: string,
+  ) => Promise<{ versionId: string; versionNumber: number; label: string } | null>;
 }
 
 /**
@@ -350,9 +364,13 @@ function createSectionPrefixPlugin(sectionsRef: React.RefObject<ConstitutionSect
 const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
   sections,
   onSaveDocument,
+  onSaveVersion,
 }) => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingVersion, setIsSavingVersion] = useState(false);
+  const [saveVersionDialogOpen, setSaveVersionDialogOpen] = useState(false);
+  const [versionNote, setVersionNote] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   // Counter that increments on every editor transaction to force toolbar re-renders
   const [, setEditorRevision] = useState(0);
@@ -441,8 +459,8 @@ const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
     }
   }, [sections, editor, hasUnsavedChanges]);
 
-  const handleSave = useCallback(async () => {
-    if (!editor) return;
+  const handleSave = useCallback(async (): Promise<boolean> => {
+    if (!editor) return false;
 
     setIsSaving(true);
     isSavingRef.current = true;
@@ -460,7 +478,7 @@ const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
         setSaveMessage("No changes detected");
         setHasUnsavedChanges(false);
         initialHtmlRef.current = currentHtml;
-        return;
+        return true;
       }
 
       setHasUnsavedChanges(false);
@@ -468,28 +486,59 @@ const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
       setSaveMessage(
         `Saved ${changedCount} change${changedCount > 1 ? "s" : ""} (${result.created} created, ${result.updated} updated, ${result.deleted} deleted, ${result.reordered} reordered)`,
       );
+      return true;
     } catch (error) {
       console.error("Failed to save:", error);
       setSaveMessage("Failed to save changes");
+      return false;
     } finally {
       setIsSaving(false);
       isSavingRef.current = false;
     }
   }, [editor, onSaveDocument]);
 
+  const handleSaveVersion = useCallback(async () => {
+    setIsSavingVersion(true);
+    try {
+      if (hasUnsavedChanges) {
+        const saved = await handleSave();
+        if (!saved) {
+          toast.error("Could not save current edits before versioning");
+          return;
+        }
+      }
+
+      const result = await onSaveVersion(versionNote);
+      if (!result) {
+        toast.error("Failed to create version");
+        return;
+      }
+
+      setSaveMessage(`Saved version ${result.label}`);
+      setVersionNote("");
+      setSaveVersionDialogOpen(false);
+      toast.success(`Saved version ${result.label}`);
+    } catch (error) {
+      console.error("Failed to save version:", error);
+      toast.error("Failed to save version");
+    } finally {
+      setIsSavingVersion(false);
+    }
+  }, [hasUnsavedChanges, handleSave, onSaveVersion, versionNote]);
+
   // Ctrl/Cmd+S keyboard shortcut to save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
-        if (hasUnsavedChanges && !isSaving) {
+        if (hasUnsavedChanges && !isSaving && !isSavingVersion) {
           handleSave();
         }
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleSave, hasUnsavedChanges, isSaving]);
+  }, [handleSave, hasUnsavedChanges, isSaving, isSavingVersion]);
 
   const handleReset = useCallback(() => {
     if (!editor) return;
@@ -709,9 +758,19 @@ const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
               Reset
             </Button>
             <Button
+              onClick={() => setSaveVersionDialogOpen(true)}
+              size="sm"
+              variant="outline"
+              disabled={isSaving || isSavingVersion}
+              className="h-8 text-xs"
+            >
+              <History className="h-3.5 w-3.5 mr-1" />
+              {isSavingVersion ? "Saving Version..." : "Save Version"}
+            </Button>
+            <Button
               onClick={handleSave}
               size="sm"
-              disabled={!hasUnsavedChanges || isSaving}
+              disabled={!hasUnsavedChanges || isSaving || isSavingVersion}
               className={`h-8 text-xs ${
                 hasUnsavedChanges
                   ? "bg-green-600 hover:bg-green-700 text-white"
@@ -729,6 +788,50 @@ const ConstitutionDocumentEditor: React.FC<ConstitutionDocumentEditorProps> = ({
       <div className="constitution-document-editor p-6 lg:p-8 min-h-125 max-h-[calc(100vh-300px)] overflow-y-auto">
         <EditorContent editor={editor} />
       </div>
+
+      <Dialog open={saveVersionDialogOpen} onOpenChange={setSaveVersionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Manual Version</DialogTitle>
+            <DialogDescription>
+              Save a restorable checkpoint. Audit logs remain separate and automatic.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <label htmlFor="version-note" className="text-sm font-medium text-gray-700">
+              Note (optional)
+            </label>
+            <Input
+              id="version-note"
+              value={versionNote}
+              onChange={(e) => setVersionNote(e.target.value)}
+              placeholder="Example: Board-approved edits before publication"
+              maxLength={120}
+            />
+            {hasUnsavedChanges && (
+              <p className="text-xs text-amber-700">
+                Unsaved changes will be saved first before creating this version.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (isSavingVersion) return;
+                setSaveVersionDialogOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveVersion} disabled={isSavingVersion}>
+              {isSavingVersion ? "Saving..." : "Save Version"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -402,6 +402,29 @@ export default defineSchema({
     isTemplate: v.optional(v.boolean()),
   }).index("by_status", ["status"]),
 
+  constitutionVersions: defineTable({
+    constitutionId: v.id("constitutions"),
+    versionNumber: v.number(),
+    label: v.string(),
+    note: v.optional(v.string()),
+    source: v.union(v.literal("manual"), v.literal("auto_backup")),
+    snapshotTitle: v.string(),
+    snapshotOrganizationName: v.string(),
+    snapshotStatus: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("archived"),
+    ),
+    snapshotSections: v.array(constitutionSection),
+    createdBy: v.string(),
+    createdByName: v.string(),
+    createdAt: v.number(),
+    restoredFromVersionNumber: v.optional(v.number()),
+  })
+    .index("by_constitutionId", ["constitutionId"])
+    .index("by_constitutionId_versionNumber", ["constitutionId", "versionNumber"])
+    .index("by_constitutionId_createdAt", ["constitutionId", "createdAt"]),
+
   constitutionAuditLogs: defineTable({
     constitutionId: v.id("constitutions"),
     entries: v.array(

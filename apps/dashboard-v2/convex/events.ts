@@ -12,6 +12,12 @@ function getLegacyAttendeeIds(event: Record<string, unknown>): string[] {
   return legacy.filter((id): id is string => typeof id === "string");
 }
 
+function normalizeEventCode(eventCode?: string): string | undefined {
+  if (typeof eventCode !== "string") return undefined;
+  const normalized = eventCode.trim().toUpperCase();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
 // ── Queries ──────────────────────────────────────────────────────────────────
 
 export const listPublished = query({
@@ -160,9 +166,12 @@ export const getByCode = query({
   args: { logtoId: v.string(), eventCode: v.string() },
   handler: async (ctx, args) => {
     await requireCurrentUser(ctx, args.logtoId);
+    const normalizedCode = normalizeEventCode(args.eventCode);
+    if (!normalizedCode) return null;
+
     return await ctx.db
       .query("events")
-      .withIndex("by_eventCode", (q) => q.eq("eventCode", args.eventCode))
+      .withIndex("by_eventCode", (q) => q.eq("eventCode", normalizedCode))
       .first();
   },
 });
@@ -271,9 +280,12 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx, args.logtoId);
     const userId = user.logtoId ?? user.authUserId ?? "";
-    const { logtoId, isDraft, ...data } = args;
+    const { logtoId, isDraft, eventCode, ...data } = args;
+    const normalizedEventCode = normalizeEventCode(eventCode);
+
     return await ctx.db.insert("events", {
       ...data,
+      ...(normalizedEventCode ? { eventCode: normalizedEventCode } : {}),
       status: isDraft ? "draft" : (data.published ? "approved" : "submitted"),
       requestedUser: userId,
       flyersCompleted: data.flyersCompleted ?? false,
@@ -384,6 +396,16 @@ export const update = mutation({
         cleanUpdates[key] = value;
       }
     }
+
+    if (typeof cleanUpdates.eventCode === "string") {
+      const normalized = normalizeEventCode(cleanUpdates.eventCode);
+      if (normalized) {
+        cleanUpdates.eventCode = normalized;
+      } else {
+        delete cleanUpdates.eventCode;
+      }
+    }
+
     await ctx.db.patch(id, cleanUpdates);
     return id;
   },
@@ -481,21 +503,40 @@ export const checkIn = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx, args.logtoId);
+    const normalizedInputCode = normalizeEventCode(args.eventCode);
 
-    // Look up event by code using index (try exact match first, then uppercase)
-    const trimmedCode = args.eventCode.trim();
+    if (!normalizedInputCode) {
+      throw new ConvexError("Invalid event code. Please check the code and try again.");
+    }
+
+    // Look up event by normalized code via index first.
     let event = await ctx.db
       .query("events")
-      .withIndex("by_eventCode", (q) => q.eq("eventCode", trimmedCode))
+      .withIndex("by_eventCode", (q) => q.eq("eventCode", normalizedInputCode))
       .first();
 
     if (!event) {
-      // Fallback: try uppercase version
-      const upperCode = trimmedCode.toUpperCase();
-      event = await ctx.db
+      // Backward-compat fallback for legacy events with mixed-case/untrimmed/missing code.
+      const publishedEvents = await ctx.db
         .query("events")
-        .withIndex("by_eventCode", (q) => q.eq("eventCode", upperCode))
-        .first();
+        .withIndex("by_published", (q) => q.eq("published", true))
+        .collect();
+
+      event =
+        publishedEvents.find((candidate) => {
+          const candidateCode = normalizeEventCode(candidate.eventCode);
+          if (candidateCode && candidateCode === normalizedInputCode) {
+            return true;
+          }
+
+          // Some UI flows displayed this fallback code without persisting it.
+          if (!candidateCode) {
+            const generatedCode = normalizeEventCode(`EVENT-${candidate._id.slice(-6)}`);
+            return generatedCode === normalizedInputCode;
+          }
+
+          return false;
+        }) ?? null;
     }
 
     if (!event) {

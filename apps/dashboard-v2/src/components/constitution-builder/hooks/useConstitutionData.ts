@@ -4,6 +4,7 @@ import {
   ConstitutionDocumentSaveResult,
   ConstitutionDocumentSectionInput,
   ConstitutionSection,
+  ConstitutionVersion,
   SaveStatus,
 } from "../types";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +27,12 @@ export function useConstitutionData() {
     api.constitutions.getSections,
     constitution ? { constitutionId: constitution._id } : "skip",
   );
+  const versions = useQuery(
+    api.constitutions.listVersions,
+    constitution && logtoId
+      ? { constitutionId: constitution._id, logtoId }
+      : "skip",
+  );
 
   // Mutations
   const addSection = useMutation(api.constitutions.addSection);
@@ -35,6 +42,8 @@ export function useConstitutionData() {
   const syncDocumentSections = useMutation(
     api.constitutions.syncDocumentSections,
   );
+  const saveVersionMutation = useMutation(api.constitutions.saveVersion);
+  const restoreVersionMutation = useMutation(api.constitutions.restoreVersion);
 
   const constitutionLoading =
     Boolean(isAuthenticated && logtoId) && constitution === undefined;
@@ -217,9 +226,38 @@ export function useConstitutionData() {
     });
   }, [constitution, logtoId, syncDocumentSections]);
 
+  const handleSaveVersion = useCallback(async (note?: string) => {
+    if (!constitution || !logtoId) {
+      return null;
+    }
+
+    const result = await saveVersionMutation({
+      logtoId,
+      constitutionId: constitution._id,
+      note,
+    });
+    return {
+      ...result,
+      versionId: result.versionId as string,
+    };
+  }, [constitution, logtoId, saveVersionMutation]);
+
+  const handleRestoreVersion = useCallback(async (versionId: string) => {
+    if (!constitution || !logtoId) {
+      return null;
+    }
+
+    return await restoreVersionMutation({
+      logtoId,
+      constitutionId: constitution._id,
+      versionId: versionId as any,
+    });
+  }, [constitution, logtoId, restoreVersionMutation]);
+
   return {
     constitution,
     sections: sections || [],
+    versions: (versions || []) as ConstitutionVersion[],
     isLoading,
     saveStatus,
     addSection: handleAddSection,
@@ -227,6 +265,8 @@ export function useConstitutionData() {
     deleteSection: handleDeleteSection,
     reorderSection: handleReorderSection,
     saveDocumentSections: handleSaveDocumentSections,
+    saveVersion: handleSaveVersion,
+    restoreVersion: handleRestoreVersion,
     initializeConstitution,
     constitutionId: constitution?._id,
   };
