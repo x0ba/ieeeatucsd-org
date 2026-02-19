@@ -3,7 +3,7 @@ import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useState, useMemo, useEffect } from "react";
-import { Plus, UserPlus, Search, Filter, X } from "lucide-react";
+import { Plus, UserPlus, Search, Filter, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_dashboard/manage-users")({
 const ITEMS_PER_PAGE = 10;
 
 function ManageUsersPage() {
-  const { hasAdminAccess, logtoId, user: currentUser, getAuthHeaders } = usePermissions();
+  const { hasAdminAccess, logtoId, user: currentUser, getAuthHeaders, isLoading } = usePermissions();
   const users = useAuthedQuery(api.users.list, logtoId ? { logtoId } : "skip");
 
   // Mutations
@@ -261,6 +261,15 @@ function ManageUsersPage() {
   };
 
   const availableTeams: OfficerTeam[] = ["Internal", "Events", "Projects"];
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   // Access denied
   if (!hasAdminAccess) {

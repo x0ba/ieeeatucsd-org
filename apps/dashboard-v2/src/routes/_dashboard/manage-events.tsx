@@ -102,7 +102,7 @@ function mapEventToType(event: any): EventRequest {
 }
 
 function ManageEventsPage() {
-	const { hasOfficerAccess, hasAdminAccess, logtoId, user, getAuthHeaders } = usePermissions();
+	const { hasOfficerAccess, hasAdminAccess, logtoId, user, getAuthHeaders, isLoading } = usePermissions();
 	const aiEnabled = user?.aiFeaturesEnabled !== false;
 
 	// Single unified query — events and eventRequests are now one table
@@ -220,6 +220,15 @@ function ManageEventsPage() {
 	useMemo(() => {
 		setCurrentPage(1);
 	}, [filters, sortConfig]);
+
+	// Loading state
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+			</div>
+		);
+	}
 
 	// Permission check
 	if (!hasOfficerAccess) {

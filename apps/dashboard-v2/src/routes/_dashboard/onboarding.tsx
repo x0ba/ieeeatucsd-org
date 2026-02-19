@@ -49,6 +49,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  Loader2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -119,7 +120,15 @@ Once again, congratulations on this position and we're all so excited to have yo
 // ── Main Page ──
 
 function OnboardingPage() {
-  const { hasAdminAccess, logtoId } = usePermissions();
+  const { hasAdminAccess, logtoId, isLoading } = usePermissions();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!hasAdminAccess) {
     return (

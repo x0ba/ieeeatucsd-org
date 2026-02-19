@@ -163,7 +163,7 @@ const getStatusIcon = (status: ReimbursementStatus) => {
 };
 
 function ManageReimbursementsPage() {
-	const { hasAdminAccess, logtoId, user, getAuthHeaders } = usePermissions();
+	const { hasAdminAccess, logtoId, user, getAuthHeaders, isLoading } = usePermissions();
 	const aiEnabled = user?.aiFeaturesEnabled !== false;
 	const reimbursements = useAuthedQuery(
 		api.reimbursements.listAll,
@@ -597,6 +597,14 @@ function ManageReimbursementsPage() {
 		setViewMode("list");
 		setSelectedReimbursement(null);
 	};
+
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+			</div>
+		);
+	}
 
 	if (!hasAdminAccess) {
 		return (

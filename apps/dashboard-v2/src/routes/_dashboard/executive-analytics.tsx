@@ -9,6 +9,7 @@ import {
 	TrendingDown,
 	TrendingUp,
 	Users,
+	Loader2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -134,7 +135,7 @@ function GrowthBadge({ value }: { value: number | null }) {
 }
 
 function ExecutiveAnalyticsPage() {
-	const { hasAdminAccess, logtoId } = usePermissions();
+	const { hasAdminAccess, logtoId, isLoading } = usePermissions();
 	const [fiscalYearStart, setFiscalYearStart] = useState<number | undefined>(
 		undefined,
 	);
@@ -159,6 +160,14 @@ function ExecutiveAnalyticsPage() {
 		() => new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }),
 		[],
 	);
+
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+			</div>
+		);
+	}
 
 	if (!hasAdminAccess) {
 		return (

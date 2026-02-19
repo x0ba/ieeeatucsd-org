@@ -5,7 +5,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import type { Id } from "@convex/_generated/dataModel";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_dashboard/manage-sponsors")({
 });
 
 function ManageSponsorsPage() {
-  const { hasAdminAccess, logtoId } = usePermissions();
+  const { hasAdminAccess, logtoId, isLoading } = usePermissions();
   const [showModal, setShowModal] = useState(false);
   const [editingSponsor, setEditingSponsor] = useState<SponsorDomain | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,6 +40,14 @@ function ManageSponsorsPage() {
   const createDomain = useAuthedMutation(api.sponsorDomains.create);
   const updateDomain = useAuthedMutation(api.sponsorDomains.update);
   const removeDomain = useAuthedMutation(api.sponsorDomains.remove);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!hasAdminAccess) {
     return (

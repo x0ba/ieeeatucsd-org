@@ -6,13 +6,14 @@ import { api } from "@convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
 import ConstitutionPreview from "@/components/constitution-builder/ConstitutionPreview";
 import { exportConstitutionToPdf } from "@/components/constitution-builder/utils/pdfExport";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_dashboard/constitution-preview")({
   component: ConstitutionPreviewPage,
 });
 
 function ConstitutionPreviewPage() {
-  const { hasOfficerAccess } = usePermissions();
+  const { hasOfficerAccess, isLoading } = usePermissions();
   const { logtoId } = useAuth();
 
   const constitution = useAuthedQuery(
@@ -25,6 +26,14 @@ function ConstitutionPreviewPage() {
     api.constitutions.getSections,
     constitution ? { constitutionId: constitution._id } : "skip",
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!hasOfficerAccess) {
     return (

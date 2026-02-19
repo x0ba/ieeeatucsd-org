@@ -492,7 +492,7 @@ function FundRequestDetailView({
 }
 
 function ManageFundRequestsPage() {
-  const { hasOfficerAccess, hasAdminAccess, logtoId, getAuthHeaders } = usePermissions();
+  const { hasOfficerAccess, hasAdminAccess, logtoId, getAuthHeaders, isLoading } = usePermissions();
   const allRequests = useAuthedQuery(
     api.fundRequests.listAll,
     logtoId ? { logtoId } : "skip",
@@ -518,6 +518,14 @@ function ManageFundRequestsPage() {
     setView("list");
     setSelectedRequestId(null);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!hasOfficerAccess) {
     return (

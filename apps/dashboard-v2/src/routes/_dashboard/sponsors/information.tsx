@@ -7,6 +7,7 @@ import {
 	Mail,
 	Sparkles,
 	X,
+	Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -99,16 +100,20 @@ function SponsorInformationPage() {
 	const { user, isLoading } = useAuth();
 	const { isSponsor, isAdmin } = usePermissions();
 
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+			</div>
+		);
+	}
+
 	if (!isSponsor && !isAdmin) {
 		return (
 			<div className="p-6 text-center text-muted-foreground">
 				You don't have permission to access this page.
 			</div>
 		);
-	}
-
-	if (isLoading) {
-		return <LoadingSkeleton />;
 	}
 
 	const sponsorData = user;
