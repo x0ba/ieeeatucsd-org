@@ -102,6 +102,7 @@ services:
         - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
         - VITE_CONVEX_URL=${VITE_CONVEX_URL}
         - VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL}
+        - CONVEX_SESSION_SECRET=${CONVEX_SESSION_SECRET}
     ports:
       - "4323:4323"
     restart: always
