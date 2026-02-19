@@ -3,18 +3,18 @@ import { mutation, query } from "./_generated/server";
 import { requireAdminAccess } from "./permissions";
 
 export const list = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const domains = await ctx.db.query("sponsorDomains").collect();
     return domains;
   },
 });
 
 export const getStats = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const domains = await ctx.db.query("sponsorDomains").collect();
 
     const goldSponsors = domains.filter((d) => d.sponsorTier === "Gold").length;
@@ -33,6 +33,7 @@ export const getStats = query({
 export const create = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     domain: v.string(),
     organizationName: v.string(),
     sponsorTier: v.union(
@@ -44,7 +45,7 @@ export const create = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const userId = admin.logtoId ?? admin._id;
 
     // Validate domain starts with @
@@ -77,6 +78,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("sponsorDomains"),
     domain: v.string(),
     organizationName: v.string(),
@@ -89,7 +91,7 @@ export const update = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const userId = admin.logtoId ?? admin._id;
 
     // Validate domain starts with @
@@ -120,10 +122,11 @@ export const update = mutation({
 export const remove = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("sponsorDomains"),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     await ctx.db.delete(args.id);
   },
 });

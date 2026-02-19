@@ -6,9 +6,9 @@ import {
 } from "./permissions";
 
 export const listMine = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
     return await ctx.db
       .query("reimbursements")
@@ -18,24 +18,34 @@ export const listMine = query({
 });
 
 export const listAll = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     return await ctx.db.query("reimbursements").collect();
   },
 });
 
 export const get = query({
-  args: { logtoId: v.string(), id: v.id("reimbursements") },
+  args: { logtoId: v.string(), authToken: v.string(), id: v.id("reimbursements") },
   handler: async (ctx, args) => {
-    await requireCurrentUser(ctx, args.logtoId);
-    return await ctx.db.get(args.id);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
+    const reimbursement = await ctx.db.get(args.id);
+    if (!reimbursement) return null;
+
+    const userId = user.logtoId ?? user.authUserId ?? "";
+    const canManage = user.role === "Administrator" || user.role === "Executive Officer";
+    if (!canManage && reimbursement.submittedBy !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    return reimbursement;
   },
 });
 
 export const create = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     title: v.string(),
     totalAmount: v.number(),
     paymentMethod: v.string(),
@@ -51,9 +61,9 @@ export const create = mutation({
     dateOfPurchase: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
-    const { logtoId, ...data } = args;
+    const { logtoId, authToken, ...data } = args;
     return await ctx.db.insert("reimbursements", {
       ...data,
       status: "submitted",
@@ -72,6 +82,7 @@ export const create = mutation({
 export const updateStatus = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("reimbursements"),
     status: v.union(
       v.literal("submitted"),
@@ -81,7 +92,7 @@ export const updateStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const adminId = admin.logtoId ?? admin.authUserId ?? "";
     const reimbursement = await ctx.db.get(args.id);
     if (!reimbursement) throw new Error("Reimbursement not found");
@@ -104,6 +115,7 @@ export const updateStatus = mutation({
 export const updatePaymentDetails = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("reimbursements"),
     paymentDetails: v.object({
       confirmationNumber: v.string(),
@@ -114,7 +126,7 @@ export const updatePaymentDetails = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const adminId = admin.logtoId ?? admin.authUserId ?? "";
     const reimbursement = await ctx.db.get(args.id);
     if (!reimbursement) throw new Error("Reimbursement not found");
@@ -138,10 +150,11 @@ export const updatePaymentDetails = mutation({
 export const remove = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("reimbursements"),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const reimbursement = await ctx.db.get(args.id);
     if (!reimbursement) throw new Error("Reimbursement not found");
     await ctx.db.delete(args.id);
@@ -150,15 +163,21 @@ export const remove = mutation({
 });
 
 export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { logtoId: v.string(), authToken: v.string() },
+  handler: async (ctx, args) => {
+    await requireCurrentUser(ctx, args.logtoId, args.authToken);
     return await ctx.storage.generateUploadUrl();
   },
 });
 
 export const getStorageUrl = mutation({
-  args: { storageId: v.id("_storage") },
+  args: {
+    logtoId: v.string(),
+    authToken: v.string(),
+    storageId: v.id("_storage"),
+  },
   handler: async (ctx, args) => {
+    await requireCurrentUser(ctx, args.logtoId, args.authToken);
     return await ctx.storage.getUrl(args.storageId);
   },
 });

@@ -12,7 +12,7 @@ import {
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
-import { useMutation } from "convex/react";
+import { useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useAuth } from "@/hooks/useAuth";
@@ -84,9 +84,9 @@ export function FundRequestFormModal({
 	editRequestId,
 	className,
 }: FundRequestFormModalProps) {
-	const { user: authUser } = useAuth();
-	const createFundRequest = useMutation(api.fundRequests.create);
-	const updateFundRequest = useMutation(api.fundRequests.update);
+	const { user: authUser, getAuthHeaders } = useAuth();
+	const createFundRequest = useAuthedMutation(api.fundRequests.create);
+	const updateFundRequest = useAuthedMutation(api.fundRequests.update);
 	const [currentStep, setCurrentStep] = useState(1);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const stepTrackInset = `${100 / (STEPS.length * 2)}%`;
@@ -297,7 +297,7 @@ export function FundRequestFormModal({
 
 				// Fire-and-forget email notification
 				if (logtoId) {
-					sendNotification(logtoId, "fund_request_submitted", {
+					sendNotification(getAuthHeaders(), "fund_request_submitted", {
 						requestId: newId,
 						title,
 						amount: parsedAmount,

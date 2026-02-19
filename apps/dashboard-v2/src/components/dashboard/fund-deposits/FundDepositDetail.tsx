@@ -39,7 +39,7 @@ import { Label } from "@/components/ui/label";       // Assuming this exists
 import type { FundDeposit } from "./types";
 import { STATUS_COLORS, STATUS_LABELS, STATUS_ICONS } from "./types";
 import { toast } from "sonner";
-import { useMutation } from "convex/react";
+import { useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { cn } from "@/lib/utils";
 
@@ -58,8 +58,8 @@ export function FundDepositDetail({
     logtoId,
     userRole,
 }: FundDepositDetailProps) {
-    const updateStatus = useMutation(api.fundDeposits.updateStatus);
-    const deleteDeposit = useMutation(api.fundDeposits.deleteRequest);
+    const updateStatus = useAuthedMutation(api.fundDeposits.updateStatus);
+    const deleteDeposit = useAuthedMutation(api.fundDeposits.deleteRequest);
 
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [zoomLevel, setZoomLevel] = useState(1);

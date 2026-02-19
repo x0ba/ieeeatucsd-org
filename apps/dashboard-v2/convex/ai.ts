@@ -186,11 +186,12 @@ const TABLES_WITH_AMOUNT = [
 export const getRecordById = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     table: v.string(),
     recordId: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
 
     if (!ALL_TABLES.includes(args.table as TableName)) {
       return { error: `Unknown table: ${args.table}`, record: null };
@@ -209,6 +210,7 @@ export const getRecordById = query({
 export const listRecords = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     table: v.string(),
     status: v.optional(v.string()),
     limit: v.optional(v.number()),
@@ -216,7 +218,7 @@ export const listRecords = query({
     sortOrder: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
 
     if (!ALL_TABLES.includes(args.table as TableName)) {
       return { error: `Unknown table: ${args.table}`, records: [], total: 0 };
@@ -248,10 +250,11 @@ export const listRecords = query({
 export const getStatistics = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     table: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
 
     if (!ALL_TABLES.includes(args.table as TableName)) {
       return { error: `Unknown table: ${args.table}` };
@@ -299,10 +302,11 @@ export const getStatistics = query({
 export const getUserByNameOrEmail = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     searchTerm: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
 
     const term = args.searchTerm.toLowerCase().trim();
     if (!term) return { error: "Empty search term", users: [] };
@@ -328,10 +332,11 @@ export const getUserByNameOrEmail = query({
 export const getBudgetOverview = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     department: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
 
     const configs = await ctx.db.query("budgetConfigs").take(100);
     const adjustments = await ctx.db.query("budgetAdjustments").take(500);
@@ -391,12 +396,13 @@ export const getBudgetOverview = query({
 export const searchEverything = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     query: v.string(),
     limit: v.optional(v.number()),
     table: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const currentUser = toCurrentUserContext(user);
     const currentServerTimeMs = Date.now();
     const normalizedQuery = normalize(args.query);

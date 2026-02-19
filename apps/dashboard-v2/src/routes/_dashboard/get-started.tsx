@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
+import { useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -108,7 +108,7 @@ const questions: Question[] = [
 
 function GetStartedPage() {
   const { user, logtoId } = useAuth();
-  const completeOnboarding = useMutation(api.users.completeOnboarding);
+  const completeOnboarding = useAuthedMutation(api.users.completeOnboarding);
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [error, setError] = useState<string | null>(null);

@@ -44,6 +44,9 @@ Set these in your `.env` file or pass as build args/runtime env vars:
 - `MXROUTE_SERVER_LOGIN`
 - `MXROUTE_SERVER_URL`
 - `OPENROUTER_API_KEY`
+- `ANTHROPIC_AUTH_TOKEN` (recommended, falls back to `OPENROUTER_API_KEY` when unset)
+- `ANTHROPIC_BASE_URL` (optional, defaults to `https://openrouter.ai/api/anthropic`)
+- `ANTHROPIC_API_KEY` (optional, SDK-required placeholder if not set)
 - `VITE_CONVEX_URL`
 - `VITE_CONVEX_SITE_URL`
 

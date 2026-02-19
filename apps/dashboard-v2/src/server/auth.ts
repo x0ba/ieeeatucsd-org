@@ -1,5 +1,7 @@
 import { ConvexHttpClient } from "convex/browser";
 import type { FunctionReference } from "convex/server";
+import { env } from "@/env";
+import type { UserRole } from "@/types/roles";
 
 /**
  * Validates a logtoId by checking if the user exists in Convex.
@@ -28,6 +30,44 @@ export async function validateLogtoId(logtoId: string | undefined | null) {
   }
 }
 
+type LogtoOidcMeResponse = {
+  sub?: string;
+  email?: string;
+  name?: string;
+  [key: string]: unknown;
+};
+
+function getBearerToken(request: Request) {
+  const header = request.headers.get("authorization");
+  if (!header) return null;
+  const [scheme, token] = header.split(" ");
+  if (!scheme || !token || scheme.toLowerCase() !== "bearer") {
+    return null;
+  }
+  return token;
+}
+
+export async function validateLogtoAccessToken(accessToken: string) {
+  const endpoint = env.LOGTO_ENDPOINT || env.VITE_LOGTO_ENDPOINT;
+  if (!endpoint) {
+    throw new Error("Missing required env: LOGTO_ENDPOINT (or VITE_LOGTO_ENDPOINT)");
+  }
+
+  const response = await fetch(`${endpoint}/oidc/me`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    return null;
+  }
+
+  const profile = (await response.json()) as LogtoOidcMeResponse;
+  if (!profile.sub || typeof profile.sub !== "string") {
+    return null;
+  }
+
+  return profile;
+}
+
 export function isAiEnabledForUser(
   user: { aiFeaturesEnabled?: boolean } | null | undefined,
 ) {
@@ -45,45 +85,82 @@ export function createAiDisabledResponse() {
 }
 
 /**
- * Returns a 401 JSON Response if logtoId is missing or invalid.
+ * Returns a 401/403 JSON response for invalid/missing bearer auth.
  * Use at the top of API route handlers.
  */
 export async function requireApiAuth(
   request: Request,
+  options?: {
+    allowMissingBody?: boolean;
+    requiredRoles?: UserRole[];
+    validateAccessToken?: (accessToken: string) => Promise<LogtoOidcMeResponse | null>;
+    validateProvisionedUser?: (
+      logtoId: string,
+    ) => Promise<({ role?: UserRole; aiFeaturesEnabled?: boolean } & Record<string, unknown>) | null>;
+  },
 ): Promise<{
+  accessToken: string;
   logtoId: string;
   body: Record<string, unknown>;
-  user: { aiFeaturesEnabled?: boolean } & Record<string, unknown>;
+  claims: LogtoOidcMeResponse;
+  user: { role?: UserRole; aiFeaturesEnabled?: boolean } & Record<string, unknown>;
 } | Response> {
-  let body: Record<string, unknown>;
+  let body: Record<string, unknown> = {};
   try {
-    body = await request.json();
+    body = (await request.json()) as Record<string, unknown>;
   } catch {
+    if (!options?.allowMissingBody) {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+  }
+
+  const accessToken = getBearerToken(request);
+  if (!accessToken) {
     return new Response(
-      JSON.stringify({ error: "Invalid JSON body" }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
+      JSON.stringify({ error: "Authentication required: missing bearer token" }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
     );
   }
 
-  const logtoId = body.logtoId as string | undefined;
+  const validateAccessToken = options?.validateAccessToken ?? validateLogtoAccessToken;
+  const validateProvisionedUser = options?.validateProvisionedUser ?? validateLogtoId;
+
+  const claims = await validateAccessToken(accessToken);
+  const logtoId = claims?.sub;
+
   if (!logtoId) {
     return new Response(
-      JSON.stringify({ error: "Authentication required: missing logtoId" }),
+      JSON.stringify({ error: "Authentication failed: invalid access token" }),
       { status: 401, headers: { "Content-Type": "application/json" } },
     );
   }
 
-  const user = await validateLogtoId(logtoId);
+  const user = await validateProvisionedUser(logtoId);
   if (!user) {
     return new Response(
-      JSON.stringify({ error: "Authentication failed: invalid logtoId" }),
+      JSON.stringify({ error: "Authenticated user is not provisioned in dashboard" }),
       { status: 401, headers: { "Content-Type": "application/json" } },
     );
+  }
+
+  if (options?.requiredRoles?.length) {
+    const currentRole = user.role as UserRole | undefined;
+    if (!currentRole || !options.requiredRoles.includes(currentRole)) {
+      return new Response(
+        JSON.stringify({ error: "Insufficient permissions" }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      );
+    }
   }
 
   return {
+    accessToken,
     logtoId,
     body,
+    claims,
     user: user as { aiFeaturesEnabled?: boolean } & Record<string, unknown>,
   };
 }

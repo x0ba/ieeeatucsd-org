@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -183,7 +184,8 @@ function OnboardingPage() {
 // ── Tab 1: Invitation Flow ──
 
 function InvitationFlowTab({ logtoId }: { logtoId: string | null }) {
-  const createInvitation = useMutation(api.officerInvitations.create);
+  const { getAuthHeaders } = useAuth();
+  const createInvitation = useAuthedMutation(api.officerInvitations.create);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");
@@ -256,9 +258,8 @@ function InvitationFlowTab({ logtoId }: { logtoId: string | null }) {
       try {
         const resp = await fetch("/api/onboarding/send-invitation", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
           body: JSON.stringify({
-            logtoId,
             inviteId: result,
             name,
             email,
@@ -427,12 +428,13 @@ function InvitationFlowTab({ logtoId }: { logtoId: string | null }) {
 // ── Tab 2: Direct Onboarding ──
 
 function DirectOnboardingTab({ logtoId }: { logtoId: string | null }) {
-  const orgSettings = useQuery(
+  const { getAuthHeaders } = useAuth();
+  const orgSettings = useAuthedQuery(
     api.organizationSettings.get,
     logtoId ? { logtoId } : "skip",
   );
-  const updateOrgSettings = useMutation(api.organizationSettings.update);
-  const createDirectOnboarding = useMutation(api.directOnboardings.create);
+  const updateOrgSettings = useAuthedMutation(api.organizationSettings.update);
+  const createDirectOnboarding = useAuthedMutation(api.directOnboardings.create);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -518,9 +520,8 @@ function DirectOnboardingTab({ logtoId }: { logtoId: string | null }) {
       // Send onboarding email via API
       const resp = await fetch("/api/onboarding/send-direct-onboarding", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({
-          logtoId,
           name,
           email,
           role,
@@ -554,9 +555,8 @@ function DirectOnboardingTab({ logtoId }: { logtoId: string | null }) {
       try {
         const roleSyncResp = await fetch("/api/users/update-role", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
           body: JSON.stringify({
-            logtoId,
             email,
             role,
             position,
@@ -916,11 +916,12 @@ function DirectOnboardingTab({ logtoId }: { logtoId: string | null }) {
 // ── Tab 3: Pending Invitations ──
 
 function PendingInvitationsTab({ logtoId }: { logtoId: string | null }) {
-  const invitations = useQuery(
+  const { getAuthHeaders } = useAuth();
+  const invitations = useAuthedQuery(
     api.officerInvitations.list,
     logtoId ? { logtoId } : "skip",
   );
-  const resendMutation = useMutation(api.officerInvitations.resend);
+  const resendMutation = useAuthedMutation(api.officerInvitations.resend);
 
   const [resendingId, setResendingId] = useState<string | null>(null);
 
@@ -985,9 +986,8 @@ function PendingInvitationsTab({ logtoId }: { logtoId: string | null }) {
       try {
         const resp = await fetch("/api/onboarding/resend-invitation", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
           body: JSON.stringify({
-            logtoId,
             invitationId: inv._id,
             name: inv.name,
             email: inv.email,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation } from "convex/react";
+import { useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { format } from "date-fns";
 import {
@@ -150,8 +150,8 @@ export function EventViewModal({
 	onUpdateGraphics,
 	canManageStatus,
 }: EventViewModalProps) {
-	const getStorageUrl = useMutation(api.events.getStorageUrl);
-	const generateUploadUrl = useMutation(api.events.generateUploadUrl);
+	const getStorageUrl = useAuthedMutation(api.events.getStorageUrl);
+	const generateUploadUrl = useAuthedMutation(api.events.generateUploadUrl);
 	const [activeTab, setActiveTab] = useState("details");
 	const [copiedInvoice, setCopiedInvoice] = useState(false);
 	const [graphicsCompleted, setGraphicsCompleted] = useState(false);

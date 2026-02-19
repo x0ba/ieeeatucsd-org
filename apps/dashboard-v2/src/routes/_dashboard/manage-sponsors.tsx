@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { Id } from "@convex/_generated/dataModel";
@@ -35,11 +35,11 @@ function ManageSponsorsPage() {
     direction: "asc",
   });
 
-  const domains = useQuery(api.sponsorDomains.list, logtoId ? { logtoId } : "skip");
-  const stats = useQuery(api.sponsorDomains.getStats, logtoId ? { logtoId } : "skip");
-  const createDomain = useMutation(api.sponsorDomains.create);
-  const updateDomain = useMutation(api.sponsorDomains.update);
-  const removeDomain = useMutation(api.sponsorDomains.remove);
+  const domains = useAuthedQuery(api.sponsorDomains.list, logtoId ? { logtoId } : "skip");
+  const stats = useAuthedQuery(api.sponsorDomains.getStats, logtoId ? { logtoId } : "skip");
+  const createDomain = useAuthedMutation(api.sponsorDomains.create);
+  const updateDomain = useAuthedMutation(api.sponsorDomains.update);
+  const removeDomain = useAuthedMutation(api.sponsorDomains.remove);
 
   if (!hasAdminAccess) {
     return (

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { usePermissions } from "@/hooks/usePermissions";
 import { useQuery } from "convex/react";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useAuthedQuery } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
 import ConstitutionPreview from "@/components/constitution-builder/ConstitutionPreview";
@@ -14,11 +15,12 @@ function ConstitutionPreviewPage() {
   const { hasOfficerAccess } = usePermissions();
   const { logtoId } = useAuth();
 
-  const constitution = useQuery(
+  const constitution = useAuthedQuery(
     api.constitutions.getDefault,
     logtoId ? { logtoId } : "skip",
   );
 
+  // getSections is a public query with no auth args
   const sections = useQuery(
     api.constitutions.getSections,
     constitution ? { constitutionId: constitution._id } : "skip",

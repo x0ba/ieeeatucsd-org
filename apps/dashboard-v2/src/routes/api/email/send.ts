@@ -11,7 +11,7 @@ async function handle({ request }: { request: Request }) {
       });
     }
 
-    const authResult = await requireApiAuth(request);
+    const authResult = await requireApiAuth(request, { requiredRoles: ["Administrator", "Executive Officer", "General Officer"] });
     if (authResult instanceof Response) return authResult;
     const { body } = authResult;
     const { to, subject, html } = body as { to?: string; subject?: string; html?: string };

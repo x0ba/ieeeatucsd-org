@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import {
   Link as LinkIcon,
@@ -49,10 +49,10 @@ function getCategoryColor(category: string) {
 
 function LinksPage() {
   const { hasOfficerAccess, logtoId } = usePermissions();
-  const links = useQuery(api.links.list, logtoId ? { logtoId } : "skip");
-  const createLink = useMutation(api.links.create);
-  const updateLink = useMutation(api.links.update);
-  const removeLink = useMutation(api.links.remove);
+  const links = useAuthedQuery(api.links.list, logtoId ? { logtoId } : "skip");
+  const createLink = useAuthedMutation(api.links.create);
+  const updateLink = useAuthedMutation(api.links.update);
+  const removeLink = useAuthedMutation(api.links.remove);
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");

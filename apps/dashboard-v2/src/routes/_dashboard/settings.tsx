@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
+import { useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_dashboard/settings")({
 
 function SettingsPage() {
   const { user, isLoading, logtoId } = useAuth();
-  const updateProfile = useMutation(api.users.updateProfile);
+  const updateProfile = useAuthedMutation(api.users.updateProfile);
   const [saving, setSaving] = useState(false);
   const [savingAiPreference, setSavingAiPreference] = useState(false);
 

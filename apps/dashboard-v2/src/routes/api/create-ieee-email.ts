@@ -3,18 +3,36 @@ import { createIEEEEmail } from "@/server/mxroute";
 import { requireApiAuth } from "@/server/auth";
 import { ConvexHttpClient } from "convex/browser";
 import type { FunctionReference } from "convex/server";
+import { createConvexSessionToken } from "@/server/convex-session";
+import type { UserRole } from "@/types/roles";
 
 async function handle({ request }: { request: Request }) {
   try {
     const authResult = await requireApiAuth(request);
     if (authResult instanceof Response) return authResult;
-    const { logtoId, body } = authResult;
+    const { logtoId, body, user } = authResult;
     const { username, password } = body as { username?: string; password?: string };
 
     if (!username || !password) {
       return new Response(
         JSON.stringify({ success: false, error: "Missing username or password" }),
         { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const normalizedUsername = username.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const privilegedRoles = new Set(["Administrator", "Executive Officer", "General Officer"]);
+    const isPrivileged = privilegedRoles.has(String(user.role || ""));
+    const requesterEmail = String(user.email || "");
+    const requesterUsername = requesterEmail
+      .split("@")[0]
+      ?.toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+
+    if (!isPrivileged && requesterUsername && normalizedUsername !== requesterUsername) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Forbidden: cannot create another user's mailbox" }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -32,7 +50,11 @@ async function handle({ request }: { request: Request }) {
         if (convexUrl) {
           const client = new ConvexHttpClient(convexUrl);
           const fn = "users:setIEEEEmail" as unknown as FunctionReference<"mutation">;
-          await client.mutation(fn, { logtoId, ieeeEmail: result.ieeeEmail });
+          const { token } = createConvexSessionToken({
+            sub: logtoId,
+            role: user.role as UserRole | undefined,
+          });
+          await client.mutation(fn, { logtoId, authToken: token, ieeeEmail: result.ieeeEmail });
         }
       } catch (convexError) {
         console.error("Failed to update Convex user with IEEE email:", convexError);

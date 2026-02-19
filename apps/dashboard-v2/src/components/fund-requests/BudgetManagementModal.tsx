@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import {
@@ -56,15 +56,15 @@ export default function BudgetManagementModal({
   const [isSavingBudget, setIsSavingBudget] = useState(false);
   const [isAddingAdjustment, setIsAddingAdjustment] = useState(false);
 
-  const budgetConfigs = useQuery(api.fundRequests.getAllBudgetConfigs, logtoId ? { logtoId } : "skip");
-  const budgetAdjustments = useQuery(
+  const budgetConfigs = useAuthedQuery(api.fundRequests.getAllBudgetConfigs, logtoId ? { logtoId } : "skip");
+  const budgetAdjustments = useAuthedQuery(
     api.fundRequests.getBudgetAdjustments,
     logtoId ? { logtoId, department: selectedDepartment } : "skip",
   );
 
-  const updateBudgetConfig = useMutation(api.fundRequests.updateBudgetConfig);
-  const createBudgetAdjustment = useMutation(api.fundRequests.createBudgetAdjustment);
-  const deleteBudgetAdjustment = useMutation(api.fundRequests.deleteBudgetAdjustment);
+  const updateBudgetConfig = useAuthedMutation(api.fundRequests.updateBudgetConfig);
+  const createBudgetAdjustment = useAuthedMutation(api.fundRequests.createBudgetAdjustment);
+  const deleteBudgetAdjustment = useAuthedMutation(api.fundRequests.deleteBudgetAdjustment);
 
   const currentConfig = budgetConfigs?.find(
     (c) => c.department === selectedDepartment,

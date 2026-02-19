@@ -20,9 +20,9 @@ const documentSectionInput = v.object({
 });
 
 export const list = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     return await ctx.db.query("constitutions").collect();
   },
 });
@@ -66,11 +66,12 @@ export const getSections = query({
 export const create = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     title: v.string(),
     organizationName: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await requireAdminAccess(ctx, args.logtoId);
+    const user = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     return await ctx.db.insert("constitutions", {
@@ -89,6 +90,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("constitutions"),
     title: v.optional(v.string()),
     organizationName: v.optional(v.string()),
@@ -102,9 +104,9 @@ export const update = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const user = await requireAdminAccess(ctx, args.logtoId);
+    const user = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
-    const { id, logtoId, ...updates } = args;
+    const { id, logtoId, authToken, ...updates } = args;
     const cleanUpdates: Record<string, unknown> = {
       lastModifiedBy: userId,
     };
@@ -122,6 +124,7 @@ export const update = mutation({
 export const addSection = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     constitutionId: v.id("constitutions"),
     type: constitutionSectionType,
     title: v.optional(v.string()),
@@ -134,7 +137,7 @@ export const addSection = mutation({
     order: v.number(),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const user = await ctx.auth.getUserIdentity();
     const userId = user?.subject || args.logtoId;
 
@@ -180,6 +183,7 @@ export const addSection = mutation({
 export const updateSection = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     constitutionId: v.id("constitutions"),
     sectionId: v.string(),
     title: v.optional(v.string()),
@@ -188,7 +192,7 @@ export const updateSection = mutation({
     parentId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const user = await ctx.auth.getUserIdentity();
     const userId = user?.subject || args.logtoId;
 
@@ -239,11 +243,12 @@ export const updateSection = mutation({
 export const deleteSection = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     constitutionId: v.id("constitutions"),
     sectionId: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const user = await ctx.auth.getUserIdentity();
     const userId = user?.subject || args.logtoId;
 
@@ -297,12 +302,13 @@ export const deleteSection = mutation({
 export const reorderSection = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     constitutionId: v.id("constitutions"),
     sectionId: v.string(),
     newOrder: v.number(),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const user = await ctx.auth.getUserIdentity();
     const userId = user?.subject || args.logtoId;
 
@@ -383,11 +389,12 @@ function hasParentCycle(
 export const syncDocumentSections = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     constitutionId: v.id("constitutions"),
     sections: v.array(documentSectionInput),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const user = await ctx.auth.getUserIdentity();
     const userId = user?.subject || args.logtoId;
 
@@ -651,10 +658,11 @@ async function createVersionSnapshotInternal(
 export const listVersions = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     constitutionId: v.id("constitutions"),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
 
     const versions = await ctx.db
       .query("constitutionVersions")
@@ -682,11 +690,12 @@ export const listVersions = query({
 export const saveVersion = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     constitutionId: v.id("constitutions"),
     note: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const adminUser = await requireAdminAccess(ctx, args.logtoId);
+    const adminUser = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const user = await ctx.auth.getUserIdentity();
     const userId = user?.subject || args.logtoId;
     const userName = user?.name || user?.email || adminUser.name || "Unknown User";
@@ -723,11 +732,12 @@ export const saveVersion = mutation({
 export const restoreVersion = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     constitutionId: v.id("constitutions"),
     versionId: v.id("constitutionVersions"),
   },
   handler: async (ctx, args) => {
-    const adminUser = await requireAdminAccess(ctx, args.logtoId);
+    const adminUser = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const user = await ctx.auth.getUserIdentity();
     const userId = user?.subject || args.logtoId;
     const userName = user?.name || user?.email || adminUser.name || "Unknown User";
@@ -942,9 +952,9 @@ export const getAuditLog = query({
 
 // Get default constitution
 export const getDefault = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     
     return await ctx.db
       .query("constitutions")
@@ -955,9 +965,9 @@ export const getDefault = query({
 
 // Ensure default constitution exists
 export const ensureDefaultConstitution = mutation({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     
     const existing = await ctx.db
       .query("constitutions")

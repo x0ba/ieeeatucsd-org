@@ -85,9 +85,9 @@ export const listPublished = query({
 });
 
 export const listMine = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
     return await ctx.db
       .query("events")
@@ -97,12 +97,40 @@ export const listMine = query({
 });
 
 export const listAll = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const events = await ctx.db.query("events").collect();
 
-    // Collect unique requestedUser IDs for submitter name lookup
+    const attendeesByEvent = new Map<
+      string,
+      Array<{
+        userId: string;
+        timeCheckedIn: number;
+        food: string;
+        pointsEarned: number;
+      }>
+    >();
+    const allAttendeeUserIds = new Set<string>();
+
+    await Promise.all(
+      events.map(async (event) => {
+        const attendeeDocs = await ctx.db
+          .query("attendees")
+          .withIndex("by_eventId", (q) => q.eq("eventId", event._id))
+          .collect();
+
+        attendeesByEvent.set(
+          event._id,
+          attendeeDocs.map((attendee) => {
+            allAttendeeUserIds.add(attendee.userId);
+            return attendee;
+          }),
+        );
+      }),
+    );
+
+    // Collect unique requestedUser IDs for submitter lookup
     const uniqueUserIds = [
       ...new Set(
         events
@@ -110,26 +138,28 @@ export const listAll = query({
           .filter((id): id is string => Boolean(id)),
       ),
     ];
+    for (const userId of allAttendeeUserIds) {
+      uniqueUserIds.push(userId);
+    }
     const userNameMap = new Map<string, string>();
+    const userEmailMap = new Map<string, string>();
 
     await Promise.all(
-      uniqueUserIds.map(async (userId) => {
+      [...new Set(uniqueUserIds)].map(async (userId) => {
         const user = await ctx.db
           .query("users")
           .withIndex("by_logtoId", (q) => q.eq("logtoId", userId))
           .first();
         if (user) {
           userNameMap.set(userId, user.name || user.email || userId);
+          userEmailMap.set(userId, user.email || "");
         }
       }),
     );
 
     return await Promise.all(
       events.map(async (event) => {
-        const attendeeDocs = await ctx.db
-          .query("attendees")
-          .withIndex("by_eventId", (q) => q.eq("eventId", event._id))
-          .collect();
+        const attendeeDocs = attendeesByEvent.get(event._id) ?? [];
         const legacyAttendeeIds = getLegacyAttendeeIds(event as Record<string, unknown>);
 
         const attendeeByUserId = new Map<
@@ -145,15 +175,10 @@ export const listAll = query({
         >();
 
         for (const attendee of attendeeDocs) {
-          const user = await ctx.db
-            .query("users")
-            .withIndex("by_logtoId", (q) => q.eq("logtoId", attendee.userId))
-            .first();
-
           attendeeByUserId.set(attendee.userId, {
             userId: attendee.userId,
-            name: user?.name || attendee.userId,
-            email: user?.email || "",
+            name: userNameMap.get(attendee.userId) || attendee.userId,
+            email: userEmailMap.get(attendee.userId) || "",
             timeCheckedIn: attendee.timeCheckedIn,
             food: attendee.food,
             pointsEarned: attendee.pointsEarned,
@@ -163,15 +188,10 @@ export const listAll = query({
         if (attendeeByUserId.size === 0 && legacyAttendeeIds.length > 0) {
           await Promise.all(
             [...new Set(legacyAttendeeIds)].map(async (userId) => {
-              const user = await ctx.db
-                .query("users")
-                .withIndex("by_logtoId", (q) => q.eq("logtoId", userId))
-                .first();
-
               attendeeByUserId.set(userId, {
                 userId,
-                name: user?.name || userId,
-                email: user?.email || "",
+                name: userNameMap.get(userId) || userId,
+                email: userEmailMap.get(userId) || "",
                 timeCheckedIn: 0,
                 food: "unknown",
                 pointsEarned: 0,
@@ -198,9 +218,9 @@ export const listAll = query({
 });
 
 export const getByCode = query({
-  args: { logtoId: v.string(), eventCode: v.string() },
+  args: { logtoId: v.string(), authToken: v.string(), eventCode: v.string() },
   handler: async (ctx, args) => {
-    await requireCurrentUser(ctx, args.logtoId);
+    await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const normalizedCode = normalizeEventCode(args.eventCode);
     if (!normalizedCode) return null;
     const canonicalCode = canonicalizeEventCode(normalizedCode);
@@ -227,19 +247,21 @@ export const getByCode = query({
 });
 
 export const get = query({
-  args: { logtoId: v.optional(v.string()), id: v.id("events") },
+  args: {
+    logtoId: v.string(),
+    authToken: v.string(),
+    id: v.id("events"),
+  },
   handler: async (ctx, args) => {
-    if (args.logtoId) {
-      await requireCurrentUser(ctx, args.logtoId);
-    }
+    await requireCurrentUser(ctx, args.logtoId, args.authToken);
     return await ctx.db.get(args.id);
   },
 });
 
 export const getAttendedEventIds = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     const attendees = await ctx.db
@@ -256,6 +278,7 @@ export const getAttendedEventIds = query({
 export const create = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     eventName: v.string(),
     eventDescription: v.string(),
     eventCode: v.optional(v.string()),
@@ -328,7 +351,7 @@ export const create = mutation({
     isDraft: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
     const { logtoId, isDraft, eventCode, ...data } = args;
     const normalizedEventCode = normalizeEventCode(eventCode);
@@ -348,6 +371,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("events"),
     eventName: v.optional(v.string()),
     eventDescription: v.optional(v.string()),
@@ -420,7 +444,7 @@ export const update = mutation({
     needsAsFunding: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     const event = await ctx.db.get(args.id);
@@ -439,7 +463,7 @@ export const update = mutation({
       }
     }
 
-    const { logtoId, id, ...updates } = args;
+    const { logtoId, authToken, id, ...updates } = args;
     const cleanUpdates: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(updates)) {
       if (value !== undefined) {
@@ -462,9 +486,9 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-  args: { logtoId: v.string(), id: v.id("events") },
+  args: { logtoId: v.string(), authToken: v.string(), id: v.id("events") },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     const event = await ctx.db.get(args.id);
@@ -493,6 +517,7 @@ export const remove = mutation({
 export const updateStatus = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("events"),
     status: v.union(
       v.literal("draft"),
@@ -507,7 +532,7 @@ export const updateStatus = mutation({
     reviewFeedback: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const event = await ctx.db.get(args.id);
     if (!event) throw new Error("Event not found");
 
@@ -532,15 +557,21 @@ export const updateStatus = mutation({
 });
 
 export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { logtoId: v.string(), authToken: v.string() },
+  handler: async (ctx, args) => {
+    await requireCurrentUser(ctx, args.logtoId, args.authToken);
     return await ctx.storage.generateUploadUrl();
   },
 });
 
 export const getStorageUrl = mutation({
-  args: { storageId: v.string() },
+  args: {
+    logtoId: v.string(),
+    authToken: v.string(),
+    storageId: v.string(),
+  },
   handler: async (ctx, args) => {
+    await requireCurrentUser(ctx, args.logtoId, args.authToken);
     return await ctx.storage.getUrl(args.storageId as any);
   },
 });
@@ -548,11 +579,12 @@ export const getStorageUrl = mutation({
 export const checkIn = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     eventCode: v.string(),
     food: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const normalizedInputCode = normalizeEventCode(args.eventCode);
     const canonicalInputCode = canonicalizeEventCode(args.eventCode);
 

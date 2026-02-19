@@ -11,13 +11,108 @@ export type UserRole =
 
 export type SponsorTier = "Bronze" | "Silver" | "Gold" | "Platinum" | "Diamond";
 
+type SessionPayload = {
+  sub: string;
+  role?: UserRole;
+  iat: number;
+  exp: number;
+  v: number;
+};
+
+let cachedKey:
+  | {
+      secret: string;
+      key: CryptoKey;
+    }
+  | null = null;
+
+function getSessionSecret() {
+  const secret = process.env.CONVEX_SESSION_SECRET;
+  if (!secret) {
+    throw new Error("Missing CONVEX_SESSION_SECRET");
+  }
+  return secret;
+}
+
+function toHex(bytes: Uint8Array) {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function getSigningKey(secret: string) {
+  if (cachedKey && cachedKey.secret === secret) {
+    return cachedKey.key;
+  }
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+
+  cachedKey = { secret, key };
+  return key;
+}
+
+async function signHex(input: string, secret: string) {
+  const key = await getSigningKey(secret);
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(input));
+  return toHex(new Uint8Array(signature));
+}
+
+async function verifySessionToken(authToken: string): Promise<SessionPayload> {
+  const parts = authToken.split(".");
+  if (parts.length !== 2) {
+    throw new Error("Invalid auth token format");
+  }
+
+  const [encodedPayload, signature] = parts;
+  const secret = getSessionSecret();
+  const expected = await signHex(encodedPayload, secret);
+  if (expected !== signature) {
+    throw new Error("Invalid auth token signature");
+  }
+
+  let payload: SessionPayload;
+  try {
+    payload = JSON.parse(decodeURIComponent(encodedPayload)) as SessionPayload;
+  } catch {
+    throw new Error("Invalid auth token payload");
+  }
+
+  if (!payload.sub || !payload.iat || !payload.exp || payload.v !== 1) {
+    throw new Error("Invalid auth token claims");
+  }
+
+  if (Date.now() >= payload.exp * 1000) {
+    throw new Error("Auth token expired");
+  }
+
+  return payload;
+}
+
 /**
  * Get the current user document from the database using their Logto ID.
  * Since Convex is self-hosted, ctx.auth is not available.
- * The logtoId is passed explicitly from the client.
+ * The logtoId is passed explicitly from the client and must match auth token subject.
  */
-export async function getCurrentUser(ctx: QueryCtx | MutationCtx, logtoId?: string) {
+export async function getCurrentUser(
+  ctx: QueryCtx | MutationCtx,
+  logtoId: string,
+  authToken: string,
+) {
   if (!logtoId) return null;
+  if (!authToken) {
+    throw new Error("Missing auth token");
+  }
+
+  const claims = await verifySessionToken(authToken);
+  if (claims.sub !== logtoId) {
+    throw new Error("Auth token subject mismatch");
+  }
 
   const user = await ctx.db
     .query("users")
@@ -30,8 +125,12 @@ export async function getCurrentUser(ctx: QueryCtx | MutationCtx, logtoId?: stri
 /**
  * Require the current user to exist in the database.
  */
-export async function requireCurrentUser(ctx: QueryCtx | MutationCtx, logtoId: string) {
-  const user = await getCurrentUser(ctx, logtoId);
+export async function requireCurrentUser(
+  ctx: QueryCtx | MutationCtx,
+  logtoId: string,
+  authToken: string,
+) {
+  const user = await getCurrentUser(ctx, logtoId, authToken);
   if (!user) {
     throw new Error("User not found in database");
   }
@@ -101,8 +200,12 @@ export function canAccessResumeDatabase(
 /**
  * Require the current user to have at least officer access.
  */
-export async function requireOfficerAccess(ctx: QueryCtx | MutationCtx, logtoId: string) {
-  const user = await requireCurrentUser(ctx, logtoId);
+export async function requireOfficerAccess(
+  ctx: QueryCtx | MutationCtx,
+  logtoId: string,
+  authToken: string,
+) {
+  const user = await requireCurrentUser(ctx, logtoId, authToken);
   if (!hasOfficerAccess(user.role)) {
     throw new Error("Insufficient permissions: officer access required");
   }
@@ -112,8 +215,12 @@ export async function requireOfficerAccess(ctx: QueryCtx | MutationCtx, logtoId:
 /**
  * Require the current user to have admin access (Admin or Executive Officer).
  */
-export async function requireAdminAccess(ctx: QueryCtx | MutationCtx, logtoId: string) {
-  const user = await requireCurrentUser(ctx, logtoId);
+export async function requireAdminAccess(
+  ctx: QueryCtx | MutationCtx,
+  logtoId: string,
+  authToken: string,
+) {
+  const user = await requireCurrentUser(ctx, logtoId, authToken);
   if (!hasAdminAccess(user.role)) {
     throw new Error("Insufficient permissions: admin access required");
   }
@@ -123,8 +230,12 @@ export async function requireAdminAccess(ctx: QueryCtx | MutationCtx, logtoId: s
 /**
  * Require the current user to be an Administrator.
  */
-export async function requireAdmin(ctx: QueryCtx | MutationCtx, logtoId: string) {
-  const user = await requireCurrentUser(ctx, logtoId);
+export async function requireAdmin(
+  ctx: QueryCtx | MutationCtx,
+  logtoId: string,
+  authToken: string,
+) {
+  const user = await requireCurrentUser(ctx, logtoId, authToken);
   if (!isAdmin(user.role)) {
     throw new Error("Insufficient permissions: administrator access required");
   }
@@ -134,8 +245,12 @@ export async function requireAdmin(ctx: QueryCtx | MutationCtx, logtoId: string)
 /**
  * Require the current user to be a Sponsor.
  */
-export async function requireSponsor(ctx: QueryCtx | MutationCtx, logtoId: string) {
-  const user = await requireCurrentUser(ctx, logtoId);
+export async function requireSponsor(
+  ctx: QueryCtx | MutationCtx,
+  logtoId: string,
+  authToken: string,
+) {
+  const user = await requireCurrentUser(ctx, logtoId, authToken);
   if (!isSponsor(user.role) && !isAdmin(user.role)) {
     throw new Error("Insufficient permissions: sponsor access required");
   }
@@ -148,9 +263,10 @@ export async function requireSponsor(ctx: QueryCtx | MutationCtx, logtoId: strin
 export async function requireOwnerOrAdmin(
   ctx: QueryCtx | MutationCtx,
   logtoId: string,
+  authToken: string,
   ownerId: string,
 ) {
-  const user = await requireCurrentUser(ctx, logtoId);
+  const user = await requireCurrentUser(ctx, logtoId, authToken);
   if (user.logtoId !== ownerId && !hasAdminAccess(user.role)) {
     throw new Error("Insufficient permissions: not the owner or admin");
   }

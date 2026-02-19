@@ -4,6 +4,7 @@ import {
 	isAiEnabledForUser,
 	requireApiAuth,
 } from "@/server/auth";
+import { validateExternalFileUrl } from "@/server/url-guard";
 
 type PaymentDetailsResponse = {
 	confirmationNumber: string;
@@ -46,6 +47,17 @@ async function handle({ request }: { request: Request }) {
 			(imageUrl.startsWith("http://") || imageUrl.startsWith("https://"));
 
 		if (isRemoteUrl) {
+			const validation = validateExternalFileUrl(imageUrl);
+			if (!validation.ok) {
+				return new Response(
+					JSON.stringify({
+						error: "Blocked external URL",
+						details: validation.reason,
+					}),
+					{ status: 400, headers: { "Content-Type": "application/json" } },
+				);
+			}
+
 			try {
 				const fileResponse = await fetch(imageUrl);
 				if (!fileResponse.ok) {

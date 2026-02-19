@@ -1,9 +1,9 @@
 import { ConvexHttpClient } from "convex/browser";
 import type { FunctionReference } from "convex/server";
+import { query, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import {
-	TOOL_DEFINITIONS,
-	executeToolCallsParallel,
-	type ToolCallRequest,
+	createConvexToolsMcpServer,
+	summarizeToolResult,
 } from "./ai-tools";
 
 type ChatMessage = { role: string; content: string };
@@ -65,7 +65,7 @@ export type ChatMeta = {
 };
 
 type BuiltContext = {
-	config: ReturnType<typeof getOpenRouterConfig>;
+	config: ReturnType<typeof getAgentConfig>;
 	steps: string[];
 	conversationMessages: Array<{ role: string; content: string; tool_call_id?: string; tool_calls?: unknown[] }>;
 	meta: ChatMeta;
@@ -93,7 +93,6 @@ const MAX_AGENTIC_SEARCH_ROUNDS = 3;
 const AGENTIC_MIN_UNIQUE_MATCHES = 12;
 const AGENTIC_MIN_SCANNED_TABLES = 3;
 const AGENTIC_MIN_QUERY_LENGTH = 4;
-const MAX_TOOL_CALL_ROUNDS = 5;
 const DASHBOARD_TIME_ZONE = "America/Los_Angeles";
 const FALLBACK_LOCALE = "en-US";
 const TIMESTAMP_FIELD_REGEX =
@@ -171,15 +170,26 @@ function getConvexUrl() {
 	);
 }
 
-function getOpenRouterConfig() {
-	const apiKey = process.env.OPENROUTER_API_KEY;
-	if (!apiKey) throw new Error("Missing OPENROUTER_API_KEY");
+export function resolveAgentConfig(env: NodeJS.ProcessEnv) {
+	const openRouterApiKey = env.OPENROUTER_API_KEY;
+	const anthropicAuthToken =
+		env.ANTHROPIC_AUTH_TOKEN || openRouterApiKey;
+	if (!anthropicAuthToken) {
+		throw new Error("Missing ANTHROPIC_AUTH_TOKEN or OPENROUTER_API_KEY");
+	}
 
 	return {
-		apiKey,
 		model: "x-ai/grok-4.1-fast",
-		baseUrl: "https://openrouter.ai/api/v1/chat/completions",
+		anthropicBaseUrl:
+			env.ANTHROPIC_BASE_URL ||
+			"https://openrouter.ai/api/anthropic",
+		anthropicAuthToken,
+		anthropicApiKey: env.ANTHROPIC_API_KEY || "openrouter",
 	};
+}
+
+function getAgentConfig() {
+	return resolveAgentConfig(process.env);
 }
 
 function getResolvedLocale(locale?: string) {
@@ -581,7 +591,7 @@ async function buildContext(
 	},
 	onStep?: (message: string) => void,
 ): Promise<BuiltContext> {
-	const config = getOpenRouterConfig();
+	const config = getAgentConfig();
 	const steps: string[] = [];
 
 	const locale = getResolvedLocale(params.locale);
@@ -642,201 +652,120 @@ export async function chatWithAI(params: {
 	systemPrompt?: string;
 	locale?: string;
 }) {
-	const { config, steps, conversationMessages, meta } =
-		await buildContext(params);
+	let reply = "";
+	let steps: string[] = [];
+	let meta: ChatMeta | null = null;
 
-	addStep(steps, "Generating AI response...");
-
-	let messages: Array<Record<string, unknown>> = [...conversationMessages];
-	let totalToolCalls = 0;
-
-	for (let round = 0; round < MAX_TOOL_CALL_ROUNDS; round++) {
-		const response = await fetch(config.baseUrl, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${config.apiKey}`,
-				"Content-Type": "application/json",
-				"HTTP-Referer": "https://ieeeatucsd.org",
-				"X-Title": "IEEE UCSD Officer Assistant",
-			},
-			body: JSON.stringify({
-				model: config.model,
-				messages,
-				temperature: 0,
-				reasoning: { effort: "low", exclude: false },
-				tools: TOOL_DEFINITIONS,
-				tool_choice: "auto",
-			}),
-		});
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			console.error("OpenRouter API Error:", errorText);
-			throw new Error("AI Chat API Failed");
+	for await (const event of chatWithAIStream(params)) {
+		if (event.type === "token") reply += event.content;
+		if (event.type === "done") {
+			reply = event.reply || reply;
+			steps = event.steps;
+			meta = event.meta;
 		}
-
-		const data = await response.json();
-		const choice = data.choices?.[0];
-		const assistantMessage = choice?.message;
-
-		if (!assistantMessage) throw new Error("No response from AI");
-
-		const toolCalls = assistantMessage.tool_calls as ToolCallRequest[] | undefined;
-
-		if (!toolCalls || toolCalls.length === 0) {
-			const reply = assistantMessage.content;
-			if (!reply) throw new Error("No response from AI");
-			addStep(steps, `Response generated with model ${config.model} (${totalToolCalls} tool calls).`);
-			meta.toolCallCount = totalToolCalls;
-			return { success: true, reply, steps, meta };
-		}
-
-		messages.push(assistantMessage);
-		totalToolCalls += toolCalls.length;
-		addStep(steps, `Model requested ${toolCalls.length} tool call(s): ${toolCalls.map((tc) => tc.function.name).join(", ")}`);
-
-		const results = await executeToolCallsParallel(toolCalls, params.logtoId);
-		for (const result of results) {
-			addStep(steps, `Tool ${result.name}: ${result.summary} (${result.durationMs}ms)`);
-			messages.push({
-				role: "tool",
-				tool_call_id: result.id,
-				content: JSON.stringify(result.result),
-			});
-		}
+		if (event.type === "error") throw new Error(event.error);
 	}
 
-	throw new Error("Max tool call rounds exceeded");
+	if (!meta) {
+		throw new Error("No response from AI");
+	}
+
+	return { success: true, reply, steps, meta };
 }
 
-type StreamDelta = {
-	content: string;
-	reasoning: string;
-	toolCalls: Array<{
-		index: number;
-		id?: string;
+function buildAgentPrompt(
+	conversationMessages: Array<{ role: string; content: string }>,
+) {
+	const systemMessages = conversationMessages.filter((m) => m.role === "system");
+	const nonSystemMessages = conversationMessages.filter((m) => m.role !== "system");
+	const latestUser = nonSystemMessages[nonSystemMessages.length - 1]?.content || "";
+	const history = nonSystemMessages.slice(0, -1);
+
+	const historyText =
+		history.length > 0
+			? history
+					.map((message) =>
+						`${message.role === "assistant" ? "Assistant" : "User"}: ${message.content}`,
+					)
+					.join("\n\n")
+			: "No previous conversation history.";
+
+	return {
+		systemPrompt: systemMessages.map((message) => message.content).join("\n\n"),
+		prompt: `Conversation history:\n${historyText}\n\nCurrent user request:\n${latestUser}`,
+	};
+}
+
+function extractStreamText(message: SDKMessage) {
+	if (message.type !== "stream_event") return "";
+	const event = message.event as {
 		type?: string;
-		function?: { name?: string; arguments?: string };
-	}>;
-	finishReason: string | null;
-};
-
-function extractStreamDelta(payload: unknown): StreamDelta {
-	const data = payload as {
-		choices?: Array<{
-			text?: string;
-			finish_reason?: string | null;
-			delta?: {
-				content?: string | null;
-				reasoning_content?: string | null;
-				reasoning?: string | null;
-				tool_calls?: Array<{
-					index: number;
-					id?: string;
-					type?: string;
-					function?: { name?: string; arguments?: string };
-				}>;
-			};
-		}>;
+		delta?: { type?: string; text?: string };
 	};
-
-	const firstChoice = data.choices?.[0];
-	const delta = firstChoice?.delta;
-
-	let content = "";
-	if (typeof firstChoice?.text === "string") content = firstChoice.text;
-	else if (typeof delta?.content === "string") content = delta.content;
-
-	let reasoning = "";
-	if (typeof delta?.reasoning_content === "string") reasoning = delta.reasoning_content;
-	else if (typeof delta?.reasoning === "string") reasoning = delta.reasoning;
-
-	const toolCalls = delta?.tool_calls || [];
-	const finishReason = firstChoice?.finish_reason || null;
-
-	return { content, reasoning, toolCalls, finishReason };
+	if (event.type !== "content_block_delta") return "";
+	if (event.delta?.type !== "text_delta") return "";
+	return event.delta.text || "";
 }
 
-async function* streamOpenRouterResponse(
-	config: ReturnType<typeof getOpenRouterConfig>,
-	messages: Array<Record<string, unknown>>,
-	withTools: boolean,
-): AsyncGenerator<{ type: "delta"; delta: StreamDelta } | { type: "line_raw"; line: string }> {
-	const body: Record<string, unknown> = {
-		model: config.model,
-		messages,
-		temperature: 0,
-		reasoning: { effort: "low", exclude: false },
-		stream: true,
+function extractStreamReasoning(message: SDKMessage) {
+	if (message.type !== "stream_event") return "";
+	const event = message.event as {
+		type?: string;
+		delta?: { type?: string; thinking?: string };
 	};
-	if (withTools) {
-		body.tools = TOOL_DEFINITIONS;
-		body.tool_choice = "auto";
-	}
+	if (event.type !== "content_block_delta") return "";
+	if (event.delta?.type !== "thinking_delta") return "";
+	return event.delta.thinking || "";
+}
 
-	const response = await fetch(config.baseUrl, {
-		method: "POST",
-		headers: {
-			Authorization: `Bearer ${config.apiKey}`,
-			"Content-Type": "application/json",
-			Accept: "text/event-stream",
-			"HTTP-Referer": "https://ieeeatucsd.org",
-			"X-Title": "IEEE UCSD Officer Assistant",
-		},
-		body: JSON.stringify(body),
-	});
+function extractAssistantText(message: SDKMessage) {
+	if (message.type !== "assistant") return "";
+	const content = message.message.content || [];
+	const textBlocks = content
+		.filter((block): block is { type: "text"; text: string } => block.type === "text")
+		.map((block) => block.text);
+	return textBlocks.join("");
+}
 
-	if (!response.ok) {
-		const errorText = await response.text();
-		console.error("OpenRouter API Error:", errorText);
-		throw new Error("AI Chat API Failed");
-	}
+function extractAssistantToolStarts(message: SDKMessage) {
+	if (message.type !== "assistant") return [];
+	const content = message.message.content || [];
+	return content
+		.filter(
+			(
+				block,
+			): block is {
+				type: "tool_use";
+				id: string;
+				name: string;
+				input: Record<string, unknown>;
+			} => block.type === "tool_use",
+		)
+		.map((block) => ({
+			id: block.id,
+			name: block.name,
+			args: (block.input || {}) as Record<string, unknown>,
+		}));
+}
 
-	if (!response.body) {
-		throw new Error("Streaming response not available");
-	}
-
-	const reader = response.body.getReader();
-	const decoder = new TextDecoder();
-	let buffer = "";
-	let done = false;
-
-	while (!done) {
-		const result = await reader.read();
-		done = result.done;
-		if (result.value) {
-			buffer += decoder.decode(result.value, { stream: true });
-			let lineBreakIndex = buffer.indexOf("\n");
-			while (lineBreakIndex >= 0) {
-				const line = buffer.slice(0, lineBreakIndex).trim();
-				buffer = buffer.slice(lineBreakIndex + 1);
-				if (line.startsWith("data:")) {
-					const payload = line.slice(5).trim();
-					if (payload && payload !== "[DONE]") {
-						try {
-							const parsed = JSON.parse(payload);
-							yield { type: "delta", delta: extractStreamDelta(parsed) };
-						} catch {
-							// Ignore malformed chunks
-						}
-					}
-				}
-				lineBreakIndex = buffer.indexOf("\n");
-			}
-		}
-	}
-
-	if (buffer.trim().startsWith("data:")) {
-		const payload = buffer.trim().slice(5).trim();
-		if (payload && payload !== "[DONE]") {
+function parseToolResultPayload(value: unknown) {
+	if (
+		value &&
+		typeof value === "object" &&
+		"content" in value &&
+		Array.isArray((value as { content?: unknown[] }).content)
+	) {
+		const first = (value as { content: Array<{ type?: string; text?: string }> })
+			.content[0];
+		if (first?.type === "text" && typeof first.text === "string") {
 			try {
-				const parsed = JSON.parse(payload);
-				yield { type: "delta", delta: extractStreamDelta(parsed) };
+				return JSON.parse(first.text) as unknown;
 			} catch {
-				// Ignore
+				return { value: first.text };
 			}
 		}
 	}
+	return value;
 }
 
 export async function* chatWithAIStream(params: {
@@ -846,157 +775,133 @@ export async function* chatWithAIStream(params: {
 	systemPrompt?: string;
 	locale?: string;
 }): AsyncGenerator<AIStreamEvent> {
-	const streamedSteps: string[] = [];
-	const config = getOpenRouterConfig();
-	const locale = getResolvedLocale(params.locale);
-	const timeZone = getPacificTimeZone();
-	const requestNow = Date.now();
-	const requestTime = formatTimestamp(requestNow, locale, timeZone);
-
-	const gathered = await gatherAgenticSearch(
-		{
-			logtoId: params.logtoId,
-			query: params.query,
-			messages: params.messages,
-		},
-		(message) => {
-			streamedSteps.push(message);
-		},
-	);
-	for (const step of gathered.steps) {
+	const { config, steps: streamedSteps, conversationMessages, meta } =
+		await buildContext(params);
+	for (const step of streamedSteps) {
 		yield { type: "status", message: step };
 	}
-	const searchResult = gathered.searchResult;
-
-	const serverTime = formatTimestamp(
-		searchResult.currentServerTimeMs,
-		locale,
-		timeZone,
-	);
-	const timeStep = `Resolved current time in Pacific time (${serverTime.timeZoneAbbr}, ${timeZone}).`;
-	streamedSteps.push(timeStep);
-	yield { type: "status", message: timeStep };
-
-	const { conversationMessages, meta } = buildConversationPayload({
-		query: params.query,
-		messages: params.messages,
-		systemPrompt: params.systemPrompt,
-		locale,
-		timeZone,
-		requestTime,
-		searchResult,
-		serverTime,
-		executedQueries: gathered.executedQueries,
-	});
-
 	const streamingStep = "Generating AI response...";
 	streamedSteps.push(streamingStep);
 	yield { type: "status", message: streamingStep };
 
-	let allMessages: Array<Record<string, unknown>> = [...conversationMessages];
-	let totalToolCalls = 0;
+	const composed = buildAgentPrompt(
+		conversationMessages.map((message) => ({
+			role: message.role,
+			content: message.content,
+		})),
+	);
+	const mcpServer = createConvexToolsMcpServer(params.logtoId);
+	const toolStarts = new Map<
+		string,
+		{ name: string; args: Record<string, unknown>; startedAtMs: number; completed: boolean }
+	>();
 	let reply = "";
+	let totalToolCalls = 0;
+	let sawStreamText = false;
 
-	for (let round = 0; round < MAX_TOOL_CALL_ROUNDS; round++) {
-		let roundContent = "";
-		let roundReasoning = "";
-		let finishReason: string | null = null;
-		const accumulatedToolCalls = new Map<
-			number,
-			{ id: string; type: string; function: { name: string; arguments: string } }
-		>();
+	const agentQuery = query({
+		prompt: composed.prompt,
+		options: {
+			cwd: process.cwd(),
+			model: config.model,
+			systemPrompt: composed.systemPrompt,
+			includePartialMessages: true,
+			permissionMode: "dontAsk",
+			tools: [],
+			settingSources: [],
+			mcpServers: {
+				ieee_convex_tools: mcpServer,
+			},
+			env: {
+				...process.env,
+				ANTHROPIC_BASE_URL: config.anthropicBaseUrl,
+				ANTHROPIC_AUTH_TOKEN: config.anthropicAuthToken,
+				ANTHROPIC_API_KEY: config.anthropicApiKey,
+				OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+			},
+		},
+	});
 
-		for await (const event of streamOpenRouterResponse(config, allMessages, true)) {
-			if (event.type === "delta") {
-				const d = event.delta;
+	try {
+		for await (const sdkMessage of agentQuery) {
+			const reasoningDelta = extractStreamReasoning(sdkMessage);
+			if (reasoningDelta) {
+				yield { type: "reasoning", content: reasoningDelta };
+			}
 
-				if (d.reasoning) {
-					roundReasoning += d.reasoning;
-					yield { type: "reasoning", content: d.reasoning };
+			const streamDelta = extractStreamText(sdkMessage);
+			if (streamDelta) {
+				sawStreamText = true;
+				reply += streamDelta;
+				yield { type: "token", content: streamDelta };
+			}
+
+			const toolStartList = extractAssistantToolStarts(sdkMessage);
+			if (toolStartList.length > 0) {
+				totalToolCalls += toolStartList.length;
+				for (const toolStart of toolStartList) {
+					toolStarts.set(toolStart.id, {
+						name: toolStart.name,
+						args: toolStart.args,
+						startedAtMs: Date.now(),
+						completed: false,
+					});
 				}
+				yield { type: "tool_start", tools: toolStartList };
+				const stepMsg = `Executing ${toolStartList.length} tool(s): ${toolStartList.map((toolStart) => toolStart.name).join(", ")}`;
+				streamedSteps.push(stepMsg);
+				yield { type: "status", message: stepMsg };
+			}
 
-				if (d.content) {
-					roundContent += d.content;
-					yield { type: "token", content: d.content };
+			if (
+				sdkMessage.type === "user" &&
+				sdkMessage.isSynthetic &&
+				sdkMessage.parent_tool_use_id
+			) {
+				const toolUseId = sdkMessage.parent_tool_use_id;
+				const started = toolStarts.get(toolUseId);
+				if (started && !started.completed) {
+					const resultPayload = parseToolResultPayload(
+						sdkMessage.tool_use_result,
+					);
+					const summary = summarizeToolResult(started.name, resultPayload);
+					const durationMs = Math.max(Date.now() - started.startedAtMs, 1);
+					started.completed = true;
+					yield {
+						type: "tool_result",
+						id: toolUseId,
+						name: started.name,
+						summary,
+						durationMs,
+					};
+					streamedSteps.push(
+						`Tool ${started.name}: ${summary} (${durationMs}ms)`,
+					);
+					yield { type: "status", message: "Continuing generation..." };
 				}
+			}
 
-				for (const tc of d.toolCalls) {
-					const existing = accumulatedToolCalls.get(tc.index);
-					if (!existing) {
-						accumulatedToolCalls.set(tc.index, {
-							id: tc.id || "",
-							type: tc.type || "function",
-							function: {
-								name: tc.function?.name || "",
-								arguments: tc.function?.arguments || "",
-							},
-						});
-					} else {
-						if (tc.id) existing.id = tc.id;
-						if (tc.function?.name) existing.function.name += tc.function.name;
-						if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
-					}
+			if (sdkMessage.type === "assistant" && !sawStreamText) {
+				const assistantText = extractAssistantText(sdkMessage);
+				if (assistantText) {
+					reply += assistantText;
+					yield { type: "token", content: assistantText };
 				}
+			}
 
-				if (d.finishReason) {
-					finishReason = d.finishReason;
+			if (sdkMessage.type === "result") {
+				if (sdkMessage.subtype === "success" && sdkMessage.result) {
+					reply = sdkMessage.result;
+				}
+				if (sdkMessage.is_error) {
+					throw new Error(
+						`Agent execution failed: ${sdkMessage.subtype}`,
+					);
 				}
 			}
 		}
-
-		if (finishReason === "tool_calls" && accumulatedToolCalls.size > 0) {
-			const toolCallsList = Array.from(accumulatedToolCalls.values());
-			totalToolCalls += toolCallsList.length;
-
-			const toolStartInfo = toolCallsList.map((tc) => {
-				let args: Record<string, unknown> = {};
-				try { args = JSON.parse(tc.function.arguments); } catch { /* ignore */ }
-				return { id: tc.id, name: tc.function.name, args };
-			});
-
-			yield { type: "tool_start", tools: toolStartInfo };
-
-			const stepMsg = `Executing ${toolCallsList.length} tool(s): ${toolCallsList.map((tc) => tc.function.name).join(", ")}`;
-			streamedSteps.push(stepMsg);
-			yield { type: "status", message: stepMsg };
-
-			const toolCallRequests: ToolCallRequest[] = toolCallsList.map((tc) => ({
-				id: tc.id,
-				type: "function" as const,
-				function: { name: tc.function.name, arguments: tc.function.arguments },
-			}));
-
-			const results = await executeToolCallsParallel(toolCallRequests, params.logtoId);
-
-			allMessages.push({
-				role: "assistant",
-				content: roundContent || null,
-				tool_calls: toolCallsList,
-			});
-
-			for (const result of results) {
-				yield {
-					type: "tool_result",
-					id: result.id,
-					name: result.name,
-					summary: result.summary,
-					durationMs: result.durationMs,
-				};
-				streamedSteps.push(`Tool ${result.name}: ${result.summary} (${result.durationMs}ms)`);
-				allMessages.push({
-					role: "tool",
-					tool_call_id: result.id,
-					content: JSON.stringify(result.result),
-				});
-			}
-
-			yield { type: "status", message: "Continuing generation..." };
-			streamedSteps.push("Continuing generation...");
-			continue;
-		}
-
-		reply = roundContent;
-		break;
+	} finally {
+		agentQuery.close();
 	}
 
 	const doneStep = `Response generated with model ${config.model} (${totalToolCalls} tool calls).`;
@@ -1004,7 +909,6 @@ export async function* chatWithAIStream(params: {
 	yield { type: "status", message: doneStep };
 
 	meta.toolCallCount = totalToolCalls;
-
 	yield {
 		type: "done",
 		reply,

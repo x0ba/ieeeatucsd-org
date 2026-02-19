@@ -620,7 +620,7 @@ const INITIAL_MESSAGE: Message = {
 };
 
 export function OfficerAiChat() {
-	const { logtoId, userRole } = useAuth();
+	const { logtoId, userRole, getAuthHeaders } = useAuth();
 	const [isOpen, setIsOpen] = useState(false);
 	const [messages, setMessages] = useState<Message[]>(() => {
 		return loadSessionMessages() || [INITIAL_MESSAGE];
@@ -743,10 +743,9 @@ export function OfficerAiChat() {
 		try {
 			const response = await fetch("/api/ai/query", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: { "Content-Type": "application/json", ...getAuthHeaders() },
 				body: JSON.stringify({
 					query: userMsg,
-					logtoId,
 					locale,
 					stream: true,
 					messages: messages

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useAuth } from "@/hooks/useAuth";
@@ -994,7 +994,6 @@ function ReceiptsStep({
 	getStorageUrl,
 	onBack,
 	onNext,
-	logtoId,
 	aiEnabled,
 }: {
 	receipts: ReceiptEntry[];
@@ -1005,9 +1004,9 @@ function ReceiptsStep({
 	}) => Promise<string | null>;
 	onBack: () => void;
 	onNext: () => void;
-	logtoId: string | null;
 	aiEnabled: boolean;
 }) {
+	const { getAuthHeaders } = useAuth();
 	const [activeReceiptId, setActiveReceiptId] = useState<string | null>(
 		receipts[0]?.id ?? null,
 	);
@@ -1115,8 +1114,8 @@ function ReceiptsStep({
 		try {
 			const response = await fetch("/api/parse-receipt", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ imageUrl: receiptUrl, logtoId }),
+				headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+				body: JSON.stringify({ imageUrl: receiptUrl }),
 			});
 			const result = await response.json();
 			if (!response.ok || !result.success || !result.data) {
@@ -1223,7 +1222,6 @@ function ReceiptsStep({
 
 		try {
 			const uploadUrl = await generateUploadUrl({});
-			console.log("Upload URL:", uploadUrl);
 
 			const uploadResponse = await fetch(uploadUrl, {
 				method: "POST",
@@ -1236,12 +1234,10 @@ function ReceiptsStep({
 			}
 
 			const uploadPayload = await uploadResponse.json();
-			console.log("Upload payload:", uploadPayload);
 
 			const fileUrl = await getStorageUrl({
 				storageId: uploadPayload.storageId,
 			});
-			console.log("File URL:", fileUrl);
 
 			if (!fileUrl) {
 				throw new Error("Failed to resolve receipt file URL");
@@ -1256,7 +1252,6 @@ function ReceiptsStep({
 			}
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Unknown error";
-			console.error("Upload error:", error);
 			setParseResults((prev) => ({
 				...prev,
 				[receiptId]: {
@@ -2008,15 +2003,15 @@ function ReviewStep({
 }
 
 function ReimbursementPage() {
-	const { logtoId, user } = useAuth();
+	const { logtoId, user, getAuthHeaders } = useAuth();
 	const aiEnabled = isAiFeatureEnabled(user?.aiFeaturesEnabled);
-	const reimbursements = useQuery(
+	const reimbursements = useAuthedQuery(
 		api.reimbursements.listMine,
 		logtoId ? { logtoId } : "skip",
 	);
-	const createReimbursement = useMutation(api.reimbursements.create);
-	const generateUploadUrl = useMutation(api.reimbursements.generateUploadUrl);
-	const getStorageUrl = useMutation(api.reimbursements.getStorageUrl);
+	const createReimbursement = useAuthedMutation(api.reimbursements.create);
+	const generateUploadUrl = useAuthedMutation(api.reimbursements.generateUploadUrl);
+	const getStorageUrl = useAuthedMutation(api.reimbursements.getStorageUrl);
 
 	const [view, setView] = useState<"list" | "create" | "detail">("list");
 	const [selectedReimbursementId, setSelectedReimbursementId] = useState<
@@ -2141,7 +2136,7 @@ function ReimbursementPage() {
 			toast.success("Reimbursement request submitted!");
 
 			// Fire-and-forget email notification
-			sendNotification(logtoId, "reimbursement_submitted", {
+			sendNotification(getAuthHeaders(), "reimbursement_submitted", {
 				reimbursementId: newId,
 				title: formData.title,
 				totalAmount,
@@ -2226,7 +2221,6 @@ function ReimbursementPage() {
 						getStorageUrl={getStorageUrl}
 						onBack={handleBack}
 						onNext={handleNext}
-						logtoId={logtoId}
 						aiEnabled={aiEnabled}
 					/>
 				)}

@@ -7,9 +7,9 @@ import {
 
 // Queries
 export const listAll = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     // Administrators can see all deposits
@@ -29,9 +29,9 @@ export const listAll = query({
 });
 
 export const listMine = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     return await ctx.db
@@ -44,10 +44,11 @@ export const listMine = query({
 export const listByStatus = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     status: v.union(v.literal("pending"), v.literal("verified"), v.literal("rejected")),
   },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
 
     // Only admins can filter by status
     if (user.role !== "Administrator") {
@@ -62,17 +63,26 @@ export const listByStatus = query({
 });
 
 export const get = query({
-  args: { logtoId: v.string(), id: v.id("fundDeposits") },
+  args: { logtoId: v.string(), authToken: v.string(), id: v.id("fundDeposits") },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
-    return await ctx.db.get(args.id);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
+    const deposit = await ctx.db.get(args.id);
+    if (!deposit) return null;
+
+    const userId = user.logtoId ?? user.authUserId ?? "";
+    const canManage = user.role === "Administrator";
+    if (!canManage && deposit.depositedBy !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    return deposit;
   },
 });
 
 export const getStats = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     // Get deposits based on role
@@ -106,6 +116,7 @@ export const getStats = query({
 export const create = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     title: v.string(),
     amount: v.number(),
     purpose: v.string(),
@@ -136,10 +147,10 @@ export const create = mutation({
     bankTransferFiles: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
-    const { logtoId, ...data } = args;
+    const { logtoId, authToken, ...data } = args;
 
     // Validate that if depositMethod is "other", otherDepositMethod is provided
     if (
@@ -175,6 +186,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("fundDeposits"),
     title: v.string(),
     amount: v.number(),
@@ -203,7 +215,7 @@ export const update = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     // Get the existing deposit
@@ -221,7 +233,7 @@ export const update = mutation({
       throw new Error("Can only edit pending deposits");
     }
 
-    const { logtoId, id, ...updateData } = args;
+    const { logtoId, authToken, id, ...updateData } = args;
 
     // Get existing deposit for audit trail
     const previousData = {
@@ -275,12 +287,13 @@ export const update = mutation({
 export const updateStatus = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("fundDeposits"),
     status: v.union(v.literal("verified"), v.literal("rejected")),
     rejectionReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const adminId = admin.logtoId ?? admin.authUserId ?? "";
 
     // Get the existing deposit
@@ -328,10 +341,11 @@ export const updateStatus = mutation({
 export const deleteRequest = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("fundDeposits"),
   },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     // Get the existing deposit
@@ -359,11 +373,12 @@ export const deleteRequest = mutation({
 export const addReceiptFile = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("fundDeposits"),
     fileUrl: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     // Get the existing deposit
@@ -393,11 +408,12 @@ export const addReceiptFile = mutation({
 export const removeReceiptFile = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("fundDeposits"),
     fileUrl: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     // Get the existing deposit
@@ -427,15 +443,21 @@ export const removeReceiptFile = mutation({
 });
 
 export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { logtoId: v.string(), authToken: v.string() },
+  handler: async (ctx, args) => {
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     return await ctx.storage.generateUploadUrl();
   },
 });
 
 export const getStorageUrl = mutation({
-  args: { storageId: v.id("_storage") },
+  args: {
+    logtoId: v.string(),
+    authToken: v.string(),
+    storageId: v.id("_storage"),
+  },
   handler: async (ctx, args) => {
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     return await ctx.storage.getUrl(args.storageId);
   },
 });

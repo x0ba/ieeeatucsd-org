@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useAuthedQuery } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Crown, Search, Users } from "lucide-react";
@@ -15,7 +15,7 @@ const ITEMS_PER_PAGE = 10;
 
 function LeaderboardPage() {
   const { user, logtoId } = useAuth();
-  const leaderboard = useQuery(api.users.getLeaderboard, logtoId ? { logtoId } : "skip");
+  const leaderboard = useAuthedQuery(api.users.getLeaderboard, logtoId ? { logtoId } : "skip");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);

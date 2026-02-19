@@ -1,7 +1,7 @@
 import { api } from "@convex/_generated/api";
 import type { Doc } from "@convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import {
 	AlertCircle,
 	CheckCircle,
@@ -89,11 +89,11 @@ type FundRequestRecord = Doc<"fundRequests">;
 function FundRequestsPage() {
 	const { logtoId } = useAuth();
 	const { hasOfficerAccess } = usePermissions();
-	const requests = useQuery(
+	const requests = useAuthedQuery(
 		api.fundRequests.listMine,
 		logtoId ? { logtoId } : "skip",
 	);
-	const deleteFundRequest = useMutation(api.fundRequests.deleteRequest);
+	const deleteFundRequest = useAuthedMutation(api.fundRequests.deleteRequest);
 
 	const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 	const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -107,35 +107,35 @@ function FundRequestsPage() {
 	const [isDeleting, setIsDeleting] = useState(false);
 
 	// Budget stats queries
-	const budgetStatsEvents = useQuery(
+	const budgetStatsEvents = useAuthedQuery(
 		api.fundRequests.getBudgetStats,
 		hasOfficerAccess && logtoId ? { logtoId, department: "events" } : "skip",
 	);
-	const budgetStatsProjects = useQuery(
+	const budgetStatsProjects = useAuthedQuery(
 		api.fundRequests.getBudgetStats,
 		hasOfficerAccess && logtoId ? { logtoId, department: "projects" } : "skip",
 	);
-	const budgetStatsInternal = useQuery(
+	const budgetStatsInternal = useAuthedQuery(
 		api.fundRequests.getBudgetStats,
 		hasOfficerAccess && logtoId ? { logtoId, department: "internal" } : "skip",
 	);
 
 	// Budget adjustments queries
-	const adjustmentsEvents = useQuery(
+	const adjustmentsEvents = useAuthedQuery(
 		api.fundRequests.getBudgetAdjustments,
 		hasOfficerAccess && logtoId ? { logtoId, department: "events" } : "skip",
 	);
-	const adjustmentsProjects = useQuery(
+	const adjustmentsProjects = useAuthedQuery(
 		api.fundRequests.getBudgetAdjustments,
 		hasOfficerAccess && logtoId ? { logtoId, department: "projects" } : "skip",
 	);
-	const adjustmentsInternal = useQuery(
+	const adjustmentsInternal = useAuthedQuery(
 		api.fundRequests.getBudgetAdjustments,
 		hasOfficerAccess && logtoId ? { logtoId, department: "internal" } : "skip",
 	);
 
 	// Fund requests by department for budget log
-	const requestsEvents = useQuery(
+	const requestsEvents = useAuthedQuery(
 		api.fundRequests.listByDepartment,
 		hasOfficerAccess && logtoId && budgetStatsEvents?.startDate
 			? {
@@ -145,7 +145,7 @@ function FundRequestsPage() {
 			}
 			: "skip",
 	);
-	const requestsProjects = useQuery(
+	const requestsProjects = useAuthedQuery(
 		api.fundRequests.listByDepartment,
 		hasOfficerAccess && logtoId && budgetStatsProjects?.startDate
 			? {
@@ -155,7 +155,7 @@ function FundRequestsPage() {
 			}
 			: "skip",
 	);
-	const requestsInternal = useQuery(
+	const requestsInternal = useAuthedQuery(
 		api.fundRequests.listByDepartment,
 		hasOfficerAccess && logtoId && budgetStatsInternal?.startDate
 			? {

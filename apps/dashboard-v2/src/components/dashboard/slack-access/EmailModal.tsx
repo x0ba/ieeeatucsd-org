@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import DOMPurify from "dompurify";
+import { useAuth } from "@/hooks/useAuth";
 import type { EmailMessage } from "./types";
 
 interface EmailModalProps {
@@ -59,6 +60,7 @@ const formatFileSize = (bytes: number): string => {
 };
 
 export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
+  const { getAuthHeaders } = useAuth();
   const [emailContent, setEmailContent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +82,7 @@ export function EmailModal({ email, credentials, onClose }: EmailModalProps) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...getAuthHeaders(),
           },
           body: JSON.stringify({
             email: credentials.email,

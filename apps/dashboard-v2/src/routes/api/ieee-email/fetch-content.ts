@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ImapFlow } from "imapflow";
+import { requireApiAuth } from "@/server/auth";
 
 // Helper function to decode quoted-printable content
 function decodeQuotedPrintable(str: string): string {
@@ -27,7 +28,9 @@ interface EmailContent {
 
 async function handle({ request }: { request: Request }) {
   try {
-    const body = await request.json();
+    const authResult = await requireApiAuth(request);
+    if (authResult instanceof Response) return authResult;
+    const { body, user } = authResult;
     const { email, password, uid } = body as {
       email?: string;
       password?: string;
@@ -41,6 +44,15 @@ async function handle({ request }: { request: Request }) {
           message: "Missing email, password, or uid",
         }),
         { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const privilegedRoles = new Set(["Administrator", "Executive Officer", "General Officer"]);
+    const isPrivileged = privilegedRoles.has(String(user.role || ""));
+    if (!isPrivileged && user.ieeeEmail !== email) {
+      return new Response(
+        JSON.stringify({ success: false, message: "Forbidden: mailbox ownership mismatch" }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
       );
     }
 

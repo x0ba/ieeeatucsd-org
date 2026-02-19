@@ -33,7 +33,7 @@ function CallbackLoading() {
 }
 
 function CallbackClient() {
-  const { getIdTokenClaims } = useLogto();
+  const { getIdTokenClaims, getAccessToken } = useLogto();
   const upsertUser = useMutation(api.users.upsertFromAuth);
   const navigate = useNavigate();
   const upsertStarted = useRef(false);
@@ -46,11 +46,30 @@ function CallbackClient() {
     upsertStarted.current = true;
 
     getIdTokenClaims?.()
-      .then((claims) => {
+      .then(async (claims) => {
         if (claims) {
+          const accessToken = await getAccessToken?.();
+          if (!accessToken) {
+            throw new Error("Missing access token");
+          }
+
+          const sessionResponse = await fetch("/api/auth/convex-session", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({}),
+          });
+          if (!sessionResponse.ok) {
+            throw new Error(`Failed to create Convex session (${sessionResponse.status})`);
+          }
+          const sessionData = (await sessionResponse.json()) as { sessionToken: string };
+
           // Fire and forget — don't block navigation on upsert completion
           upsertUser({
             logtoId: claims.sub,
+            authToken: sessionData.sessionToken,
             email: (claims as any).email || "",
             name: (claims as any).name || claims.sub,
             avatar: (claims as any).picture,

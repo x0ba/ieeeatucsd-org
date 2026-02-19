@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -36,6 +36,11 @@ import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { sendNotification } from "@/lib/send-notification";
 import { cn } from "@/lib/utils";
+import {
+  formatCurrencyUSD,
+  formatDateDisplay,
+  formatDateTimeDisplay,
+} from "@/lib/formatters";
 import BudgetManagementModal from "@/components/fund-requests/BudgetManagementModal";
 
 export const Route = createFileRoute("/_dashboard/manage-fund-requests")({
@@ -114,13 +119,15 @@ function FundRequestDetailView({
   request,
   onBack,
   logtoId,
+  authHeaders,
 }: {
   request: FundRequestData;
   onBack: () => void;
   logtoId: string;
+  authHeaders: Record<string, string>;
 }) {
-  const updateStatus = useMutation(api.fundRequests.updateStatus);
-  const updateFundSource = useMutation(api.fundRequests.updateFundSource);
+  const updateStatus = useAuthedMutation(api.fundRequests.updateStatus);
+  const updateFundSource = useAuthedMutation(api.fundRequests.updateFundSource);
 
   const [selectedStatus, setSelectedStatus] = useState<string>("approve");
   const [selectedFundSource, setSelectedFundSource] = useState<string>(
@@ -128,23 +135,6 @@ function FundRequestDetailView({
   );
   const [reviewNotes, setReviewNotes] = useState(request.reviewNotes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const formatDate = (dateVal: number | undefined) => {
-    if (!dateVal) return "N/A";
-    return new Date(dateVal).toLocaleDateString();
-  };
-
-  const formatDateTime = (dateVal: number | undefined) => {
-    if (!dateVal) return "N/A";
-    return new Date(dateVal).toLocaleString();
-  };
-
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
 
   const handleSave = async () => {
     if (!logtoId) return;
@@ -189,7 +179,7 @@ function FundRequestDetailView({
 
       // Send email notification for status changes
       if (statusChanged) {
-        sendNotification(logtoId, "fund_request_status_changed", {
+        sendNotification(authHeaders, "fund_request_status_changed", {
           requestId: request._id,
           title: request.title,
           amount: request.amount,
@@ -246,7 +236,7 @@ function FundRequestDetailView({
               )}
               <span className="capitalize">{DEPARTMENT_LABELS[request.department] || request.department}</span>
               <span className="text-muted-foreground/40">·</span>
-              <span>{formatDateTime(request.createdAt || Date.now())}</span>
+              <span>{formatDateTimeDisplay(request.createdAt || Date.now())}</span>
             </div>
           </div>
         </div>
@@ -254,7 +244,7 @@ function FundRequestDetailView({
           <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
             Requested Amount
           </p>
-          <p className="text-xl font-bold tabular-nums">{formatCurrency(request.amount)}</p>
+          <p className="text-xl font-bold tabular-nums">{formatCurrencyUSD(request.amount)}</p>
         </div>
       </div>
 
@@ -376,11 +366,11 @@ function FundRequestDetailView({
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs">Amount</p>
-                    <p className="font-medium">{formatCurrency(request.amount)}</p>
+                    <p className="font-medium">{formatCurrencyUSD(request.amount)}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs">Submitted On</p>
-                    <p className="font-medium">{formatDate(request.submittedAt || request.createdAt)}</p>
+                    <p className="font-medium">{formatDateDisplay(request.submittedAt || request.createdAt)}</p>
                   </div>
                 </div>
               </div>
@@ -436,7 +426,7 @@ function FundRequestDetailView({
                       <div className="flex items-center justify-between">
                         <span className="font-medium capitalize">{entry.action.replace(/_/g, " ")}</span>
                         <span className="text-xs text-muted-foreground">
-                          {formatDateTime(entry.timestamp)}
+                          {formatDateTimeDisplay(entry.timestamp)}
                         </span>
                       </div>
                       {entry.performedByName && (
@@ -502,8 +492,8 @@ function FundRequestDetailView({
 }
 
 function ManageFundRequestsPage() {
-  const { hasOfficerAccess, hasAdminAccess, logtoId } = usePermissions();
-  const allRequests = useQuery(
+  const { hasOfficerAccess, hasAdminAccess, logtoId, getAuthHeaders } = usePermissions();
+  const allRequests = useAuthedQuery(
     api.fundRequests.listAll,
     logtoId ? { logtoId } : "skip",
   );
@@ -545,6 +535,7 @@ function ManageFundRequestsPage() {
           request={selectedRequest}
           onBack={handleBackToList}
           logtoId={logtoId}
+          authHeaders={getAuthHeaders()}
         />
       </div>
     );
@@ -584,21 +575,6 @@ function ManageFundRequestsPage() {
   };
 
   const stats = getStats();
-
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
-
-  const formatDate = (timestamp: number): string => {
-    return new Date(timestamp).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
 
   return (
     <div className="p-6 space-y-6 w-full">
@@ -646,7 +622,7 @@ function ManageFundRequestsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">Pending Amount</p>
-              <p className="text-xl font-bold mt-1 text-gray-900">{formatCurrency(stats.pendingValue)}</p>
+              <p className="text-xl font-bold mt-1 text-gray-900">{formatCurrencyUSD(stats.pendingValue)}</p>
             </div>
             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
               <DollarSign className="w-4 h-4 text-gray-600" />
@@ -657,7 +633,7 @@ function ManageFundRequestsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground font-medium">Total Approved</p>
-              <p className="text-xl font-bold mt-1 text-green-600">{formatCurrency(stats.approvedValue)}</p>
+              <p className="text-xl font-bold mt-1 text-green-600">{formatCurrencyUSD(stats.approvedValue)}</p>
             </div>
             <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
               <CheckCircle className="w-4 h-4 text-green-600" />
@@ -829,7 +805,7 @@ function ManageFundRequestsPage() {
                       <div className="col-span-6 md:col-span-2">
                         <div className="text-sm">
                           <div className="font-medium text-xs">{request.submittedByName || "Unknown"}</div>
-                          <div className="text-xs text-muted-foreground">{formatDate(request.createdAt || Date.now())}</div>
+                          <div className="text-xs text-muted-foreground">{formatDateDisplay(request.createdAt || Date.now())}</div>
                         </div>
                       </div>
 
@@ -842,7 +818,7 @@ function ManageFundRequestsPage() {
 
                       {/* Amount */}
                       <div className="col-span-4 md:col-span-1">
-                        <span className="font-semibold text-sm">{formatCurrency(request.amount)}</span>
+                        <span className="font-semibold text-sm">{formatCurrencyUSD(request.amount)}</span>
                       </div>
 
                       {/* Status */}

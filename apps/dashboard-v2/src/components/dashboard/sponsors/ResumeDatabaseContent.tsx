@@ -1,5 +1,5 @@
 import { api } from "@convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useAuthedQuery } from "@/hooks/useAuthedConvex";
 import {
 	ArrowLeft,
 	Briefcase,
@@ -56,7 +56,7 @@ export default function ResumeDatabaseContent() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(10);
 
-	const allUsers = useQuery(api.users.list, logtoId ? { logtoId } : "skip");
+	const allUsers = useAuthedQuery(api.users.list, logtoId ? { logtoId } : "skip");
 
 	useEffect(() => {
 		if (!allUsers) return;

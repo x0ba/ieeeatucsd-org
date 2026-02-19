@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { CheckCircle } from "lucide-react";
-import { useMutation } from "convex/react";
+import { useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import {
 	Dialog,
@@ -25,7 +25,6 @@ interface EventRequestWizardModalProps {
 	onClose: () => void;
 	onSubmit: (data: EventFormData) => void;
 	initialData?: Partial<EventRequest>;
-	logtoId?: string | null;
 	aiEnabled?: boolean;
 }
 
@@ -133,12 +132,11 @@ export function EventRequestWizardModal({
 	onClose,
 	onSubmit,
 	initialData,
-	logtoId,
 	aiEnabled = true,
 }: EventRequestWizardModalProps) {
 	const isEditing = !!initialData;
 	const isConvertingDraft = initialData?.status === "draft";
-	const generateUploadUrl = useMutation(api.events.generateUploadUrl);
+	const generateUploadUrl = useAuthedMutation(api.events.generateUploadUrl);
 	const [currentStep, setCurrentStep] = useState(isEditing ? 2 : 1);
 	const [disclaimerAccepted, setDisclaimerAccepted] = useState(isEditing);
 	const [formData, setFormData] = useState<EventFormData>(
@@ -241,7 +239,7 @@ export function EventRequestWizardModal({
 							const urls: string[] = [];
 							for (const file of files) {
 								try {
-									const uploadUrl = await generateUploadUrl();
+									const uploadUrl = await generateUploadUrl({});
 									const res = await fetch(uploadUrl, {
 										method: "POST",
 										headers: { "Content-Type": file.type },
@@ -294,9 +292,8 @@ export function EventRequestWizardModal({
 						}}
 						onChange={(data) => updateFormData(data)}
 						generateUploadUrl={async () => {
-							return await generateUploadUrl();
+							return await generateUploadUrl({});
 						}}
-						logtoId={logtoId}
 						aiEnabled={aiEnabled}
 					/>
 				);

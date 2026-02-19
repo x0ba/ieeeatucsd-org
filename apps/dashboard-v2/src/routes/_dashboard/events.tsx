@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import {
   Calendar,
@@ -29,12 +30,13 @@ const PAST_EVENTS_PER_PAGE = 9;
 
 function EventsPage() {
   const { logtoId } = useAuth();
+  // listPublished is a public query with no auth args
   const events = useQuery(api.events.listPublished);
-  const attendedEventIdsData = useQuery(
+  const attendedEventIdsData = useAuthedQuery(
     api.events.getAttendedEventIds,
     logtoId ? { logtoId } : "skip"
   );
-  const checkIn = useMutation(api.events.checkIn);
+  const checkIn = useAuthedMutation(api.events.checkIn);
 
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");

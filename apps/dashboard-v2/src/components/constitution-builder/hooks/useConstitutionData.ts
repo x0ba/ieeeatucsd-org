@@ -1,4 +1,5 @@
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import {
   ConstitutionDocumentSaveResult,
@@ -16,18 +17,19 @@ export function useConstitutionData() {
   const [ensuringDefault, setEnsuringDefault] = useState(false);
 
   // Get or ensure constitution exists
-  const constitution = useQuery(
+  const constitution = useAuthedQuery(
     api.constitutions.getDefault,
     logtoId ? { logtoId } : "skip",
   );
-  const ensureConstitution = useMutation(api.constitutions.ensureDefaultConstitution);
+  const ensureConstitution = useAuthedMutation(api.constitutions.ensureDefaultConstitution);
 
   // Get sections - only when we have a valid constitution ID
+  // getSections is a public query with no auth args
   const sections = useQuery(
     api.constitutions.getSections,
     constitution ? { constitutionId: constitution._id } : "skip",
   );
-  const versions = useQuery(
+  const versions = useAuthedQuery(
     api.constitutions.listVersions,
     constitution && logtoId
       ? { constitutionId: constitution._id, logtoId }
@@ -35,15 +37,15 @@ export function useConstitutionData() {
   );
 
   // Mutations
-  const addSection = useMutation(api.constitutions.addSection);
-  const updateSection = useMutation(api.constitutions.updateSection);
-  const deleteSection = useMutation(api.constitutions.deleteSection);
-  const reorderSection = useMutation(api.constitutions.reorderSection);
-  const syncDocumentSections = useMutation(
+  const addSection = useAuthedMutation(api.constitutions.addSection);
+  const updateSection = useAuthedMutation(api.constitutions.updateSection);
+  const deleteSection = useAuthedMutation(api.constitutions.deleteSection);
+  const reorderSection = useAuthedMutation(api.constitutions.reorderSection);
+  const syncDocumentSections = useAuthedMutation(
     api.constitutions.syncDocumentSections,
   );
-  const saveVersionMutation = useMutation(api.constitutions.saveVersion);
-  const restoreVersionMutation = useMutation(api.constitutions.restoreVersion);
+  const saveVersionMutation = useAuthedMutation(api.constitutions.saveVersion);
+  const restoreVersionMutation = useAuthedMutation(api.constitutions.restoreVersion);
 
   const constitutionLoading =
     Boolean(isAuthenticated && logtoId) && constitution === undefined;

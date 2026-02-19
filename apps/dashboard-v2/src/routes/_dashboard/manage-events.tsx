@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -102,20 +102,20 @@ function mapEventToType(event: any): EventRequest {
 }
 
 function ManageEventsPage() {
-	const { hasOfficerAccess, hasAdminAccess, logtoId, user } = usePermissions();
+	const { hasOfficerAccess, hasAdminAccess, logtoId, user, getAuthHeaders } = usePermissions();
 	const aiEnabled = user?.aiFeaturesEnabled !== false;
 
 	// Single unified query — events and eventRequests are now one table
-	const eventsData = useQuery(
+	const eventsData = useAuthedQuery(
 		api.events.listAll,
 		logtoId ? { logtoId } : "skip",
 	);
 
 	// Convex mutations (all unified under api.events)
-	const createEvent = useMutation(api.events.create);
-	const updateEvent = useMutation(api.events.update);
-	const updateEventStatus = useMutation(api.events.updateStatus);
-	const removeEvent = useMutation(api.events.remove);
+	const createEvent = useAuthedMutation(api.events.create);
+	const updateEvent = useAuthedMutation(api.events.update);
+	const updateEventStatus = useAuthedMutation(api.events.updateStatus);
+	const removeEvent = useAuthedMutation(api.events.remove);
 
 	// View mode state
 	const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
@@ -300,7 +300,7 @@ function ManageEventsPage() {
 
 			// Fire-and-forget email notification
 			if (logtoId) {
-				sendNotification(logtoId, "event_request_submitted", {
+				sendNotification(getAuthHeaders(), "event_request_submitted", {
 					eventRequestId: "(new)",
 					name: data.eventName,
 					location: data.location,
@@ -396,7 +396,7 @@ function ManageEventsPage() {
 				});
 				toast.success("Event request submitted successfully!");
 
-				sendNotification(logtoId, "event_request_submitted", {
+				sendNotification(getAuthHeaders(), "event_request_submitted", {
 					eventRequestId: editingRequest._id,
 					name: data.eventName,
 					location: data.location,
@@ -478,7 +478,7 @@ function ManageEventsPage() {
 			});
 			toast.success("Event declined");
 
-			sendNotification(logtoId, "event_request_status_changed", {
+			sendNotification(getAuthHeaders(), "event_request_status_changed", {
 				eventRequestId: event._id,
 				name: event.eventName,
 				location: event.location,
@@ -540,7 +540,7 @@ function ManageEventsPage() {
 
 			toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
 
-			sendNotification(logtoId, "event_request_status_changed", {
+			sendNotification(getAuthHeaders(), "event_request_status_changed", {
 				eventRequestId: event._id,
 				name: event.eventName,
 				location: event.location,
@@ -879,7 +879,6 @@ function ManageEventsPage() {
 				}}
 				onSubmit={editingRequest ? handleUpdateRequest : handleCreateRequest}
 				initialData={editingRequest || undefined}
-				logtoId={logtoId}
 				aiEnabled={aiEnabled}
 			/>
 

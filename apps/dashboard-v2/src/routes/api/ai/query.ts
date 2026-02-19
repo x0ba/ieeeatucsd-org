@@ -3,31 +3,26 @@ import { chatWithAI, chatWithAIStream, OfficerAccessError } from "@/server/ai";
 import {
 	createAiDisabledResponse,
 	isAiEnabledForUser,
-	validateLogtoId,
+	requireApiAuth,
 } from "@/server/auth";
 
 async function handle({ request }: { request: Request }) {
 	try {
-		const { query, messages, logtoId, locale, stream } = await request.json();
+		const authResult = await requireApiAuth(request, {
+			requiredRoles: ["Administrator", "Executive Officer", "General Officer"],
+		});
+		if (authResult instanceof Response) return authResult;
+		const { body, logtoId, user } = authResult;
+		const { query, messages, locale, stream } = body as {
+			query?: string;
+			messages?: Array<{ role: "user" | "assistant"; content: string }>;
+			locale?: string;
+			stream?: boolean;
+		};
 
 		if (!query) {
 			return new Response(JSON.stringify({ error: "Missing query" }), {
 				status: 400,
-				headers: { "Content-Type": "application/json" },
-			});
-		}
-
-		if (!logtoId) {
-			return new Response(JSON.stringify({ error: "Missing logtoId" }), {
-				status: 401,
-				headers: { "Content-Type": "application/json" },
-			});
-		}
-
-		const user = await validateLogtoId(logtoId);
-		if (!user) {
-			return new Response(JSON.stringify({ error: "Authentication failed: invalid logtoId" }), {
-				status: 401,
 				headers: { "Content-Type": "application/json" },
 			});
 		}

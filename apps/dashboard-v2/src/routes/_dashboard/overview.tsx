@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useQuery } from "convex/react";
+import { useAuthedQuery } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { Calendar, CreditCard, DollarSign } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -99,7 +99,7 @@ const activityConfig: Record<string, { icon: React.ComponentType<{ className?: s
 function OverviewPage() {
   const { user, isLoading } = useAuth();
   const { logtoId } = usePermissions();
-  const overviewData = useQuery(
+  const overviewData = useAuthedQuery(
     api.users.getOverviewData,
     logtoId ? { logtoId } : "skip",
   );

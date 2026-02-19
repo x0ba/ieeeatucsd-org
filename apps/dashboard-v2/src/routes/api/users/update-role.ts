@@ -4,11 +4,13 @@ import type { FunctionReference } from "convex/server";
 
 import { env } from "@/env";
 import { requireApiAuth } from "@/server/auth";
+import { createConvexSessionToken } from "@/server/convex-session";
 import {
   ensureRoleOnLogtoUser,
   findLogtoUserByEmail,
   isSupportedRole,
 } from "@/server/logto";
+import type { UserRole } from "@/types/roles";
 
 type AppRole =
   | "Member"
@@ -41,10 +43,12 @@ async function handle({ request }: { request: Request }) {
       });
     }
 
-    const authResult = await requireApiAuth(request);
+    const authResult = await requireApiAuth(request, {
+      requiredRoles: ["Administrator", "Executive Officer"],
+    });
     if (authResult instanceof Response) return authResult;
 
-    const { body, logtoId } = authResult;
+    const { body, logtoId, user } = authResult;
     const role = body.role as string | undefined;
     const source = (body.source as Source | undefined) || "manage-users";
     const email = body.email as string | undefined;
@@ -88,6 +92,10 @@ async function handle({ request }: { request: Request }) {
     let resolvedLogtoUserId: string | null = null;
 
     const convex = getConvexClient();
+    const { token } = createConvexSessionToken({
+      sub: logtoId,
+      role: user.role as UserRole | undefined,
+    });
     const getByIdFn = "users:getByIdForAdmin" as unknown as FunctionReference<"query">;
     const getByEmailFn = "users:getByEmailForAdmin" as unknown as FunctionReference<"query">;
     const updateRoleFn = "users:updateRole" as unknown as FunctionReference<"mutation">;
@@ -101,6 +109,7 @@ async function handle({ request }: { request: Request }) {
     if (userId) {
       targetUser = (await convex.query(getByIdFn, {
         logtoId,
+        authToken: token,
         userId,
       })) as typeof targetUser;
 
@@ -111,6 +120,7 @@ async function handle({ request }: { request: Request }) {
       try {
         await convex.mutation(updateRoleFn, {
           logtoId,
+          authToken: token,
           userId,
           role,
           position: position || undefined,
@@ -128,12 +138,14 @@ async function handle({ request }: { request: Request }) {
     } else if (resolvedEmail) {
       targetUser = (await convex.query(getByEmailFn, {
         logtoId,
+        authToken: token,
         email: resolvedEmail,
       })) as { _id: string; email: string; logtoId?: string } | null;
 
       if (targetUser?._id) {
         await convex.mutation(updateRoleFn, {
           logtoId,
+          authToken: token,
           userId: targetUser._id,
           role,
           position: position || undefined,

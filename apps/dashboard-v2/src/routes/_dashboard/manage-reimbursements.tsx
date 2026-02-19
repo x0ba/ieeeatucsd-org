@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -163,18 +163,18 @@ const getStatusIcon = (status: ReimbursementStatus) => {
 };
 
 function ManageReimbursementsPage() {
-	const { hasAdminAccess, logtoId, user } = usePermissions();
+	const { hasAdminAccess, logtoId, user, getAuthHeaders } = usePermissions();
 	const aiEnabled = user?.aiFeaturesEnabled !== false;
-	const reimbursements = useQuery(
+	const reimbursements = useAuthedQuery(
 		api.reimbursements.listAll,
 		logtoId ? { logtoId } : "skip",
 	);
-	const updateStatus = useMutation(api.reimbursements.updateStatus);
-	const updatePaymentDetails = useMutation(
+	const updateStatus = useAuthedMutation(api.reimbursements.updateStatus);
+	const updatePaymentDetails = useAuthedMutation(
 		api.reimbursements.updatePaymentDetails,
 	);
-	const generateUploadUrl = useMutation(api.reimbursements.generateUploadUrl);
-	const getStorageUrl = useMutation(api.reimbursements.getStorageUrl);
+	const generateUploadUrl = useAuthedMutation(api.reimbursements.generateUploadUrl);
+	const getStorageUrl = useAuthedMutation(api.reimbursements.getStorageUrl);
 
 	// Table state
 	type Reimbursement = typeof reimbursements extends infer R
@@ -366,7 +366,7 @@ function ManageReimbursementsPage() {
 			// Find the reimbursement to get details for the email
 			const reimbursement = reimbursements?.find((r: any) => r._id === id);
 			if (reimbursement && logtoId) {
-				sendNotification(logtoId, "reimbursement_status_changed", {
+				sendNotification(getAuthHeaders(), "reimbursement_status_changed", {
 					reimbursementId: id,
 					title: reimbursement.title,
 					totalAmount: reimbursement.totalAmount,
@@ -401,7 +401,7 @@ function ManageReimbursementsPage() {
 			toast.success("Reimbursement approved");
 
 			if (logtoId) {
-				sendNotification(logtoId, "reimbursement_status_changed", {
+				sendNotification(getAuthHeaders(), "reimbursement_status_changed", {
 					reimbursementId: selectedReimbursement._id,
 					title: selectedReimbursement.title,
 					totalAmount: selectedReimbursement.totalAmount,
@@ -449,7 +449,7 @@ function ManageReimbursementsPage() {
 				toast.success("Reimbursement marked as paid");
 
 				if (logtoId) {
-					sendNotification(logtoId, "reimbursement_status_changed", {
+					sendNotification(getAuthHeaders(), "reimbursement_status_changed", {
 						reimbursementId: selectedReimbursement._id,
 						title: selectedReimbursement.title,
 						totalAmount: selectedReimbursement.totalAmount,
@@ -522,8 +522,8 @@ function ManageReimbursementsPage() {
 
 			const response = await fetch("/api/extract-payment-details", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ imageUrl: proofUrl, logtoId }),
+				headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+				body: JSON.stringify({ imageUrl: proofUrl }),
 			});
 
 			if (!response.ok) {

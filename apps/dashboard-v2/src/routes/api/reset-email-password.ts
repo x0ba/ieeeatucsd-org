@@ -6,13 +6,22 @@ async function handle({ request }: { request: Request }) {
   try {
     const authResult = await requireApiAuth(request);
     if (authResult instanceof Response) return authResult;
-    const { body } = authResult;
+    const { body, user } = authResult;
     const { email, password } = body as { email?: string; password?: string };
 
     if (!email || !password) {
       return new Response(
         JSON.stringify({ success: false, error: "Missing email or password" }),
         { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const privilegedRoles = new Set(["Administrator", "Executive Officer", "General Officer"]);
+    const isPrivileged = privilegedRoles.has(String(user.role || ""));
+    if (!isPrivileged && user.ieeeEmail !== email) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Forbidden: mailbox ownership mismatch" }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
       );
     }
 

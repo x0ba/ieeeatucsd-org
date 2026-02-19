@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import {
   Dialog,
@@ -98,8 +98,8 @@ export default function FundRequestActionModal({
   const [fundingSource, setFundingSource] = useState<FUNDING_SOURCE>("department");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fundRequest = useQuery(api.fundRequests.get, logtoId && requestId ? { logtoId, id: requestId as any } : "skip");
-  const updateStatus = useMutation(api.fundRequests.updateStatus);
+  const fundRequest = useAuthedQuery(api.fundRequests.get, logtoId && requestId ? { logtoId, id: requestId as any } : "skip");
+  const updateStatus = useAuthedMutation(api.fundRequests.updateStatus);
 
   useEffect(() => {
     if (isOpen) {

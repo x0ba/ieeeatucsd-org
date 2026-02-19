@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Bell, Check, CheckCheck, Trash2 } from "lucide-react";
@@ -16,17 +16,17 @@ export function NotificationBell() {
   const { logtoId } = useAuth();
   const [open, setOpen] = useState(false);
 
-  const unreadCount = useQuery(
+  const unreadCount = useAuthedQuery(
     api.notifications.unreadCount,
     logtoId ? { logtoId } : "skip",
   );
-  const notifications = useQuery(
+  const notifications = useAuthedQuery(
     api.notifications.listMine,
     logtoId && open ? { logtoId } : "skip",
   );
-  const markAsRead = useMutation(api.notifications.markAsRead);
-  const markAllAsRead = useMutation(api.notifications.markAllAsRead);
-  const removeNotification = useMutation(api.notifications.remove);
+  const markAsRead = useAuthedMutation(api.notifications.markAsRead);
+  const markAllAsRead = useAuthedMutation(api.notifications.markAllAsRead);
+  const removeNotification = useAuthedMutation(api.notifications.remove);
 
   const count = unreadCount ?? 0;
 

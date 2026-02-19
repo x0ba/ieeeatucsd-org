@@ -8,9 +8,9 @@ import {
 
 // Fund Request Queries
 export const listMine = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
     return await ctx.db
       .query("fundRequests")
@@ -20,24 +20,34 @@ export const listMine = query({
 });
 
 export const listAll = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     return await ctx.db.query("fundRequests").collect();
   },
 });
 
 export const get = query({
-  args: { logtoId: v.string(), id: v.id("fundRequests") },
+  args: { logtoId: v.string(), authToken: v.string(), id: v.id("fundRequests") },
   handler: async (ctx, args) => {
-    await requireCurrentUser(ctx, args.logtoId);
-    return await ctx.db.get(args.id);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
+    const request = await ctx.db.get(args.id);
+    if (!request) return null;
+
+    const userId = user.logtoId ?? user.authUserId ?? "";
+    const canManage = user.role === "Administrator" || user.role === "Executive Officer" || user.role === "General Officer";
+    if (!canManage && request.requestedBy !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    return request;
   },
 });
 
 export const listByDepartment = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     department: v.union(
       v.literal("events"),
       v.literal("projects"),
@@ -47,7 +57,7 @@ export const listByDepartment = query({
     startDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const requests = await ctx.db
       .query("fundRequests")
       .withIndex("by_department", (q) => q.eq("department", args.department))
@@ -64,6 +74,7 @@ export const listByDepartment = query({
 export const listByStatus = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     status: v.union(
       v.literal("draft"),
       v.literal("submitted"),
@@ -80,7 +91,7 @@ export const listByStatus = query({
     ),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const statusFilter = await ctx.db
       .query("fundRequests")
       .withIndex("by_status", (q) => q.eq("status", args.status))
@@ -96,6 +107,7 @@ export const listByStatus = query({
 export const create = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     title: v.string(),
     purpose: v.string(),
     category: v.union(
@@ -139,9 +151,9 @@ export const create = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
-    const { logtoId, ...data } = args;
+    const { logtoId, authToken, ...data } = args;
     const now = Date.now();
 
     const auditLogId = crypto.randomUUID();
@@ -174,6 +186,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("fundRequests"),
     title: v.optional(v.string()),
     purpose: v.optional(v.string()),
@@ -219,9 +232,9 @@ export const update = mutation({
     infoResponseNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
-    const { id, logtoId, ...data } = args;
+    const { id, logtoId, authToken, ...data } = args;
 
     const existingRequest = await ctx.db.get(id);
     if (!existingRequest) {
@@ -263,6 +276,7 @@ export const update = mutation({
 export const updateStatus = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("fundRequests"),
     status: v.union(
       v.literal("draft"),
@@ -276,7 +290,7 @@ export const updateStatus = mutation({
     infoRequestNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const { id, status, reviewNotes, infoRequestNotes } = args;
     const adminId = admin.logtoId ?? admin.authUserId ?? "";
 
@@ -314,11 +328,12 @@ export const updateStatus = mutation({
 export const updateFundSource = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("fundRequests"),
     fundSource: v.union(v.literal("ece"), v.literal("ieee"), v.literal("other")),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const { id, fundSource } = args;
 
     const existingRequest = await ctx.db.get(id);
@@ -339,10 +354,11 @@ export const updateFundSource = mutation({
 export const deleteRequest = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("fundRequests"),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     const request = await ctx.db.get(args.id);
@@ -367,6 +383,7 @@ export const deleteRequest = mutation({
 export const getBudgetConfig = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     department: v.union(
       v.literal("events"),
       v.literal("projects"),
@@ -375,7 +392,7 @@ export const getBudgetConfig = query({
     ),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const config = await ctx.db
       .query("budgetConfigs")
       .withIndex("by_department", (q) => q.eq("department", args.department))
@@ -385,9 +402,9 @@ export const getBudgetConfig = query({
 });
 
 export const getAllBudgetConfigs = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     return await ctx.db.query("budgetConfigs").collect();
   },
 });
@@ -395,6 +412,7 @@ export const getAllBudgetConfigs = query({
 export const createBudgetConfig = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     department: v.union(
       v.literal("events"),
       v.literal("projects"),
@@ -405,10 +423,10 @@ export const createBudgetConfig = mutation({
     startDate: v.number(),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
-    const admin = await requireCurrentUser(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
+    const admin = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const adminId = admin.logtoId ?? admin.authUserId ?? "";
-    const { logtoId, ...data } = args;
+    const { logtoId, authToken, ...data } = args;
 
     const now = Date.now();
     return await ctx.db.insert("budgetConfigs", {
@@ -423,6 +441,7 @@ export const createBudgetConfig = mutation({
 export const updateBudgetConfig = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     department: v.union(
       v.literal("events"),
       v.literal("projects"),
@@ -433,10 +452,10 @@ export const updateBudgetConfig = mutation({
     startDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
-    const admin = await requireCurrentUser(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
+    const admin = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const adminId = admin.logtoId ?? admin.authUserId ?? "";
-    const { logtoId, department, ...data } = args;
+    const { logtoId, authToken, department, ...data } = args;
 
     const config = await ctx.db
       .query("budgetConfigs")
@@ -475,6 +494,7 @@ export const updateBudgetConfig = mutation({
 export const getBudgetAdjustments = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     department: v.union(
       v.literal("events"),
       v.literal("projects"),
@@ -483,7 +503,7 @@ export const getBudgetAdjustments = query({
     ),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     return await ctx.db
       .query("budgetAdjustments")
       .withIndex("by_department", (q) => q.eq("department", args.department))
@@ -494,6 +514,7 @@ export const getBudgetAdjustments = query({
 export const createBudgetAdjustment = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     department: v.union(
       v.literal("events"),
       v.literal("projects"),
@@ -504,10 +525,10 @@ export const createBudgetAdjustment = mutation({
     description: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
-    const admin = await requireCurrentUser(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
+    const admin = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const adminId = admin.logtoId ?? admin.authUserId ?? "";
-    const { logtoId, ...data } = args;
+    const { logtoId, authToken, ...data } = args;
 
     const now = Date.now();
     return await ctx.db.insert("budgetAdjustments", {
@@ -522,10 +543,11 @@ export const createBudgetAdjustment = mutation({
 export const deleteBudgetAdjustment = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("budgetAdjustments"),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const adjustment = await ctx.db.get(args.id);
 
     if (!adjustment) {
@@ -541,6 +563,7 @@ export const deleteBudgetAdjustment = mutation({
 export const getBudgetStats = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     department: v.union(
       v.literal("events"),
       v.literal("projects"),
@@ -549,7 +572,7 @@ export const getBudgetStats = query({
     ),
   },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
 
     // Get budget config
     const config = await ctx.db

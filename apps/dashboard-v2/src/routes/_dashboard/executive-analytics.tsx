@@ -1,6 +1,6 @@
 import { api } from "@convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useAuthedQuery } from "@/hooks/useAuthedConvex";
 import {
 	Activity,
 	CalendarDays,
@@ -139,7 +139,7 @@ function ExecutiveAnalyticsPage() {
 		undefined,
 	);
 
-	const analytics = useQuery(
+	const analytics = useAuthedQuery(
 		api.users.getExecutiveAnalytics,
 		logtoId
 			? {

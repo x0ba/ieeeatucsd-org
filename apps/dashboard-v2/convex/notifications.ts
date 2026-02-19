@@ -3,9 +3,9 @@ import { v } from "convex/values";
 import { requireCurrentUser, requireAdminAccess } from "./permissions";
 
 export const listMine = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
     const now = Date.now();
 
@@ -21,9 +21,9 @@ export const listMine = query({
 });
 
 export const unreadCount = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
     const now = Date.now();
 
@@ -37,19 +37,23 @@ export const unreadCount = query({
 });
 
 export const markAsRead = mutation({
-  args: { logtoId: v.string(), id: v.id("notifications") },
+  args: { logtoId: v.string(), authToken: v.string(), id: v.id("notifications") },
   handler: async (ctx, args) => {
-    await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
+    const userId = user.logtoId ?? user.authUserId ?? "";
     const notification = await ctx.db.get(args.id);
     if (!notification) throw new Error("Notification not found");
+    if (notification.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
     await ctx.db.patch(args.id, { read: true });
   },
 });
 
 export const markAllAsRead = mutation({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     const unread = await ctx.db
@@ -66,6 +70,7 @@ export const markAllAsRead = mutation({
 export const create = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     userId: v.string(),
     type: v.string(),
     title: v.string(),
@@ -74,8 +79,8 @@ export const create = mutation({
     expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
-    const { logtoId, ...notificationData } = args;
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
+    const { logtoId, authToken, ...notificationData } = args;
     return await ctx.db.insert("notifications", {
       ...notificationData,
       read: false,
@@ -85,11 +90,15 @@ export const create = mutation({
 });
 
 export const remove = mutation({
-  args: { logtoId: v.string(), id: v.id("notifications") },
+  args: { logtoId: v.string(), authToken: v.string(), id: v.id("notifications") },
   handler: async (ctx, args) => {
-    await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
+    const userId = user.logtoId ?? user.authUserId ?? "";
     const notification = await ctx.db.get(args.id);
     if (!notification) throw new Error("Notification not found");
+    if (notification.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
     await ctx.db.delete(args.id);
   },
 });

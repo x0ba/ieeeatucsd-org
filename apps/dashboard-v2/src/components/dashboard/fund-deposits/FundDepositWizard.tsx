@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,11 +50,13 @@ const DEPOSIT_STEPS = [
 ];
 
 export function FundDepositWizard({ isOpen, onClose, logtoId }: FundDepositWizardProps) {
-    const { user } = useAuth();
+    const { user, getAuthHeaders } = useAuth();
     const aiEnabled = user?.aiFeaturesEnabled !== false;
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const createDeposit = useMutation(api.fundDeposits.create);
+    const createDeposit = useAuthedMutation(api.fundDeposits.create);
+    const generateUploadUrl = useAuthedMutation(api.fundDeposits.generateUploadUrl);
+    const getStorageUrl = useAuthedMutation(api.fundDeposits.getStorageUrl);
 
     const [formData, setFormData] = useState({
         title: "",
@@ -88,8 +90,8 @@ export function FundDepositWizard({ isOpen, onClose, logtoId }: FundDepositWizar
             const imageUrl = await fileToDataUrl(file);
             const response = await fetch("/api/parse-receipt", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ imageUrl, logtoId }),
+                headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+                body: JSON.stringify({ imageUrl }),
             });
 
             const result = await response.json();
@@ -216,53 +218,27 @@ export function FundDepositWizard({ isOpen, onClose, logtoId }: FundDepositWizar
     };
 
     const uploadFiles = async (files: File[]): Promise<string[]> => {
-        const uploadPromises = files.map(async (file) => {
-            const response = await fetch(
-                `${import.meta.env.VITE_CONVEX_URL}/api/fundDeposits/generateUploadUrl`,
-                {
+        return await Promise.all(
+            files.map(async (file) => {
+                const uploadUrl = await generateUploadUrl({});
+                const result = await fetch(uploadUrl, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({}),
+                    body: file,
+                    headers: { "Content-Type": file.type || "application/octet-stream" },
+                });
+
+                if (!result.ok) {
+                    throw new Error(`Failed to upload ${file.name}`);
                 }
-            );
-            const { uploadUrl } = await response.json();
 
-            const result = await fetch(uploadUrl, {
-                method: "PUT",
-                body: file,
-                headers: { "Content-Type": file.type },
-            });
-
-            if (!result.ok) throw new Error(`Failed to upload ${file.name}`);
-
-            const { storageId } = await result.json();
-            return storageId;
-        });
-
-        // Wait for all uploads to complete
-        const storageIds = await Promise.all(uploadPromises);
-
-        // Get public URLs for the storage IDs
-        // Note: The original code fetched getStorageUrl for each ID.
-        // However, the create mutation expects distinct storageIds usually, or maybe URLs?
-        // Let's check original code:
-        // It called `getStorageUrl` which implies it wants the URL.
-        // "receiptFiles: receiptFileUrls" in handleSubmit
-
-        // We can do this in parallel too
-        const urlPromises = storageIds.map(async (storageId) => {
-            const urlData = await fetch(
-                `${import.meta.env.VITE_CONVEX_URL}/api/fundDeposits/getStorageUrl`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ storageId }),
+                const { storageId } = await result.json();
+                const fileUrl = await getStorageUrl({ storageId });
+                if (!fileUrl) {
+                    throw new Error(`Failed to resolve uploaded file URL for ${file.name}`);
                 }
-            ).then((res) => res.json());
-            return urlData; // The original code returned whatever getStorageUrl returned, which seems to be a string or object
-        });
-
-        return await Promise.all(urlPromises);
+                return fileUrl;
+            }),
+        );
     };
 
     const handleSubmit = async () => {

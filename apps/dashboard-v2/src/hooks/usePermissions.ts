@@ -1,7 +1,16 @@
 import { useAuth } from "./useAuth";
 
 export function usePermissions() {
-  const { user, userRole, isAuthenticated, isLoading, logtoId } = useAuth();
+  const {
+    user,
+    userRole,
+    isAuthenticated,
+    isLoading,
+    logtoId,
+    accessToken,
+    convexSessionToken,
+    getAuthHeaders,
+  } = useAuth();
 
   const isAdmin = userRole === "Administrator";
   const isExecutiveOfficer = userRole === "Executive Officer";
@@ -20,6 +29,9 @@ export function usePermissions() {
     isAuthenticated,
     isLoading,
     logtoId,
+    accessToken,
+    convexSessionToken,
+    getAuthHeaders,
     isAdmin,
     isExecutiveOfficer,
     isGeneralOfficer,

@@ -3,9 +3,9 @@ import { v } from "convex/values";
 import { requireAdminAccess } from "./permissions";
 
 export const get = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     return await ctx.db.query("organizationSettings").first();
   },
 });
@@ -13,10 +13,11 @@ export const get = query({
 export const update = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     googleSheetsContactListUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const adminId = admin.logtoId ?? admin.authUserId ?? "";
     const existing = await ctx.db.query("organizationSettings").first();
 

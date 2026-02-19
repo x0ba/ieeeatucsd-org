@@ -4,15 +4,21 @@
  */
 
 export async function sendNotification(
-  logtoId: string,
+  authHeaders: Record<string, string>,
   type: string,
   data: Record<string, unknown>,
 ): Promise<void> {
   try {
     const res = await fetch("/api/email/notify", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ logtoId, type, ...data }),
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders,
+      },
+      body: JSON.stringify({
+        type,
+        ...data,
+      }),
     });
 
     if (!res.ok) {

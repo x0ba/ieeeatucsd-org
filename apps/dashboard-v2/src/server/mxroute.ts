@@ -83,10 +83,16 @@ export async function resetEmailPassword(params: {
 }) {
   const config = getMXRouteConfig();
   const [username, domain] = params.email.split("@");
+  if (!username || !domain) {
+    throw new Error("Invalid email format");
+  }
+  if (domain.toLowerCase() !== config.emailDomain.toLowerCase()) {
+    throw new Error(`Email must belong to @${config.emailDomain}`);
+  }
 
   const formData = new URLSearchParams();
   formData.append("action", "modify");
-  formData.append("domain", domain);
+  formData.append("domain", config.emailDomain);
   formData.append("user", username);
   formData.append("passwd", params.password);
   formData.append("passwd2", params.password);
@@ -119,10 +125,16 @@ export async function resetEmailPassword(params: {
 export async function checkEmailExists(email: string) {
   const config = getMXRouteConfig();
   const [username, domain] = email.split("@");
+  if (!username || !domain) {
+    return { exists: false };
+  }
+  if (domain.toLowerCase() !== config.emailDomain.toLowerCase()) {
+    return { exists: false };
+  }
 
   const formData = new URLSearchParams();
   formData.append("action", "list");
-  formData.append("domain", domain);
+  formData.append("domain", config.emailDomain);
 
   const response = await fetch(config.emailApiUrl, {
     method: "POST",

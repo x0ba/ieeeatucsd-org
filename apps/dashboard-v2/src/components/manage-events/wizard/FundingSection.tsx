@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useAuth } from "@/hooks/useAuth";
 import type { Invoice, InvoiceItem } from "../types";
 
 interface FundingSectionProps {
@@ -15,7 +16,6 @@ interface FundingSectionProps {
   };
   onChange: (data: Partial<FundingSectionProps["data"]>) => void;
   generateUploadUrl?: () => Promise<string>;
-  logtoId?: string | null;
   aiEnabled?: boolean;
 }
 
@@ -27,9 +27,9 @@ export function FundingSection({
   data,
   onChange,
   generateUploadUrl,
-  logtoId,
   aiEnabled = true,
 }: FundingSectionProps) {
+  const { getAuthHeaders } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -81,9 +81,9 @@ export function FundingSection({
       try {
         const response = await fetch("/api/parse-invoice", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
           // Use local data URL for parsing. Convex storage IDs are not fetchable URLs.
-          body: JSON.stringify({ imageUrl: parseDataUrl, logtoId }),
+          body: JSON.stringify({ imageUrl: parseDataUrl }),
         });
 
         if (response.ok) {

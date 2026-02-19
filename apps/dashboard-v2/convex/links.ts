@@ -3,17 +3,17 @@ import { v } from "convex/values";
 import { requireCurrentUser, requireOfficerAccess } from "./permissions";
 
 export const list = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireCurrentUser(ctx, args.logtoId);
+    await requireCurrentUser(ctx, args.logtoId, args.authToken);
     return await ctx.db.query("links").collect();
   },
 });
 
 export const getByCategory = query({
-  args: { logtoId: v.string(), category: v.string() },
+  args: { logtoId: v.string(), authToken: v.string(), category: v.string() },
   handler: async (ctx, args) => {
-    await requireCurrentUser(ctx, args.logtoId);
+    await requireCurrentUser(ctx, args.logtoId, args.authToken);
     return await ctx.db
       .query("links")
       .withIndex("by_category", (q) => q.eq("category", args.category))
@@ -24,6 +24,7 @@ export const getByCategory = query({
 export const create = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     url: v.string(),
     title: v.string(),
     category: v.string(),
@@ -35,9 +36,9 @@ export const create = mutation({
     order: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
-    const { logtoId, ...data } = args;
+    const { logtoId, authToken, ...data } = args;
     return await ctx.db.insert("links", {
       ...data,
       createdBy: userId,
@@ -48,6 +49,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("links"),
     url: v.optional(v.string()),
     title: v.optional(v.string()),
@@ -60,9 +62,9 @@ export const update = mutation({
     order: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const user = await requireOfficerAccess(ctx, args.logtoId);
+    const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
-    const { id, logtoId, ...updates } = args;
+    const { id, logtoId, authToken, ...updates } = args;
     const cleanUpdates: Record<string, unknown> = {
       lastModified: Date.now(),
       lastModifiedBy: userId,
@@ -78,9 +80,9 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-  args: { logtoId: v.string(), id: v.id("links") },
+  args: { logtoId: v.string(), authToken: v.string(), id: v.id("links") },
   handler: async (ctx, args) => {
-    await requireOfficerAccess(ctx, args.logtoId);
+    await requireOfficerAccess(ctx, args.logtoId, args.authToken);
     await ctx.db.delete(args.id);
   },
 });

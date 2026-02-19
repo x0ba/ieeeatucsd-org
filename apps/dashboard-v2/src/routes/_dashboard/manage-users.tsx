@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
+import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useState, useMemo, useEffect } from "react";
@@ -29,12 +29,12 @@ export const Route = createFileRoute("/_dashboard/manage-users")({
 const ITEMS_PER_PAGE = 10;
 
 function ManageUsersPage() {
-  const { hasAdminAccess, logtoId, user: currentUser } = usePermissions();
-  const users = useQuery(api.users.list, logtoId ? { logtoId } : "skip");
+  const { hasAdminAccess, logtoId, user: currentUser, getAuthHeaders } = usePermissions();
+  const users = useAuthedQuery(api.users.list, logtoId ? { logtoId } : "skip");
 
   // Mutations
-  const updateStatusMutation = useMutation(api.users.updateStatus);
-  const updateProfileForAdminMutation = useMutation(api.users.updateProfileForAdmin);
+  const updateStatusMutation = useAuthedMutation(api.users.updateStatus);
+  const updateProfileForAdminMutation = useAuthedMutation(api.users.updateProfileForAdmin);
 
   // State
   const [filters, setFilters] = useState<UserFilters>({
@@ -162,9 +162,8 @@ function ManageUsersPage() {
       if (roleChanged) {
         const roleResponse = await fetch("/api/users/update-role", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
           body: JSON.stringify({
-            logtoId,
             userId: userData.id,
             role: userData.role,
             position: userData.position || undefined,
@@ -216,9 +215,8 @@ function ManageUsersPage() {
     try {
       const roleResponse = await fetch("/api/users/update-role", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({
-          logtoId,
           userId,
           role: newRole,
           position: newPosition || undefined,

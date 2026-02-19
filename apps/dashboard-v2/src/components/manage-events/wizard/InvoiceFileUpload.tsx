@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Upload, Loader2, AlertCircle, CheckCircle, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import type { InvoiceItem } from "../types";
 
 interface ParsedInvoiceData {
@@ -18,7 +19,6 @@ interface InvoiceFileUploadProps {
   onParsed: (data: ParsedInvoiceData) => void;
   onFileUploaded: (fileUrl: string) => void;
   generateUploadUrl?: () => Promise<string>;
-  logtoId?: string | null;
   aiEnabled?: boolean;
 }
 
@@ -31,9 +31,9 @@ export function InvoiceFileUpload({
   onParsed,
   onFileUploaded,
   generateUploadUrl,
-  logtoId,
   aiEnabled = true,
 }: InvoiceFileUploadProps) {
+  const { getAuthHeaders } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [error, setError] = useState("");
@@ -103,9 +103,9 @@ export function InvoiceFileUpload({
       try {
         const response = await fetch("/api/parse-invoice", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
           // Parse the actual file bytes via data URL, not Convex storage ID.
-          body: JSON.stringify({ imageUrl: parseDataUrl, logtoId }),
+          body: JSON.stringify({ imageUrl: parseDataUrl }),
         });
 
         if (!response.ok) {

@@ -3,9 +3,9 @@ import { v } from "convex/values";
 import { requireAdminAccess } from "./permissions";
 
 export const list = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     return await ctx.db.query("officerInvitations").collect();
   },
 });
@@ -30,6 +30,7 @@ export const get = query({
 export const create = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     name: v.string(),
     email: v.string(),
     role: v.union(
@@ -47,10 +48,10 @@ export const create = mutation({
     leaderName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const adminId = admin.logtoId ?? admin.authUserId ?? "";
     const now = Date.now();
-    const { logtoId, ...data } = args;
+    const { logtoId, authToken, ...data } = args;
     return await ctx.db.insert("officerInvitations", {
       ...data,
       status: "pending",
@@ -64,6 +65,8 @@ export const create = mutation({
 
 export const updateStatus = mutation({
   args: {
+    logtoId: v.string(),
+    authToken: v.string(),
     id: v.id("officerInvitations"),
     status: v.union(
       v.literal("pending"),
@@ -73,6 +76,7 @@ export const updateStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const now = Date.now();
     const updates: Record<string, unknown> = { status: args.status };
     if (args.status === "accepted") updates.acceptedAt = now;
@@ -83,9 +87,9 @@ export const updateStatus = mutation({
 });
 
 export const resend = mutation({
-  args: { logtoId: v.string(), id: v.id("officerInvitations") },
+  args: { logtoId: v.string(), authToken: v.string(), id: v.id("officerInvitations") },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     await ctx.db.patch(args.id, {
       resentAt: Date.now(),
       lastSentAt: Date.now(),

@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_dashboard/slack-access")({
 });
 
 function SlackAccessPage() {
-  const { user, logtoId } = useAuth();
+  const { user, getAuthHeaders } = useAuth();
   const passwordInputId = useId();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -145,8 +145,8 @@ function SlackAccessPage() {
 
       const checkResponse = await fetch("/api/check-email-exists", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ logtoId, email: proposedEmail }),
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ email: proposedEmail }),
       });
 
       if (checkResponse.ok) {
@@ -163,9 +163,8 @@ function SlackAccessPage() {
 
       const response = await fetch("/api/create-ieee-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({
-          logtoId,
           username: extractUsername(user.email),
           password: customPassword,
         }),
@@ -218,8 +217,8 @@ function SlackAccessPage() {
     try {
       const response = await fetch("/api/reset-email-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ logtoId, email: ieeeEmailAddress, password: customPassword }),
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ email: ieeeEmailAddress, password: customPassword }),
       });
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -262,7 +261,7 @@ function SlackAccessPage() {
     try {
       const response = await fetch("/api/ieee-email/fetch-emails", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ email: ieeeEmailAddress, password: inboxPassword }),
       });
 
@@ -301,7 +300,7 @@ function SlackAccessPage() {
     try {
       const response = await fetch("/api/ieee-email/fetch-emails", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify(inboxState.credentials),
       });
 

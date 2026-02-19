@@ -44,9 +44,9 @@ function toPercentChange(currentValue: number, previousValue: number) {
 }
 
 export const getMe = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    return await getCurrentUser(ctx, args.logtoId);
+    return await getCurrentUser(ctx, args.logtoId, args.authToken);
   },
 });
 
@@ -61,9 +61,10 @@ export const getByLogtoId = query({
 });
 
 export const getByEmailForAdmin = query({
-  args: { logtoId: v.string(), email: v.string() },
+  args: { logtoId: v.string(),
+    authToken: v.string(), email: v.string() },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     return await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
@@ -72,9 +73,10 @@ export const getByEmailForAdmin = query({
 });
 
 export const getByIdForAdmin = query({
-  args: { logtoId: v.string(), userId: v.id("users") },
+  args: { logtoId: v.string(),
+    authToken: v.string(), userId: v.id("users") },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
     return await ctx.db.get(args.userId);
   },
 });
@@ -82,6 +84,7 @@ export const getByIdForAdmin = query({
 export const upsertFromAuth = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     email: v.string(),
     name: v.string(),
     avatar: v.optional(v.string()),
@@ -103,30 +106,7 @@ export const upsertFromAuth = mutation({
       return existing._id;
     }
 
-    // 2. Check if a Firebase-migrated user exists by email (no logtoId yet)
-    const migratedUser = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .first();
-
-    if (migratedUser && !migratedUser.logtoId) {
-      // Link the migrated user to their Logto account
-      await ctx.db.patch(migratedUser._id, {
-        logtoId: args.logtoId,
-        lastLogin: Date.now(),
-        ...(args.signInMethod && { signInMethod: args.signInMethod }),
-        ...(args.avatar && !migratedUser.avatar && { avatar: args.avatar }),
-        ...(args.name && !migratedUser.name && { name: args.name }),
-      });
-
-      // The role field stays in the DB — it will be synced to Logto
-      // by the manage-users page or a background job later.
-      // For now, the DB role continues to drive permissions.
-
-      return migratedUser._id;
-    }
-
-    // 3. Brand new user — check for sponsor domain auto-assignment
+    // Brand new user — check for sponsor domain auto-assignment
     let role: string = "Member";
     let sponsorTier: string | undefined;
     let sponsorOrganization: string | undefined;
@@ -197,6 +177,7 @@ export const upsertFromAuth = mutation({
 export const completeOnboarding = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     pid: v.string(),
     major: v.string(),
     graduationYear: v.number(),
@@ -207,7 +188,7 @@ export const completeOnboarding = mutation({
     privacyPolicyVersion: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const now = Date.now();
 
     await ctx.db.patch(user._id, {
@@ -255,6 +236,7 @@ export const completeOnboarding = mutation({
 export const updateProfile = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     name: v.optional(v.string()),
     major: v.optional(v.string()),
     graduationYear: v.optional(v.number()),
@@ -271,7 +253,7 @@ export const updateProfile = mutation({
     syncPublicProfile: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const updateData: Record<string, unknown> = {
       lastUpdated: Date.now(),
     };
@@ -328,10 +310,11 @@ export const updateProfile = mutation({
 export const setIEEEEmail = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     ieeeEmail: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     await ctx.db.patch(user._id, {
       hasIEEEEmail: true,
       ieeeEmail: args.ieeeEmail,
@@ -345,11 +328,12 @@ export const setIEEEEmail = mutation({
 export const acceptPolicyUpdate = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     tosVersion: v.string(),
     privacyPolicyVersion: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const now = Date.now();
 
     await ctx.db.patch(user._id, {
@@ -366,20 +350,31 @@ export const acceptPolicyUpdate = mutation({
 export const list = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     paginationOpts: v.optional(v.object({
       cursor: v.optional(v.string()),
       numItems: v.optional(v.number()),
     })),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
-    return await ctx.db.query("users").collect();
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
+    const users = await ctx.db.query("users").collect();
+    const start = Math.max(
+      0,
+      Number.parseInt(args.paginationOpts?.cursor ?? "0", 10) || 0,
+    );
+    const count = Math.max(
+      1,
+      Math.min(args.paginationOpts?.numItems ?? users.length, 500),
+    );
+    return users.slice(start, start + count);
   },
 });
 
 export const updateRole = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     userId: v.id("users"),
     role: v.union(
       v.literal("Member"),
@@ -400,7 +395,7 @@ export const updateRole = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
 
     const targetUser = await ctx.db.get(args.userId);
     if (!targetUser) throw new Error("Target user not found");
@@ -436,6 +431,7 @@ export const updateRole = mutation({
 export const updateStatus = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     userId: v.id("users"),
     status: v.union(
       v.literal("active"),
@@ -444,7 +440,7 @@ export const updateStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
 
     await ctx.db.patch(args.userId, {
       status: args.status,
@@ -459,6 +455,7 @@ export const updateStatus = mutation({
 export const updateProfileForAdmin = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     userId: v.id("users"),
     name: v.optional(v.string()),
     major: v.optional(v.string()),
@@ -467,7 +464,7 @@ export const updateProfileForAdmin = mutation({
     pid: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const admin = await requireAdminAccess(ctx, args.logtoId);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
     const targetUser = await ctx.db.get(args.userId);
     if (!targetUser) throw new Error("Target user not found");
 
@@ -524,10 +521,11 @@ export const updateProfileForAdmin = mutation({
 export const deleteUser = mutation({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
 
     // Delete the user's public profile if it exists
     const publicProfile = await ctx.db
@@ -547,9 +545,9 @@ export const deleteUser = mutation({
 });
 
 export const getOverviewData = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await requireCurrentUser(ctx, args.logtoId);
+    const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
 
     // Get user's attended events
@@ -626,9 +624,9 @@ export const getOverviewData = query({
 });
 
 export const getLeaderboard = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireCurrentUser(ctx, args.logtoId);
+    await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const users = await ctx.db.query("users").collect();
     return users
       .filter((u) => u.signedUp && u.status === "active")
@@ -648,10 +646,11 @@ export const getLeaderboard = query({
 export const getExecutiveAnalytics = query({
   args: {
     logtoId: v.string(),
+    authToken: v.string(),
     fiscalYearStart: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId);
+    await requireAdminAccess(ctx, args.logtoId, args.authToken);
 
     const [events, attendees, users] = await Promise.all([
       ctx.db.query("events").collect(),
@@ -817,9 +816,9 @@ export const getExecutiveAnalytics = query({
 });
 
 export const getOfficerLeaderboard = query({
-  args: { logtoId: v.string() },
+  args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
-    await requireCurrentUser(ctx, args.logtoId);
+    await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const users = await ctx.db.query("users").collect();
 
     const officers = users.filter(

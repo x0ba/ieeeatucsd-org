@@ -1,5 +1,7 @@
 import { ConvexHttpClient } from "convex/browser";
 import type { FunctionReference } from "convex/server";
+import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
+import { z } from "zod/v4";
 
 export type ToolDefinition = {
 	type: "function";
@@ -198,7 +200,7 @@ function getConvexClient(): ConvexHttpClient {
 	return new ConvexHttpClient(url);
 }
 
-function summarizeResult(name: string, result: unknown): string {
+export function summarizeToolResult(name: string, result: unknown): string {
 	if (!result || typeof result !== "object") return `${name}: no data`;
 	const r = result as Record<string, unknown>;
 
@@ -236,6 +238,71 @@ function summarizeResult(name: string, result: unknown): string {
 	}
 }
 
+async function executeToolByName(
+	name: string,
+	args: Record<string, unknown>,
+	logtoId: string,
+) {
+	const convex = getConvexClient();
+	switch (name) {
+		case "search_data": {
+			const fn =
+				"ai:searchEverything" as unknown as FunctionReference<"query">;
+			return convex.query(fn, {
+				logtoId,
+				query: String(args.query || ""),
+				limit: args.limit ? Number(args.limit) : 25,
+				table: args.table ? String(args.table) : undefined,
+			});
+		}
+		case "get_record": {
+			const fn =
+				"ai:getRecordById" as unknown as FunctionReference<"query">;
+			return convex.query(fn, {
+				logtoId,
+				table: String(args.table || ""),
+				recordId: String(args.recordId || ""),
+			});
+		}
+		case "list_records": {
+			const fn =
+				"ai:listRecords" as unknown as FunctionReference<"query">;
+			return convex.query(fn, {
+				logtoId,
+				table: String(args.table || ""),
+				status: args.status ? String(args.status) : undefined,
+				limit: args.limit ? Number(args.limit) : undefined,
+			});
+		}
+		case "get_statistics": {
+			const fn =
+				"ai:getStatistics" as unknown as FunctionReference<"query">;
+			return convex.query(fn, {
+				logtoId,
+				table: String(args.table || ""),
+			});
+		}
+		case "get_user_info": {
+			const fn =
+				"ai:getUserByNameOrEmail" as unknown as FunctionReference<"query">;
+			return convex.query(fn, {
+				logtoId,
+				searchTerm: String(args.searchTerm || ""),
+			});
+		}
+		case "get_budget_overview": {
+			const fn =
+				"ai:getBudgetOverview" as unknown as FunctionReference<"query">;
+			return convex.query(fn, {
+				logtoId,
+				department: args.department ? String(args.department) : undefined,
+			});
+		}
+		default:
+			return { error: `Unknown tool: ${name}` };
+	}
+}
+
 export async function executeToolCall(
 	toolCall: ToolCallRequest,
 	logtoId: string,
@@ -256,75 +323,10 @@ export async function executeToolCall(
 		};
 	}
 
-	const convex = getConvexClient();
 	let result: unknown;
 
 	try {
-		switch (name) {
-			case "search_data": {
-				const fn =
-					"ai:searchEverything" as unknown as FunctionReference<"query">;
-				result = await convex.query(fn, {
-					logtoId,
-					query: String(args.query || ""),
-					limit: args.limit ? Number(args.limit) : 25,
-					table: args.table ? String(args.table) : undefined,
-				});
-				break;
-			}
-			case "get_record": {
-				const fn =
-					"ai:getRecordById" as unknown as FunctionReference<"query">;
-				result = await convex.query(fn, {
-					logtoId,
-					table: String(args.table || ""),
-					recordId: String(args.recordId || ""),
-				});
-				break;
-			}
-			case "list_records": {
-				const fn =
-					"ai:listRecords" as unknown as FunctionReference<"query">;
-				result = await convex.query(fn, {
-					logtoId,
-					table: String(args.table || ""),
-					status: args.status ? String(args.status) : undefined,
-					limit: args.limit ? Number(args.limit) : undefined,
-				});
-				break;
-			}
-			case "get_statistics": {
-				const fn =
-					"ai:getStatistics" as unknown as FunctionReference<"query">;
-				result = await convex.query(fn, {
-					logtoId,
-					table: String(args.table || ""),
-				});
-				break;
-			}
-			case "get_user_info": {
-				const fn =
-					"ai:getUserByNameOrEmail" as unknown as FunctionReference<"query">;
-				result = await convex.query(fn, {
-					logtoId,
-					searchTerm: String(args.searchTerm || ""),
-				});
-				break;
-			}
-			case "get_budget_overview": {
-				const fn =
-					"ai:getBudgetOverview" as unknown as FunctionReference<"query">;
-				result = await convex.query(fn, {
-					logtoId,
-					department: args.department
-						? String(args.department)
-						: undefined,
-				});
-				break;
-			}
-			default:
-				result = { error: `Unknown tool: ${name}` };
-		}
+		result = await executeToolByName(name, args, logtoId);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		result = { error: message };
@@ -334,7 +336,7 @@ export async function executeToolCall(
 		id: toolCall.id,
 		name,
 		result,
-		summary: summarizeResult(name, result),
+		summary: summarizeToolResult(name, result),
 		durationMs: Date.now() - start,
 	};
 }
@@ -346,4 +348,92 @@ export async function executeToolCallsParallel(
 	return Promise.all(
 		toolCalls.map((tc) => executeToolCall(tc, logtoId)),
 	);
+}
+
+export function createConvexToolsMcpServer(logtoId: string) {
+	const searchDataSchema = z.object({
+		query: z.string(),
+		table: z.string().optional(),
+		limit: z.number().optional(),
+	});
+
+	const getRecordSchema = z.object({
+		table: z.string(),
+		recordId: z.string(),
+	});
+
+	const listRecordsSchema = z.object({
+		table: z.string(),
+		status: z.string().optional(),
+		limit: z.number().optional(),
+	});
+
+	const getStatisticsSchema = z.object({
+		table: z.string(),
+	});
+
+	const getUserInfoSchema = z.object({
+		searchTerm: z.string(),
+	});
+
+	const getBudgetOverviewSchema = z.object({
+		department: z.string().optional(),
+	});
+
+	const createToolHandler = (name: string) => async (args: Record<string, unknown>) => {
+		const result = await executeToolByName(name, args, logtoId);
+		const payload = JSON.stringify(result);
+		const isError =
+			typeof result === "object" &&
+			result !== null &&
+			"error" in result &&
+			typeof (result as { error?: unknown }).error === "string";
+		return {
+			isError,
+			content: [{ type: "text" as const, text: payload }],
+		};
+	};
+
+	return createSdkMcpServer({
+		name: "ieee-convex-tools",
+		version: "1.0.0",
+		tools: [
+			tool(
+				"search_data",
+				"Full-text search across all Convex database tables or a specific table.",
+				searchDataSchema.shape,
+				createToolHandler("search_data"),
+			),
+			tool(
+				"get_record",
+				"Fetch a specific record by Convex document ID and table name.",
+				getRecordSchema.shape,
+				createToolHandler("get_record"),
+			),
+			tool(
+				"list_records",
+				"List records from a specific table with optional status filter.",
+				listRecordsSchema.shape,
+				createToolHandler("list_records"),
+			),
+			tool(
+				"get_statistics",
+				"Get aggregate statistics for a table.",
+				getStatisticsSchema.shape,
+				createToolHandler("get_statistics"),
+			),
+			tool(
+				"get_user_info",
+				"Look up users by name or email address.",
+				getUserInfoSchema.shape,
+				createToolHandler("get_user_info"),
+			),
+			tool(
+				"get_budget_overview",
+				"Get budget overview with totals, adjustments, and remaining balances.",
+				getBudgetOverviewSchema.shape,
+				createToolHandler("get_budget_overview"),
+			),
+		],
+	});
 }
