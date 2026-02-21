@@ -28,6 +28,23 @@ describe("shouldAttemptProvisioning", () => {
 });
 
 describe("resolveAuthState", () => {
+  it("does not block unauthenticated users on logto loading", () => {
+    const state = resolveAuthState({
+      logtoLoading: true,
+      isAuthenticated: false,
+      logtoId: null,
+      accessToken: null,
+      convexSessionToken: null,
+      convexUser: undefined,
+      isProvisioningUser: false,
+      hasProvisioningAttempt: false,
+      authFailureReason: null,
+    });
+
+    expect(state.isLoading).toBe(false);
+    expect(state.isAuthResolved).toBe(true);
+  });
+
   it("stays loading while provisioning is in progress", () => {
     const state = resolveAuthState({
       logtoLoading: false,
@@ -38,6 +55,7 @@ describe("resolveAuthState", () => {
       convexUser: null,
       isProvisioningUser: true,
       hasProvisioningAttempt: true,
+      authFailureReason: null,
     });
 
     expect(state.isLoading).toBe(true);
@@ -54,6 +72,24 @@ describe("resolveAuthState", () => {
       convexUser: null,
       isProvisioningUser: false,
       hasProvisioningAttempt: true,
+      authFailureReason: null,
+    });
+
+    expect(state.isLoading).toBe(false);
+    expect(state.isAuthResolved).toBe(true);
+  });
+
+  it("clears loading when auth bootstrap has a terminal failure", () => {
+    const state = resolveAuthState({
+      logtoLoading: false,
+      isAuthenticated: true,
+      logtoId: null,
+      accessToken: null,
+      convexSessionToken: null,
+      convexUser: undefined,
+      isProvisioningUser: false,
+      hasProvisioningAttempt: false,
+      authFailureReason: "session_mint_failed",
     });
 
     expect(state.isLoading).toBe(false);

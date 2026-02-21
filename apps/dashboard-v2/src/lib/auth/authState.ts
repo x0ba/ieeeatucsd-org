@@ -7,6 +7,7 @@ interface ResolveAuthStateInput {
   convexUser: unknown;
   isProvisioningUser: boolean;
   hasProvisioningAttempt: boolean;
+  authFailureReason: string | null;
 }
 
 export function resolveAuthState({
@@ -18,16 +19,30 @@ export function resolveAuthState({
   convexUser,
   isProvisioningUser,
   hasProvisioningAttempt,
+  authFailureReason,
 }: ResolveAuthStateInput) {
+  if (authFailureReason) {
+    return {
+      isAuthResolved: true,
+      isLoading: false,
+    };
+  }
+
+  if (!isAuthenticated) {
+    return {
+      isAuthResolved: true,
+      isLoading: false,
+    };
+  }
+
   const isAuthResolved =
     !logtoLoading &&
-    (!isAuthenticated ||
-      (!!logtoId &&
-        !!accessToken &&
-        !!convexSessionToken &&
-        convexUser !== undefined &&
-        !(convexUser === null && isProvisioningUser) &&
-        !(convexUser === null && !hasProvisioningAttempt)));
+    (!!logtoId &&
+      !!accessToken &&
+      !!convexSessionToken &&
+      convexUser !== undefined &&
+      !(convexUser === null && isProvisioningUser) &&
+      !(convexUser === null && !hasProvisioningAttempt));
 
   return {
     isAuthResolved,

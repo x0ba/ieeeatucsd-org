@@ -92,6 +92,7 @@ export async function requireApiAuth(
   request: Request,
   options?: {
     allowMissingBody?: boolean;
+    allowUnprovisionedUser?: boolean;
     requiredRoles?: UserRole[];
     validateAccessToken?: (accessToken: string) => Promise<LogtoOidcMeResponse | null>;
     validateProvisionedUser?: (
@@ -139,7 +140,7 @@ export async function requireApiAuth(
   }
 
   const user = await validateProvisionedUser(logtoId);
-  if (!user) {
+  if (!user && !options?.allowUnprovisionedUser) {
     return new Response(
       JSON.stringify({ error: "Authenticated user is not provisioned in dashboard" }),
       { status: 401, headers: { "Content-Type": "application/json" } },
@@ -147,7 +148,7 @@ export async function requireApiAuth(
   }
 
   if (options?.requiredRoles?.length) {
-    const currentRole = user.role as UserRole | undefined;
+    const currentRole = user?.role as UserRole | undefined;
     if (!currentRole || !options.requiredRoles.includes(currentRole)) {
       return new Response(
         JSON.stringify({ error: "Insufficient permissions" }),
@@ -161,6 +162,6 @@ export async function requireApiAuth(
     logtoId,
     body,
     claims,
-    user: user as { aiFeaturesEnabled?: boolean } & Record<string, unknown>,
+    user: (user ?? {}) as { aiFeaturesEnabled?: boolean } & Record<string, unknown>,
   };
 }

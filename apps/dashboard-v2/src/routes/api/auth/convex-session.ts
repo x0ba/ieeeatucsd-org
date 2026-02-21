@@ -3,7 +3,7 @@ import { requireApiAuth } from "@/server/auth";
 import { createConvexSessionToken } from "@/server/convex-session";
 import type { UserRole } from "@/types/roles";
 
-async function handle({ request }: { request: Request }) {
+export async function handleConvexSession({ request }: { request: Request }) {
   try {
     if (request.method !== "POST") {
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -12,7 +12,10 @@ async function handle({ request }: { request: Request }) {
       });
     }
 
-    const authResult = await requireApiAuth(request, { allowMissingBody: true });
+    const authResult = await requireApiAuth(request, {
+      allowMissingBody: true,
+      allowUnprovisionedUser: true,
+    });
     if (authResult instanceof Response) return authResult;
 
     const { logtoId, user } = authResult;
@@ -48,7 +51,7 @@ async function handle({ request }: { request: Request }) {
 export const Route = createFileRoute("/api/auth/convex-session")({
   server: {
     handlers: {
-      POST: handle,
+      POST: handleConvexSession,
     },
   },
 });

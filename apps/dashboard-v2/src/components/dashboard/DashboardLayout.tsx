@@ -15,11 +15,16 @@ import { useEffect } from "react";
 import { resolveDashboardRedirect } from "@/lib/auth/dashboardRouting";
 
 export function DashboardLayout() {
-  const { isAuthenticated, isLoading, isAuthResolved, user } = useAuth();
+  const { isAuthenticated, isLoading, isAuthResolved, authFailureReason, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (authFailureReason) {
+      navigate({ to: "/signin" });
+      return;
+    }
+
     const redirectPath = resolveDashboardRedirect({
       isAuthResolved,
       isAuthenticated,
@@ -29,7 +34,7 @@ export function DashboardLayout() {
     if (redirectPath) {
       navigate({ to: redirectPath });
     }
-  }, [isAuthResolved, isAuthenticated, user, location.pathname, navigate]);
+  }, [authFailureReason, isAuthResolved, isAuthenticated, user, location.pathname, navigate]);
 
   if (isLoading || !isAuthenticated) {
     return (

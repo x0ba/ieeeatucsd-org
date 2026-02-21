@@ -13,6 +13,17 @@ describe("resolveDashboardRedirect", () => {
     ).toBe("/signin");
   });
 
+  it("redirects to signin once auth is resolved after a bootstrap failure", () => {
+    expect(
+      resolveDashboardRedirect({
+        isAuthResolved: true,
+        isAuthenticated: false,
+        user: null,
+        pathname: "/events",
+      }),
+    ).toBe("/signin");
+  });
+
   it("redirects unsigned non-sponsor users to get-started", () => {
     expect(
       resolveDashboardRedirect({

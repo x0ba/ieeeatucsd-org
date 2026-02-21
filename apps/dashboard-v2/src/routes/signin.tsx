@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/signin")({
@@ -11,20 +11,16 @@ export const Route = createFileRoute("/signin")({
 function SignInPage() {
   const { signIn, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const reason = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("reason");
+  }, []);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       navigate({ to: "/overview" });
     }
   }, [isLoading, isAuthenticated, navigate]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   const handleSignIn = () => {
     signIn();
@@ -52,15 +48,28 @@ function SignInPage() {
               </span>{" "}
               dashboard
             </p>
+            {reason === "session-init" && (
+              <p className="mt-3 text-sm text-amber-700">
+                Session initialization failed. Please sign in again.
+              </p>
+            )}
           </div>
 
           <div>
             <Button
               onClick={handleSignIn}
+              disabled={isLoading}
               className="w-full py-3.5 text-sm font-medium rounded-xl shadow-md"
               size="lg"
             >
-              Continue with Google
+              {isLoading && isAuthenticated ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Finishing sign in...
+                </>
+              ) : (
+                "Continue with Google"
+              )}
             </Button>
           </div>
 
