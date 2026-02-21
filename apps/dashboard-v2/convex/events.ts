@@ -81,6 +81,28 @@ function getPublicCalendarMeta(eventId: string) {
   };
 }
 
+function getPrivateCalendarMeta(eventType: "published" | "internal", eventId: string) {
+  const privateCalendarId = process.env.PRIVATE_GOOGLE_CALENDAR_ID;
+  if (!privateCalendarId) {
+    return {
+      privateGoogleEventId: null,
+      privateGoogleEventUrl: null,
+      privateGoogleCalendarId: null,
+      privateGoogleCalendarSubscribeUrl: null,
+      privateGoogleCalendarIcsUrl: null,
+    };
+  }
+
+  const privateGoogleEventId = generateGoogleCalendarEventId(eventType, eventId);
+  return {
+    privateGoogleEventId,
+    privateGoogleEventUrl: buildGoogleCalendarEventUrl(privateGoogleEventId, privateCalendarId),
+    privateGoogleCalendarId: privateCalendarId,
+    privateGoogleCalendarSubscribeUrl: buildGoogleCalendarSubscribeUrl(privateCalendarId),
+    privateGoogleCalendarIcsUrl: buildGoogleCalendarIcsUrl(privateCalendarId),
+  };
+}
+
 // ── Queries ──────────────────────────────────────────────────────────────────
 
 export const listPublished = query({
@@ -242,6 +264,7 @@ export const listAll = query({
             (a, b) => b.timeCheckedIn - a.timeCheckedIn
           ),
           ...(event.published ? getPublicCalendarMeta(event._id) : {}),
+          ...getPrivateCalendarMeta("published", event._id),
         };
       })
     );

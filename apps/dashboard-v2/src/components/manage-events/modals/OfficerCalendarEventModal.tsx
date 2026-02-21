@@ -28,7 +28,8 @@ interface OfficerCalendarEventModalProps {
   event: EventRequest | null;
   isInternalEvent: boolean;
   onEditInternalEvent?: () => void;
-  publicCalendarId?: string | null;
+  calendarId?: string | null;
+  calendarLabel?: string;
 }
 
 export function OfficerCalendarEventModal({
@@ -37,15 +38,16 @@ export function OfficerCalendarEventModal({
   event,
   isInternalEvent,
   onEditInternalEvent,
-  publicCalendarId,
+  calendarId,
+  calendarLabel = "Calendar",
 }: OfficerCalendarEventModalProps) {
   if (!event) return null;
 
   const startDate = new Date(event.startDate);
   const endDate = new Date(event.endDate);
-  const eventGoogleUrl = event.publicGoogleEventUrl || undefined;
-  const subscribeUrl = publicCalendarId ? buildGoogleCalendarSubscribeUrl(publicCalendarId) : null;
-  const publicIcsUrl = publicCalendarId ? buildGoogleCalendarIcsUrl(publicCalendarId) : null;
+  const eventGoogleUrl = event.privateGoogleEventUrl || event.publicGoogleEventUrl || undefined;
+  const subscribeUrl = calendarId ? buildGoogleCalendarSubscribeUrl(calendarId) : null;
+  const calendarIcsUrl = calendarId ? buildGoogleCalendarIcsUrl(calendarId) : null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -109,15 +111,15 @@ export function OfficerCalendarEventModal({
                 <Button size="sm" variant="outline" asChild>
                   <a href={subscribeUrl} target="_blank" rel="noreferrer">
                     <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                    Subscribe Public Calendar
+                    Subscribe {calendarLabel}
                   </a>
                 </Button>
               )}
-              {publicIcsUrl && (
+              {calendarIcsUrl && (
                 <Button size="sm" variant="outline" asChild>
-                  <a href={publicIcsUrl} target="_blank" rel="noreferrer">
+                  <a href={calendarIcsUrl} target="_blank" rel="noreferrer">
                     <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                    Public ICS Feed
+                    {calendarLabel} ICS Feed
                   </a>
                 </Button>
               )}
@@ -135,7 +137,7 @@ export function OfficerCalendarEventModal({
                 onClick={() =>
                   downloadEventIcs(
                     {
-                      id: event.publicGoogleEventId || event._id,
+                      id: event.privateGoogleEventId || event.publicGoogleEventId || event._id,
                       title: event.eventName,
                       description: event.eventDescription,
                       location: event.location,

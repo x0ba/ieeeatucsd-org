@@ -88,6 +88,11 @@ function OfficerCalendarPage() {
           publicGoogleCalendarId?: string | null;
           publicGoogleCalendarSubscribeUrl?: string | null;
           publicGoogleCalendarIcsUrl?: string | null;
+          privateGoogleEventId?: string | null;
+          privateGoogleEventUrl?: string | null;
+          privateGoogleCalendarId?: string | null;
+          privateGoogleCalendarSubscribeUrl?: string | null;
+          privateGoogleCalendarIcsUrl?: string | null;
         };
         if (event.published) {
           events.push({
@@ -115,6 +120,11 @@ function OfficerCalendarPage() {
             publicGoogleCalendarId: eventWithCalendar.publicGoogleCalendarId ?? null,
             publicGoogleCalendarSubscribeUrl: eventWithCalendar.publicGoogleCalendarSubscribeUrl ?? null,
             publicGoogleCalendarIcsUrl: eventWithCalendar.publicGoogleCalendarIcsUrl ?? null,
+            privateGoogleEventId: eventWithCalendar.privateGoogleEventId ?? null,
+            privateGoogleEventUrl: eventWithCalendar.privateGoogleEventUrl ?? null,
+            privateGoogleCalendarId: eventWithCalendar.privateGoogleCalendarId ?? null,
+            privateGoogleCalendarSubscribeUrl: eventWithCalendar.privateGoogleCalendarSubscribeUrl ?? null,
+            privateGoogleCalendarIcsUrl: eventWithCalendar.privateGoogleCalendarIcsUrl ?? null,
           });
         }
       }
@@ -142,6 +152,11 @@ function OfficerCalendarPage() {
           files: [],
           invoices: [],
           createdBy: event.createdBy,
+          privateGoogleEventId: (event as any).privateGoogleEventId ?? null,
+          privateGoogleEventUrl: (event as any).privateGoogleEventUrl ?? null,
+          privateGoogleCalendarId: (event as any).privateGoogleCalendarId ?? null,
+          privateGoogleCalendarSubscribeUrl: (event as any).privateGoogleCalendarSubscribeUrl ?? null,
+          privateGoogleCalendarIcsUrl: (event as any).privateGoogleCalendarIcsUrl ?? null,
         });
       }
     }
@@ -208,13 +223,17 @@ function OfficerCalendarPage() {
     setEditingEvent(null);
   };
 
-  const publicCalendarId = useMemo(
-    () =>
-      ((eventsData?.find((event) => event.published && "publicGoogleCalendarId" in event) as
-        | ({ publicGoogleCalendarId?: string | null } & Record<string, unknown>)
-        | undefined)?.publicGoogleCalendarId ?? null),
-    [eventsData],
-  );
+  const officerCalendarId = useMemo(() => {
+    const publishedCalendarId =
+      ((eventsData?.find((event) => "privateGoogleCalendarId" in event) as
+        | ({ privateGoogleCalendarId?: string | null } & Record<string, unknown>)
+        | undefined)?.privateGoogleCalendarId ?? null);
+    const internalCalendarId =
+      ((internalEvents?.find((event) => "privateGoogleCalendarId" in event) as
+        | ({ privateGoogleCalendarId?: string | null } & Record<string, unknown>)
+        | undefined)?.privateGoogleCalendarId ?? null);
+    return publishedCalendarId ?? internalCalendarId ?? null;
+  }, [eventsData, internalEvents]);
 
   const isLoading = eventsData === undefined || internalEvents === undefined;
 
@@ -236,26 +255,26 @@ function OfficerCalendarPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {publicCalendarId && (
+          {officerCalendarId && (
             <>
               <Button variant="outline" asChild>
                 <a
-                  href={buildGoogleCalendarSubscribeUrl(publicCalendarId)}
+                  href={buildGoogleCalendarSubscribeUrl(officerCalendarId)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Subscribe Public Calendar
+                  Subscribe Officer Calendar
                 </a>
               </Button>
               <Button variant="outline" asChild>
                 <a
-                  href={buildGoogleCalendarIcsUrl(publicCalendarId)}
+                  href={buildGoogleCalendarIcsUrl(officerCalendarId)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Public ICS Feed
+                  Officer ICS Feed
                 </a>
               </Button>
             </>
@@ -300,7 +319,8 @@ function OfficerCalendarPage() {
           setSelectedCalendarEvent(null);
           openEditModal(internalEvent);
         }}
-        publicCalendarId={publicCalendarId}
+        calendarId={officerCalendarId}
+        calendarLabel="Officer Calendar"
       />
     </div>
   );

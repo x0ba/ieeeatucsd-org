@@ -1,12 +1,42 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireOfficerAccess } from "./permissions";
+import {
+  buildGoogleCalendarEventUrl,
+  buildGoogleCalendarIcsUrl,
+  buildGoogleCalendarSubscribeUrl,
+  generateGoogleCalendarEventId,
+} from "./googleCalendarIds";
 
 export const list = query({
   args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
     await requireOfficerAccess(ctx, args.logtoId, args.authToken);
-    return await ctx.db.query("internalEvents").withIndex("by_startDate").collect();
+    const events = await ctx.db.query("internalEvents").withIndex("by_startDate").collect();
+    const privateCalendarId = process.env.PRIVATE_GOOGLE_CALENDAR_ID;
+
+    return events.map((event) => {
+      if (!privateCalendarId) {
+        return {
+          ...event,
+          privateGoogleEventId: null,
+          privateGoogleEventUrl: null,
+          privateGoogleCalendarId: null,
+          privateGoogleCalendarSubscribeUrl: null,
+          privateGoogleCalendarIcsUrl: null,
+        };
+      }
+
+      const privateGoogleEventId = generateGoogleCalendarEventId("internal", event._id);
+      return {
+        ...event,
+        privateGoogleEventId,
+        privateGoogleEventUrl: buildGoogleCalendarEventUrl(privateGoogleEventId, privateCalendarId),
+        privateGoogleCalendarId: privateCalendarId,
+        privateGoogleCalendarSubscribeUrl: buildGoogleCalendarSubscribeUrl(privateCalendarId),
+        privateGoogleCalendarIcsUrl: buildGoogleCalendarIcsUrl(privateCalendarId),
+      };
+    });
   },
 });
 

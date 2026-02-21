@@ -93,6 +93,11 @@ export interface EventRequest {
 	publicGoogleCalendarId?: string | null;
 	publicGoogleCalendarSubscribeUrl?: string | null;
 	publicGoogleCalendarIcsUrl?: string | null;
+	privateGoogleEventId?: string | null;
+	privateGoogleEventUrl?: string | null;
+	privateGoogleCalendarId?: string | null;
+	privateGoogleCalendarSubscribeUrl?: string | null;
+	privateGoogleCalendarIcsUrl?: string | null;
 }
 
 export interface EventStats {
