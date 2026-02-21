@@ -32,6 +32,7 @@ import type * as organizationSettings from "../organizationSettings.js";
 import type * as permissions from "../permissions.js";
 import type * as reimbursements from "../reimbursements.js";
 import type * as sponsorDomains from "../sponsorDomains.js";
+import type * as userProvisioning from "../userProvisioning.js";
 import type * as users from "../users.js";
 
 /**
@@ -62,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   permissions: typeof permissions;
   reimbursements: typeof reimbursements;
   sponsorDomains: typeof sponsorDomains;
+  userProvisioning: typeof userProvisioning;
   users: typeof users;
 }>;
 export declare const api: FilterApi<

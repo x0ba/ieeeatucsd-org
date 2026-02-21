@@ -31,6 +31,25 @@ function canonicalizeEventCode(eventCode?: string): string | undefined {
   return canonical.length > 0 ? canonical : undefined;
 }
 
+function stripAuthFields<T extends { logtoId?: unknown; authToken?: unknown }>(
+  data: T,
+): Omit<T, "logtoId" | "authToken"> {
+  const { logtoId, authToken, ...rest } = data;
+  void logtoId;
+  void authToken;
+  return rest;
+}
+
+function removeUndefinedFields<T extends Record<string, unknown>>(data: T): Partial<T> {
+  const cleanedData: Partial<T> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      cleanedData[key as keyof T] = value as T[keyof T];
+    }
+  }
+  return cleanedData;
+}
+
 function eventMatchesCode(
   event: { _id: string; eventCode?: string },
   normalizedInputCode: string,
@@ -407,7 +426,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
     const userId = user.logtoId ?? user.authUserId ?? "";
-    const { logtoId, isDraft, eventCode, ...data } = args;
+    const { isDraft, eventCode, ...data } = stripAuthFields(args);
     const normalizedEventCode = normalizeEventCode(eventCode);
 
     return await ctx.db.insert("events", {
@@ -517,13 +536,8 @@ export const update = mutation({
       }
     }
 
-    const { logtoId, authToken, id, ...updates } = args;
-    const cleanUpdates: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(updates)) {
-      if (value !== undefined) {
-        cleanUpdates[key] = value;
-      }
-    }
+    const { id, ...updates } = args;
+    const cleanUpdates = removeUndefinedFields(stripAuthFields(updates));
 
     if (typeof cleanUpdates.eventCode === "string") {
       const normalized = normalizeEventCode(cleanUpdates.eventCode);

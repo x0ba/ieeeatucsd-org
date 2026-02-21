@@ -1,8 +1,9 @@
 import { useLogto } from "@logto/react";
-import { useQuery } from "convex/react";
-import { useCallback, useEffect, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { UserRole } from "@/types/roles";
+import { resolveAuthState, shouldAttemptProvisioning } from "@/lib/auth/authState";
 
 export type { UserRole };
 
@@ -13,6 +14,8 @@ const isServer = typeof window === "undefined";
 const ssrDefaults = {
   isAuthenticated: false as const,
   isLoading: true as const,
+  isAuthResolved: false as const,
+  isProvisioningUser: false as const,
   user: null,
   userRole: "Member" as UserRole,
   logtoId: null as string | null,
@@ -47,6 +50,9 @@ function useAuthClient() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [convexSessionToken, setConvexSessionToken] = useState<string | null>(null);
   const [convexSessionExpiresAt, setConvexSessionExpiresAt] = useState<number | null>(null);
+  const [isProvisioningUser, setIsProvisioningUser] = useState(false);
+  const lastProvisioningAttemptRef = useRef<string | null>(null);
+  const upsertUser = useMutation(api.users.upsertFromAuth);
 
   const getAuthHeaders = useCallback((): Record<string, string> => {
     if (!accessToken) return {};
@@ -85,6 +91,8 @@ function useAuthClient() {
       setAccessToken(null);
       setConvexSessionToken(null);
       setConvexSessionExpiresAt(null);
+      setIsProvisioningUser(false);
+      lastProvisioningAttemptRef.current = null;
       return;
     }
 
@@ -149,24 +157,83 @@ function useAuthClient() {
       : "skip",
   );
 
+  useEffect(() => {
+    if (!shouldAttemptProvisioning({
+      isAuthenticated: !!isAuthenticated,
+      logtoId,
+      convexSessionToken,
+      convexUser,
+      lastProvisioningAttemptLogtoId: lastProvisioningAttemptRef.current,
+    })) {
+      setIsProvisioningUser(false);
+      return;
+    }
+
+    lastProvisioningAttemptRef.current = logtoId!;
+    setIsProvisioningUser(true);
+
+    let cancelled = false;
+    const attemptProvision = async () => {
+      try {
+        const claims = await getIdTokenClaims?.();
+        const token = accessToken ?? (await getAccessToken?.());
+        if (!claims?.sub || !token) {
+          throw new Error("Missing claims or access token during user provisioning");
+        }
+
+        await upsertUser({
+          logtoId: claims.sub,
+          authToken: convexSessionToken,
+          email: (claims as any).email || "",
+          name: (claims as any).name || claims.sub,
+          avatar: (claims as any).picture,
+          signInMethod: "logto",
+        });
+      } catch (err) {
+        console.error("Failed to provision user from auth state:", err);
+      } finally {
+        if (!cancelled) {
+          setIsProvisioningUser(false);
+        }
+      }
+    };
+
+    void attemptProvision();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isAuthenticated,
+    logtoId,
+    convexSessionToken,
+    convexUser,
+    accessToken,
+    getIdTokenClaims,
+    getAccessToken,
+    upsertUser,
+  ]);
+
   const userRole: UserRole = (convexUser?.role as UserRole) ?? "Member";
-  // Consider loading if we don't yet have enough info to render.
-  // If we already have isAuthenticated + logtoId + convexUser, we're done
-  // regardless of logtoLoading (Logto SDK sometimes stays loading after auth completes).
-  const hasFullAuth = isAuthenticated && logtoId !== null && convexUser != null;
-  const isLoading = hasFullAuth
-    ? false
-    : logtoLoading ||
-      (isAuthenticated && !logtoId) ||
-      (isAuthenticated && !accessToken) ||
-      (isAuthenticated && !convexSessionToken) ||
-      (isAuthenticated && logtoId !== null && convexUser === undefined);
+  const hasProvisioningAttempt =
+    !!logtoId && lastProvisioningAttemptRef.current === logtoId;
+  const { isAuthResolved, isLoading } = resolveAuthState({
+    logtoLoading,
+    isAuthenticated: !!isAuthenticated,
+    logtoId,
+    accessToken,
+    convexSessionToken,
+    convexUser,
+    isProvisioningUser,
+    hasProvisioningAttempt,
+  });
 
   const origin = window.location.origin;
 
   return {
     isAuthenticated: isAuthenticated ?? false,
     isLoading,
+    isAuthResolved,
+    isProvisioningUser,
     user: convexUser ?? null,
     userRole,
     logtoId,
@@ -181,6 +248,8 @@ function useAuthClient() {
       setAccessToken(null);
       setConvexSessionToken(null);
       setConvexSessionExpiresAt(null);
+      setIsProvisioningUser(false);
+      lastProvisioningAttemptRef.current = null;
       signOut(`${origin}/signin`);
     },
   };

@@ -12,17 +12,24 @@ import { PATH_LABELS } from "@/config/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, ChevronRight } from "lucide-react";
 import { useEffect } from "react";
+import { resolveDashboardRedirect } from "@/lib/auth/dashboardRouting";
 
 export function DashboardLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isAuthResolved, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate({ to: "/signin" });
+    const redirectPath = resolveDashboardRedirect({
+      isAuthResolved,
+      isAuthenticated,
+      user,
+      pathname: location.pathname,
+    });
+    if (redirectPath) {
+      navigate({ to: redirectPath });
     }
-  }, [isLoading, isAuthenticated, navigate]);
+  }, [isAuthResolved, isAuthenticated, user, location.pathname, navigate]);
 
   if (isLoading || !isAuthenticated) {
     return (

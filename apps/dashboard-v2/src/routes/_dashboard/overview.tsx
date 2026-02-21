@@ -3,8 +3,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuthedQuery } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
-import { Calendar, CreditCard, DollarSign } from "lucide-react";
+import { AlertCircle, Calendar, CreditCard, DollarSign, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   AreaChart,
   Area,
@@ -97,14 +98,14 @@ const activityConfig: Record<string, { icon: React.ComponentType<{ className?: s
 
 /* ─── Main Page ─── */
 function OverviewPage() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, signOut } = useAuth();
   const { logtoId } = usePermissions();
   const overviewData = useAuthedQuery(
     api.users.getOverviewData,
     logtoId ? { logtoId } : "skip",
   );
 
-  if (isLoading || !user) {
+  if (isLoading) {
     return (
       <div className="p-6 md:p-8 space-y-8 w-full max-w-5xl mx-auto">
         <div className="flex flex-col items-center text-center py-8">
@@ -117,6 +118,44 @@ function OverviewPage() {
           ))}
         </div>
         <Skeleton className="h-72 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="p-6 md:p-8 w-full max-w-3xl mx-auto">
+        <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 p-6 md:p-8">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-700 mt-0.5" />
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold text-amber-900">
+                Finalizing account setup...
+              </h2>
+              <p className="text-sm text-amber-900/80">
+                We are syncing your dashboard profile. This should only take a moment.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                >
+                  <Loader2 className="h-4 w-4 mr-2" />
+                  Retry
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => signOut()}
+                >
+                  Sign out
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

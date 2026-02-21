@@ -5,6 +5,7 @@ import {
   requireAdminAccess,
   getCurrentUser,
 } from "./permissions";
+import { buildAuthUpsertResult } from "./userProvisioning";
 
 const FISCAL_YEAR_START_MONTH = 6; // July
 const FISCAL_MONTH_LABELS = [
@@ -103,7 +104,11 @@ export const upsertFromAuth = mutation({
         ...(args.signInMethod && { signInMethod: args.signInMethod }),
         ...(args.avatar && { avatar: args.avatar }),
       });
-      return existing._id;
+      return buildAuthUpsertResult(
+        existing._id,
+        existing.signedUp ?? false,
+        existing.role,
+      );
     }
 
     // Brand new user — check for sponsor domain auto-assignment
@@ -170,7 +175,7 @@ export const upsertFromAuth = mutation({
       }),
     });
 
-    return userId;
+    return buildAuthUpsertResult(userId, false, role);
   },
 });
 

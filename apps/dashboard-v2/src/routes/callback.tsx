@@ -4,6 +4,7 @@ import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Loader2 } from "lucide-react";
 import { useRef } from "react";
+import { finalizeSignInAndGetRedirect } from "@/lib/auth/callbackFlow";
 
 export const Route = createFileRoute("/callback")({
   component: CallbackPage,
@@ -39,51 +40,37 @@ function CallbackClient() {
   const upsertStarted = useRef(false);
 
   // Note: useHandleSignInCallback's callback is NOT async-aware (type is () => void).
-  // The SDK calls callbackRef.current?.() without await.
-  // We fire the upsert and navigate immediately — the upsert runs in the background.
+  // Use an internal async function and manage navigation ourselves.
   const { isLoading } = useHandleSignInCallback(() => {
     if (upsertStarted.current) return;
     upsertStarted.current = true;
 
-    getIdTokenClaims?.()
-      .then(async (claims) => {
-        if (claims) {
-          const accessToken = await getAccessToken?.();
-          if (!accessToken) {
-            throw new Error("Missing access token");
-          }
-
-          const sessionResponse = await fetch("/api/auth/convex-session", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({}),
-          });
-          if (!sessionResponse.ok) {
-            throw new Error(`Failed to create Convex session (${sessionResponse.status})`);
-          }
-          const sessionData = (await sessionResponse.json()) as { sessionToken: string };
-
-          // Fire and forget — don't block navigation on upsert completion
-          upsertUser({
-            logtoId: claims.sub,
-            authToken: sessionData.sessionToken,
-            email: (claims as any).email || "",
-            name: (claims as any).name || claims.sub,
-            avatar: (claims as any).picture,
-            signInMethod: "logto",
-          }).catch((err: unknown) => {
-            console.error("Error upserting user after sign-in:", err);
-          });
+    void finalizeSignInAndGetRedirect({
+      getIdTokenClaims: getIdTokenClaims as any,
+      getAccessToken: getAccessToken as any,
+      createSession: async (accessToken: string) => {
+        const sessionResponse = await fetch("/api/auth/convex-session", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        });
+        if (!sessionResponse.ok) {
+          throw new Error(`Failed to create Convex session (${sessionResponse.status})`);
         }
+        return (await sessionResponse.json()) as { sessionToken: string };
+      },
+      upsertUser,
+    })
+      .then((targetRoute) => {
+        navigate({ to: targetRoute });
       })
       .catch((err: unknown) => {
-        console.error("Error getting ID token claims:", err);
-      });
-
-    navigate({ to: "/overview" });
+      console.error("Error finalizing sign-in:", err);
+      navigate({ to: "/signin" });
+    });
   });
 
   if (isLoading) {
