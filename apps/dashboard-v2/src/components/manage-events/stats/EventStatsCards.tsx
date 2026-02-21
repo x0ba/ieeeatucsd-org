@@ -41,9 +41,9 @@ export function EventStatsCards({ stats, loading = false }: EventStatsCardsProps
       title: "Published Events",
       value: stats.publishedEvents,
       icon: CheckCircle2,
-      gradient: "from-green-500 to-green-600",
-      bgGradient: "from-green-50 to-green-100",
-      textColor: "text-green-600",
+      gradient: "from-pink-500 to-pink-600",
+      bgGradient: "from-pink-50 to-pink-100",
+      textColor: "text-pink-600",
     },
     {
       title: "Total Attendees",

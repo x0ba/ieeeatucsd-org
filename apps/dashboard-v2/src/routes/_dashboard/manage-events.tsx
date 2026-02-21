@@ -683,8 +683,9 @@ function ManageEventsPage() {
 	};
 
 	// Calendar date click handler
-	const handleCalendarDateClick = () => {
-		setIsWizardOpen(true);
+	const handleCalendarDateClick = (_date: Date) => {
+		setEditingDraft(null);
+		setIsDraftModalOpen(true);
 	};
 
 	// Event click handler for calendar

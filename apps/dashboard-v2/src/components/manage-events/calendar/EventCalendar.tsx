@@ -30,7 +30,7 @@ const statusColors: Record<EventStatus, string> = {
   needs_review: "bg-orange-400",
   approved: "bg-green-400",
   declined: "bg-red-400",
-  published: "bg-yellow-400",
+  published: "bg-pink-400",
 };
 
 const statusBgColors: Record<EventStatus, string> = {
@@ -40,7 +40,7 @@ const statusBgColors: Record<EventStatus, string> = {
   needs_review: "bg-orange-50 hover:bg-orange-100",
   approved: "bg-green-50 hover:bg-green-100",
   declined: "bg-red-50 hover:bg-red-100",
-  published: "bg-yellow-50 hover:bg-yellow-100",
+  published: "bg-pink-50 hover:bg-pink-100",
 };
 
 const legendItems: { status: EventStatus; label: string }[] = [

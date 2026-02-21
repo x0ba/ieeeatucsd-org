@@ -20,7 +20,7 @@ const statusStyles: Record<EventStatus, string> = {
   declined:
     "bg-red-100 text-red-800 border-red-200",
   published:
-    "bg-yellow-100 text-yellow-800 border-yellow-200",
+    "bg-pink-100 text-pink-800 border-pink-200",
 };
 
 const statusLabels: Record<EventStatus, string> = {
