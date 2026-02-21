@@ -5,7 +5,6 @@ import { Image } from "astro:assets";
 import eventborder from "../images/eventborder.webp";
 import UpcomingEvents from "../components/events/UpcomingEvents.astro";
 import Calendar from "../components/events/Calendar.jsx";
-import AllEventsList from "../components/events/AllEventsList.jsx";
 import { fetchPublishedEventsFromConvex } from "../lib/convexEvents";
 
 const events = await fetchPublishedEventsFromConvex();
@@ -44,6 +43,4 @@ const seoProps = {
   <div class="flex justify-center pb-[10%]">
     <Calendar client:load events={events} publicCalendarId={publicCalendarId} />
   </div>
-
-  <AllEventsList client:load events={events} publicCalendarId={publicCalendarId} />
 </Layout>

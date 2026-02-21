@@ -8,7 +8,7 @@ import {
 /** @param {{ events?: any[]; publicCalendarId?: string }} props */
 const Calendar = ({ events = [], publicCalendarId = "" }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [hoveredEvent, setHoveredEvent] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -81,23 +81,29 @@ const Calendar = ({ events = [], publicCalendarId = "" }) => {
 
       {publicCalendarId && (
         <div className="flex justify-center mb-4">
-          <div className="flex flex-wrap gap-2 bg-ieee-black/40 border border-white/15 rounded-full px-3 py-2">
+          <div className="w-full max-w-3xl bg-gradient-to-r from-ieee-blue-100/35 to-ieee-black/50 border border-ieee-yellow/40 rounded-2xl px-4 py-3 md:px-5 md:py-4 shadow-lg shadow-black/30">
+            <p className="text-white font-semibold text-sm md:text-base mb-2">Add IEEE Events To Your Calendar</p>
+            <p className="text-white/80 text-xs md:text-sm mb-3">
+              Subscribe once to stay synced, or open an individual event below.
+            </p>
+            <div className="flex flex-wrap gap-2">
             <a
               href={buildGoogleCalendarSubscribeUrl(publicCalendarId)}
               target="_blank"
               rel="noreferrer"
-              className="text-xs md:text-sm text-black bg-ieee-yellow px-3 py-1 rounded-full font-semibold hover:brightness-95 transition"
+              className="text-xs md:text-sm text-black bg-ieee-yellow px-3 py-1.5 rounded-full font-semibold hover:brightness-95 transition"
             >
-              Subscribe Public Calendar
+              Subscribe in Google Calendar
             </a>
             <a
               href={buildGoogleCalendarIcsUrl(publicCalendarId)}
               target="_blank"
               rel="noreferrer"
-              className="text-xs md:text-sm text-white bg-white/15 px-3 py-1 rounded-full hover:bg-white/25 transition"
+              className="text-xs md:text-sm text-white bg-white/15 px-3 py-1.5 rounded-full hover:bg-white/25 transition"
             >
-              Public ICS Feed
+              Subscribe via ICS Feed
             </a>
+            </div>
           </div>
         </div>
       )}
@@ -139,18 +145,7 @@ const Calendar = ({ events = [], publicCalendarId = "" }) => {
                         type="button"
                         key={event._id}
                         className="w-full text-left text-[0.75vw] border border-ieee-yellow text-white p-[0.45vw] rounded truncate hover:bg-white/10 transition-colors"
-                        onMouseEnter={() => setHoveredEvent(event)}
-                        onMouseLeave={() => setHoveredEvent(null)}
-                        onClick={() =>
-                          downloadEventIcs({
-                            id: event.publicGoogleEventId || event._id,
-                            title: event.eventName,
-                            description: event.eventDescription,
-                            location: event.location,
-                            startDate: Number(event.startDate),
-                            endDate: Number(event.endDate),
-                          })
-                        }
+                        onClick={() => setSelectedEvent(event)}
                       >
                         {event.eventName}
                       </button>
@@ -162,41 +157,79 @@ const Calendar = ({ events = [], publicCalendarId = "" }) => {
           ))}
         </div>
 
-        {hoveredEvent && (
-          <div className="absolute right-4 bottom-4 z-30 bg-ieee-blue-100 text-white p-3 rounded-lg border border-white/20 w-[min(32vw,380px)] shadow-2xl">
-            <h3 className="text-sm font-semibold mb-1">{hoveredEvent.eventName}</h3>
-            <p className="text-xs text-white/90 mb-2">
-              {new Date(Number(hoveredEvent.startDate)).toLocaleString()} -{" "}
-              {new Date(Number(hoveredEvent.endDate)).toLocaleTimeString()}
-            </p>
-            {hoveredEvent.location && <p className="text-xs text-white/80 mb-2">{hoveredEvent.location}</p>}
-            <div className="flex flex-wrap gap-2">
-              {hoveredEvent.publicGoogleEventUrl && (
-                <a
-                  href={hoveredEvent.publicGoogleEventUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs px-2 py-1 bg-white/20 rounded hover:bg-white/30 transition"
+        {selectedEvent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm">
+            <div className="w-full max-w-lg bg-gradient-to-b from-ieee-blue-100/90 to-ieee-black border border-ieee-yellow/40 rounded-2xl p-5 shadow-2xl">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <h3 className="text-white text-lg md:text-xl font-bold leading-tight">{selectedEvent.eventName}</h3>
+                <button
+                  type="button"
+                  onClick={() => setSelectedEvent(null)}
+                  className="text-white/70 hover:text-white text-xl leading-none"
+                  aria-label="Close event details"
                 >
-                  Open in Google
-                </a>
+                  ×
+                </button>
+              </div>
+
+              <p className="text-white/90 text-sm mb-1">
+                {new Date(Number(selectedEvent.startDate)).toLocaleString()} -{" "}
+                {new Date(Number(selectedEvent.endDate)).toLocaleTimeString()}
+              </p>
+              {selectedEvent.location && <p className="text-white/80 text-sm mb-2">{selectedEvent.location}</p>}
+              {selectedEvent.eventDescription && (
+                <p className="text-white/75 text-sm mb-4 line-clamp-4">{selectedEvent.eventDescription}</p>
               )}
-              <button
-                type="button"
-                onClick={() =>
-                  downloadEventIcs({
-                    id: hoveredEvent.publicGoogleEventId || hoveredEvent._id,
-                    title: hoveredEvent.eventName,
-                    description: hoveredEvent.eventDescription,
-                    location: hoveredEvent.location,
-                    startDate: Number(hoveredEvent.startDate),
-                    endDate: Number(hoveredEvent.endDate),
-                  })
-                }
-                className="text-xs px-2 py-1 bg-ieee-yellow text-black rounded hover:brightness-95 transition"
-              >
-                Download ICS
-              </button>
+
+              <div className="flex flex-wrap gap-2">
+                {selectedEvent.publicGoogleEventUrl && (
+                  <a
+                    href={selectedEvent.publicGoogleEventUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs md:text-sm px-3 py-1.5 rounded-full bg-ieee-yellow text-black font-semibold hover:brightness-95 transition"
+                  >
+                    Add This Event (Google)
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() =>
+                    downloadEventIcs({
+                      id: selectedEvent.publicGoogleEventId || selectedEvent._id,
+                      title: selectedEvent.eventName,
+                      description: selectedEvent.eventDescription,
+                      location: selectedEvent.location,
+                      startDate: Number(selectedEvent.startDate),
+                      endDate: Number(selectedEvent.endDate),
+                    })
+                  }
+                  className="text-xs md:text-sm px-3 py-1.5 rounded-full bg-white/15 text-white hover:bg-white/25 transition"
+                >
+                  Download Event ICS
+                </button>
+              </div>
+
+              {publicCalendarId && (
+                <div className="mt-4 pt-4 border-t border-white/20 flex flex-wrap gap-2">
+                  <a
+                    href={buildGoogleCalendarSubscribeUrl(publicCalendarId)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs px-3 py-1.5 rounded-full bg-white/15 text-white hover:bg-white/25 transition"
+                  >
+                    Subscribe Full Calendar
+                  </a>
+                  <a
+                    href={buildGoogleCalendarIcsUrl(publicCalendarId)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs px-3 py-1.5 rounded-full bg-white/15 text-white hover:bg-white/25 transition"
+                  >
+                    Full Calendar ICS Feed
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         )}
