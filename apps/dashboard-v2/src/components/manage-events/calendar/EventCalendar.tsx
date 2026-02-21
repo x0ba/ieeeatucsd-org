@@ -128,9 +128,11 @@ export function EventCalendar({
           return (
             <div
               key={day.toISOString()}
-              className={`bg-white min-h-[100px] p-2 cursor-pointer transition-colors hover:bg-gray-50 ${
-                !isCurrentMonth ? "opacity-50" : ""
-              } ${isTodayDate && todayHighlightMode === "background" ? "bg-blue-100" : ""}`}
+              className={`min-h-[100px] p-2 cursor-pointer transition-colors ${
+                isTodayDate && todayHighlightMode === "background"
+                  ? "bg-blue-100 border border-blue-300 hover:bg-blue-100"
+                  : "bg-white hover:bg-gray-50"
+              } ${!isCurrentMonth ? "opacity-50" : ""}`}
               onClick={() => onDateClick?.(day)}
             >
               <div className="flex items-center justify-between mb-1">
@@ -144,7 +146,7 @@ export function EventCalendar({
                   {format(day, "d")}
                 </span>
                 {isTodayDate && (
-                  <span className="text-xs text-blue-600 font-medium">
+                  <span className={`text-xs font-medium ${todayHighlightMode === "background" ? "text-blue-700" : "text-blue-600"}`}>
                     Today
                   </span>
                 )}
