@@ -1,6 +1,8 @@
 ---
 import { LiaDotCircle } from "react-icons/lia";
 import FirestoreEventList from "./FirestoreEventList.jsx";
+
+const { events = [] } = Astro.props;
 ---
 
 <div class="flex ml-[15%] md:my-[10%] my-[20%]">
@@ -19,6 +21,6 @@ import FirestoreEventList from "./FirestoreEventList.jsx";
         </p>
     </div>
     <div>
-        <FirestoreEventList client:load />
+        <FirestoreEventList client:load events={events} />
     </div>
 </div>

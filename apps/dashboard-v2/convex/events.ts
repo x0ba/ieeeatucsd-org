@@ -5,6 +5,12 @@ import {
   requireOfficerAccess,
   hasAdminAccess,
 } from "./permissions";
+import {
+  buildGoogleCalendarEventUrl,
+  buildGoogleCalendarIcsUrl,
+  buildGoogleCalendarSubscribeUrl,
+  generateGoogleCalendarEventId,
+} from "./googleCalendarIds";
 
 function getLegacyAttendeeIds(event: Record<string, unknown>): string[] {
   const legacy = (event as { attendees?: unknown }).attendees;
@@ -53,11 +59,34 @@ function eventMatchesCode(
   return false;
 }
 
+function getPublicCalendarMeta(eventId: string) {
+  const publicCalendarId = process.env.PUBLIC_GOOGLE_CALENDAR_ID;
+  if (!publicCalendarId) {
+    return {
+      publicGoogleEventId: null,
+      publicGoogleEventUrl: null,
+      publicGoogleCalendarId: null,
+      publicGoogleCalendarSubscribeUrl: null,
+      publicGoogleCalendarIcsUrl: null,
+    };
+  }
+
+  const publicGoogleEventId = generateGoogleCalendarEventId("published", eventId);
+  return {
+    publicGoogleEventId,
+    publicGoogleEventUrl: buildGoogleCalendarEventUrl(publicGoogleEventId, publicCalendarId),
+    publicGoogleCalendarId: publicCalendarId,
+    publicGoogleCalendarSubscribeUrl: buildGoogleCalendarSubscribeUrl(publicCalendarId),
+    publicGoogleCalendarIcsUrl: buildGoogleCalendarIcsUrl(publicCalendarId),
+  };
+}
+
 // ── Queries ──────────────────────────────────────────────────────────────────
 
 export const listPublished = query({
   args: {},
   handler: async (ctx) => {
+    // Public read path: no authentication required for published event listings.
     const events = await ctx.db
       .query("events")
       .withIndex("by_published", (q) => q.eq("published", true))
@@ -78,6 +107,7 @@ export const listPublished = query({
         return {
           ...event,
           attendeeCount,
+          ...getPublicCalendarMeta(event._id),
         };
       }),
     );
@@ -211,6 +241,7 @@ export const listAll = query({
           attendees: enrichedAttendees.sort(
             (a, b) => b.timeCheckedIn - a.timeCheckedIn
           ),
+          ...(event.published ? getPublicCalendarMeta(event._id) : {}),
         };
       })
     );

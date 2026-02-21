@@ -12,6 +12,11 @@ export interface Event {
   eventType: "social" | "technical" | "outreach" | "professional" | "projects" | "other";
   hasFood: boolean;
   attendeeCount?: number;
+  publicGoogleEventId?: string | null;
+  publicGoogleEventUrl?: string | null;
+  publicGoogleCalendarId?: string | null;
+  publicGoogleCalendarSubscribeUrl?: string | null;
+  publicGoogleCalendarIcsUrl?: string | null;
 }
 
 export type EventStatus = "live" | "upcoming" | "ended";

@@ -17,6 +17,8 @@ import {
   Eye,
   Download,
   UserCheck,
+  CalendarPlus,
+  ExternalLink,
 } from "lucide-react";
 import {
   Event,
@@ -25,6 +27,7 @@ import {
   EVENT_TYPE_LABELS,
   EVENT_TYPE_COLORS,
 } from "./types";
+import { downloadEventIcs } from "@/lib/calendarLinks";
 
 interface EventDetailModalProps {
   event: Event | null;
@@ -69,6 +72,20 @@ export function EventDetailModal({
       minute: "2-digit",
     });
     return `${start} – ${end}`;
+  };
+
+  const handleDownloadIcs = () => {
+    downloadEventIcs(
+      {
+        id: event.publicGoogleEventId || event._id,
+        title: event.eventName,
+        description: event.eventDescription,
+        location: event.location,
+        startDate: event.startDate,
+        endDate: event.endDate,
+      },
+      `${event.eventName.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "event"}.ics`,
+    );
   };
 
   return (
@@ -189,6 +206,29 @@ export function EventDetailModal({
                 </div>
               </div>
             )}
+
+            <div>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                Add to Phone
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {event.publicGoogleEventUrl && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(event.publicGoogleEventUrl!, "_blank", "noopener,noreferrer")}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                    Open in Google Calendar
+                  </Button>
+                )}
+                <Button type="button" variant="outline" size="sm" onClick={handleDownloadIcs}>
+                  <CalendarPlus className="w-3.5 h-3.5 mr-1.5" />
+                  Download ICS
+                </Button>
+              </div>
+            </div>
 
             {/* Files */}
             {event.files && event.files.length > 0 && (

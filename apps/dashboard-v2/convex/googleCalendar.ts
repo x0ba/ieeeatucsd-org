@@ -1,0 +1,476 @@
+import { action, internalAction } from "./_generated/server";
+import { v, ConvexError } from "convex/values";
+import { internal } from "./_generated/api";
+import { generateGoogleCalendarEventId } from "./googleCalendarIds";
+
+interface CalendarEvent {
+  id: string;
+  summary: string;
+  description?: string;
+  location?: string;
+  start: { dateTime: string; timeZone: string };
+  end: { dateTime: string; timeZone: string };
+}
+
+interface GoogleConfig {
+  clientEmail: string;
+  privateKey: string;
+  privateCalendarId: string;
+  publicCalendarId: string;
+}
+
+let cachedAccessToken: { token: string; expiresAt: number } | null = null;
+const GOOGLE_API_MAX_RETRIES = 5;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function backoffDelayMs(attempt: number): number {
+  const base = 500 * 2 ** attempt;
+  const jitter = Math.floor(Math.random() * 250);
+  return Math.min(base + jitter, 10_000);
+}
+
+function isRetryableGoogleError(status: number, reason?: string): boolean {
+  if (status === 429 || status === 500 || status === 502 || status === 503 || status === 504) {
+    return true;
+  }
+
+  if (status === 403) {
+    return (
+      reason === "rateLimitExceeded" ||
+      reason === "userRateLimitExceeded" ||
+      reason === "quotaExceeded" ||
+      reason === "backendError"
+    );
+  }
+
+  return false;
+}
+
+function getGoogleCalendarConfig(): GoogleConfig {
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const privateCalendarId = process.env.PRIVATE_GOOGLE_CALENDAR_ID;
+  const publicCalendarId = process.env.PUBLIC_GOOGLE_CALENDAR_ID;
+
+  if (!clientEmail) {
+    throw new ConvexError("GOOGLE_CLIENT_EMAIL not configured");
+  }
+
+  if (!privateKey) {
+    throw new ConvexError("GOOGLE_PRIVATE_KEY not configured");
+  }
+
+  if (!privateCalendarId) {
+    throw new ConvexError("PRIVATE_GOOGLE_CALENDAR_ID not configured");
+  }
+
+  if (!publicCalendarId) {
+    throw new ConvexError("PUBLIC_GOOGLE_CALENDAR_ID not configured");
+  }
+
+  return { clientEmail, privateKey, privateCalendarId, publicCalendarId };
+}
+
+function parseGoogleApiError(errorText: string): { message: string; reason?: string } {
+  try {
+    const parsed = JSON.parse(errorText);
+    const message = parsed?.error?.message || errorText;
+    const reason = parsed?.error?.errors?.[0]?.reason;
+    return { message, reason };
+  } catch {
+    return { message: errorText };
+  }
+}
+
+async function fetchGoogleWithRetry(
+  url: string,
+  init: RequestInit,
+  context: string,
+  allowedStatuses: number[] = [],
+): Promise<Response> {
+  for (let attempt = 0; attempt <= GOOGLE_API_MAX_RETRIES; attempt++) {
+    const response = await fetch(url, init);
+    if (response.ok || allowedStatuses.includes(response.status)) {
+      return response;
+    }
+
+    const errorText = await response.text();
+    const googleError = parseGoogleApiError(errorText);
+    if (isRetryableGoogleError(response.status, googleError.reason) && attempt < GOOGLE_API_MAX_RETRIES) {
+      await sleep(backoffDelayMs(attempt));
+      continue;
+    }
+
+    throw new Error(`${context} (${response.status}): ${errorText || googleError.message}`);
+  }
+
+  throw new Error(`${context}: exhausted retries`);
+}
+
+function base64UrlEncodeString(value: string): string {
+  const base64 = btoa(value);
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlEncodeBytes(bytes: Uint8Array): string {
+  let binary = "";
+  for (const b of bytes) {
+    binary += String.fromCharCode(b);
+  }
+  const base64 = btoa(binary);
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function parsePkcs8PrivateKey(privateKey: string): ArrayBuffer {
+  const pemBody = privateKey
+    .replace("-----BEGIN PRIVATE KEY-----", "")
+    .replace("-----END PRIVATE KEY-----", "")
+    .replace(/\s+/g, "");
+  const binary = atob(pemBody);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+async function getGoogleAccessToken(config: GoogleConfig): Promise<string> {
+  const now = Date.now();
+  if (cachedAccessToken && now < cachedAccessToken.expiresAt - 60_000) {
+    return cachedAccessToken.token;
+  }
+
+  const iat = Math.floor(now / 1000);
+  const exp = iat + 3600;
+
+  const header = { alg: "RS256", typ: "JWT" };
+  const payload = {
+    iss: config.clientEmail,
+    scope: "https://www.googleapis.com/auth/calendar",
+    aud: "https://oauth2.googleapis.com/token",
+    iat,
+    exp,
+  };
+
+  const encodedHeader = base64UrlEncodeString(JSON.stringify(header));
+  const encodedPayload = base64UrlEncodeString(JSON.stringify(payload));
+  const unsignedAssertion = `${encodedHeader}.${encodedPayload}`;
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    parsePkcs8PrivateKey(config.privateKey),
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    cryptoKey,
+    new TextEncoder().encode(unsignedAssertion),
+  );
+
+  const signedAssertion = `${unsignedAssertion}.${base64UrlEncodeBytes(new Uint8Array(signature))}`;
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: signedAssertion,
+    }).toString(),
+  });
+
+  if (!tokenResponse.ok) {
+    const errorText = await tokenResponse.text();
+    throw new ConvexError(`Failed to obtain Google access token: ${errorText}`);
+  }
+
+  const tokenData = await tokenResponse.json();
+  const accessToken: string | undefined = tokenData.access_token;
+  const expiresIn: number = tokenData.expires_in || 3600;
+  if (!accessToken) {
+    throw new ConvexError("Google OAuth response did not include access_token");
+  }
+
+  cachedAccessToken = {
+    token: accessToken,
+    expiresAt: now + expiresIn * 1000,
+  };
+
+  return accessToken;
+}
+
+async function fetchGoogleCalendarEvents(accessToken: string, calendarId: string): Promise<CalendarEvent[]> {
+  const now = new Date();
+  const threeMonthsLater = new Date();
+  threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+
+  const timeMin = now.toISOString();
+  const timeMax = threeMonthsLater.toISOString();
+
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
+
+  const response = await fetchGoogleWithRetry(
+    url,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+    `Failed to fetch Google Calendar events for calendar ${calendarId}`,
+    [401, 403, 404],
+  );
+  if (!response.ok) {
+    const errorText = await response.text();
+    const googleError = parseGoogleApiError(errorText);
+
+    if (response.status === 404 || googleError.reason === "notFound") {
+      throw new ConvexError(
+        `Google Calendar not found. Verify calendar ID and sharing for service account: ${calendarId}`,
+      );
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new ConvexError(
+        `Google Calendar authorization failed (${response.status}). Verify service account access to calendar: ${calendarId}`,
+      );
+    }
+
+    throw new Error(
+      `Failed to fetch Google Calendar events (${response.status}): ${googleError.message}`,
+    );
+  }
+
+  const data = await response.json();
+  return data.items || [];
+}
+
+async function createOrUpdateGoogleEvent(
+  accessToken: string,
+  calendarId: string,
+  event: CalendarEvent,
+): Promise<void> {
+  const updateUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${event.id}`;
+  const updateResponse = await fetchGoogleWithRetry(
+    updateUrl,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(event),
+    },
+    `Failed to update Google Calendar event for calendar ${calendarId}`,
+    [404],
+  );
+
+  if (updateResponse.ok) {
+    return;
+  }
+
+  // Event doesn't exist yet in this calendar, create it with the same stable ID.
+  if (updateResponse.status === 404) {
+    const createUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
+    const createResponse = await fetchGoogleWithRetry(
+      createUrl,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(event),
+      },
+      `Failed to create Google Calendar event for calendar ${calendarId}`,
+      [409],
+    );
+
+    // Another writer may have created the same stable ID concurrently.
+    if (createResponse.ok || createResponse.status === 409) {
+      return;
+    }
+
+    const createError = await createResponse.text();
+    throw new Error(
+      `Failed to create Google Calendar event (${createResponse.status}) for calendar ${calendarId}: ${createError}`,
+    );
+  }
+
+  const updateError = await updateResponse.text();
+  throw new Error(
+    `Failed to update Google Calendar event (${updateResponse.status}) for calendar ${calendarId}: ${updateError}`,
+  );
+}
+
+async function deleteGoogleEvent(accessToken: string, calendarId: string, eventId: string): Promise<void> {
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`;
+
+  const response = await fetchGoogleWithRetry(
+    url,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+    `Failed to delete Google Calendar event for calendar ${calendarId}`,
+    [404],
+  );
+
+  if (!response.ok && response.status !== 404) {
+    const error = await response.text();
+    throw new Error(`Failed to delete event from Google Calendar: ${error}`);
+  }
+}
+
+function toPublishedCalendarEvent(event: {
+  _id: string;
+  eventName: string;
+  eventDescription?: string;
+  location?: string;
+  startDate: number;
+  endDate: number;
+}): CalendarEvent {
+  return {
+    id: generateGoogleCalendarEventId("published", event._id),
+    summary: event.eventName,
+    description: event.eventDescription,
+    location: event.location,
+    start: {
+      dateTime: new Date(event.startDate).toISOString(),
+      timeZone: "America/Los_Angeles",
+    },
+    end: {
+      dateTime: new Date(event.endDate).toISOString(),
+      timeZone: "America/Los_Angeles",
+    },
+  };
+}
+
+function toInternalCalendarEvent(event: {
+  _id: string;
+  name: string;
+  description?: string;
+  location?: string;
+  startDate: number;
+  endDate: number;
+}): CalendarEvent {
+  return {
+    id: generateGoogleCalendarEventId("internal", event._id),
+    summary: `[Internal] ${event.name}`,
+    description: event.description,
+    location: event.location,
+    start: {
+      dateTime: new Date(event.startDate).toISOString(),
+      timeZone: "America/Los_Angeles",
+    },
+    end: {
+      dateTime: new Date(event.endDate).toISOString(),
+      timeZone: "America/Los_Angeles",
+    },
+  };
+}
+
+async function syncCalendar(
+  accessToken: string,
+  calendarId: string,
+  eventsToUpsert: CalendarEvent[],
+  managedEventIds: Set<string>,
+): Promise<void> {
+  const existingEvents = await fetchGoogleCalendarEvents(accessToken, calendarId);
+
+  for (const event of eventsToUpsert) {
+    await createOrUpdateGoogleEvent(accessToken, calendarId, event);
+  }
+
+  for (const gEvent of existingEvents) {
+    if (gEvent.id?.startsWith("ieee") && !managedEventIds.has(gEvent.id)) {
+      await deleteGoogleEvent(accessToken, calendarId, gEvent.id);
+    }
+  }
+}
+
+export const syncToGoogleCalendar = action({
+  args: { logtoId: v.string(), authToken: v.string() },
+  handler: async (ctx, _args): Promise<{ publishedCount: number; internalCount: number; syncedAt: number }> => {
+    const config = getGoogleCalendarConfig();
+    const accessToken = await getGoogleAccessToken(config);
+
+    const publishedEvents = await ctx.runQuery(internal.googleCalendarQueries.getPublishedEventsForSync, {});
+    const internalEvents = await ctx.runQuery(internal.googleCalendarQueries.getInternalEventsForSync, {});
+
+    const publishedCalendarEvents = publishedEvents.map(toPublishedCalendarEvent);
+    const internalCalendarEvents = internalEvents.map(toInternalCalendarEvent);
+
+    const privateManagedIds = new Set<string>([
+      ...publishedCalendarEvents.map((event) => event.id),
+      ...internalCalendarEvents.map((event) => event.id),
+    ]);
+    const publicManagedIds = new Set<string>(publishedCalendarEvents.map((event) => event.id));
+
+    await syncCalendar(
+      accessToken,
+      config.privateCalendarId,
+      [...publishedCalendarEvents, ...internalCalendarEvents],
+      privateManagedIds,
+    );
+    await syncCalendar(accessToken, config.publicCalendarId, publishedCalendarEvents, publicManagedIds);
+
+    return {
+      publishedCount: publishedEvents.length,
+      internalCount: internalEvents.length,
+      syncedAt: Date.now(),
+    };
+  },
+});
+
+export const getGoogleCalendarEvents = action({
+  args: {},
+  handler: async () => {
+    const config = getGoogleCalendarConfig();
+    const accessToken = await getGoogleAccessToken(config);
+    return await fetchGoogleCalendarEvents(accessToken, config.privateCalendarId);
+  },
+});
+
+export const scheduledSync = internalAction({
+  args: {},
+  handler: async (ctx): Promise<void> => {
+    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+    const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+    const privateCalendarId = process.env.PRIVATE_GOOGLE_CALENDAR_ID;
+    const publicCalendarId = process.env.PUBLIC_GOOGLE_CALENDAR_ID;
+    if (!clientEmail || !privateKey || !privateCalendarId || !publicCalendarId) {
+      console.log(
+        "GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, PRIVATE_GOOGLE_CALENDAR_ID, or PUBLIC_GOOGLE_CALENDAR_ID not configured, skipping sync",
+      );
+      return;
+    }
+
+    const config = getGoogleCalendarConfig();
+    const accessToken = await getGoogleAccessToken(config);
+
+    const publishedEvents = await ctx.runQuery(internal.googleCalendarQueries.getPublishedEventsForSync, {});
+    const internalEvents = await ctx.runQuery(internal.googleCalendarQueries.getInternalEventsForSync, {});
+
+    const publishedCalendarEvents = publishedEvents.map(toPublishedCalendarEvent);
+    const internalCalendarEvents = internalEvents.map(toInternalCalendarEvent);
+
+    const privateManagedIds = new Set<string>([
+      ...publishedCalendarEvents.map((event) => event.id),
+      ...internalCalendarEvents.map((event) => event.id),
+    ]);
+    const publicManagedIds = new Set<string>(publishedCalendarEvents.map((event) => event.id));
+
+    await syncCalendar(
+      accessToken,
+      config.privateCalendarId,
+      [...publishedCalendarEvents, ...internalCalendarEvents],
+      privateManagedIds,
+    );
+    await syncCalendar(accessToken, config.publicCalendarId, publishedCalendarEvents, publicManagedIds);
+
+    console.log(
+      `Synced ${publishedEvents.length} published events to private and public calendars, plus ${internalEvents.length} internal events to private calendar`,
+    );
+  },
+});

@@ -6,6 +6,8 @@ import {
   Calendar,
   Clock,
   Search,
+  ExternalLink,
+  Download,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,10 @@ import {
   getEventStatus,
   type Event as EventType,
 } from "@/components/events";
+import {
+  buildGoogleCalendarIcsUrl,
+  buildGoogleCalendarSubscribeUrl,
+} from "@/lib/calendarLinks";
 
 export const Route = createFileRoute("/_dashboard/events")({
   component: EventsPage,
@@ -138,7 +144,21 @@ function EventsPage() {
     eventType: event.eventType,
     hasFood: event.hasFood,
     attendeeCount: event.attendeeCount,
+    publicGoogleEventId: event.publicGoogleEventId,
+    publicGoogleEventUrl: event.publicGoogleEventUrl,
+    publicGoogleCalendarId: event.publicGoogleCalendarId,
+    publicGoogleCalendarSubscribeUrl: event.publicGoogleCalendarSubscribeUrl,
+    publicGoogleCalendarIcsUrl: event.publicGoogleCalendarIcsUrl,
   });
+
+  const publicCalendarMeta = useMemo(() => {
+    const calendarId = events?.find((event) => event.publicGoogleCalendarId)?.publicGoogleCalendarId;
+    if (!calendarId) return null;
+    return {
+      subscribeUrl: buildGoogleCalendarSubscribeUrl(calendarId),
+      icsUrl: buildGoogleCalendarIcsUrl(calendarId),
+    };
+  }, [events]);
 
   return (
     <div className="p-6 space-y-6 w-full">
@@ -148,6 +168,28 @@ function EventsPage() {
         <p className="text-sm text-muted-foreground mt-1">
           Browse and check in to IEEE UCSD events.
         </p>
+        {publicCalendarMeta && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <a
+              href={publicCalendarMeta.subscribeUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+              Subscribe to Public Calendar
+            </a>
+            <a
+              href={publicCalendarMeta.icsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+            >
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              Add Calendar via ICS
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Happening Today */}

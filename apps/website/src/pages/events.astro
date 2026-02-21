@@ -6,9 +6,10 @@ import eventborder from "../images/eventborder.webp";
 import UpcomingEvents from "../components/events/UpcomingEvents.astro";
 import Calendar from "../components/events/Calendar.jsx";
 import AllEventsList from "../components/events/AllEventsList.jsx";
+import { fetchPublishedEventsFromConvex } from "../lib/convexEvents";
 
-const CALENDAR_API_KEY = import.meta.env.CALENDAR_API_KEY;
-const EVENT_CALENDAR_ID = import.meta.env.EVENT_CALENDAR_ID;
+const events = await fetchPublishedEventsFromConvex();
+const publicCalendarId = import.meta.env.PUBLIC_GOOGLE_CALENDAR_ID || "";
 
 const seoProps = {
   title: "Events - IEEE at UC San Diego",
@@ -39,15 +40,10 @@ const seoProps = {
     class="absolute right-[1vw] md:w-[4vw] w-[5vw] md:top-[60vh] top-[70vw] -z-10"
   />
   <EventTitle />
-  <UpcomingEvents />
+  <UpcomingEvents events={events} />
   <div class="flex justify-center pb-[10%]">
-    <Calendar
-      client:load
-      CALENDAR_API_KEY={CALENDAR_API_KEY}
-      EVENT_CALENDAR_ID={EVENT_CALENDAR_ID}
-    />
+    <Calendar client:load events={events} publicCalendarId={publicCalendarId} />
   </div>
 
-  <!-- All Events from Firestore -->
-  <AllEventsList client:load />
+  <AllEventsList client:load events={events} publicCalendarId={publicCalendarId} />
 </Layout>

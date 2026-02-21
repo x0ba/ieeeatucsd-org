@@ -283,6 +283,30 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_requestedUser", ["requestedUser"]),
 
+  // Internal events for officer calendar (meetings, tabling, etc.)
+  internalEvents: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    location: v.string(),
+    startDate: v.number(),
+    endDate: v.number(),
+    eventType: v.union(
+      v.literal("meeting"),
+      v.literal("tabling"),
+      v.literal("workshop"),
+      v.literal("social"),
+      v.literal("outreach"),
+      v.literal("other"),
+    ),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+    updatedBy: v.optional(v.string()),
+  })
+    .index("by_startDate", ["startDate"])
+    .index("by_eventType", ["eventType"])
+    .index("by_createdBy", ["createdBy"]),
+
   attendees: defineTable({
     eventId: v.id("events"),
     userId: v.string(),

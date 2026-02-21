@@ -17,6 +17,8 @@ if (
 }
 
 interface ImportMetaEnv {
+  readonly CONVEX_SELF_HOSTED_URL: string;
+  readonly PUBLIC_GOOGLE_CALENDAR_ID: string;
   // Firebase Environment Variables
   readonly FIREBASE_PRIVATE_KEY_ID: string;
   readonly FIREBASE_PRIVATE_KEY: string;
@@ -258,3 +260,8 @@ export const env = {
 
 // Export individual configs for convenience
 export const firebaseConfig = firebaseEnv;
+
+export const websiteEnv = {
+  convexSelfHostedUrl: getEnvVar("CONVEX_SELF_HOSTED_URL"),
+  publicGoogleCalendarId: getEnvVar("PUBLIC_GOOGLE_CALENDAR_ID"),
+};

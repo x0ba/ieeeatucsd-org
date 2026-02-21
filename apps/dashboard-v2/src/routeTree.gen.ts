@@ -27,6 +27,7 @@ import { Route as DashboardSettingsRouteImport } from './routes/_dashboard/setti
 import { Route as DashboardReimbursementRouteImport } from './routes/_dashboard/reimbursement'
 import { Route as DashboardOverviewRouteImport } from './routes/_dashboard/overview'
 import { Route as DashboardOnboardingRouteImport } from './routes/_dashboard/onboarding'
+import { Route as DashboardOfficerCalendarRouteImport } from './routes/_dashboard/officer-calendar'
 import { Route as DashboardManageUsersRouteImport } from './routes/_dashboard/manage-users'
 import { Route as DashboardManageSponsorsRouteImport } from './routes/_dashboard/manage-sponsors'
 import { Route as DashboardManageReimbursementsRouteImport } from './routes/_dashboard/manage-reimbursements'
@@ -144,6 +145,12 @@ const DashboardOnboardingRoute = DashboardOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardOfficerCalendarRoute =
+  DashboardOfficerCalendarRouteImport.update({
+    id: '/officer-calendar',
+    path: '/officer-calendar',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardManageUsersRoute = DashboardManageUsersRouteImport.update({
   id: '/manage-users',
   path: '/manage-users',
@@ -305,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/manage-reimbursements': typeof DashboardManageReimbursementsRoute
   '/manage-sponsors': typeof DashboardManageSponsorsRoute
   '/manage-users': typeof DashboardManageUsersRoute
+  '/officer-calendar': typeof DashboardOfficerCalendarRoute
   '/onboarding': typeof DashboardOnboardingRoute
   '/overview': typeof DashboardOverviewRoute
   '/reimbursement': typeof DashboardReimbursementRoute
@@ -350,6 +358,7 @@ export interface FileRoutesByTo {
   '/manage-reimbursements': typeof DashboardManageReimbursementsRoute
   '/manage-sponsors': typeof DashboardManageSponsorsRoute
   '/manage-users': typeof DashboardManageUsersRoute
+  '/officer-calendar': typeof DashboardOfficerCalendarRoute
   '/onboarding': typeof DashboardOnboardingRoute
   '/overview': typeof DashboardOverviewRoute
   '/reimbursement': typeof DashboardReimbursementRoute
@@ -397,6 +406,7 @@ export interface FileRoutesById {
   '/_dashboard/manage-reimbursements': typeof DashboardManageReimbursementsRoute
   '/_dashboard/manage-sponsors': typeof DashboardManageSponsorsRoute
   '/_dashboard/manage-users': typeof DashboardManageUsersRoute
+  '/_dashboard/officer-calendar': typeof DashboardOfficerCalendarRoute
   '/_dashboard/onboarding': typeof DashboardOnboardingRoute
   '/_dashboard/overview': typeof DashboardOverviewRoute
   '/_dashboard/reimbursement': typeof DashboardReimbursementRoute
@@ -444,6 +454,7 @@ export interface FileRouteTypes {
     | '/manage-reimbursements'
     | '/manage-sponsors'
     | '/manage-users'
+    | '/officer-calendar'
     | '/onboarding'
     | '/overview'
     | '/reimbursement'
@@ -489,6 +500,7 @@ export interface FileRouteTypes {
     | '/manage-reimbursements'
     | '/manage-sponsors'
     | '/manage-users'
+    | '/officer-calendar'
     | '/onboarding'
     | '/overview'
     | '/reimbursement'
@@ -535,6 +547,7 @@ export interface FileRouteTypes {
     | '/_dashboard/manage-reimbursements'
     | '/_dashboard/manage-sponsors'
     | '/_dashboard/manage-users'
+    | '/_dashboard/officer-calendar'
     | '/_dashboard/onboarding'
     | '/_dashboard/overview'
     | '/_dashboard/reimbursement'
@@ -715,6 +728,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof DashboardOnboardingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/officer-calendar': {
+      id: '/_dashboard/officer-calendar'
+      path: '/officer-calendar'
+      fullPath: '/officer-calendar'
+      preLoaderRoute: typeof DashboardOfficerCalendarRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/_dashboard/manage-users': {
@@ -916,6 +936,7 @@ interface DashboardRouteChildren {
   DashboardManageReimbursementsRoute: typeof DashboardManageReimbursementsRoute
   DashboardManageSponsorsRoute: typeof DashboardManageSponsorsRoute
   DashboardManageUsersRoute: typeof DashboardManageUsersRoute
+  DashboardOfficerCalendarRoute: typeof DashboardOfficerCalendarRoute
   DashboardOnboardingRoute: typeof DashboardOnboardingRoute
   DashboardOverviewRoute: typeof DashboardOverviewRoute
   DashboardReimbursementRoute: typeof DashboardReimbursementRoute
@@ -939,6 +960,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardManageReimbursementsRoute: DashboardManageReimbursementsRoute,
   DashboardManageSponsorsRoute: DashboardManageSponsorsRoute,
   DashboardManageUsersRoute: DashboardManageUsersRoute,
+  DashboardOfficerCalendarRoute: DashboardOfficerCalendarRoute,
   DashboardOnboardingRoute: DashboardOnboardingRoute,
   DashboardOverviewRoute: DashboardOverviewRoute,
   DashboardReimbursementRoute: DashboardReimbursementRoute,

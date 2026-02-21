@@ -20,6 +20,7 @@ interface EventCalendarProps {
   events: EventRequest[];
   onDateClick?: (date: Date) => void;
   onEventClick?: (event: EventRequest) => void;
+  todayHighlightMode?: "text" | "background";
 }
 
 const statusColors: Record<EventStatus, string> = {
@@ -29,7 +30,7 @@ const statusColors: Record<EventStatus, string> = {
   needs_review: "bg-orange-400",
   approved: "bg-green-400",
   declined: "bg-red-400",
-  published: "bg-blue-400",
+  published: "bg-yellow-400",
 };
 
 const statusBgColors: Record<EventStatus, string> = {
@@ -39,7 +40,7 @@ const statusBgColors: Record<EventStatus, string> = {
   needs_review: "bg-orange-50 hover:bg-orange-100",
   approved: "bg-green-50 hover:bg-green-100",
   declined: "bg-red-50 hover:bg-red-100",
-  published: "bg-blue-50 hover:bg-blue-100",
+  published: "bg-yellow-50 hover:bg-yellow-100",
 };
 
 const legendItems: { status: EventStatus; label: string }[] = [
@@ -56,6 +57,7 @@ export function EventCalendar({
   events,
   onDateClick,
   onEventClick,
+  todayHighlightMode = "text",
 }: EventCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
@@ -128,13 +130,13 @@ export function EventCalendar({
               key={day.toISOString()}
               className={`bg-white min-h-[100px] p-2 cursor-pointer transition-colors hover:bg-gray-50 ${
                 !isCurrentMonth ? "opacity-50" : ""
-              } ${isTodayDate ? "bg-blue-50/50" : ""}`}
+              } ${isTodayDate && todayHighlightMode === "background" ? "bg-blue-100" : ""}`}
               onClick={() => onDateClick?.(day)}
             >
               <div className="flex items-center justify-between mb-1">
                 <span
                   className={`text-sm font-medium ${
-                    isTodayDate
+                    isTodayDate && todayHighlightMode === "text"
                       ? "text-blue-600"
                       : "text-gray-700"
                   }`}

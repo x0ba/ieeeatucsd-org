@@ -1,13 +1,4 @@
-import React, { useEffect, useState } from "react";
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from "firebase/firestore";
-import { app } from "../../firebase/client";
+import { useMemo } from "react";
 
 const UpcomingEvent = ({ name, location, date, time, delay, description }) => (
   <div className="text-white w-full max-w-lg pl-4 md:pl-8 border-l-2 md:border-l-4 border-white/70 pb-8 md:pb-12 relative">
@@ -48,102 +39,22 @@ const UpcomingEvent = ({ name, location, date, time, delay, description }) => (
   </div>
 );
 
-const FirestoreEventList = () => {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [mounted, setMounted] = useState(false);
+/** @param {{ events?: any[] }} props */
+const FirestoreEventList = ({ events = [] }) => {
+  const upcomingEvents = useMemo(() => {
+    const now = Date.now();
+    return [...events]
+      .filter((event) => Number(event.startDate) >= now)
+      .sort((a, b) => Number(a.startDate) - Number(b.startDate))
+      .slice(0, 3);
+  }, [events]);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    const fetchEvents = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const db = getFirestore(app);
-        const eventsRef = collection(db, "events");
-
-        // Query published events, ordered by start date
-        const q = query(
-          eventsRef,
-          where("published", "==", true),
-          orderBy("startDate", "asc"),
-        );
-
-        const eventsSnapshot = await getDocs(q);
-
-        const eventsData = eventsSnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-          };
-        });
-
-        // Filter for upcoming events (start date >= today)
-        const now = new Date();
-        const upcomingEvents = eventsData.filter((event) => {
-          const startDate = event.startDate?.toDate
-            ? event.startDate.toDate()
-            : new Date(event.startDate);
-          return startDate >= now;
-        });
-
-        // Take only the first 3 upcoming events
-        setEvents(upcomingEvents.slice(0, 3));
-      } catch (error) {
-        console.error("Error fetching events from Firestore:", error);
-        setError("Failed to load events");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEvents();
-  }, [mounted]);
-
-  if (!mounted || loading) {
-    return (
-      <div className="text-white">
-        <UpcomingEvent
-          name="Loading Events..."
-          location="Please wait..."
-          date=""
-          time=""
-          delay={0}
-          description="Fetching the latest events from our database..."
-        />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-white">
-        <UpcomingEvent
-          name="Error Loading Events"
-          location="Something went wrong"
-          date=""
-          time=""
-          delay={0}
-          description={error}
-        />
-      </div>
-    );
-  }
-
-  if (events.length === 0) {
+  if (upcomingEvents.length === 0) {
     return (
       <div className="text-white">
         <UpcomingEvent
           name="No Upcoming Events!"
-          location="¯\_(ツ)_/¯"
+          location="¯\\_(ツ)_/¯"
           date=""
           time=""
           delay={0}
@@ -155,13 +66,9 @@ const FirestoreEventList = () => {
 
   return (
     <div>
-      {events.map((event, index) => {
-        const startDate = event.startDate?.toDate
-          ? event.startDate.toDate()
-          : new Date(event.startDate);
-        const day = startDate.toLocaleDateString("en-US", {
-          weekday: "short",
-        });
+      {upcomingEvents.map((event, index) => {
+        const startDate = new Date(Number(event.startDate));
+        const day = startDate.toLocaleDateString("en-US", { weekday: "short" });
         const date = startDate.toLocaleDateString("en-US", {
           day: "numeric",
           month: "short",
@@ -174,7 +81,7 @@ const FirestoreEventList = () => {
 
         return (
           <UpcomingEvent
-            key={event.id}
+            key={event._id}
             name={event.eventName || "No Title"}
             location={event.location || "No location provided"}
             date={`${day} ${date}`}

@@ -1,37 +1,27 @@
-import React, { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from "firebase/firestore";
-import { app } from "../../firebase/client";
+  buildGoogleCalendarIcsUrl,
+  buildGoogleCalendarSubscribeUrl,
+  downloadEventIcs,
+} from "../../lib/calendarLinks";
 
-const EventCard = ({ event, index }) => {
-  const startDate = event.startDate?.toDate
-    ? event.startDate.toDate()
-    : new Date(event.startDate);
-  const endDate = event.endDate?.toDate
-    ? event.endDate.toDate()
-    : new Date(event.endDate);
+const EventCard = ({ event, index, publicCalendarId }) => {
+  const startDate = new Date(Number(event.startDate));
+  const endDate = new Date(Number(event.endDate));
 
-  const formatDate = (date) => {
-    return date.toLocaleDateString("en-US", {
+  const formatDate = (date) =>
+    date.toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-  };
 
-  const formatTime = (date) => {
-    return date.toLocaleTimeString("en-US", {
+  const formatTime = (date) =>
+    date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
     });
-  };
 
   const isUpcoming = startDate > new Date();
   const isPast = endDate < new Date();
@@ -83,11 +73,7 @@ const EventCard = ({ event, index }) => {
 
         {event.location && (
           <div className="flex items-center text-white/80">
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
+            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
                 d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
@@ -100,128 +86,97 @@ const EventCard = ({ event, index }) => {
       </div>
 
       {event.eventDescription && (
-        <p className="text-white/70 text-sm leading-relaxed mb-4">
-          {event.eventDescription}
-        </p>
+        <p className="text-white/70 text-sm leading-relaxed mb-4">{event.eventDescription}</p>
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          {event.pointsToReward > 0 && (
-            <span className="text-ieee-yellow font-medium">
-              {event.pointsToReward} points
-            </span>
-          )}
-          {event.hasFood && (
-            <span className="text-green-300 text-sm">🍕 Food provided</span>
-          )}
-        </div>
-
-        {event.eventType && (
-          <span className="text-white/60 text-xs uppercase tracking-wide">
-            {event.eventType}
-          </span>
+      <div className="flex flex-wrap items-center gap-2 mt-4">
+        {event.publicGoogleEventUrl && (
+          <a
+            href={event.publicGoogleEventUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="px-3 py-1.5 rounded-full bg-white/15 text-white text-xs hover:bg-white/25 transition-colors"
+          >
+            Open in Google Calendar
+          </a>
+        )}
+        <button
+          type="button"
+          onClick={() =>
+            downloadEventIcs({
+              id: event.publicGoogleEventId || event._id,
+              title: event.eventName,
+              description: event.eventDescription,
+              location: event.location,
+              startDate: Number(event.startDate),
+              endDate: Number(event.endDate),
+            })
+          }
+          className="px-3 py-1.5 rounded-full bg-ieee-yellow/80 text-black text-xs font-medium hover:bg-ieee-yellow transition-colors"
+        >
+          Download Event ICS
+        </button>
+        {publicCalendarId && (
+          <a
+            href={buildGoogleCalendarSubscribeUrl(publicCalendarId)}
+            target="_blank"
+            rel="noreferrer"
+            className="px-3 py-1.5 rounded-full bg-white/15 text-white text-xs hover:bg-white/25 transition-colors"
+          >
+            Subscribe Calendar
+          </a>
         )}
       </div>
     </div>
   );
 };
 
-const AllEventsList = () => {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filter, setFilter] = useState("all"); // all, upcoming, past
-  const [mounted, setMounted] = useState(false);
+/** @param {{ events?: any[]; publicCalendarId?: string }} props */
+const AllEventsList = ({ events = [], publicCalendarId = "" }) => {
+  const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const sortedEvents = useMemo(
+    () => [...events].sort((a, b) => Number(b.startDate) - Number(a.startDate)),
+    [events],
+  );
 
-  useEffect(() => {
-    if (!mounted) return;
-
-    const fetchEvents = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const db = getFirestore(app);
-        const eventsRef = collection(db, "events");
-
-        // Query published events, ordered by start date (newest first)
-        const q = query(
-          eventsRef,
-          where("published", "==", true),
-          orderBy("startDate", "desc"),
-        );
-
-        const eventsSnapshot = await getDocs(q);
-
-        const eventsData = eventsSnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-          };
-        });
-
-        setEvents(eventsData);
-      } catch (error) {
-        console.error("Error fetching events from Firestore:", error);
-        setError("Failed to load events");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEvents();
-  }, [mounted]);
-
-  const filteredEvents = events.filter((event) => {
-    if (filter === "all") return true;
-
-    const startDate = event.startDate?.toDate
-      ? event.startDate.toDate()
-      : new Date(event.startDate);
-    const endDate = event.endDate?.toDate
-      ? event.endDate.toDate()
-      : new Date(event.endDate);
-    const now = new Date();
-
-    if (filter === "upcoming") return startDate > now;
-    if (filter === "past") return endDate < now;
-
-    return true;
-  });
-
-  if (!mounted || loading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ieee-yellow mx-auto mb-4"></div>
-          <p>Loading events...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center text-white">
-          <p className="text-red-300">Error: {error}</p>
-        </div>
-      </div>
-    );
-  }
+  const filteredEvents = useMemo(() => {
+    return sortedEvents.filter((event) => {
+      if (filter === "all") return true;
+      const startDate = new Date(Number(event.startDate));
+      const endDate = new Date(Number(event.endDate));
+      const now = new Date();
+      if (filter === "upcoming") return startDate > now;
+      if (filter === "past") return endDate < now;
+      return true;
+    });
+  }, [filter, sortedEvents]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h2 className="text-white text-3xl font-bold mb-4">All Events</h2>
+        {publicCalendarId && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            <a
+              href={buildGoogleCalendarSubscribeUrl(publicCalendarId)}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-full bg-ieee-yellow/90 text-black text-xs font-semibold hover:bg-ieee-yellow transition-colors"
+            >
+              Subscribe Public Calendar
+            </a>
+            <a
+              href={buildGoogleCalendarIcsUrl(publicCalendarId)}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-full bg-white/15 text-white text-xs hover:bg-white/25 transition-colors"
+            >
+              Public Calendar ICS Feed
+            </a>
+          </div>
+        )}
 
-        {/* Filter buttons */}
         <div className="flex space-x-4 mb-6">
           {[
             { key: "all", label: "All Events" },
@@ -250,7 +205,12 @@ const AllEventsList = () => {
       ) : (
         <div>
           {filteredEvents.map((event, index) => (
-            <EventCard key={event.id} event={event} index={index} />
+            <EventCard
+              key={event._id}
+              event={event}
+              index={index}
+              publicCalendarId={publicCalendarId}
+            />
           ))}
         </div>
       )}

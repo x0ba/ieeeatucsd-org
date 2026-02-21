@@ -88,6 +88,11 @@ export interface EventRequest {
 	additionalSpecifications?: string;
 	flyersCompleted?: boolean;
 	graphicsUploadNote?: string;
+	publicGoogleEventId?: string | null;
+	publicGoogleEventUrl?: string | null;
+	publicGoogleCalendarId?: string | null;
+	publicGoogleCalendarSubscribeUrl?: string | null;
+	publicGoogleCalendarIcsUrl?: string | null;
 }
 
 export interface EventStats {

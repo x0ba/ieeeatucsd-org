@@ -50,6 +50,7 @@ export const NAVIGATION_PATHS = {
   SETTINGS: "/settings",
   SIGNOUT: "/signout",
   GET_STARTED: "/get-started",
+  OFFICER_CALENDAR: "/officer-calendar",
 } as const;
 
 export type NavigationPath =
@@ -82,6 +83,11 @@ export const navigationCategories: NavigationCategory[] = [
         icon: Calendar,
         label: "Manage Events",
         href: NAVIGATION_PATHS.MANAGE_EVENTS,
+      },
+      {
+        icon: Calendar,
+        label: "Officer Calendar",
+        href: NAVIGATION_PATHS.OFFICER_CALENDAR,
       },
       {
         icon: ClipboardList,
@@ -174,6 +180,7 @@ export const PATH_LABELS: Record<string, string> = {
   "/sponsors/information": "Sponsor Information",
   "/settings": "Settings",
   "/get-started": "Get Started",
+  "/officer-calendar": "Officer Calendar",
 };
 
 export const LEGAL_VERSIONS = {
