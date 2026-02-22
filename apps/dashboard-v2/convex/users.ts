@@ -92,6 +92,8 @@ export const upsertFromAuth = mutation({
     signInMethod: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const normalizedEmail = args.email.trim().toLowerCase();
+
     // 1. Check if user already exists by logtoId
     const existing = await ctx.db
       .query("users")
@@ -111,14 +113,66 @@ export const upsertFromAuth = mutation({
       );
     }
 
-    // Brand new user — check for sponsor domain auto-assignment
+    // 2. If logtoId changed/re-created, relink by email instead of creating a duplicate.
+    // This prevents a second onboarding account for the same email.
+    const emailMatches: any[] = [];
+    const seen = new Set<string>();
+    const addCandidate = (candidate: any) => {
+      if (!candidate || seen.has(candidate._id)) return;
+      seen.add(candidate._id);
+      emailMatches.push(candidate);
+    };
+
+    if (args.email) {
+      const exactMatches = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", args.email))
+        .collect();
+      for (const candidate of exactMatches) addCandidate(candidate);
+    }
+
+    if (normalizedEmail && normalizedEmail !== args.email) {
+      const normalizedMatches = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+        .collect();
+      for (const candidate of normalizedMatches) addCandidate(candidate);
+    }
+
+    if (emailMatches.length > 0) {
+      const bestMatch = emailMatches.sort((a, b) => {
+        const aSignedUp = a.signedUp ? 1 : 0;
+        const bSignedUp = b.signedUp ? 1 : 0;
+        if (aSignedUp !== bSignedUp) return bSignedUp - aSignedUp;
+
+        const aLastLogin = a.lastLogin ?? 0;
+        const bLastLogin = b.lastLogin ?? 0;
+        return bLastLogin - aLastLogin;
+      })[0];
+
+      await ctx.db.patch(bestMatch._id, {
+        logtoId: args.logtoId,
+        email: normalizedEmail || args.email,
+        lastLogin: Date.now(),
+        ...(args.signInMethod && { signInMethod: args.signInMethod }),
+        ...(args.avatar && { avatar: args.avatar }),
+      });
+
+      return buildAuthUpsertResult(
+        bestMatch._id,
+        bestMatch.signedUp ?? false,
+        bestMatch.role,
+      );
+    }
+
+    // 3. Brand new user — check for sponsor domain auto-assignment
     let role: string = "Member";
     let sponsorTier: string | undefined;
     let sponsorOrganization: string | undefined;
     let autoAssignedSponsor = false;
 
-    if (args.email) {
-      const emailDomain = "@" + args.email.split("@")[1]?.toLowerCase();
+    if (normalizedEmail) {
+      const emailDomain = "@" + normalizedEmail.split("@")[1]?.toLowerCase();
       const domainMatch = await ctx.db
         .query("sponsorDomains")
         .withIndex("by_domain", (q) => q.eq("domain", emailDomain))
@@ -135,7 +189,7 @@ export const upsertFromAuth = mutation({
     // Check for accepted officer invitations
     const acceptedInvitation = await ctx.db
       .query("officerInvitations")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", normalizedEmail || args.email))
       .filter((q) => q.eq(q.field("status"), "accepted"))
       .first();
 
@@ -145,7 +199,7 @@ export const upsertFromAuth = mutation({
 
     const userId = await ctx.db.insert("users", {
       logtoId: args.logtoId,
-      email: args.email,
+      email: normalizedEmail || args.email,
       emailVisibility: true,
       verified: true,
       name: args.name,
@@ -530,14 +584,29 @@ export const deleteUser = mutation({
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    await requireAdminAccess(ctx, args.logtoId, args.authToken);
+    const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
+    const targetUser = await ctx.db.get(args.userId);
+    if (!targetUser) {
+      throw new Error("Target user not found");
+    }
+
+    if (targetUser._id === admin._id) {
+      throw new Error("You cannot delete your own account");
+    }
+
+    if (
+      admin.role === "Executive Officer" &&
+      targetUser.role === "Administrator"
+    ) {
+      throw new Error("Executive Officers cannot delete Administrator accounts");
+    }
 
     // Delete the user's public profile if it exists
     const publicProfile = await ctx.db
       .query("publicProfiles")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .first();
-    
+
     if (publicProfile) {
       await ctx.db.delete(publicProfile._id);
     }

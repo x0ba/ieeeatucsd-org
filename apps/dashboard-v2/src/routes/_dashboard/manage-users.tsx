@@ -35,6 +35,7 @@ function ManageUsersPage() {
   // Mutations
   const updateStatusMutation = useAuthedMutation(api.users.updateStatus);
   const updateProfileForAdminMutation = useAuthedMutation(api.users.updateProfileForAdmin);
+  const deleteUserMutation = useAuthedMutation(api.users.deleteUser);
 
   // State
   const [filters, setFilters] = useState<UserFilters>({
@@ -243,14 +244,22 @@ function ManageUsersPage() {
     }
   };
 
-  const handleDeleteUser = async (_userId: Id<"users">) => {
-    if (!logtoId) return;
+  const handleDeleteUser = async (userId: Id<"users">) => {
     if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
       return;
     }
 
-    // Note: Delete mutation needs to be added to Convex
-    toast.info("Delete functionality needs to be implemented in Convex");
+    setSaving(true);
+    try {
+      await deleteUserMutation({ userId });
+      toast.success("User deleted successfully");
+      setShowEditModal(false);
+      setEditingUser(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete user");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getAvailableRoles = (isCurrentUser = false): UserRole[] => {

@@ -150,6 +150,7 @@ function ManageEventsPage() {
 		null,
 	);
 	const [editingDraft, setEditingDraft] = useState<EventRequest | null>(null);
+	const [draftDate, setDraftDate] = useState<Date | null>(null);
 
 	// Loading state
 	const [isProcessing, setIsProcessing] = useState(false);
@@ -683,8 +684,9 @@ function ManageEventsPage() {
 	};
 
 	// Calendar date click handler
-	const handleCalendarDateClick = (_date: Date) => {
+	const handleCalendarDateClick = (date: Date) => {
 		setEditingDraft(null);
+		setDraftDate(date);
 		setIsDraftModalOpen(true);
 	};
 
@@ -785,7 +787,13 @@ function ManageEventsPage() {
 					</p>
 				</div>
 				<div className="flex gap-2">
-					<Button variant="outline" onClick={() => setIsDraftModalOpen(true)}>
+					<Button
+						variant="outline"
+						onClick={() => {
+							setDraftDate(null);
+							setIsDraftModalOpen(true);
+						}}
+					>
 						<FilePlus className="h-4 w-4 mr-2" />
 						Quick Draft
 					</Button>
@@ -940,12 +948,22 @@ function ManageEventsPage() {
 				onClose={() => {
 					setIsDraftModalOpen(false);
 					setEditingDraft(null);
+					setDraftDate(null);
 				}}
 				onSubmit={editingDraft ? handleUpdateDraft : handleCreateDraft}
-				initialData={editingDraft || undefined}
+				initialData={
+					editingDraft ||
+					(draftDate
+						? {
+								startDate: draftDate.getTime(),
+								endDate: draftDate.getTime() + 3600000,
+							}
+						: undefined)
+				}
 				onConvertToRequest={(data) => {
 					setIsDraftModalOpen(false);
 					setEditingDraft(null);
+					setDraftDate(null);
 					// Open wizard with draft data prefilled
 					setEditingRequest({
 						...data,
