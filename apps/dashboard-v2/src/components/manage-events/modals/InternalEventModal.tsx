@@ -58,6 +58,7 @@ interface InternalEventModalProps {
   }) => Promise<void>;
   onDelete?: (event: InternalEvent) => Promise<void>;
   editingEvent?: InternalEvent | null;
+  initialDate?: Date | null;
 }
 
 const EVENT_TYPES: Array<{
@@ -122,12 +123,20 @@ const defaultFormData = {
   eventType: "meeting" as InternalEventType,
 };
 
+function formatDateForInput(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function InternalEventModal({
   isOpen,
   onClose,
   onSubmit,
   onDelete,
   editingEvent,
+  initialDate,
 }: InternalEventModalProps) {
   const [formData, setFormData] = useState(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -149,10 +158,16 @@ export function InternalEventModal({
           eventType: editingEvent.eventType,
         });
       } else {
-        setFormData(defaultFormData);
+        const selectedDate = initialDate ?? new Date();
+        const dateString = formatDateForInput(selectedDate);
+        setFormData({
+          ...defaultFormData,
+          startDate: dateString,
+          endDate: dateString,
+        });
       }
     }
-  }, [isOpen, editingEvent]);
+  }, [isOpen, editingEvent, initialDate]);
 
   const handleSubmit = async () => {
     if (
@@ -206,10 +221,9 @@ export function InternalEventModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 overflow-hidden gap-0">
+      <DialogContent className="w-[min(96vw,700px)] max-w-[700px] p-0 overflow-hidden gap-0">
         {/* Header */}
         <div className="relative">
-          <div className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-[#00629B] via-[#FFCD00] to-[#00629B]" />
           <DialogHeader className="px-5 pt-5 pb-3">
             <DialogTitle className="text-lg font-semibold">
               {editingEvent ? "Edit Event" : "New Internal Event"}
@@ -281,13 +295,19 @@ export function InternalEventModal({
           {/* Date & Time - Compact inline */}
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">Date & Time</Label>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="relative flex-1">
                 <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                 <Input
                   type="date"
                   value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      startDate: e.target.value,
+                      endDate: e.target.value,
+                    })
+                  }
                   className="h-9 pl-8 text-sm"
                 />
               </div>
@@ -295,14 +315,14 @@ export function InternalEventModal({
                 type="time"
                 value={formData.startTime}
                 onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                className="h-9 w-20 text-sm"
+                className="h-9 w-36 min-w-[8.5rem] text-sm"
               />
               <span className="text-muted-foreground text-sm shrink-0">→</span>
               <Input
                 type="time"
                 value={formData.endTime}
                 onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                className="h-9 w-20 text-sm"
+                className="h-9 w-36 min-w-[8.5rem] text-sm"
               />
             </div>
           </div>

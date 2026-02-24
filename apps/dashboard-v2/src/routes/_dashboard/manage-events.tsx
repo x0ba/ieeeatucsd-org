@@ -10,7 +10,16 @@ import {
 	Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo } from "react";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { sendNotification } from "@/lib/send-notification";
 import {
@@ -32,6 +41,12 @@ import {
 	normalizeDepartment,
 	normalizeEventType,
 } from "@/components/manage-events/constants";
+import {
+	getWeekLabelForDate,
+	saveWeekLabelSettings,
+	loadWeekLabelSettings,
+	type WeekLabelSettings,
+} from "@/components/manage-events/utils/weekLabels";
 
 export const Route = createFileRoute("/_dashboard/manage-events")({
 	component: ManageEventsPage,
@@ -146,14 +161,22 @@ function ManageEventsPage() {
 	const [isDraftViewModalOpen, setIsDraftViewModalOpen] = useState(false);
 	const [isDraftModalOpen, setIsDraftModalOpen] = useState(false);
 	const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
+	const [isWeekSettingsOpen, setIsWeekSettingsOpen] = useState(false);
 	const [editingRequest, setEditingRequest] = useState<EventRequest | null>(
 		null,
 	);
 	const [editingDraft, setEditingDraft] = useState<EventRequest | null>(null);
 	const [draftDate, setDraftDate] = useState<Date | null>(null);
+	const [weekLabelSettings, setWeekLabelSettings] = useState<WeekLabelSettings>(
+		() => loadWeekLabelSettings(),
+	);
 
 	// Loading state
 	const [isProcessing, setIsProcessing] = useState(false);
+
+	useEffect(() => {
+		saveWeekLabelSettings(weekLabelSettings);
+	}, [weekLabelSettings]);
 
 	// Transform data to EventRequest type — single query, no merge needed
 	const allEvents: EventRequest[] = useMemo(() => {
@@ -776,6 +799,16 @@ function ManageEventsPage() {
 		setCurrentPage(1);
 	};
 
+	const updateWeekLabelSetting = (
+		field: keyof WeekLabelSettings,
+		value: string,
+	) => {
+		setWeekLabelSettings((prev) => ({
+			...prev,
+			[field]: value,
+		}));
+	};
+
 	return (
 		<div className="p-4 sm:p-6 space-y-6 w-full max-w-7xl mx-auto overflow-x-hidden">
 			{/* Header */}
@@ -797,6 +830,65 @@ function ManageEventsPage() {
 						<FilePlus className="h-4 w-4 mr-2" />
 						Quick Draft
 					</Button>
+					<Dialog open={isWeekSettingsOpen} onOpenChange={setIsWeekSettingsOpen}>
+						<DialogTrigger asChild>
+							<Button variant="outline">Week Label Settings</Button>
+						</DialogTrigger>
+						<DialogContent className="sm:max-w-xl">
+							<DialogHeader>
+								<DialogTitle>Week Label Settings</DialogTitle>
+							</DialogHeader>
+							<p className="text-xs text-muted-foreground">
+								Set quarter starts once. Labels apply to both Manage Events and
+								Officer Calendar.
+							</p>
+							<p className="text-xs text-muted-foreground">
+								Follow the UCSD calendar and put the date where it says __
+								Quarter Begins and NOT the date that says instruction begins.
+							</p>
+							<div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+								<div className="space-y-1.5">
+									<Label htmlFor="fall-week0-start" className="text-xs">
+										Fall Week 0 Start
+									</Label>
+									<Input
+										id="fall-week0-start"
+										type="date"
+										value={weekLabelSettings.fallWeek0Start}
+										onChange={(e) =>
+											updateWeekLabelSetting("fallWeek0Start", e.target.value)
+										}
+									/>
+								</div>
+								<div className="space-y-1.5">
+									<Label htmlFor="winter-week1-start" className="text-xs">
+										Winter Week 1 Start
+									</Label>
+									<Input
+										id="winter-week1-start"
+										type="date"
+										value={weekLabelSettings.winterWeek1Start}
+										onChange={(e) =>
+											updateWeekLabelSetting("winterWeek1Start", e.target.value)
+										}
+									/>
+								</div>
+								<div className="space-y-1.5">
+									<Label htmlFor="spring-week1-start" className="text-xs">
+										Spring Week 1 Start
+									</Label>
+									<Input
+										id="spring-week1-start"
+										type="date"
+										value={weekLabelSettings.springWeek1Start}
+										onChange={(e) =>
+											updateWeekLabelSetting("springWeek1Start", e.target.value)
+										}
+									/>
+								</div>
+							</div>
+						</DialogContent>
+					</Dialog>
 					<Button onClick={() => setIsWizardOpen(true)}>
 						<Plus className="h-4 w-4 mr-2" />
 						New Event Request
@@ -883,6 +975,9 @@ function ManageEventsPage() {
 							events={sortedEvents}
 							onDateClick={handleCalendarDateClick}
 							onEventClick={handleCalendarEventClick}
+							getDayLabel={(date) =>
+								getWeekLabelForDate(date, weekLabelSettings)
+							}
 						/>
 					)}
 				</>

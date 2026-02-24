@@ -10,6 +10,7 @@ import {
   isSameMonth,
   isToday,
   format,
+  getDay,
   addMonths,
   subMonths,
   isSameDay,
@@ -21,6 +22,7 @@ interface EventCalendarProps {
   onDateClick?: (date: Date) => void;
   onEventClick?: (event: EventRequest) => void;
   todayHighlightMode?: "text" | "background";
+  getDayLabel?: (date: Date) => string | null;
 }
 
 const statusColors: Record<EventStatus, string> = {
@@ -58,6 +60,7 @@ export function EventCalendar({
   onDateClick,
   onEventClick,
   todayHighlightMode = "text",
+  getDayLabel,
 }: EventCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
@@ -124,6 +127,9 @@ export function EventCalendar({
           const dayEvents = getEventsForDay(day);
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isTodayDate = isToday(day);
+          const isSunday = getDay(day) === 0;
+          const sundayWeekLabel = isSunday ? getDayLabel?.(day) : null;
+          const isFinalsWeekLabel = sundayWeekLabel?.includes("Finals") ?? false;
 
           return (
             <div
@@ -135,16 +141,37 @@ export function EventCalendar({
               } ${!isCurrentMonth ? "opacity-50" : ""}`}
               onClick={() => onDateClick?.(day)}
             >
-              <div className="flex items-center justify-between mb-1">
-                <span
-                  className={`text-sm font-medium ${
-                    isTodayDate && todayHighlightMode === "text"
-                      ? "text-blue-600"
-                      : "text-gray-700"
-                  }`}
-                >
-                  {format(day, "d")}
-                </span>
+              <div className="flex items-start justify-between mb-1">
+                <div className="min-w-0">
+                  <span
+                    className={`text-sm font-medium ${
+                      isTodayDate && todayHighlightMode === "text"
+                        ? "text-blue-600"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    {format(day, "d")}
+                  </span>
+                  {sundayWeekLabel && (
+                    <div className="mt-1">
+                      <div
+                        className={`rounded-md px-2 py-1 ${
+                          isFinalsWeekLabel
+                            ? "border border-red-300 bg-red-700/85"
+                            : "border border-blue-200 bg-blue-500/85"
+                        }`}
+                      >
+                        <span
+                          className={`block truncate text-[10px] font-semibold tracking-normal ${
+                            isFinalsWeekLabel ? "text-red-50" : "text-blue-50"
+                          }`}
+                        >
+                          {sundayWeekLabel}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 {isTodayDate && (
                   <span className={`text-xs font-medium ${todayHighlightMode === "background" ? "text-blue-700" : "text-blue-600"}`}>
                     Today

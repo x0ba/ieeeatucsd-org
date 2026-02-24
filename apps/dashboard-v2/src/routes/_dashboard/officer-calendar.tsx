@@ -2,23 +2,26 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Plus,
   Loader2,
   ExternalLink,
-  Download,
 } from "lucide-react";
 import { EventCalendar } from "@/components/manage-events/calendar/EventCalendar";
 import { InternalEventModal } from "@/components/manage-events/modals/InternalEventModal";
 import { OfficerCalendarEventModal } from "@/components/manage-events/modals/OfficerCalendarEventModal";
 import type { EventRequest, EventStatus } from "@/components/manage-events/types";
 import {
-  buildGoogleCalendarIcsUrl,
   buildGoogleCalendarSubscribeUrl,
 } from "@/lib/calendarLinks";
+import {
+  getWeekLabelForDate,
+  loadWeekLabelSettings,
+  type WeekLabelSettings,
+} from "@/components/manage-events/utils/weekLabels";
 
 export const Route = createFileRoute("/_dashboard/officer-calendar")({
   component: OfficerCalendarPage,
@@ -76,6 +79,10 @@ function OfficerCalendarPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<InternalEvent | null>(null);
   const [selectedCalendarEvent, setSelectedCalendarEvent] = useState<EventRequest | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [weekLabelSettings] = useState<WeekLabelSettings>(() =>
+    loadWeekLabelSettings(),
+  );
 
   const calendarEvents = useMemo(() => {
     const events: EventRequest[] = [];
@@ -204,13 +211,15 @@ function OfficerCalendarPage() {
     setEditingEvent(null);
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = (date?: Date) => {
     setEditingEvent(null);
+    setSelectedDate(date ?? null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (event: InternalEvent) => {
     setEditingEvent(event);
+    setSelectedDate(null);
     setIsModalOpen(true);
   };
 
@@ -221,6 +230,7 @@ function OfficerCalendarPage() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingEvent(null);
+    setSelectedDate(null);
   };
 
   const officerCalendarId = useMemo(() => {
@@ -256,28 +266,16 @@ function OfficerCalendarPage() {
         </div>
         <div className="flex gap-2">
           {officerCalendarId && (
-            <>
-              <Button variant="outline" asChild>
-                <a
-                  href={buildGoogleCalendarSubscribeUrl(officerCalendarId)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Subscribe Officer Calendar
-                </a>
-              </Button>
-              <Button variant="outline" asChild>
-                <a
-                  href={buildGoogleCalendarIcsUrl(officerCalendarId)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Officer ICS Feed
-                </a>
-              </Button>
-            </>
+            <Button variant="outline" asChild>
+              <a
+                href={buildGoogleCalendarSubscribeUrl(officerCalendarId)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Subscribe Officer Calendar
+              </a>
+            </Button>
           )}
           <Button onClick={openCreateModal}>
             <Plus className="h-4 w-4 mr-2" />
@@ -293,9 +291,10 @@ function OfficerCalendarPage() {
       ) : (
         <EventCalendar
           events={calendarEvents}
-          onDateClick={() => openCreateModal()}
+          onDateClick={(date) => openCreateModal(date)}
           onEventClick={handleEventClick}
           todayHighlightMode="background"
+          getDayLabel={(date) => getWeekLabelForDate(date, weekLabelSettings)}
         />
       )}
 
@@ -305,6 +304,7 @@ function OfficerCalendarPage() {
         onSubmit={handleSubmit}
         onDelete={handleDelete}
         editingEvent={editingEvent}
+        initialDate={selectedDate}
       />
 
       <OfficerCalendarEventModal

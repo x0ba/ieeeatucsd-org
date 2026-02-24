@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { EventRequest } from "@/components/manage-events/types";
 import {
-  buildGoogleCalendarIcsUrl,
   buildGoogleCalendarSubscribeUrl,
   downloadEventIcs,
 } from "@/lib/calendarLinks";
@@ -47,7 +46,6 @@ export function OfficerCalendarEventModal({
   const endDate = new Date(event.endDate);
   const eventGoogleUrl = event.privateGoogleEventUrl || event.publicGoogleEventUrl || undefined;
   const subscribeUrl = calendarId ? buildGoogleCalendarSubscribeUrl(calendarId) : null;
-  const calendarIcsUrl = calendarId ? buildGoogleCalendarIcsUrl(calendarId) : null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -112,14 +110,6 @@ export function OfficerCalendarEventModal({
                   <a href={subscribeUrl} target="_blank" rel="noreferrer">
                     <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                     Subscribe {calendarLabel}
-                  </a>
-                </Button>
-              )}
-              {calendarIcsUrl && (
-                <Button size="sm" variant="outline" asChild>
-                  <a href={calendarIcsUrl} target="_blank" rel="noreferrer">
-                    <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                    {calendarLabel} ICS Feed
                   </a>
                 </Button>
               )}
