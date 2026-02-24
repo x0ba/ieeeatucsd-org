@@ -1,27 +1,26 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
-import { usePermissions } from "@/hooks/usePermissions";
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  ExternalLink,
+  Loader2,
+  Plus,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import {
-  Plus,
-  Loader2,
-  ExternalLink,
-} from "lucide-react";
 import { EventCalendar } from "@/components/manage-events/calendar/EventCalendar";
 import { InternalEventModal } from "@/components/manage-events/modals/InternalEventModal";
 import { OfficerCalendarEventModal } from "@/components/manage-events/modals/OfficerCalendarEventModal";
 import type { EventRequest, EventStatus } from "@/components/manage-events/types";
 import {
-  buildGoogleCalendarSubscribeUrl,
-} from "@/lib/calendarLinks";
-import {
   getWeekLabelForDate,
   loadWeekLabelSettings,
+  saveWeekLabelSettings,
   type WeekLabelSettings,
 } from "@/components/manage-events/utils/weekLabels";
+import { Button } from "@/components/ui/button";
+import { useAuthedMutation, useAuthedQuery } from "@/hooks/useAuthedConvex";
+import { usePermissions } from "@/hooks/usePermissions";
+import { buildGoogleCalendarSubscribeUrl } from "@/lib/calendarLinks";
 
 export const Route = createFileRoute("/_dashboard/officer-calendar")({
   component: OfficerCalendarPage,
@@ -69,7 +68,7 @@ function OfficerCalendarPage() {
 
   const internalEvents = useAuthedQuery(
     api.internalEvents.list,
-    logtoId ? { logtoId, authToken: "" } : "skip",
+    logtoId ? { logtoId } : "skip",
   );
 
   const createInternalEvent = useAuthedMutation(api.internalEvents.create);
@@ -80,9 +79,18 @@ function OfficerCalendarPage() {
   const [editingEvent, setEditingEvent] = useState<InternalEvent | null>(null);
   const [selectedCalendarEvent, setSelectedCalendarEvent] = useState<EventRequest | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [weekLabelSettings] = useState<WeekLabelSettings>(() =>
-    loadWeekLabelSettings(),
+  const convexWeekLabelSettings = useAuthedQuery(
+    api.weekLabelSettings.get,
+    logtoId ? { logtoId } : "skip",
   );
+
+  const weekLabelSettings = useMemo<WeekLabelSettings>(() => {
+    if (!convexWeekLabelSettings) {
+      return loadWeekLabelSettings();
+    }
+    saveWeekLabelSettings(convexWeekLabelSettings);
+    return convexWeekLabelSettings;
+  }, [convexWeekLabelSettings]);
 
   const calendarEvents = useMemo(() => {
     const events: EventRequest[] = [];
@@ -184,7 +192,6 @@ function OfficerCalendarPage() {
     if (editingEvent) {
       await updateInternalEvent({
         logtoId,
-        authToken: "",
         id: editingEvent._id as any,
         ...data,
       });
@@ -204,16 +211,15 @@ function OfficerCalendarPage() {
     if (!logtoId) return;
     await deleteInternalEvent({
       logtoId,
-      authToken: "",
       id: event._id as any,
     });
     toast.success("Event deleted successfully");
     setEditingEvent(null);
   };
 
-  const openCreateModal = (date?: Date) => {
+  const openCreateModal = (date?: Date | unknown) => {
     setEditingEvent(null);
-    setSelectedDate(date ?? null);
+    setSelectedDate(date instanceof Date ? date : null);
     setIsModalOpen(true);
   };
 
@@ -277,7 +283,7 @@ function OfficerCalendarPage() {
               </a>
             </Button>
           )}
-          <Button onClick={openCreateModal}>
+          <Button onClick={() => openCreateModal()}>
             <Plus className="h-4 w-4 mr-2" />
             Add Internal Event
           </Button>

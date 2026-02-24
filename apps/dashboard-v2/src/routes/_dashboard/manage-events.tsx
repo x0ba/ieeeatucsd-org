@@ -1,14 +1,40 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useAuthedQuery, useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
-import { usePermissions } from "@/hooks/usePermissions";
+import { createFileRoute } from "@tanstack/react-router";
 import {
-	Plus,
-	List,
 	Calendar as CalendarIcon,
 	FilePlus,
+	List,
 	Loader2,
+	Plus,
 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import {
+	DraftEventModal,
+	DraftViewModal,
+	EventCalendar,
+	type EventFilters,
+	type EventFormData,
+	type EventRequest,
+	EventRequestWizardModal,
+	type EventStatus,
+	EventsDataTable,
+	EventsFilters,
+	EventViewModal,
+	FileManagerModal,
+	type SortConfig,
+} from "@/components/manage-events";
+import {
+	normalizeDepartment,
+	normalizeEventType,
+} from "@/components/manage-events/constants";
+import {
+	defaultWeekLabelSettings,
+	getWeekLabelForDate,
+	loadWeekLabelSettings,
+	saveWeekLabelSettings,
+	type WeekLabelSettings,
+} from "@/components/manage-events/utils/weekLabels";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -19,34 +45,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useAuthedMutation, useAuthedQuery } from "@/hooks/useAuthedConvex";
+import { usePermissions } from "@/hooks/usePermissions";
 import { sendNotification } from "@/lib/send-notification";
-import {
-	EventsFilters,
-	EventsDataTable,
-	EventCalendar,
-	EventRequestWizardModal,
-	EventViewModal,
-	DraftViewModal,
-	DraftEventModal,
-	FileManagerModal,
-	type EventRequest,
-	type EventFilters,
-	type SortConfig,
-	type EventFormData,
-	type EventStatus,
-} from "@/components/manage-events";
-import {
-	normalizeDepartment,
-	normalizeEventType,
-} from "@/components/manage-events/constants";
-import {
-	getWeekLabelForDate,
-	saveWeekLabelSettings,
-	loadWeekLabelSettings,
-	type WeekLabelSettings,
-} from "@/components/manage-events/utils/weekLabels";
 
 export const Route = createFileRoute("/_dashboard/manage-events")({
 	component: ManageEventsPage,
@@ -131,6 +132,13 @@ function ManageEventsPage() {
 	const updateEvent = useAuthedMutation(api.events.update);
 	const updateEventStatus = useAuthedMutation(api.events.updateStatus);
 	const removeEvent = useAuthedMutation(api.events.remove);
+	const updateWeekLabelSettingsMutation = useAuthedMutation(
+		api.weekLabelSettings.update,
+	);
+	const convexWeekLabelSettings = useAuthedQuery(
+		api.weekLabelSettings.get,
+		logtoId ? { logtoId } : "skip",
+	);
 
 	// View mode state
 	const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
@@ -170,13 +178,32 @@ function ManageEventsPage() {
 	const [weekLabelSettings, setWeekLabelSettings] = useState<WeekLabelSettings>(
 		() => loadWeekLabelSettings(),
 	);
+	const hasHydratedWeekSettings = useRef(false);
 
 	// Loading state
 	const [isProcessing, setIsProcessing] = useState(false);
 
 	useEffect(() => {
-		saveWeekLabelSettings(weekLabelSettings);
-	}, [weekLabelSettings]);
+		if (!convexWeekLabelSettings || hasHydratedWeekSettings.current) return;
+		hasHydratedWeekSettings.current = true;
+
+		const convexHasValues = Object.values(convexWeekLabelSettings).some(Boolean);
+		if (convexHasValues) {
+			setWeekLabelSettings(convexWeekLabelSettings);
+			saveWeekLabelSettings(convexWeekLabelSettings);
+			return;
+		}
+
+		const localSettings = loadWeekLabelSettings();
+		const localHasValues = Object.values(localSettings).some(Boolean);
+		if (localHasValues) {
+			setWeekLabelSettings(localSettings);
+			void updateWeekLabelSettingsMutation(localSettings);
+			return;
+		}
+
+		setWeekLabelSettings(defaultWeekLabelSettings);
+	}, [convexWeekLabelSettings, updateWeekLabelSettingsMutation]);
 
 	// Transform data to EventRequest type — single query, no merge needed
 	const allEvents: EventRequest[] = useMemo(() => {
@@ -803,10 +830,15 @@ function ManageEventsPage() {
 		field: keyof WeekLabelSettings,
 		value: string,
 	) => {
-		setWeekLabelSettings((prev) => ({
-			...prev,
-			[field]: value,
-		}));
+		setWeekLabelSettings((prev) => {
+			const next = {
+				...prev,
+				[field]: value,
+			};
+			saveWeekLabelSettings(next);
+			void updateWeekLabelSettingsMutation(next);
+			return next;
+		});
 	};
 
 	return (

@@ -34,6 +34,7 @@ import type * as reimbursements from "../reimbursements.js";
 import type * as sponsorDomains from "../sponsorDomains.js";
 import type * as userProvisioning from "../userProvisioning.js";
 import type * as users from "../users.js";
+import type * as weekLabelSettings from "../weekLabelSettings.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   sponsorDomains: typeof sponsorDomains;
   userProvisioning: typeof userProvisioning;
   users: typeof users;
+  weekLabelSettings: typeof weekLabelSettings;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

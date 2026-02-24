@@ -687,6 +687,9 @@ export default defineSchema({
 
   organizationSettings: defineTable({
     googleSheetsContactListUrl: v.optional(v.string()),
+    fallWeek0Start: v.optional(v.string()),
+    winterWeek1Start: v.optional(v.string()),
+    springWeek1Start: v.optional(v.string()),
     updatedBy: v.optional(v.string()),
   }),
 
