@@ -5,7 +5,6 @@ import {
   ExternalLink,
   MapPin,
   Pencil,
-  Sparkles,
 } from "lucide-react";
 import {
   Dialog,
@@ -49,19 +48,24 @@ export function OfficerCalendarEventModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl border-0 bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100 shadow-2xl">
+      <DialogContent className="max-w-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
         <DialogHeader className="space-y-3">
           <div className="flex items-start justify-between gap-2">
-            <DialogTitle className="text-2xl font-black tracking-tight leading-tight text-white">
+            <DialogTitle className="text-2xl font-black tracking-tight leading-tight text-slate-900">
               {event.eventName}
             </DialogTitle>
-            <Sparkles className="h-5 w-5 text-cyan-300" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge className={isInternalEvent ? "bg-amber-500/20 text-amber-200 border-amber-400/40" : "bg-cyan-500/20 text-cyan-100 border-cyan-400/40"}>
+            <Badge
+              className={
+                isInternalEvent
+                  ? "border-amber-300 bg-amber-100 text-amber-900"
+                  : "border-blue-300 bg-blue-100 text-blue-900"
+              }
+            >
               {isInternalEvent ? "Internal Event" : "Published Event"}
             </Badge>
-            <Badge variant="outline" className="border-slate-500 text-slate-200">
+            <Badge variant="outline" className="border-slate-300 text-slate-700">
               {event.status}
             </Badge>
           </div>
@@ -69,41 +73,41 @@ export function OfficerCalendarEventModal({
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="rounded-xl bg-slate-800/70 border border-slate-700 px-3 py-2.5">
-              <div className="flex items-center text-xs uppercase tracking-wide text-slate-300 gap-1.5">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+              <div className="flex items-center gap-1.5 text-slate-500 text-xs uppercase tracking-wide">
                 <Calendar className="h-3.5 w-3.5" />
                 Date
               </div>
-              <p className="text-sm text-white mt-1">{format(startDate, "EEEE, MMMM d, yyyy")}</p>
+              <p className="mt-1 text-sm text-slate-900">{format(startDate, "EEEE, MMMM d, yyyy")}</p>
             </div>
-            <div className="rounded-xl bg-slate-800/70 border border-slate-700 px-3 py-2.5">
-              <div className="flex items-center text-xs uppercase tracking-wide text-slate-300 gap-1.5">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+              <div className="flex items-center gap-1.5 text-slate-500 text-xs uppercase tracking-wide">
                 <Clock3 className="h-3.5 w-3.5" />
                 Time
               </div>
-              <p className="text-sm text-white mt-1">
+              <p className="mt-1 text-sm text-slate-900">
                 {format(startDate, "h:mm a")} - {format(endDate, "h:mm a")}
               </p>
             </div>
           </div>
 
-          <div className="rounded-xl bg-slate-800/70 border border-slate-700 px-3 py-2.5">
-            <div className="flex items-center text-xs uppercase tracking-wide text-slate-300 gap-1.5">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <div className="flex items-center gap-1.5 text-slate-500 text-xs uppercase tracking-wide">
               <MapPin className="h-3.5 w-3.5" />
               Location
             </div>
-            <p className="text-sm text-white mt-1">{event.location || "TBD"}</p>
+            <p className="mt-1 text-sm text-slate-900">{event.location || "TBD"}</p>
           </div>
 
           {event.eventDescription && (
-            <div className="rounded-xl bg-slate-800/70 border border-slate-700 px-3 py-2.5">
-              <p className="text-xs uppercase tracking-wide text-slate-300">Details</p>
-              <p className="text-sm text-slate-100 mt-1 whitespace-pre-wrap">{event.eventDescription}</p>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+              <p className="text-slate-500 text-xs uppercase tracking-wide">Details</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{event.eventDescription}</p>
             </div>
           )}
 
-          <div className="rounded-xl bg-slate-800/60 border border-slate-700 px-3 py-3 space-y-2">
-            <p className="text-xs uppercase tracking-wide text-slate-300">Add to Calendar</p>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 space-y-2">
+            <p className="text-slate-500 text-xs uppercase tracking-wide">Add to Calendar</p>
             <div className="flex flex-wrap gap-2">
               {subscribeUrl && (
                 <Button size="sm" variant="outline" asChild>
