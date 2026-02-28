@@ -104,7 +104,7 @@ function useAuthClient() {
   }, [accessToken]);
 
   const mintConvexSession = useCallback(
-    async (token: string) => {
+    async (token: string): Promise<{ sessionToken: string; expiresAt: number }> => {
       const response = await fetch("/api/auth/convex-session", {
         method: "POST",
         headers: {
@@ -122,8 +122,7 @@ function useAuthClient() {
         sessionToken: string;
         expiresAt: number;
       };
-      setConvexSessionToken(data.sessionToken);
-      setConvexSessionExpiresAt(data.expiresAt);
+      return data;
     },
     [],
   );
@@ -231,7 +230,7 @@ function useAuthClient() {
 
           if (cancelled) return;
 
-          // Update state
+          // Update state immediately on initial load
           setConvexSessionToken(data.sessionToken);
           setConvexSessionExpiresAt(data.expiresAt);
           setAuthFailureReason(null);
@@ -267,17 +266,51 @@ function useAuthClient() {
 
   useEffect(() => {
     if (!isAuthenticated || !accessToken || authFailureReason) return;
-    const timer = window.setInterval(() => {
+    const timer = window.setInterval(async () => {
+      // Add grace period: only refresh if within 60 seconds of expiry
       const shouldRefresh = !convexSessionExpiresAt || Date.now() + 60_000 >= convexSessionExpiresAt;
-      if (shouldRefresh) {
-        void mintConvexSession(accessToken).catch((err) => {
-          console.error("Failed to refresh Convex session:", err);
-          markAuthFailure("session_mint_failed");
-        });
+      if (!shouldRefresh) return;
+
+      try {
+        // Fetch new session data without updating state
+        const newSessionData = await mintConvexSession(accessToken);
+        
+        // Only update state if the token actually changed
+        // This prevents unnecessary Convex query re-subscriptions
+        if (newSessionData.sessionToken !== convexSessionToken) {
+          setConvexSessionToken(newSessionData.sessionToken);
+          setConvexSessionExpiresAt(newSessionData.expiresAt);
+          
+          // Update cache
+          if (logtoId) {
+            setCachedSession({
+              logtoId,
+              accessToken,
+              convexSessionToken: newSessionData.sessionToken,
+              convexSessionExpiresAt: newSessionData.expiresAt,
+            });
+          }
+        } else {
+          // Token didn't change, just update expiry time
+          setConvexSessionExpiresAt(newSessionData.expiresAt);
+          
+          // Update cache with new expiry
+          if (logtoId) {
+            setCachedSession({
+              logtoId,
+              accessToken,
+              convexSessionToken: newSessionData.sessionToken,
+              convexSessionExpiresAt: newSessionData.expiresAt,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to refresh Convex session:", err);
+        markAuthFailure("session_mint_failed");
       }
     }, 30_000);
     return () => window.clearInterval(timer);
-  }, [isAuthenticated, accessToken, convexSessionExpiresAt, mintConvexSession, authFailureReason, markAuthFailure]);
+  }, [isAuthenticated, accessToken, convexSessionToken, convexSessionExpiresAt, logtoId, mintConvexSession, authFailureReason, markAuthFailure]);
 
   // convexUser is:
   //   undefined — query still loading (Convex hasn't responded yet)
@@ -335,8 +368,8 @@ function useAuthClient() {
       try {
         const claims = await getIdTokenClaimsRef.current?.();
         const token = accessToken ?? (await getAccessTokenRef.current?.());
-        if (!claims?.sub || !token) {
-          throw new Error("Missing claims or access token during user provisioning");
+        if (!claims?.sub || !token || !convexSessionToken) {
+          throw new Error("Missing claims, access token, or session token during user provisioning");
         }
 
         await upsertUser({
