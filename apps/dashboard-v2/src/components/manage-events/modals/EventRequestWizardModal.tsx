@@ -309,7 +309,10 @@ export function EventRequestWizardModal({
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className="sm:max-w-2xl overflow-hidden">
-				<div className="flex max-h-[90vh] min-h-0 flex-col">
+				<form
+					onSubmit={(e) => e.preventDefault()}
+					className="flex max-h-[90vh] min-h-0 flex-col"
+				>
 					<DialogHeader className="shrink-0">
 						<DialogTitle>
 							{isConvertingDraft
@@ -357,21 +360,25 @@ export function EventRequestWizardModal({
 					<DialogFooter className="mt-6 flex shrink-0 justify-between">
 						<div>
 							{currentStep > 1 && (
-								<Button variant="outline" onClick={handleBack}>
+								<Button type="button" variant="outline" onClick={handleBack}>
 									Back
 								</Button>
 							)}
 						</div>
 						<div className="flex gap-2">
-							<Button variant="outline" onClick={onClose}>
+							<Button type="button" variant="outline" onClick={onClose}>
 								Cancel
 							</Button>
 							{currentStep < steps.length ? (
-								<Button onClick={handleNext} disabled={!canProceed()}>
+								<Button
+									type="button"
+									onClick={handleNext}
+									disabled={!canProceed()}
+								>
 									Next
 								</Button>
 							) : (
-								<Button onClick={handleSubmit}>
+								<Button type="button" onClick={handleSubmit}>
 									<CheckCircle className="h-4 w-4 mr-2" />
 									{isConvertingDraft
 										? "Submit Request"
@@ -382,7 +389,7 @@ export function EventRequestWizardModal({
 							)}
 						</div>
 					</DialogFooter>
-				</div>
+				</form>
 			</DialogContent>
 		</Dialog>
 	);

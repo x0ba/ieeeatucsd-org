@@ -931,6 +931,7 @@ function ManageEventsPage() {
 			{/* View Toggle */}
 			<div className="flex items-center gap-2">
 				<button
+					type="button"
 					onClick={() => setViewMode("list")}
 					className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
 						viewMode === "list"
@@ -942,6 +943,7 @@ function ManageEventsPage() {
 					Events List
 				</button>
 				<button
+					type="button"
 					onClick={() => setViewMode("calendar")}
 					className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
 						viewMode === "calendar"

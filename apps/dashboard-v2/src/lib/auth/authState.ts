@@ -11,7 +11,6 @@ interface ResolveAuthStateInput {
 }
 
 export function resolveAuthState({
-  logtoLoading,
   isAuthenticated,
   logtoId,
   accessToken,
@@ -35,14 +34,18 @@ export function resolveAuthState({
     };
   }
 
+  const hasCoreSession = !!logtoId && !!accessToken && !!convexSessionToken;
+  if (!hasCoreSession) {
+    return {
+      isAuthResolved: false,
+      isLoading: true,
+    };
+  }
+
   const isAuthResolved =
-    !logtoLoading &&
-    (!!logtoId &&
-      !!accessToken &&
-      !!convexSessionToken &&
-      convexUser !== undefined &&
-      !(convexUser === null && isProvisioningUser) &&
-      !(convexUser === null && !hasProvisioningAttempt));
+    convexUser !== undefined &&
+    !(convexUser === null && isProvisioningUser) &&
+    !(convexUser === null && !hasProvisioningAttempt);
 
   return {
     isAuthResolved,

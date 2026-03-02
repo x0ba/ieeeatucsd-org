@@ -1006,6 +1006,7 @@ export default function EventRequestModal({
             <ModalFooter className="border-t border-gray-200">
               {/* Cancel Button - Leftmost */}
               <Button
+                type="button"
                 variant="bordered"
                 onPress={onModalClose}
                 isDisabled={loading}
@@ -1019,6 +1020,7 @@ export default function EventRequestModal({
               {/* Right side buttons */}
               <div className="flex gap-3">
                 <Button
+                  type="button"
                   variant="light"
                   onPress={handlePrevious}
                   isDisabled={currentStep === 0 || loading}
@@ -1028,6 +1030,7 @@ export default function EventRequestModal({
 
                 {isLastStep ? (
                   <Button
+                    type="button"
                     color="primary"
                     onPress={handleSubmit}
                     isLoading={loading}
@@ -1037,6 +1040,7 @@ export default function EventRequestModal({
                   </Button>
                 ) : (
                   <Button
+                    type="button"
                     color="primary"
                     onPress={handleNext}
                     isDisabled={loading}

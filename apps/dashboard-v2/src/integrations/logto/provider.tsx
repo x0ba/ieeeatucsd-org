@@ -2,15 +2,27 @@ import { LogtoProvider, LogtoConfig, UserScope } from "@logto/react";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
+const defaultScopes: string[] = [
+  UserScope.Email,
+  UserScope.Profile,
+  UserScope.CustomData,
+  UserScope.Organizations,
+];
+
+function parseLogtoScopes(rawScopes: string | undefined): string[] {
+  if (!rawScopes) return defaultScopes;
+  const scopes = rawScopes
+    .split(",")
+    .map((scope) => scope.trim())
+    .filter(Boolean);
+  return scopes.length > 0 ? scopes : defaultScopes;
+}
+
 const logtoConfig: LogtoConfig = {
   endpoint: import.meta.env.VITE_LOGTO_ENDPOINT || "https://auth.ieeeatucsd.org",
   appId: import.meta.env.VITE_LOGTO_APP_ID || "",
-  scopes: [
-    UserScope.Email,
-    UserScope.Profile,
-    UserScope.CustomData,
-    UserScope.Organizations,
-  ],
+  scopes: parseLogtoScopes(import.meta.env.VITE_LOGTO_SCOPES),
+  includeReservedScopes: true,
 };
 
 export default function AppLogtoProvider({

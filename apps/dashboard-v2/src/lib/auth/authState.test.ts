@@ -62,6 +62,40 @@ describe("resolveAuthState", () => {
     expect(state.isAuthResolved).toBe(false);
   });
 
+  it("resolves auth even if logto is still loading when local session is complete", () => {
+    const state = resolveAuthState({
+      logtoLoading: true,
+      isAuthenticated: true,
+      logtoId: "logto|member",
+      accessToken: "access-token",
+      convexSessionToken: "session-token",
+      convexUser: { role: "Member" },
+      isProvisioningUser: false,
+      hasProvisioningAttempt: true,
+      authFailureReason: null,
+    });
+
+    expect(state.isLoading).toBe(false);
+    expect(state.isAuthResolved).toBe(true);
+  });
+
+  it("stays loading when authenticated but core session is incomplete", () => {
+    const state = resolveAuthState({
+      logtoLoading: false,
+      isAuthenticated: true,
+      logtoId: "logto|member",
+      accessToken: "access-token",
+      convexSessionToken: null,
+      convexUser: undefined,
+      isProvisioningUser: false,
+      hasProvisioningAttempt: false,
+      authFailureReason: null,
+    });
+
+    expect(state.isLoading).toBe(true);
+    expect(state.isAuthResolved).toBe(false);
+  });
+
   it("clears loading after bounded null-user provisioning attempt", () => {
     const state = resolveAuthState({
       logtoLoading: false,

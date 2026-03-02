@@ -36,7 +36,7 @@ export function DashboardLayout() {
     }
   }, [authFailureReason, isAuthResolved, isAuthenticated, user, location.pathname, navigate]);
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
@@ -45,6 +45,10 @@ export function DashboardLayout() {
         </div>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return null;
   }
 
   return (

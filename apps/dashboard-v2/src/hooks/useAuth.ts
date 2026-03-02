@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { UserRole } from "@/types/roles";
 import { resolveAuthState, shouldAttemptProvisioning } from "@/lib/auth/authState";
+import { refreshSessionWithRetry } from "@/lib/auth/sessionRefresh";
 
 export type { UserRole };
 export type AuthFailureReason =
@@ -13,6 +14,28 @@ export type AuthFailureReason =
   | null;
 
 const isServer = typeof window === "undefined";
+const SESSION_MINT_TIMEOUT_MS = 10_000;
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 15_000;
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  timeoutMs: number,
+) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error(`Request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
 
 // Module-level cache to persist auth state across component remounts
 // This prevents React Strict Mode and Logto SDK state cycling from clearing auth
@@ -90,6 +113,7 @@ function useAuthClient() {
   const lastProvisioningAttemptRef = useRef<string | null>(null);
   const signOutTriggeredRef = useRef(false);
   const authInitializedRef = useRef(false);
+  const refreshInFlightRef = useRef(false);
   const upsertUser = useMutation(api.users.upsertFromAuth);
 
   // Store Logto functions in refs to avoid effect re-runs when they change identity
@@ -105,14 +129,14 @@ function useAuthClient() {
 
   const mintConvexSession = useCallback(
     async (token: string): Promise<{ sessionToken: string; expiresAt: number }> => {
-      const response = await fetch("/api/auth/convex-session", {
+      const response = await fetchWithTimeout("/api/auth/convex-session", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({}),
-      });
+      }, SESSION_MINT_TIMEOUT_MS);
 
       if (!response.ok) {
         throw new Error(`Failed to mint Convex session (${response.status})`);
@@ -134,6 +158,8 @@ function useAuthClient() {
     setConvexSessionExpiresAt(null);
     setIsProvisioningUser(false);
     lastProvisioningAttemptRef.current = null;
+    refreshInFlightRef.current = false;
+    clearCachedSession();
     // Note: authInitializedRef is only reset when isAuthenticated becomes false
   }, []);
 
@@ -168,6 +194,7 @@ function useAuthClient() {
       lastProvisioningAttemptRef.current = null;
       signOutTriggeredRef.current = false;
       authInitializedRef.current = false;
+      refreshInFlightRef.current = false;
       clearCachedSession();
       return;
     }
@@ -181,6 +208,7 @@ function useAuthClient() {
         setAccessToken(existingSession.accessToken);
         setConvexSessionToken(existingSession.convexSessionToken);
         setConvexSessionExpiresAt(existingSession.convexSessionExpiresAt);
+        setAuthFailureReason(null);
         authInitializedRef.current = true;
       }
       return;
@@ -210,23 +238,7 @@ function useAuthClient() {
         setAccessToken(token);
 
         try {
-          const response = await fetch("/api/auth/convex-session", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({}),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to mint Convex session (${response.status})`);
-          }
-
-          const data = (await response.json()) as {
-            sessionToken: string;
-            expiresAt: number;
-          };
+          const data = await mintConvexSession(token);
 
           if (cancelled) return;
 
@@ -265,50 +277,62 @@ function useAuthClient() {
   }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated || authFailureReason) return;
+    const hasCoreSession = !!logtoId && !!accessToken && !!convexSessionToken;
+    if (hasCoreSession) return;
+
+    const timeout = window.setTimeout(() => {
+      markAuthFailure("session_mint_failed");
+    }, AUTH_BOOTSTRAP_TIMEOUT_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [isAuthenticated, authFailureReason, logtoId, accessToken, convexSessionToken, markAuthFailure]);
+
+  useEffect(() => {
     if (!isAuthenticated || !accessToken || authFailureReason) return;
-    const timer = window.setInterval(async () => {
+    const timer = window.setInterval(() => {
       // Add grace period: only refresh if within 60 seconds of expiry
       const shouldRefresh = !convexSessionExpiresAt || Date.now() + 60_000 >= convexSessionExpiresAt;
-      if (!shouldRefresh) return;
+      if (!shouldRefresh || refreshInFlightRef.current) return;
 
-      try {
-        // Fetch new session data without updating state
-        const newSessionData = await mintConvexSession(accessToken);
-        
-        // Only update state if the token actually changed
-        // This prevents unnecessary Convex query re-subscriptions
-        if (newSessionData.sessionToken !== convexSessionToken) {
-          setConvexSessionToken(newSessionData.sessionToken);
-          setConvexSessionExpiresAt(newSessionData.expiresAt);
-          
-          // Update cache
+      refreshInFlightRef.current = true;
+      void (async () => {
+        try {
+          const { session, accessToken: latestAccessToken } = await refreshSessionWithRetry({
+            currentAccessToken: accessToken,
+            getLatestAccessToken: async () => getAccessTokenRef.current?.(),
+            mintSession: mintConvexSession,
+            maxAttempts: 3,
+            baseDelayMs: 750,
+          });
+
+          if (latestAccessToken !== accessToken) {
+            setAccessToken(latestAccessToken);
+          }
+
+          if (session.sessionToken !== convexSessionToken) {
+            setConvexSessionToken(session.sessionToken);
+          }
+
+          setConvexSessionExpiresAt(session.expiresAt);
+
           if (logtoId) {
             setCachedSession({
               logtoId,
-              accessToken,
-              convexSessionToken: newSessionData.sessionToken,
-              convexSessionExpiresAt: newSessionData.expiresAt,
+              accessToken: latestAccessToken,
+              convexSessionToken: session.sessionToken,
+              convexSessionExpiresAt: session.expiresAt,
             });
           }
-        } else {
-          // Token didn't change, just update expiry time
-          setConvexSessionExpiresAt(newSessionData.expiresAt);
-          
-          // Update cache with new expiry
-          if (logtoId) {
-            setCachedSession({
-              logtoId,
-              accessToken,
-              convexSessionToken: newSessionData.sessionToken,
-              convexSessionExpiresAt: newSessionData.expiresAt,
-            });
-          }
+        } catch (err) {
+          console.error("Failed to refresh Convex session:", err);
+          markAuthFailure("session_mint_failed");
+        } finally {
+          refreshInFlightRef.current = false;
         }
-      } catch (err) {
-        console.error("Failed to refresh Convex session:", err);
-        markAuthFailure("session_mint_failed");
-      }
+      })();
     }, 30_000);
+
     return () => window.clearInterval(timer);
   }, [isAuthenticated, accessToken, convexSessionToken, convexSessionExpiresAt, logtoId, mintConvexSession, authFailureReason, markAuthFailure]);
 
