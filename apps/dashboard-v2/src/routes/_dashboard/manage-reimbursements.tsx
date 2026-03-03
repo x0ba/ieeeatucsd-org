@@ -163,7 +163,8 @@ const getStatusIcon = (status: ReimbursementStatus) => {
 };
 
 function ManageReimbursementsPage() {
-	const { hasAdminAccess, logtoId, user, getAuthHeaders, isLoading } = usePermissions();
+	const { hasAdminAccess, logtoId, user, getAuthHeaders, isLoading } =
+		usePermissions();
 	const aiEnabled = user?.aiFeaturesEnabled !== false;
 	const reimbursements = useAuthedQuery(
 		api.reimbursements.listAll,
@@ -173,7 +174,9 @@ function ManageReimbursementsPage() {
 	const updatePaymentDetails = useAuthedMutation(
 		api.reimbursements.updatePaymentDetails,
 	);
-	const generateUploadUrl = useAuthedMutation(api.reimbursements.generateUploadUrl);
+	const generateUploadUrl = useAuthedMutation(
+		api.reimbursements.generateUploadUrl,
+	);
 	const getStorageUrl = useAuthedMutation(api.reimbursements.getStorageUrl);
 
 	// Table state
@@ -357,10 +360,22 @@ function ManageReimbursementsPage() {
 	const handleStatusChange = async (
 		id: string,
 		status: ReimbursementStatus,
+		reason?: string,
 	) => {
+		const trimmedReason = reason?.trim();
+		if (status === "declined" && !trimmedReason) {
+			toast.error("Decline reason is required");
+			return;
+		}
+
 		setProcessingId(id);
 		try {
-			await updateStatus({ logtoId: logtoId!, id: id as any, status });
+			await updateStatus({
+				logtoId: logtoId!,
+				id: id as any,
+				status,
+				reason: status === "declined" ? trimmedReason : undefined,
+			});
 			toast.success(`Reimbursement ${status}`);
 
 			// Find the reimbursement to get details for the email
@@ -375,6 +390,9 @@ function ManageReimbursementsPage() {
 					previousStatus: reimbursement.status,
 					changedByName: user?.name || "Admin",
 					submittedBy: reimbursement.submittedBy,
+					...(status === "declined" && trimmedReason
+						? { rejectionReason: trimmedReason }
+						: {}),
 				});
 			}
 
@@ -387,6 +405,21 @@ function ManageReimbursementsPage() {
 		} finally {
 			setProcessingId(null);
 		}
+	};
+
+	const handleDecline = async (id: string) => {
+		const reasonInput = window.prompt(
+			"Please provide a reason for declining this reimbursement:",
+		);
+		if (reasonInput === null) return;
+
+		const reason = reasonInput.trim();
+		if (!reason) {
+			toast.error("Decline reason is required");
+			return;
+		}
+
+		await handleStatusChange(id, "declined", reason);
 	};
 
 	const handleApproveFull = async () => {
@@ -513,7 +546,9 @@ function ManageReimbursementsPage() {
 			if (!aiEnabled) {
 				setPaymentReviewData({ manual: true });
 				setPaymentDate(new Date().toISOString().split("T")[0]);
-				setPaymentAmount(calculateTotalAmount(selectedReimbursement).toFixed(2));
+				setPaymentAmount(
+					calculateTotalAmount(selectedReimbursement).toFixed(2),
+				);
 				toast.success("Proof uploaded", {
 					description: "AI is disabled. Please enter payment details manually.",
 				});
@@ -708,10 +743,7 @@ function ManageReimbursementsPage() {
 													size="sm"
 													variant="destructive"
 													onClick={() =>
-														handleStatusChange(
-															selectedReimbursement._id,
-															"declined",
-														)
+														handleDecline(selectedReimbursement._id)
 													}
 													disabled={processingId === selectedReimbursement._id}
 												>
@@ -1160,19 +1192,21 @@ function ManageReimbursementsPage() {
 								<div className="flex gap-6">
 									{/* Left: Inputs */}
 									<div className="flex-1 space-y-4">
-									<div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-start gap-3">
-										<Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
-										<div className="text-sm text-blue-800">
-											<p className="font-semibold">
-												{aiEnabled ? "AI Extraction Complete" : "Manual Entry Mode"}
-											</p>
-											<p className="opacity-80">
-												{aiEnabled
-													? "Please verify the details below match the proof."
-													: "AI is disabled for this account. Enter and verify payment details manually."}
-											</p>
+										<div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-start gap-3">
+											<Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
+											<div className="text-sm text-blue-800">
+												<p className="font-semibold">
+													{aiEnabled
+														? "AI Extraction Complete"
+														: "Manual Entry Mode"}
+												</p>
+												<p className="opacity-80">
+													{aiEnabled
+														? "Please verify the details below match the proof."
+														: "AI is disabled for this account. Enter and verify payment details manually."}
+												</p>
+											</div>
 										</div>
-									</div>
 
 										<div className="grid grid-cols-2 gap-4">
 											<div className="space-y-2">
@@ -1554,9 +1588,7 @@ function ManageReimbursementsPage() {
 																variant="ghost"
 																size="sm"
 																className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-																onClick={() =>
-																	handleStatusChange(r._id, "declined")
-																}
+																onClick={() => handleDecline(r._id)}
 																disabled={processingId === r._id}
 																title="Decline"
 															>

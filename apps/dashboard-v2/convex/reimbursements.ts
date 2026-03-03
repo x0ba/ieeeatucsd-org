@@ -90,6 +90,7 @@ export const updateStatus = mutation({
       v.literal("approved"),
       v.literal("paid"),
     ),
+    reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const admin = await requireAdminAccess(ctx, args.logtoId, args.authToken);
@@ -97,16 +98,32 @@ export const updateStatus = mutation({
     const reimbursement = await ctx.db.get(args.id);
     if (!reimbursement) throw new Error("Reimbursement not found");
 
-    const auditLogs = reimbursement.auditLogs || [];
+    const reason = args.reason?.trim();
+    if (args.status === "declined" && !reason) {
+      throw new Error("Decline reason is required");
+    }
+
+    const now = Date.now();
+    const auditLogs = [...(reimbursement.auditLogs || [])];
     auditLogs.push({
       action: `status_changed_to_${args.status}`,
       createdBy: adminId,
-      timestamp: Date.now(),
+      timestamp: now,
     });
+
+    const auditNotes = [...(reimbursement.auditNotes || [])];
+    if (args.status === "declined" && reason) {
+      auditNotes.push({
+        note: reason,
+        createdBy: adminId,
+        timestamp: now,
+      });
+    }
 
     await ctx.db.patch(args.id, {
       status: args.status,
       auditLogs,
+      ...(args.status === "declined" && reason ? { auditNotes } : {}),
     });
     return args.id;
   },
