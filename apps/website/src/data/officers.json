@@ -84,13 +84,6 @@
     "type": ["Projects"]
   },
   {
-    "name": "Allie Dinh",
-    "position": "Professional Chair",
-    "picture": "/officers/allie.webp",
-    "email": "professional@ieeeatucsd.org",
-    "type": ["Events"]
-  },
-  {
     "name": "Iris Chou",
     "position": "Professional Chair",
     "picture": "https://placehold.co/334x440?text=IRIS%20CHOU",
@@ -107,7 +100,7 @@
   {
     "name": "Aryen Singhal",
     "position": "Technical Chair",
-    "picture": "https://placehold.co/334x440?text=ARYEN%20SINGHAL",
+    "picture": "/officers/aryen.webp",
     "email": "technical@ieeeatucsd.org",
     "type": ["Events"]
   },
@@ -168,6 +161,13 @@
     "type": ["Internal"]
   },
   {
+    "name": "Daniel Xu",
+    "position": "Webmaster",
+    "picture": "https://placehold.co/334x440?text=DANIEL%20XU",
+    "email": "webmaster@ieeeatucsd.org",
+    "type": ["Internal"]
+  },
+  {
     "name": "Lauren Vo",
     "position": "Marketing Chair",
     "picture": "/officers/lauren.webp",
@@ -196,10 +196,17 @@
     "type": ["Internal"]
   },
   {
+    "name": "Cameryn Mugol",
+    "position": "Design Chair",
+    "picture": "https://placehold.co/334x440?text=CAMERYN%20MUGOL",
+    "email": "design@ieeeatucsd.org",
+    "type": ["Internal"]
+  },
+  {
     "name": "Paul Moore",
     "position": "UI/UX Chair",
     "picture": "https://placehold.co/334x440?text=PAUL%20MOORE",
-    "email": "@ieeeatucsd.org",
+    "email": "ui@ieeeatucsd.org",
     "type": ["Internal"]
   }
 ]
