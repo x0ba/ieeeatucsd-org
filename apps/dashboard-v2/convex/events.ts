@@ -4,6 +4,8 @@ import {
   requireCurrentUser,
   requireOfficerAccess,
   hasAdminAccess,
+  hasOfficerAccess,
+  isGeneralOfficer,
 } from "./permissions";
 import {
   buildGoogleCalendarEventUrl,
@@ -523,8 +525,9 @@ export const update = mutation({
     const event = await ctx.db.get(args.id);
     if (!event) throw new Error("Event not found");
 
-    // Admins and Executive Officers can edit any event
-    if (!hasAdminAccess(user.role)) {
+    // Admins, Executive Officers, and General Officers can edit any event
+    const canEditAnyEvent = hasOfficerAccess(user.role);
+    if (!canEditAnyEvent) {
       // Non-admin users can only edit their own events
       if (event.requestedUser && event.requestedUser !== userId) {
         throw new Error("You can only edit your own events");
@@ -608,7 +611,7 @@ export const updateStatus = mutation({
     const canSubmitOwnDraft =
       args.status === "submitted" &&
       event.status === "draft" &&
-      event.requestedUser === userId;
+      (event.requestedUser === userId || isGeneralOfficer(user.role));
 
     if (!hasAdminAccess(user.role) && !canSubmitOwnDraft) {
       throw new Error("Only admins can change this status");
