@@ -156,14 +156,14 @@
   {
     "name": "Katie Ngo",
     "position": "Webmaster",
-    "picture": "https://placehold.co/334x440?text=KATIE%20NGO",
+    "picture": "/officers/katie.webp",
     "email": "webmaster@ieeeatucsd.org",
     "type": ["Internal"]
   },
   {
     "name": "Daniel Xu",
     "position": "Webmaster",
-    "picture": "https://placehold.co/334x440?text=DANIEL%20XU",
+    "picture": "/officers/daniel.webp",
     "email": "webmaster@ieeeatucsd.org",
     "type": ["Internal"]
   },
@@ -198,14 +198,14 @@
   {
     "name": "Cameryn Mugol",
     "position": "Design Chair",
-    "picture": "https://placehold.co/334x440?text=CAMERYN%20MUGOL",
+    "picture": "/officers/cameryn.webp",
     "email": "design@ieeeatucsd.org",
     "type": ["Internal"]
   },
   {
     "name": "Paul Moore",
     "position": "UI/UX Chair",
-    "picture": "https://placehold.co/334x440?text=PAUL%20MOORE",
+    "picture": "/officers/paul.webp",
     "email": "ui@ieeeatucsd.org",
     "type": ["Internal"]
   }

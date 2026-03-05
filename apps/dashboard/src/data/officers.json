@@ -21,13 +21,6 @@
     "type": ["Executives"]
   },
   {
-    "name": "Yu Chen Tai",
-    "position": "Vice Chair Projects",
-    "picture": "/officers/terri.webp",
-    "email": "projects@ieeeatucsd.org",
-    "type": ["Executives", "Projects"]
-  },
-  {
     "name": "Anupama Nambiar",
     "position": "Vice Chair Events",
     "picture": "/officers/anu.webp",
@@ -54,13 +47,6 @@
     "picture": "/officers/anusha.webp",
     "email": "coordinators@ieeeatucsd.org",
     "type": ["Executives", "Events"]
-  },
-  {
-    "name": "Nian-Nian Wang",
-    "position": "Project Space Chair",
-    "picture": "https://placehold.co/800x800?text=NIAN-NIAN%20WANG",
-    "email": "@ieeeatucsd.org",
-    "type": ["Projects"]
   },
   {
     "name": "Raymond Rada",
@@ -177,7 +163,7 @@
   {
     "name": "Katie Ngo",
     "position": "Webmaster",
-    "picture": "https://placehold.co/800x800?text=KATIE%20NGO",
+    "picture": "/officers/katie.webp",
     "email": "webmaster@ieeeatucsd.org",
     "type": ["Internal"]
   },
