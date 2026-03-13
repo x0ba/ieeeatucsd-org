@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import AppLogtoProvider from "../integrations/logto/provider";
 import ConvexProvider from "../integrations/convex/provider";
+import { AuthProvider } from "@/hooks/useAuth";
 
 import { Toaster } from "sonner";
 
@@ -128,8 +129,10 @@ function RootComponent() {
   return (
     <AppLogtoProvider>
       <ConvexProvider>
-        <Outlet />
-        <Toaster richColors position="bottom-right" />
+        <AuthProvider>
+          <Outlet />
+          <Toaster richColors position="bottom-right" />
+        </AuthProvider>
       </ConvexProvider>
     </AppLogtoProvider>
   );

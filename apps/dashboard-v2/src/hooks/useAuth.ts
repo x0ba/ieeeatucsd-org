@@ -1,6 +1,15 @@
 import { useLogto } from "@logto/react";
 import { useMutation, useQuery } from "convex/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createElement,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { api } from "../../convex/_generated/api";
 import type { UserRole } from "@/types/roles";
 import { resolveAuthState, shouldAttemptProvisioning } from "@/lib/auth/authState";
@@ -82,14 +91,22 @@ const ssrDefaults = {
   signOut: () => {},
 };
 
+type AuthContextValue = ReturnType<typeof useAuthClient>;
+
+const AuthContext = createContext<AuthContextValue>(ssrDefaults);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const value = useAuthClient();
+
+  return createElement(AuthContext.Provider, { value }, children);
+}
+
 export function useAuth() {
-  // During SSR, LogtoProvider is not mounted so useLogto() would throw.
-  // Return loading defaults — the client will hydrate with real state.
   if (isServer) {
     return ssrDefaults;
   }
 
-  return useAuthClient();
+  return useContext(AuthContext);
 }
 
 function useAuthClient() {
@@ -448,7 +465,7 @@ function useAuthClient() {
     performSignOut("session-init");
   }, [authFailureReason, performSignOut]);
 
-  return {
+  return useMemo(() => ({
     isAuthenticated: isAuthenticated ?? false,
     isLoading,
     isAuthResolved,
@@ -465,5 +482,20 @@ function useAuthClient() {
         import.meta.env.VITE_LOGTO_REDIRECT_URI || `${origin}/callback`,
       ),
     signOut: () => performSignOut(),
-  };
+  }), [
+    accessToken,
+    authFailureReason,
+    convexSessionToken,
+    getAuthHeaders,
+    isAuthResolved,
+    isAuthenticated,
+    isLoading,
+    isProvisioningUser,
+    logtoId,
+    origin,
+    performSignOut,
+    signIn,
+    userRole,
+    convexUser,
+  ]);
 }
