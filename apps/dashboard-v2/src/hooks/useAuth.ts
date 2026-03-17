@@ -26,6 +26,30 @@ const isServer = typeof window === "undefined";
 const SESSION_MINT_TIMEOUT_MS = 10_000;
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 15_000;
 
+function resolveLogtoRedirectUri(redirectUri: string | undefined, origin: string): string {
+  const trimmedRedirectUri = redirectUri?.trim();
+
+  if (!trimmedRedirectUri) {
+    return `${origin}/callback`;
+  }
+
+  try {
+    const configuredUrl = new URL(trimmedRedirectUri, origin);
+
+    if (configuredUrl.origin === origin) {
+      return configuredUrl.toString();
+    }
+
+    if (configuredUrl.hostname.includes("localhost") && !window.location.hostname.includes("localhost")) {
+      return `${origin}/callback`;
+    }
+
+    return configuredUrl.toString();
+  } catch {
+    return `${origin}/callback`;
+  }
+}
+
 async function fetchWithTimeout(
   input: RequestInfo | URL,
   init: RequestInit,
@@ -189,6 +213,11 @@ function useAuthClient() {
   );
 
   const origin = window.location.origin;
+  const resolvedRedirectUri = useMemo(
+    () => resolveLogtoRedirectUri(import.meta.env.VITE_LOGTO_REDIRECT_URI, origin),
+    [origin],
+  );
+
   const performSignOut = useCallback(
     (reason?: "session-init") => {
       clearLocalAuthState();
@@ -477,10 +506,7 @@ function useAuthClient() {
     accessToken,
     convexSessionToken,
     getAuthHeaders,
-    signIn: () =>
-      signIn(
-        import.meta.env.VITE_LOGTO_REDIRECT_URI || `${origin}/callback`,
-      ),
+      signIn: () => signIn(resolvedRedirectUri),
     signOut: () => performSignOut(),
   }), [
     accessToken,
@@ -493,6 +519,7 @@ function useAuthClient() {
     isProvisioningUser,
     logtoId,
     origin,
+    resolvedRedirectUri,
     performSignOut,
     signIn,
     userRole,

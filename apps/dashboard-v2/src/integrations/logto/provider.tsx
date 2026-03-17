@@ -18,9 +18,23 @@ function parseLogtoScopes(rawScopes: string | undefined): string[] {
   return scopes.length > 0 ? scopes : defaultScopes;
 }
 
+const DEFAULT_LOGTO_ENDPOINT = "https://auth.ieeeatucsd.org";
+
+function resolveLogtoEndpoint(rawEndpoint: string | undefined): string {
+  const trimmed = rawEndpoint?.trim();
+  if (!trimmed) return DEFAULT_LOGTO_ENDPOINT;
+
+  try {
+    return new URL(trimmed).toString();
+  } catch {
+    console.error(`Invalid VITE_LOGTO_ENDPOINT: ${trimmed}`);
+    return DEFAULT_LOGTO_ENDPOINT;
+  }
+}
+
 const logtoConfig: LogtoConfig = {
-  endpoint: import.meta.env.VITE_LOGTO_ENDPOINT || "https://auth.ieeeatucsd.org",
-  appId: import.meta.env.VITE_LOGTO_APP_ID || "",
+  endpoint: resolveLogtoEndpoint(import.meta.env.VITE_LOGTO_ENDPOINT),
+  appId: import.meta.env.VITE_LOGTO_APP_ID?.trim() || "",
   scopes: parseLogtoScopes(import.meta.env.VITE_LOGTO_SCOPES),
   includeReservedScopes: true,
 };
