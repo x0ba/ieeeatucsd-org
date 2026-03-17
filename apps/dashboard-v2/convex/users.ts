@@ -82,6 +82,24 @@ export const getByIdForAdmin = query({
   },
 });
 
+export const getUserInfo = query({
+  args: { logtoId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_logtoId", (q) => q.eq("logtoId", args.logtoId))
+      .first();
+    
+    if (!user) return null;
+    
+    return {
+      name: user.name,
+      zelleInformation: user.zelleInformation,
+      email: user.email,
+    };
+  },
+});
+
 export const upsertFromAuth = mutation({
   args: {
     logtoId: v.string(),

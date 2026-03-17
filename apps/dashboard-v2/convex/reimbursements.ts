@@ -21,7 +21,26 @@ export const listAll = query({
   args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
     await requireAdminAccess(ctx, args.logtoId, args.authToken);
-    return await ctx.db.query("reimbursements").collect();
+    const reimbursements = await ctx.db.query("reimbursements").collect();
+    
+    // Fetch user information for each reimbursement
+    const reimbursementsWithUserInfo = await Promise.all(
+      reimbursements.map(async (reimbursement) => {
+        const userInfo = await ctx.db
+          .query("users")
+          .withIndex("by_logtoId", (q) => q.eq("logtoId", reimbursement.submittedBy))
+          .first();
+        
+        return {
+          ...reimbursement,
+          submittedByName: userInfo?.name || reimbursement.submittedBy,
+          submittedByZelle: userInfo?.zelleInformation,
+          submittedByEmail: userInfo?.email,
+        };
+      })
+    );
+    
+    return reimbursementsWithUserInfo;
   },
 });
 

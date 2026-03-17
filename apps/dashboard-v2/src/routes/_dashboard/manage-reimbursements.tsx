@@ -306,7 +306,10 @@ function ManageReimbursementsPage() {
 					!search ||
 					r.title.toLowerCase().includes(search.toLowerCase()) ||
 					r.department.toLowerCase().includes(search.toLowerCase()) ||
-					r.additionalInfo.toLowerCase().includes(search.toLowerCase());
+					r.additionalInfo.toLowerCase().includes(search.toLowerCase()) ||
+					(r.submittedByName && r.submittedByName.toLowerCase().includes(search.toLowerCase())) ||
+					r.submittedBy.toLowerCase().includes(search.toLowerCase()) ||
+					(r.submittedByZelle && r.submittedByZelle.toLowerCase().includes(search.toLowerCase()));
 				const matchesStatus =
 					statusFilter.size === 0 || statusFilter.has(r.status);
 				return matchesSearch && matchesStatus;
@@ -337,8 +340,8 @@ function ManageReimbursementsPage() {
 						bValue = b.department.toLowerCase();
 						break;
 					case "submittedBy":
-						aValue = a.submittedBy.toLowerCase();
-						bValue = b.submittedBy.toLowerCase();
+						aValue = (a.submittedByName || a.submittedBy).toLowerCase();
+						bValue = (b.submittedByName || b.submittedBy).toLowerCase();
 						break;
 					default:
 						return 0;
@@ -687,7 +690,7 @@ function ManageReimbursementsPage() {
 								</Badge>
 							</div>
 							<div className="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
-								<span>{selectedReimbursement.submittedBy}</span>
+								<span>{selectedReimbursement.submittedByName || selectedReimbursement.submittedBy}</span>
 								<span className="text-muted-foreground/40">·</span>
 								<span className="capitalize">
 									{selectedReimbursement.department}
@@ -802,9 +805,19 @@ function ManageReimbursementsPage() {
 											Submitted By
 										</span>
 										<span className="col-span-2 text-gray-900">
-											{selectedReimbursement.submittedBy}
+											{selectedReimbursement.submittedByName || selectedReimbursement.submittedBy}
 										</span>
 									</div>
+									{selectedReimbursement.submittedByZelle && (
+										<div className="grid grid-cols-3 gap-2">
+											<span className="text-gray-500 font-medium">
+												Zelle Info
+											</span>
+											<span className="col-span-2 text-gray-900 font-medium bg-green-50 px-2 py-0.5 rounded text-green-800">
+												{selectedReimbursement.submittedByZelle}
+											</span>
+										</div>
+									)}
 									{selectedReimbursement.additionalInfo && (
 										<div className="grid grid-cols-3 gap-2">
 											<span className="text-gray-500 font-medium">
@@ -1417,7 +1430,7 @@ function ManageReimbursementsPage() {
 				<div className="relative flex-1 max-w-sm">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
-						placeholder="Search title, business purpose, submitter..."
+						placeholder="Search title, business purpose, submitter name, Zelle info..."
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						className="pl-9"
@@ -1527,8 +1540,13 @@ function ManageReimbursementsPage() {
 													{r.title}
 												</div>
 												<div className="text-xs text-muted-foreground">
-													{r.submittedBy}
+													{r.submittedByName || r.submittedBy}
 												</div>
+												{r.submittedByZelle && (
+													<div className="text-xs text-blue-600 mt-0.5">
+														Zelle: {r.submittedByZelle}
+													</div>
+												)}
 											</TableCell>
 											<TableCell>
 												<span className="font-mono font-semibold">
