@@ -2,7 +2,7 @@ import { action, internalAction } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 import { generateGoogleCalendarEventId } from "./googleCalendarIds";
-import { filterValidGoogleCalendarEvents } from "./googleCalendarEventUtils";
+import { normalizeGoogleCalendarEventsForSync } from "./googleCalendarEventUtils";
 
 interface CalendarEvent {
   id: string;
@@ -377,7 +377,7 @@ async function syncCalendar(
   eventsToUpsert: CalendarEvent[],
 ): Promise<void> {
   const existingEvents = await fetchGoogleCalendarEvents(accessToken, calendarId);
-  const validEventsToUpsert = filterValidGoogleCalendarEvents(calendarId, eventsToUpsert);
+  const validEventsToUpsert = normalizeGoogleCalendarEventsForSync(calendarId, eventsToUpsert);
   const validManagedEventIds = new Set(validEventsToUpsert.map((event) => event.id));
 
   for (const event of validEventsToUpsert) {

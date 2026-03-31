@@ -5,6 +5,8 @@ export interface SyncableGoogleCalendarEvent {
   end: { dateTime: string };
 }
 
+const DEFAULT_GOOGLE_EVENT_DURATION_MS = 3 * 60 * 60 * 1000;
+
 function parseGoogleCalendarDateTime(value: string): number | null {
   const timestamp = Date.parse(value);
   return Number.isFinite(timestamp) ? timestamp : null;
@@ -27,19 +29,35 @@ export function getGoogleCalendarEventTimeRangeError(
   return null;
 }
 
-export function filterValidGoogleCalendarEvents<T extends SyncableGoogleCalendarEvent>(
+export function normalizeGoogleCalendarEventsForSync<T extends SyncableGoogleCalendarEvent>(
   calendarId: string,
   events: T[],
 ): T[] {
-  return events.filter((event) => {
-    const error = getGoogleCalendarEventTimeRangeError(event);
-    if (!error) {
-      return true;
+  return events.flatMap((event) => {
+    const start = parseGoogleCalendarDateTime(event.start.dateTime);
+    if (start === null) {
+      console.error(
+        `Skipping Google Calendar sync for calendar ${calendarId}, event ${event.id} (${event.summary}): invalid start timestamp (${event.start.dateTime})`,
+      );
+      return [];
     }
 
-    console.error(
-      `Skipping Google Calendar sync for calendar ${calendarId}, event ${event.id} (${event.summary}): ${error}`,
+    const end = parseGoogleCalendarDateTime(event.end.dateTime);
+    if (end !== null && end > start) {
+      return [event];
+    }
+
+    const normalizedEvent = {
+      ...event,
+      end: {
+        ...event.end,
+        dateTime: new Date(start + DEFAULT_GOOGLE_EVENT_DURATION_MS).toISOString(),
+      },
+    };
+
+    console.warn(
+      `Normalizing Google Calendar event duration for calendar ${calendarId}, event ${event.id} (${event.summary}): end=${event.end.dateTime} -> ${normalizedEvent.end.dateTime}`,
     );
-    return false;
+    return [normalizedEvent];
   });
 }
