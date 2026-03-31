@@ -3,7 +3,7 @@ import { useHandleSignInCallback, useLogto } from "@logto/react";
 import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Loader2 } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { finalizeSignInAndGetRedirect } from "@/lib/auth/callbackFlow";
 
 export const Route = createFileRoute("/callback")({
@@ -22,12 +22,12 @@ function CallbackPage() {
   return <CallbackClient />;
 }
 
-function CallbackLoading() {
+function CallbackLoading({ label = "Signing you in..." }: { label?: string }) {
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <div className="text-center">
         <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Signing you in...</p>
+        <p className="text-muted-foreground">{label}</p>
       </div>
     </div>
   );
@@ -38,12 +38,15 @@ function CallbackClient() {
   const upsertUser = useMutation(api.users.upsertFromAuth);
   const navigate = useNavigate();
   const upsertStarted = useRef(false);
+  const [finalizeInProgress, setFinalizeInProgress] = useState(false);
 
   // Note: useHandleSignInCallback's callback is NOT async-aware (type is () => void).
-  // Use an internal async function and manage navigation ourselves.
+  // useHandleSignInCallback's isLoading becomes false before our async finalize + navigate
+  // finish — track finalizeInProgress so we never render an empty screen during that gap.
   const { isLoading } = useHandleSignInCallback(() => {
     if (upsertStarted.current) return;
     upsertStarted.current = true;
+    setFinalizeInProgress(true);
 
     void finalizeSignInAndGetRedirect({
       getIdTokenClaims: getIdTokenClaims as any,
@@ -64,18 +67,39 @@ function CallbackClient() {
       },
       upsertUser,
     })
-      .then((targetRoute) => {
-        navigate({ to: targetRoute });
+      .then(async (targetRoute) => {
+        await navigate({ to: targetRoute });
       })
       .catch((err: unknown) => {
-      console.error("Error finalizing sign-in:", err);
-      navigate({ to: "/signin" });
-    });
+        console.error("Error finalizing sign-in:", err);
+        return navigate({ to: "/signin" });
+      })
+      .finally(() => {
+        setFinalizeInProgress(false);
+      });
   });
 
-  if (isLoading) {
-    return <CallbackLoading />;
+  // Logto finished without invoking the handler (bad state / direct /callback hit)
+  useEffect(() => {
+    if (isLoading || finalizeInProgress) return;
+    if (upsertStarted.current) return;
+    const id = window.setTimeout(() => {
+      if (!upsertStarted.current) {
+        void navigate({ to: "/signin" });
+      }
+    }, 4000);
+    return () => window.clearTimeout(id);
+  }, [isLoading, finalizeInProgress, navigate]);
+
+  const label =
+    isLoading && !upsertStarted.current
+      ? "Signing you in..."
+      : "Finishing sign in...";
+
+  // Keep a visible shell until navigation unmounts us; never return null.
+  if (isLoading || finalizeInProgress || upsertStarted.current) {
+    return <CallbackLoading label={label} />;
   }
 
-  return null;
+  return <CallbackLoading label="Finishing sign in..." />;
 }

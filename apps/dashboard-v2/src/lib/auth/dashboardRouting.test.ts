@@ -24,6 +24,17 @@ describe("resolveDashboardRedirect", () => {
     ).toBe("/signin");
   });
 
+  it("redirects authenticated users with no Convex user record to signin", () => {
+    expect(
+      resolveDashboardRedirect({
+        isAuthResolved: true,
+        isAuthenticated: true,
+        user: null,
+        pathname: "/overview",
+      }),
+    ).toBe("/signin");
+  });
+
   it("redirects unsigned non-sponsor users to get-started", () => {
     expect(
       resolveDashboardRedirect({

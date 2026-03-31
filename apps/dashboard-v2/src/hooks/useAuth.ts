@@ -14,6 +14,7 @@ import { api } from "../../convex/_generated/api";
 import type { UserRole } from "@/types/roles";
 import { resolveAuthState, shouldAttemptProvisioning } from "@/lib/auth/authState";
 import { refreshSessionWithRetry } from "@/lib/auth/sessionRefresh";
+import { buildLogtoSignInOptions } from "@/lib/auth/signIn";
 
 export type { UserRole };
 export type AuthFailureReason =
@@ -506,7 +507,13 @@ function useAuthClient() {
     accessToken,
     convexSessionToken,
     getAuthHeaders,
-      signIn: () => signIn(resolvedRedirectUri),
+    signIn: () =>
+      signIn(
+        buildLogtoSignInOptions(
+          resolvedRedirectUri,
+          import.meta.env.VITE_LOGTO_DIRECT_SIGN_IN_TARGET,
+        ),
+      ),
     signOut: () => performSignOut(),
   }), [
     accessToken,

@@ -18,7 +18,7 @@ export function resolveDashboardRedirect({
 }: DashboardRedirectInput): "/signin" | "/get-started" | "/overview" | null {
   if (!isAuthResolved) return null;
   if (!isAuthenticated) return "/signin";
-  if (!user) return null;
+  if (!user) return "/signin";
   if (!user.signedUp && user.role !== "Sponsor" && pathname !== "/get-started") {
     return "/get-started";
   }

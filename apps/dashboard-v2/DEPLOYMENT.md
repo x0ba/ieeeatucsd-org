@@ -34,6 +34,7 @@ Set these in your `.env` file or pass as build args/runtime env vars:
 - `VITE_LOGTO_APP_SECRET`
 - `VITE_LOGTO_REDIRECT_URI`
 - `VITE_LOGTO_SCOPES`
+- `VITE_LOGTO_DIRECT_SIGN_IN_TARGET` (optional; defaults to `google`, set to `off` to disable direct social sign-in)
 - `REPLY_TO_EMAIL`
 - `RESEND_API_KEY`
 - `FROM_EMAIL`
