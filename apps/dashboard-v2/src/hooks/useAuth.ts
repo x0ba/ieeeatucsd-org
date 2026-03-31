@@ -210,7 +210,7 @@ function useAuthClient() {
       clearLocalAuthState();
       setAuthFailureReason(reason);
     },
-    [clearLocalAuthState],
+    [clearLocalAuthState, isAuthenticated, logtoId, accessToken, convexSessionToken],
   );
 
   const origin = window.location.origin;
@@ -227,6 +227,19 @@ function useAuthClient() {
     },
     [clearLocalAuthState, origin, signOut],
   );
+
+  const triggerSignIn = useCallback(async () => {
+    try {
+      await signIn(
+        buildLogtoSignInOptions(
+          resolvedRedirectUri,
+          import.meta.env.VITE_LOGTO_DIRECT_SIGN_IN_TARGET,
+        ),
+      );
+    } catch (err) {
+      console.error("Logto signIn failed:", err);
+    }
+  }, [resolvedRedirectUri, signIn]);
 
   // Fetch logtoId from ID token claims when authenticated
   // Only re-run when isAuthenticated changes
@@ -493,7 +506,7 @@ function useAuthClient() {
     if (!authFailureReason || signOutTriggeredRef.current) return;
     signOutTriggeredRef.current = true;
     performSignOut("session-init");
-  }, [authFailureReason, performSignOut]);
+  }, [authFailureReason, performSignOut, isAuthenticated]);
 
   return useMemo(() => ({
     isAuthenticated: isAuthenticated ?? false,
@@ -507,13 +520,9 @@ function useAuthClient() {
     accessToken,
     convexSessionToken,
     getAuthHeaders,
-    signIn: () =>
-      signIn(
-        buildLogtoSignInOptions(
-          resolvedRedirectUri,
-          import.meta.env.VITE_LOGTO_DIRECT_SIGN_IN_TARGET,
-        ),
-      ),
+    signIn: () => {
+      void triggerSignIn();
+    },
     signOut: () => performSignOut(),
   }), [
     accessToken,
@@ -528,7 +537,7 @@ function useAuthClient() {
     origin,
     resolvedRedirectUri,
     performSignOut,
-    signIn,
+    triggerSignIn,
     userRole,
     convexUser,
   ]);

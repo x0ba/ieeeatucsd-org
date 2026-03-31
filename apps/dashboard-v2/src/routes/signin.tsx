@@ -18,7 +18,7 @@ function SignInPage() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate({ to: "/overview" });
+      navigate({ to: "/overview", replace: true });
     }
   }, [isLoading, isAuthenticated, navigate]);
 

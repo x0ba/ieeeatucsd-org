@@ -21,7 +21,7 @@ export function DashboardLayout() {
 
   useEffect(() => {
     if (authFailureReason) {
-      navigate({ to: "/signin" });
+      navigate({ to: "/signin", replace: true });
       return;
     }
 
@@ -32,7 +32,7 @@ export function DashboardLayout() {
       pathname: location.pathname,
     });
     if (redirectPath) {
-      navigate({ to: redirectPath });
+      navigate({ to: redirectPath, replace: true });
     }
   }, [authFailureReason, isAuthResolved, isAuthenticated, user, location.pathname, navigate]);
 
