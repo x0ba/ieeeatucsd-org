@@ -173,6 +173,7 @@ export function EventRequestWizardModal({
 					formData.location.trim() &&
 					formData.startDate &&
 					formData.endDate &&
+					formData.endDate > formData.startDate &&
 					formData.eventCode.trim()
 				);
 			default:

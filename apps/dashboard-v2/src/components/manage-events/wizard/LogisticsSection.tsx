@@ -35,6 +35,10 @@ export function LogisticsSection({ data, onChange, onUploadRoomBooking }: Logist
   const [dateError, setDateError] = useState("");
   const [startTimeError, setStartTimeError] = useState("");
   const [endTimeError, setEndTimeError] = useState("");
+  const timeRangeError =
+    Number.isFinite(data.startDate) && Number.isFinite(data.endDate) && data.endDate <= data.startDate
+      ? "End time must be after start time."
+      : "";
 
   const handleDateBlur = () => {
     setDateError("");
@@ -147,6 +151,7 @@ export function LogisticsSection({ data, onChange, onUploadRoomBooking }: Logist
             {endTimeError && <p className="text-xs text-red-500">{endTimeError}</p>}
           </div>
         </div>
+        {timeRangeError && <p className="text-xs text-red-500">{timeRangeError}</p>}
 
         <div className="space-y-2">
           <Label htmlFor="eventCode">

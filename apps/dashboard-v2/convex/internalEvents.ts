@@ -7,6 +7,7 @@ import {
   buildGoogleCalendarSubscribeUrl,
   generateGoogleCalendarEventId,
 } from "./googleCalendarIds";
+import { assertValidEventTimeRange } from "./eventTimeRange";
 
 export const list = query({
   args: { logtoId: v.string(), authToken: v.string() },
@@ -68,6 +69,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireOfficerAccess(ctx, args.logtoId, args.authToken);
+    assertValidEventTimeRange(args.startDate, args.endDate);
     const id = await ctx.db.insert("internalEvents", {
       name: args.name,
       description: args.description,
@@ -105,6 +107,15 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     await requireOfficerAccess(ctx, args.logtoId, args.authToken);
+    const event = await ctx.db.get(args.id);
+    if (!event) throw new Error("Event not found");
+
+    const nextStartDate = args.startDate ?? event.startDate;
+    const nextEndDate = args.endDate ?? event.endDate;
+    if (args.startDate !== undefined || args.endDate !== undefined) {
+      assertValidEventTimeRange(nextStartDate, nextEndDate);
+    }
+
     const { logtoId, authToken, id, ...updates } = args;
     await ctx.db.patch(id, {
       ...updates,

@@ -13,6 +13,7 @@ import {
   buildGoogleCalendarSubscribeUrl,
   generateGoogleCalendarEventId,
 } from "./googleCalendarIds";
+import { assertValidEventTimeRange } from "./eventTimeRange";
 
 function getLegacyAttendeeIds(event: Record<string, unknown>): string[] {
   const legacy = (event as { attendees?: unknown }).attendees;
@@ -431,6 +432,8 @@ export const create = mutation({
     const { isDraft, eventCode, ...data } = stripAuthFields(args);
     const normalizedEventCode = normalizeEventCode(eventCode);
 
+    assertValidEventTimeRange(data.startDate, data.endDate);
+
     return await ctx.db.insert("events", {
       ...data,
       ...(normalizedEventCode ? { eventCode: normalizedEventCode } : {}),
@@ -541,6 +544,16 @@ export const update = mutation({
 
     const { id, ...updates } = args;
     const cleanUpdates = removeUndefinedFields(stripAuthFields(updates));
+
+    const nextStartDate = cleanUpdates.startDate ?? event.startDate;
+    const nextEndDate = cleanUpdates.endDate ?? event.endDate;
+    if (
+      cleanUpdates.startDate !== undefined ||
+      cleanUpdates.endDate !== undefined ||
+      cleanUpdates.published === true
+    ) {
+      assertValidEventTimeRange(nextStartDate, nextEndDate);
+    }
 
     if (typeof cleanUpdates.eventCode === "string") {
       const normalized = normalizeEventCode(cleanUpdates.eventCode);

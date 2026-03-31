@@ -2,6 +2,7 @@ import { action, internalAction } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 import { generateGoogleCalendarEventId } from "./googleCalendarIds";
+import { filterValidGoogleCalendarEvents } from "./googleCalendarEventUtils";
 
 interface CalendarEvent {
   id: string;
@@ -374,16 +375,17 @@ async function syncCalendar(
   accessToken: string,
   calendarId: string,
   eventsToUpsert: CalendarEvent[],
-  managedEventIds: Set<string>,
 ): Promise<void> {
   const existingEvents = await fetchGoogleCalendarEvents(accessToken, calendarId);
+  const validEventsToUpsert = filterValidGoogleCalendarEvents(calendarId, eventsToUpsert);
+  const validManagedEventIds = new Set(validEventsToUpsert.map((event) => event.id));
 
-  for (const event of eventsToUpsert) {
+  for (const event of validEventsToUpsert) {
     await createOrUpdateGoogleEvent(accessToken, calendarId, event);
   }
 
   for (const gEvent of existingEvents) {
-    if (gEvent.id?.startsWith("ieee") && !managedEventIds.has(gEvent.id)) {
+    if (gEvent.id?.startsWith("ieee") && !validManagedEventIds.has(gEvent.id)) {
       await deleteGoogleEvent(accessToken, calendarId, gEvent.id);
     }
   }
@@ -401,19 +403,11 @@ export const syncToGoogleCalendar = action({
     const publishedCalendarEvents = publishedEvents.map(toPublishedCalendarEvent);
     const internalCalendarEvents = internalEvents.map(toInternalCalendarEvent);
 
-    const privateManagedIds = new Set<string>([
-      ...publishedCalendarEvents.map((event) => event.id),
-      ...internalCalendarEvents.map((event) => event.id),
+    await syncCalendar(accessToken, config.privateCalendarId, [
+      ...publishedCalendarEvents,
+      ...internalCalendarEvents,
     ]);
-    const publicManagedIds = new Set<string>(publishedCalendarEvents.map((event) => event.id));
-
-    await syncCalendar(
-      accessToken,
-      config.privateCalendarId,
-      [...publishedCalendarEvents, ...internalCalendarEvents],
-      privateManagedIds,
-    );
-    await syncCalendar(accessToken, config.publicCalendarId, publishedCalendarEvents, publicManagedIds);
+    await syncCalendar(accessToken, config.publicCalendarId, publishedCalendarEvents);
 
     return {
       publishedCount: publishedEvents.length,
@@ -455,19 +449,11 @@ export const scheduledSync = internalAction({
     const publishedCalendarEvents = publishedEvents.map(toPublishedCalendarEvent);
     const internalCalendarEvents = internalEvents.map(toInternalCalendarEvent);
 
-    const privateManagedIds = new Set<string>([
-      ...publishedCalendarEvents.map((event) => event.id),
-      ...internalCalendarEvents.map((event) => event.id),
+    await syncCalendar(accessToken, config.privateCalendarId, [
+      ...publishedCalendarEvents,
+      ...internalCalendarEvents,
     ]);
-    const publicManagedIds = new Set<string>(publishedCalendarEvents.map((event) => event.id));
-
-    await syncCalendar(
-      accessToken,
-      config.privateCalendarId,
-      [...publishedCalendarEvents, ...internalCalendarEvents],
-      privateManagedIds,
-    );
-    await syncCalendar(accessToken, config.publicCalendarId, publishedCalendarEvents, publicManagedIds);
+    await syncCalendar(accessToken, config.publicCalendarId, publishedCalendarEvents);
 
     console.log(
       `Synced ${publishedEvents.length} published events to private and public calendars, plus ${internalEvents.length} internal events to private calendar`,
