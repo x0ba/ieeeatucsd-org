@@ -5,6 +5,12 @@ import { api } from "@convex/_generated/api";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { finalizeSignInAndGetRedirect } from "@/lib/auth/callbackFlow";
+import {
+  createAuthRequestId,
+  errorMessage,
+  logAuthEvent,
+} from "@/lib/auth/logging";
+import { isNativeAuthBridgeMode } from "@/lib/auth/mode";
 
 export const Route = createFileRoute("/callback")({
   component: CallbackPage,
@@ -34,7 +40,7 @@ function CallbackLoading({ label = "Signing you in..." }: { label?: string }) {
 }
 
 function CallbackClient() {
-  const { getIdTokenClaims, getAccessToken } = useLogto();
+  const { getIdTokenClaims, getAccessToken, getIdToken, clearAllTokens } = useLogto();
   const upsertUser = useMutation(api.users.upsertFromAuth);
   const navigate = useNavigate();
   const upsertStarted = useRef(false);
@@ -47,16 +53,27 @@ function CallbackClient() {
     if (upsertStarted.current) return;
     upsertStarted.current = true;
     setFinalizeInProgress(true);
+    const requestId = createAuthRequestId("callback");
+    logAuthEvent("callback_finalize_started", { requestId });
 
     void finalizeSignInAndGetRedirect({
       getIdTokenClaims: getIdTokenClaims as any,
       getAccessToken: getAccessToken as any,
       createSession: async (accessToken: string) => {
+        if (isNativeAuthBridgeMode()) {
+          const idToken = await getIdToken?.();
+          if (!idToken) {
+            throw new Error("Missing ID token for native Convex auth");
+          }
+          return { sessionToken: idToken };
+        }
+
         const sessionResponse = await fetch("/api/auth/convex-session", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
+            "X-Auth-Request-Id": requestId,
           },
           body: JSON.stringify({}),
         });
@@ -68,10 +85,14 @@ function CallbackClient() {
       upsertUser,
     })
       .then(async (targetRoute) => {
+        logAuthEvent("callback_finalize_succeeded", { requestId, targetRoute });
         await navigate({ to: targetRoute });
       })
       .catch((err: unknown) => {
-        console.error("Error finalizing sign-in:", err);
+        logAuthEvent("callback_finalize_failed", {
+          requestId,
+          error: errorMessage(err),
+        });
         return navigate({ to: "/signin" });
       })
       .finally(() => {
@@ -85,11 +106,22 @@ function CallbackClient() {
     if (upsertStarted.current) return;
     const id = window.setTimeout(() => {
       if (!upsertStarted.current) {
-        void navigate({ to: "/signin" });
+        logAuthEvent("callback_stale_detected");
+        void (async () => {
+          try {
+            await clearAllTokens?.();
+          } catch (error) {
+            logAuthEvent("callback_stale_clear_tokens_failed", {
+              error: errorMessage(error),
+            });
+          } finally {
+            window.location.replace("/signin?reason=stale-callback");
+          }
+        })();
       }
     }, 4000);
     return () => window.clearTimeout(id);
-  }, [isLoading, finalizeInProgress, navigate]);
+  }, [clearAllTokens, finalizeInProgress, isLoading, navigate]);
 
   const label =
     isLoading && !upsertStarted.current

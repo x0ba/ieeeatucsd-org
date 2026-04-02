@@ -3,13 +3,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo } from "react";
 import { Loader2 } from "lucide-react";
+import { logAuthEvent } from "@/lib/auth/logging";
 
 export const Route = createFileRoute("/signin")({
   component: SignInPage,
 });
 
 function SignInPage() {
-  const { signIn, isAuthenticated, isLoading } = useAuth();
+  const { signIn, isAuthenticated, isLoading, authFailureReason } = useAuth();
   const navigate = useNavigate();
   const reason = useMemo(() => {
     if (typeof window === "undefined") return null;
@@ -17,10 +18,22 @@ function SignInPage() {
   }, []);
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (!isLoading && isAuthenticated && !authFailureReason) {
       navigate({ to: "/overview", replace: true });
     }
-  }, [isLoading, isAuthenticated, navigate]);
+  }, [authFailureReason, isLoading, isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (reason !== "stale-callback" && reason !== "session-init") return;
+
+    const storageKey = `auth-retry:${reason}`;
+    if (window.sessionStorage.getItem(storageKey)) return;
+
+    window.sessionStorage.setItem(storageKey, "1");
+    logAuthEvent("signin_retry_triggered", { reason });
+    signIn();
+  }, [reason, signIn]);
 
   const handleSignIn = () => {
     signIn();
@@ -51,6 +64,11 @@ function SignInPage() {
             {reason === "session-init" && (
               <p className="mt-3 text-sm text-amber-700">
                 Session initialization failed. Please sign in again.
+              </p>
+            )}
+            {reason === "stale-callback" && (
+              <p className="mt-3 text-sm text-amber-700">
+                Your previous sign-in callback expired. Retrying sign-in now.
               </p>
             )}
           </div>

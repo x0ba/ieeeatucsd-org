@@ -29,9 +29,11 @@ Set these in your `.env` file or pass as build args/runtime env vars:
 
 - `CONVEX_SELF_HOSTED_URL`
 - `CONVEX_SELF_HOSTED_ADMIN_KEY`
+- `AUTH_BRIDGE_MODE` (`legacy` for rollback, `native` for Convex-native auth)
+- `VITE_AUTH_BRIDGE_MODE` (must match `AUTH_BRIDGE_MODE` for client/server consistency)
 - `VITE_LOGTO_ENDPOINT`
+- `LOGTO_APP_ID` (required by Convex self-hosted auth config)
 - `VITE_LOGTO_APP_ID`
-- `VITE_LOGTO_APP_SECRET`
 - `VITE_LOGTO_REDIRECT_URI`
 - `VITE_LOGTO_SCOPES`
 - `VITE_LOGTO_DIRECT_SIGN_IN_TARGET` (optional; defaults to `google`, set to `off` to disable direct social sign-in)
@@ -50,6 +52,16 @@ Set these in your `.env` file or pass as build args/runtime env vars:
 - `ANTHROPIC_API_KEY` (optional, SDK-required placeholder if not set)
 - `VITE_CONVEX_URL`
 - `VITE_CONVEX_SITE_URL`
+
+### Self-Hosted Convex Auth
+
+The repo now includes `convex/auth.config.ts` for native Convex authentication against self-hosted Logto.
+
+- Set `LOGTO_ENDPOINT` to your Logto issuer URL.
+- Set `LOGTO_APP_ID` to the Logto application ID used by the dashboard.
+- Set both `AUTH_BRIDGE_MODE=native` and `VITE_AUTH_BRIDGE_MODE=native` in staging to enable native Convex auth.
+- Keep `AUTH_BRIDGE_MODE=legacy` as the rollback path while validating staging.
+- For self-hosted Convex manual setup, apply environment variables directly in the Convex deployment since the CLI flow is limited.
 
 ## Docker Deployment
 

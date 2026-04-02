@@ -1,9 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 describe("convex session token signing", () => {
 	beforeEach(() => {
 		process.env.CONVEX_SESSION_SECRET = "unit-test-secret";
-		vi.resetModules();
 	});
 
 	it("accepts a valid token", async () => {

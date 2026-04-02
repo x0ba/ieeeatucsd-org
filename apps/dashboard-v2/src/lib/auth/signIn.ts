@@ -1,4 +1,10 @@
-import type { SignInOptions } from "@logto/browser";
+export type SignInOptions = {
+	redirectUri: string;
+	directSignIn?: {
+		method: "social";
+		target: string;
+	};
+};
 
 const DEFAULT_DIRECT_SIGN_IN_TARGET = "google";
 const DISABLED_DIRECT_SIGN_IN_TARGETS = new Set(["off", "false", "none"]);

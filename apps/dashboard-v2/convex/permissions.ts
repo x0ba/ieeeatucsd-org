@@ -19,6 +19,8 @@ type SessionPayload = {
   v: number;
 };
 
+type AuthContext = QueryCtx | MutationCtx;
+
 let cachedKey:
   | {
       secret: string;
@@ -94,29 +96,47 @@ async function verifySessionToken(authToken: string): Promise<SessionPayload> {
   return payload;
 }
 
+async function getNativeIdentity(ctx: AuthContext) {
+  try {
+    return await ctx.auth.getUserIdentity();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Get the current user document from the database using their Logto ID.
  * Since Convex is self-hosted, ctx.auth is not available.
  * The logtoId is passed explicitly from the client and must match auth token subject.
  */
 export async function getCurrentUser(
-  ctx: QueryCtx | MutationCtx,
-  logtoId: string,
-  authToken: string,
+  ctx: AuthContext,
+  logtoId?: string,
+  authToken?: string,
 ) {
-  if (!logtoId) return null;
-  if (!authToken) {
-    throw new Error("Missing auth token");
-  }
+  const nativeIdentity = await getNativeIdentity(ctx);
+  const resolvedLogtoId = nativeIdentity?.subject ?? logtoId;
 
-  const claims = await verifySessionToken(authToken);
-  if (claims.sub !== logtoId) {
-    throw new Error("Auth token subject mismatch");
+  if (!resolvedLogtoId) return null;
+
+  if (nativeIdentity?.subject) {
+    if (logtoId && nativeIdentity.subject !== logtoId) {
+      throw new Error("Auth token subject mismatch");
+    }
+  } else {
+    if (!authToken) {
+      throw new Error("Missing auth token");
+    }
+
+    const claims = await verifySessionToken(authToken);
+    if (claims.sub !== resolvedLogtoId) {
+      throw new Error("Auth token subject mismatch");
+    }
   }
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_logtoId", (q) => q.eq("logtoId", logtoId))
+    .withIndex("by_logtoId", (q) => q.eq("logtoId", resolvedLogtoId))
     .first();
 
   return user;
@@ -126,9 +146,9 @@ export async function getCurrentUser(
  * Require the current user to exist in the database.
  */
 export async function requireCurrentUser(
-  ctx: QueryCtx | MutationCtx,
-  logtoId: string,
-  authToken: string,
+  ctx: AuthContext,
+  logtoId?: string,
+  authToken?: string,
 ) {
   const user = await getCurrentUser(ctx, logtoId, authToken);
   if (!user) {
@@ -201,9 +221,9 @@ export function canAccessResumeDatabase(
  * Require the current user to have at least officer access.
  */
 export async function requireOfficerAccess(
-  ctx: QueryCtx | MutationCtx,
-  logtoId: string,
-  authToken: string,
+  ctx: AuthContext,
+  logtoId?: string,
+  authToken?: string,
 ) {
   const user = await requireCurrentUser(ctx, logtoId, authToken);
   if (!hasOfficerAccess(user.role)) {
@@ -216,9 +236,9 @@ export async function requireOfficerAccess(
  * Require the current user to have admin access (Admin or Executive Officer).
  */
 export async function requireAdminAccess(
-  ctx: QueryCtx | MutationCtx,
-  logtoId: string,
-  authToken: string,
+  ctx: AuthContext,
+  logtoId?: string,
+  authToken?: string,
 ) {
   const user = await requireCurrentUser(ctx, logtoId, authToken);
   if (!hasAdminAccess(user.role)) {
@@ -231,9 +251,9 @@ export async function requireAdminAccess(
  * Require the current user to be an Administrator.
  */
 export async function requireAdmin(
-  ctx: QueryCtx | MutationCtx,
-  logtoId: string,
-  authToken: string,
+  ctx: AuthContext,
+  logtoId?: string,
+  authToken?: string,
 ) {
   const user = await requireCurrentUser(ctx, logtoId, authToken);
   if (!isAdmin(user.role)) {
@@ -246,9 +266,9 @@ export async function requireAdmin(
  * Require the current user to be a Sponsor.
  */
 export async function requireSponsor(
-  ctx: QueryCtx | MutationCtx,
-  logtoId: string,
-  authToken: string,
+  ctx: AuthContext,
+  logtoId?: string,
+  authToken?: string,
 ) {
   const user = await requireCurrentUser(ctx, logtoId, authToken);
   if (!isSponsor(user.role) && !isAdmin(user.role)) {
@@ -261,7 +281,7 @@ export async function requireSponsor(
  * Check if the current user owns a resource or has admin access.
  */
 export async function requireOwnerOrAdmin(
-  ctx: QueryCtx | MutationCtx,
+  ctx: AuthContext,
   logtoId: string,
   authToken: string,
   ownerId: string,

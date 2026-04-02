@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireApiAuthMock = vi.fn();
 const createConvexSessionTokenMock = vi.fn();
+const isNativeAuthBridgeModeMock = vi.fn(() => false);
 
 vi.mock("@/server/auth", () => ({
   requireApiAuth: requireApiAuthMock,
@@ -11,9 +12,16 @@ vi.mock("@/server/convex-session", () => ({
   createConvexSessionToken: createConvexSessionTokenMock,
 }));
 
+vi.mock("@/lib/auth/mode", () => ({
+  isNativeAuthBridgeMode: isNativeAuthBridgeModeMock,
+  getAuthBridgeMode: () =>
+    isNativeAuthBridgeModeMock() ? "native" : "legacy",
+}));
+
 describe("POST /api/auth/convex-session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isNativeAuthBridgeModeMock.mockReturnValue(false);
   });
 
   it("mints a session for a valid but unprovisioned user", async () => {
@@ -71,6 +79,21 @@ describe("POST /api/auth/convex-session", () => {
     });
 
     expect(response.status).toBe(401);
+    expect(createConvexSessionTokenMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects legacy minting in native auth mode", async () => {
+    isNativeAuthBridgeModeMock.mockReturnValue(true);
+
+    const { handleConvexSession } = await import("./convex-session");
+    const response = await handleConvexSession({
+      request: new Request("http://localhost/api/auth/convex-session", {
+        method: "POST",
+      }),
+    });
+
+    expect(response.status).toBe(409);
+    expect(requireApiAuthMock).not.toHaveBeenCalled();
     expect(createConvexSessionTokenMock).not.toHaveBeenCalled();
   });
 });
