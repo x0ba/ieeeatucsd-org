@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthedMutation } from "@/hooks/useAuthedConvex";
 import { api } from "@convex/_generated/api";
 import { format } from "date-fns";
@@ -92,6 +92,17 @@ function getDisplayFileName(fileRef: string, fallback: string) {
 	}
 }
 
+function areResolvedUrlMapsEqual(
+	current: Record<string, string>,
+	next: Record<string, string>,
+) {
+	const currentKeys = Object.keys(current);
+	const nextKeys = Object.keys(next);
+	if (currentKeys.length !== nextKeys.length) return false;
+
+	return currentKeys.every((key) => current[key] === next[key]);
+}
+
 function formatInvoiceData(event: EventRequest, invoiceIndex?: number): string {
 	if (!event.invoices || event.invoices.length === 0) {
 		return "No invoice data available";
@@ -161,6 +172,12 @@ export function EventViewModal({
 	const [resolvedStorageUrls, setResolvedStorageUrls] = useState<
 		Record<string, string>
 	>({});
+	const getStorageUrlRef = useRef(getStorageUrl);
+	const resolvableFileRefsRef = useRef<string[]>([]);
+
+	useEffect(() => {
+		getStorageUrlRef.current = getStorageUrl;
+	}, [getStorageUrl]);
 
 	useEffect(() => {
 		if (!event) return;
@@ -183,21 +200,33 @@ export function EventViewModal({
 		);
 	}, [event]);
 
+	const resolvableFileRefs = useMemo(
+		() => allFileRefs.filter(isResolvableStorageId).sort(),
+		[allFileRefs],
+	);
+	const resolvableFileRefsKey = resolvableFileRefs.join("|");
+
 	useEffect(() => {
-		if (!event) return;
+		resolvableFileRefsRef.current = resolvableFileRefs;
+	}, [resolvableFileRefs]);
+
+	useEffect(() => {
+		if (!event || !isOpen) return;
 		let cancelled = false;
 
 		const resolveRefs = async () => {
-			const refsToResolve = allFileRefs.filter(isResolvableStorageId);
-			if (refsToResolve.length === 0) {
-				setResolvedStorageUrls({});
+			const currentResolvableFileRefs = resolvableFileRefsRef.current;
+			if (currentResolvableFileRefs.length === 0) {
+				setResolvedStorageUrls((current) =>
+					Object.keys(current).length === 0 ? current : {},
+				);
 				return;
 			}
 
 			const resolvedEntries = await Promise.all(
-				refsToResolve.map(async (ref) => {
+				currentResolvableFileRefs.map(async (ref) => {
 					try {
-						const url = await getStorageUrl({ storageId: ref });
+						const url = await getStorageUrlRef.current({ storageId: ref });
 						return [ref, url || ""] as const;
 					} catch {
 						return [ref, ""] as const;
@@ -209,14 +238,16 @@ export function EventViewModal({
 			const nextMap = Object.fromEntries(
 				resolvedEntries.filter(([, value]) => Boolean(value)),
 			) as Record<string, string>;
-			setResolvedStorageUrls(nextMap);
+			setResolvedStorageUrls((current) =>
+				areResolvedUrlMapsEqual(current, nextMap) ? current : nextMap,
+			);
 		};
 
 		resolveRefs();
 		return () => {
 			cancelled = true;
 		};
-	}, [allFileRefs, event, getStorageUrl]);
+	}, [event?._id, isOpen, resolvableFileRefsKey]);
 
 	if (!event) return null;
 

@@ -47,6 +47,7 @@ export function AppSidebar({ currentPath = "" }: AppSidebarProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(navigationCategories.map((cat) => cat.title)),
   );
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   const isActiveRoute = (href: string): boolean => {
     if (currentPath === "/" || currentPath === "") {
@@ -162,7 +163,7 @@ export function AppSidebar({ currentPath = "" }: AppSidebarProps) {
       <SidebarFooter className="border-t p-2">
         <div className="flex flex-col group-data-[collapsible=icon]:flex-col gap-1">
           <div className="flex items-center gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1">
-            <DropdownMenu>
+            <DropdownMenu open={accountMenuOpen} onOpenChange={setAccountMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -179,41 +180,43 @@ export function AppSidebar({ currentPath = "" }: AppSidebarProps) {
                   </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex items-center gap-2">
-                    <Avatar size="sm">
-                      <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
-                      <AvatarFallback>
-                        <UserAvatarFallback name={user?.name || "User"} size="sm" className="h-6 w-6 text-xs" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{user?.name || "User"}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {user?.email}
-                      </p>
+              {accountMenuOpen && (
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex items-center gap-2">
+                      <Avatar size="sm">
+                        <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
+                        <AvatarFallback>
+                          <UserAvatarFallback name={user?.name || "User"} size="sm" className="h-6 w-6 text-xs" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold">{user?.name || "User"}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {user?.email}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link
-                    to="/settings"
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to="/settings"
+                      className="flex items-center gap-2"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => signOut()}
                     className="flex items-center gap-2"
                   >
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => signOut()}
-                  className="flex items-center gap-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              )}
             </DropdownMenu>
 
             {/* AI Chat - Only for officers */}

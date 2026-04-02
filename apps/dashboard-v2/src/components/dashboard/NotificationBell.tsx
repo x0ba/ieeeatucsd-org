@@ -42,85 +42,87 @@ export function NotificationBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h4 className="text-sm font-semibold">Notifications</h4>
-          {count > 0 && logtoId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => markAllAsRead({ logtoId })}
-            >
-              <CheckCheck className="mr-1 h-3 w-3" />
-              Mark all read
-            </Button>
-          )}
-        </div>
-        <ScrollArea className="max-h-80">
-          {!notifications || notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Bell className="mb-2 h-8 w-8 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">No notifications</p>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {notifications.map((notification) => (
-                <div
-                  key={notification._id}
-                  className={`group flex gap-3 px-4 py-3 transition-colors ${
-                    !notification.read ? "bg-accent/50" : ""
-                  }`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium leading-tight">
-                      {notification.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                      {notification.message}
-                    </p>
-                    <p className="mt-1 text-[10px] text-muted-foreground/70">
-                      {formatDistanceToNow(
-                        notification.createdAt ?? notification._creationTime,
-                        { addSuffix: true },
+      {open && (
+        <PopoverContent align="end" className="w-80 p-0">
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <h4 className="text-sm font-semibold">Notifications</h4>
+            {count > 0 && logtoId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => markAllAsRead({ logtoId })}
+              >
+                <CheckCheck className="mr-1 h-3 w-3" />
+                Mark all read
+              </Button>
+            )}
+          </div>
+          <ScrollArea className="max-h-80">
+            {!notifications || notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Bell className="mb-2 h-8 w-8 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">No notifications</p>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {notifications.map((notification) => (
+                  <div
+                    key={notification._id}
+                    className={`group flex gap-3 px-4 py-3 transition-colors ${
+                      !notification.read ? "bg-accent/50" : ""
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium leading-tight">
+                        {notification.title}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                        {notification.message}
+                      </p>
+                      <p className="mt-1 text-[10px] text-muted-foreground/70">
+                        {formatDistanceToNow(
+                          notification.createdAt ?? notification._creationTime,
+                          { addSuffix: true },
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {!notification.read && logtoId && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() =>
+                            markAsRead({ logtoId, id: notification._id })
+                          }
+                        >
+                          <Check className="h-3 w-3" />
+                        </Button>
                       )}
-                    </p>
+                      {logtoId && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          onClick={() =>
+                            removeNotification({
+                              logtoId,
+                              id: notification._id,
+                            })
+                          }
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {!notification.read && logtoId && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() =>
-                          markAsRead({ logtoId, id: notification._id })
-                        }
-                      >
-                        <Check className="h-3 w-3" />
-                      </Button>
-                    )}
-                    {logtoId && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                        onClick={() =>
-                          removeNotification({
-                            logtoId,
-                            id: notification._id,
-                          })
-                        }
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
-      </PopoverContent>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </PopoverContent>
+      )}
     </Popover>
   );
 }
