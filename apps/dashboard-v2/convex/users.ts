@@ -44,6 +44,46 @@ function toPercentChange(currentValue: number, previousValue: number) {
   return ((currentValue - previousValue) / previousValue) * 100;
 }
 
+export function removeUndefinedFields<T extends Record<string, unknown>>(data: T) {
+  const cleanedData: Partial<T> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      cleanedData[key as keyof T] = value as T[keyof T];
+    }
+  }
+  return cleanedData;
+}
+
+// Internal helper for profile mutations that receive auth context from the client.
+export function buildSelfProfilePatch<
+  T extends {
+    logtoId: unknown;
+    authToken: unknown;
+    syncPublicProfile?: unknown;
+  } & Record<string, unknown>,
+>(args: T) {
+  const { logtoId, authToken, syncPublicProfile, ...rest } = args;
+  void logtoId;
+  void authToken;
+  void syncPublicProfile;
+  return removeUndefinedFields(rest);
+}
+
+// Internal helper for admin profile mutations that receive auth context from the client.
+export function buildAdminProfilePatch<
+  T extends {
+    logtoId: unknown;
+    authToken: unknown;
+    userId: unknown;
+  } & Record<string, unknown>,
+>(args: T) {
+  const { logtoId, authToken, userId, ...rest } = args;
+  void logtoId;
+  void authToken;
+  void userId;
+  return removeUndefinedFields(rest);
+}
+
 export const getMe = query({
   args: { logtoId: v.string(), authToken: v.string() },
   handler: async (ctx, args) => {
@@ -331,17 +371,12 @@ export const updateProfile = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx, args.logtoId, args.authToken);
-    const updateData: Record<string, unknown> = {
+    const { syncPublicProfile = true } = args;
+    const sanitizedUpdates = buildSelfProfilePatch(args);
+    const updateData = {
+      ...sanitizedUpdates,
       lastUpdated: Date.now(),
     };
-
-    const { syncPublicProfile = true, ...profileArgs } = args;
-
-    for (const [key, value] of Object.entries(profileArgs)) {
-      if (key !== "logtoId" && value !== undefined) {
-        updateData[key] = value;
-      }
-    }
 
     await ctx.db.patch(user._id, updateData);
 
@@ -545,16 +580,12 @@ export const updateProfileForAdmin = mutation({
     const targetUser = await ctx.db.get(args.userId);
     if (!targetUser) throw new Error("Target user not found");
 
-    const updateData: Record<string, unknown> = {
+    const sanitizedUpdates = buildAdminProfilePatch(args);
+    const updateData = {
+      ...sanitizedUpdates,
       lastUpdated: Date.now(),
       lastUpdatedBy: admin.logtoId,
     };
-
-    for (const [key, value] of Object.entries(args)) {
-      if (key !== "logtoId" && key !== "userId" && value !== undefined) {
-        updateData[key] = value;
-      }
-    }
 
     await ctx.db.patch(args.userId, updateData);
 
