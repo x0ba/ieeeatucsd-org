@@ -1,10 +1,7 @@
 import { ConvexHttpClient } from "convex/browser";
 import type { FunctionReference } from "convex/server";
 import { query, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import {
-	createConvexToolsMcpServer,
-	summarizeToolResult,
-} from "./ai-tools";
+import { createConvexToolsMcpServer, summarizeToolResult } from "./ai-tools";
 
 type ChatMessage = { role: string; content: string };
 
@@ -67,7 +64,12 @@ export type ChatMeta = {
 type BuiltContext = {
 	config: ReturnType<typeof getAgentConfig>;
 	steps: string[];
-	conversationMessages: Array<{ role: string; content: string; tool_call_id?: string; tool_calls?: unknown[] }>;
+	conversationMessages: Array<{
+		role: string;
+		content: string;
+		tool_call_id?: string;
+		tool_calls?: unknown[];
+	}>;
 	meta: ChatMeta;
 };
 
@@ -76,12 +78,29 @@ type SearchBatch = {
 	result: ConvexSearchResult;
 };
 
+type AssistantContentBlock = {
+	type?: string;
+	text?: string;
+	id?: string;
+	name?: string;
+	input?: Record<string, unknown>;
+};
+
 export type AIStreamEvent =
 	| { type: "status"; message: string }
 	| { type: "reasoning"; content: string }
 	| { type: "token"; content: string }
-	| { type: "tool_start"; tools: Array<{ id: string; name: string; args: Record<string, unknown> }> }
-	| { type: "tool_result"; id: string; name: string; summary: string; durationMs: number }
+	| {
+			type: "tool_start";
+			tools: Array<{ id: string; name: string; args: Record<string, unknown> }>;
+	  }
+	| {
+			type: "tool_result";
+			id: string;
+			name: string;
+			summary: string;
+			durationMs: number;
+	  }
 	| { type: "done"; reply: string; steps: string[]; meta: ChatMeta }
 	| { type: "error"; error: string };
 
@@ -172,8 +191,7 @@ function getConvexUrl() {
 
 export function resolveAgentConfig(env: NodeJS.ProcessEnv) {
 	const openRouterApiKey = env.OPENROUTER_API_KEY;
-	const anthropicAuthToken =
-		env.ANTHROPIC_AUTH_TOKEN || openRouterApiKey;
+	const anthropicAuthToken = env.ANTHROPIC_AUTH_TOKEN || openRouterApiKey;
 	if (!anthropicAuthToken) {
 		throw new Error("Missing ANTHROPIC_AUTH_TOKEN or OPENROUTER_API_KEY");
 	}
@@ -181,8 +199,7 @@ export function resolveAgentConfig(env: NodeJS.ProcessEnv) {
 	return {
 		model: "x-ai/grok-4.1-fast",
 		anthropicBaseUrl:
-			env.ANTHROPIC_BASE_URL ||
-			"https://openrouter.ai/api/anthropic",
+			env.ANTHROPIC_BASE_URL || "https://openrouter.ai/api/anthropic",
 		anthropicAuthToken,
 		anthropicApiKey: env.ANTHROPIC_API_KEY || "openrouter",
 	};
@@ -676,16 +693,22 @@ export async function chatWithAI(params: {
 function buildAgentPrompt(
 	conversationMessages: Array<{ role: string; content: string }>,
 ) {
-	const systemMessages = conversationMessages.filter((m) => m.role === "system");
-	const nonSystemMessages = conversationMessages.filter((m) => m.role !== "system");
-	const latestUser = nonSystemMessages[nonSystemMessages.length - 1]?.content || "";
+	const systemMessages = conversationMessages.filter(
+		(m) => m.role === "system",
+	);
+	const nonSystemMessages = conversationMessages.filter(
+		(m) => m.role !== "system",
+	);
+	const latestUser =
+		nonSystemMessages[nonSystemMessages.length - 1]?.content || "";
 	const history = nonSystemMessages.slice(0, -1);
 
 	const historyText =
 		history.length > 0
 			? history
-					.map((message) =>
-						`${message.role === "assistant" ? "Assistant" : "User"}: ${message.content}`,
+					.map(
+						(message) =>
+							`${message.role === "assistant" ? "Assistant" : "User"}: ${message.content}`,
 					)
 					.join("\n\n")
 			: "No previous conversation history.";
@@ -720,16 +743,18 @@ function extractStreamReasoning(message: SDKMessage) {
 
 function extractAssistantText(message: SDKMessage) {
 	if (message.type !== "assistant") return "";
-	const content = message.message.content || [];
+	const content = (message.message.content || []) as AssistantContentBlock[];
 	const textBlocks = content
-		.filter((block): block is { type: "text"; text: string } => block.type === "text")
+		.filter(
+			(block): block is { type: "text"; text: string } => block.type === "text",
+		)
 		.map((block) => block.text);
 	return textBlocks.join("");
 }
 
 function extractAssistantToolStarts(message: SDKMessage) {
 	if (message.type !== "assistant") return [];
-	const content = message.message.content || [];
+	const content = (message.message.content || []) as AssistantContentBlock[];
 	return content
 		.filter(
 			(
@@ -755,8 +780,9 @@ function parseToolResultPayload(value: unknown) {
 		"content" in value &&
 		Array.isArray((value as { content?: unknown[] }).content)
 	) {
-		const first = (value as { content: Array<{ type?: string; text?: string }> })
-			.content[0];
+		const first = (
+			value as { content: Array<{ type?: string; text?: string }> }
+		).content[0];
 		if (first?.type === "text" && typeof first.text === "string") {
 			try {
 				return JSON.parse(first.text) as unknown;
@@ -775,8 +801,12 @@ export async function* chatWithAIStream(params: {
 	systemPrompt?: string;
 	locale?: string;
 }): AsyncGenerator<AIStreamEvent> {
-	const { config, steps: streamedSteps, conversationMessages, meta } =
-		await buildContext(params);
+	const {
+		config,
+		steps: streamedSteps,
+		conversationMessages,
+		meta,
+	} = await buildContext(params);
 	for (const step of streamedSteps) {
 		yield { type: "status", message: step };
 	}
@@ -793,7 +823,12 @@ export async function* chatWithAIStream(params: {
 	const mcpServer = createConvexToolsMcpServer(params.logtoId);
 	const toolStarts = new Map<
 		string,
-		{ name: string; args: Record<string, unknown>; startedAtMs: number; completed: boolean }
+		{
+			name: string;
+			args: Record<string, unknown>;
+			startedAtMs: number;
+			completed: boolean;
+		}
 	>();
 	let reply = "";
 	let totalToolCalls = 0;
@@ -894,9 +929,7 @@ export async function* chatWithAIStream(params: {
 					reply = sdkMessage.result;
 				}
 				if (sdkMessage.is_error) {
-					throw new Error(
-						`Agent execution failed: ${sdkMessage.subtype}`,
-					);
+					throw new Error(`Agent execution failed: ${sdkMessage.subtype}`);
 				}
 			}
 		}

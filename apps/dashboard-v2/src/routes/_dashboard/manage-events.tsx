@@ -94,7 +94,10 @@ function mapEventToType(event: any): EventRequest {
 			fileUrl: inv.invoiceFile,
 		})),
 		createdBy:
-			event.submitterName || event.requestedUser || event.createdBy || "Unknown",
+			event.submitterName ||
+			event.requestedUser ||
+			event.createdBy ||
+			"Unknown",
 		requestedUser: event.requestedUser,
 		_updatedAt: event._updatedAt,
 		attendeeCount: event.attendeeCount || 0,
@@ -118,7 +121,14 @@ function mapEventToType(event: any): EventRequest {
 }
 
 function ManageEventsPage() {
-	const { hasOfficerAccess, hasAdminAccess, logtoId, user, getAuthHeaders, isLoading } = usePermissions();
+	const {
+		hasOfficerAccess,
+		hasAdminAccess,
+		logtoId,
+		user,
+		getAuthHeaders,
+		isLoading,
+	} = usePermissions();
 	const aiEnabled = user?.aiFeaturesEnabled !== false;
 
 	// Single unified query — events and eventRequests are now one table
@@ -187,7 +197,9 @@ function ManageEventsPage() {
 		if (!convexWeekLabelSettings || hasHydratedWeekSettings.current) return;
 		hasHydratedWeekSettings.current = true;
 
-		const convexHasValues = Object.values(convexWeekLabelSettings).some(Boolean);
+		const convexHasValues = Object.values(convexWeekLabelSettings).some(
+			Boolean,
+		);
 		if (convexHasValues) {
 			setWeekLabelSettings(convexWeekLabelSettings);
 			saveWeekLabelSettings(convexWeekLabelSettings);
@@ -253,7 +265,13 @@ function ManageEventsPage() {
 			const aValue = a[sortConfig.field as keyof EventRequest];
 			const bValue = b[sortConfig.field as keyof EventRequest];
 
-			if (aValue === undefined || bValue === undefined) return 0;
+			if (
+				aValue === undefined ||
+				aValue === null ||
+				bValue === undefined ||
+				bValue === null
+			)
+				return 0;
 
 			const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
 			return sortConfig.direction === "asc" ? comparison : -comparison;
@@ -587,7 +605,8 @@ function ManageEventsPage() {
 				await updateEventStatus({
 					logtoId,
 					id: eventId,
-					status: newStatus === "needs_review" ? "needs_review" : (newStatus as any),
+					status:
+						newStatus === "needs_review" ? "needs_review" : (newStatus as any),
 				});
 				if (newStatus === "approved" || newStatus === "draft") {
 					await updateEvent({
@@ -778,9 +797,7 @@ function ManageEventsPage() {
 				eventDescription:
 					data.eventDescription || editingDraft.eventDescription,
 				eventCode:
-					data.eventCode ||
-					editingDraft.eventCode ||
-					`EVENT-${Date.now()}`,
+					data.eventCode || editingDraft.eventCode || `EVENT-${Date.now()}`,
 				eventType: normalizeEventType(
 					(data.eventType as string | undefined) || editingDraft.eventType,
 				),
@@ -862,7 +879,10 @@ function ManageEventsPage() {
 						<FilePlus className="h-4 w-4 mr-2" />
 						Quick Draft
 					</Button>
-					<Dialog open={isWeekSettingsOpen} onOpenChange={setIsWeekSettingsOpen}>
+					<Dialog
+						open={isWeekSettingsOpen}
+						onOpenChange={setIsWeekSettingsOpen}
+					>
 						<DialogTrigger asChild>
 							<Button variant="outline">Week Label Settings</Button>
 						</DialogTrigger>
