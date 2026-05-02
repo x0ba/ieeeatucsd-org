@@ -12,7 +12,11 @@ import {
 } from "react";
 import { api } from "../../convex/_generated/api";
 import type { UserRole } from "@/types/roles";
-import { resolveAuthState, shouldAttemptProvisioning } from "@/lib/auth/authState";
+import {
+  resolveAuthState,
+  resolveStableAuthUser,
+  shouldAttemptProvisioning,
+} from "@/lib/auth/authState";
 import { refreshSessionWithRetry } from "@/lib/auth/sessionRefresh";
 import { buildLogtoSignInOptions, type SignInOptions } from "@/lib/auth/signIn";
 import {
@@ -190,6 +194,7 @@ function useSharedAuthClient(options: {
   const refreshInFlightRef = useRef(false);
   const authInitializedRef = useRef(false);
   const recoveryTriggeredRef = useRef(false);
+  const lastResolvedUserRef = useRef<{ logtoId: string; user: unknown } | null>(null);
   const upsertUser = useMutation(api.users.upsertFromAuth);
 
   const getIdTokenClaimsRef = useRef(getIdTokenClaims);
@@ -213,6 +218,7 @@ function useSharedAuthClient(options: {
     lastProvisioningAttemptRef.current = null;
     refreshInFlightRef.current = false;
     authInitializedRef.current = false;
+    lastResolvedUserRef.current = null;
   }, []);
 
   const markAuthFailure = useCallback((reason: Exclude<AuthFailureReason, null>) => {
@@ -380,11 +386,21 @@ function useSharedAuthClient(options: {
       ? { logtoId, authToken: convexSessionToken }
       : "skip",
   );
+  const stableAuthUser = resolveStableAuthUser({
+    logtoId,
+    convexUser,
+    lastResolvedUser: lastResolvedUserRef.current as {
+      logtoId: string;
+      user: NonNullable<typeof convexUser>;
+    } | null,
+  });
+  lastResolvedUserRef.current = stableAuthUser.lastResolvedUser;
+  const stableConvexUser = stableAuthUser.user as typeof convexUser;
 
   useEffect(() => {
     if (!isAuthenticated || authFailureReason) return;
     if (!logtoId || !accessToken || !convexSessionToken) return;
-    if (convexUser !== undefined) return;
+    if (stableConvexUser !== undefined) return;
 
     const timeout = window.setTimeout(() => {
       markAuthFailure("user_query_timeout");
@@ -397,7 +413,7 @@ function useSharedAuthClient(options: {
     logtoId,
     accessToken,
     convexSessionToken,
-    convexUser,
+    stableConvexUser,
     markAuthFailure,
   ]);
 
@@ -411,7 +427,7 @@ function useSharedAuthClient(options: {
       isAuthenticated,
       logtoId,
       convexSessionToken,
-      convexUser,
+      convexUser: stableConvexUser,
       lastProvisioningAttemptLogtoId: lastProvisioningAttemptRef.current,
     })) {
       setIsProvisioningUser(false);
@@ -459,10 +475,10 @@ function useSharedAuthClient(options: {
     accessToken,
     authFailureReason,
     convexSessionToken,
-    convexUser,
     isAuthenticated,
     logtoId,
     mode,
+    stableConvexUser,
     upsertUser,
   ]);
 
@@ -492,7 +508,7 @@ function useSharedAuthClient(options: {
     })();
   }, [authFailureReason, clearLocalAuthState, mode, origin]);
 
-  const userRole: UserRole = (convexUser?.role as UserRole) ?? "Member";
+  const userRole: UserRole = (stableConvexUser?.role as UserRole) ?? "Member";
   const hasProvisioningAttempt =
     !!logtoId && lastProvisioningAttemptRef.current === logtoId;
   const { isAuthResolved, isLoading } = resolveAuthState({
@@ -501,7 +517,7 @@ function useSharedAuthClient(options: {
     logtoId,
     accessToken,
     convexSessionToken,
-    convexUser,
+    convexUser: stableConvexUser,
     isProvisioningUser,
     hasProvisioningAttempt,
     authFailureReason,
@@ -513,7 +529,7 @@ function useSharedAuthClient(options: {
     isAuthResolved,
     isProvisioningUser,
     authFailureReason,
-    user: convexUser ?? null,
+    user: stableConvexUser ?? null,
     userRole,
     logtoId,
     accessToken,
@@ -527,7 +543,6 @@ function useSharedAuthClient(options: {
     accessToken,
     authFailureReason,
     convexSessionToken,
-    convexUser,
     getAuthHeaders,
     isAuthenticated,
     isAuthResolved,
@@ -535,6 +550,7 @@ function useSharedAuthClient(options: {
     isProvisioningUser,
     logtoId,
     performSignOut,
+    stableConvexUser,
     triggerSignIn,
     userRole,
   ]);
