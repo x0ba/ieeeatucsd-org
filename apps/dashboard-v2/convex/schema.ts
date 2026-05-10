@@ -315,6 +315,19 @@ export default defineSchema({
     .index("by_eventType", ["eventType"])
     .index("by_createdBy", ["createdBy"]),
 
+  googleCalendarSyncState: defineTable({
+    calendarKey: v.union(v.literal("private"), v.literal("public")),
+    calendarId: v.string(),
+    googleEventId: v.string(),
+    sourceKind: v.union(v.literal("published"), v.literal("internal")),
+    sourceId: v.string(),
+    sourceStartDate: v.number(),
+    lastSyncedAt: v.number(),
+  })
+    .index("by_calendarKey", ["calendarKey"])
+    .index("by_googleEventId", ["calendarKey", "googleEventId"])
+    .index("by_sourceId", ["calendarKey", "sourceKind", "sourceId"]),
+
   attendees: defineTable({
     eventId: v.id("events"),
     userId: v.string(),
