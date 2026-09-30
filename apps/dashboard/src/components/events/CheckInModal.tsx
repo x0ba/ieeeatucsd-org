@@ -13,11 +13,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	EVENT_CODE_INPUT_ATTRS,
-	EVENT_CODE_INPUT_CLASS,
-	submittedEventCode,
-} from "./eventCodeInput";
 
 interface CheckInModalProps {
 	isOpen: boolean;
@@ -59,12 +54,12 @@ export function CheckInModal({
 		if (eventHasFood) {
 			setStep(2);
 		} else {
-			onSubmit(submittedEventCode(code));
+			onSubmit(code.trim().toUpperCase());
 		}
 	};
 
 	const handleFoodSubmit = () => {
-		onSubmit(submittedEventCode(code), foodPreference || undefined);
+		onSubmit(code.trim().toUpperCase(), foodPreference || undefined);
 	};
 
 	const handleClose = () => {
@@ -145,8 +140,7 @@ export function CheckInModal({
 							onKeyDown={(e) => {
 								if (e.key === "Enter") handleCodeSubmit();
 							}}
-							{...EVENT_CODE_INPUT_ATTRS}
-							className={EVENT_CODE_INPUT_CLASS}
+							className="text-center text-lg font-mono tracking-wider uppercase h-12"
 							autoFocus
 						/>
 						{error && <p className="text-xs text-destructive">{error}</p>}
