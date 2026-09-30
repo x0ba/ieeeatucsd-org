@@ -13,6 +13,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	EVENT_CODE_INPUT_ATTRS,
+	EVENT_CODE_INPUT_CLASS,
+	submittedEventCode,
+} from "./eventCodeInput";
 
 interface CheckInModalProps {
 	isOpen: boolean;
@@ -54,12 +59,12 @@ export function CheckInModal({
 		if (eventHasFood) {
 			setStep(2);
 		} else {
-			onSubmit(code.trim().toUpperCase());
+			onSubmit(submittedEventCode(code));
 		}
 	};
 
 	const handleFoodSubmit = () => {
-		onSubmit(code.trim().toUpperCase(), foodPreference || undefined);
+		onSubmit(submittedEventCode(code), foodPreference || undefined);
 	};
 
 	const handleClose = () => {
@@ -140,14 +145,8 @@ export function CheckInModal({
 							onKeyDown={(e) => {
 								if (e.key === "Enter") handleCodeSubmit();
 							}}
-							// text-center / RTL / CSS uppercase prepends keystrokes on iOS and some desktop browsers.
-							dir="ltr"
-							autoCapitalize="characters"
-							autoCorrect="off"
-							spellCheck={false}
-							autoComplete="off"
-							inputMode="text"
-							className="h-12 text-start text-lg font-mono tracking-wider"
+							{...EVENT_CODE_INPUT_ATTRS}
+							className={EVENT_CODE_INPUT_CLASS}
 							autoFocus
 						/>
 						{error && <p className="text-xs text-destructive">{error}</p>}
