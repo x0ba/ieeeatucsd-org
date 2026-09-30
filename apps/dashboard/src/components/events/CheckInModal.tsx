@@ -140,7 +140,14 @@ export function CheckInModal({
 							onKeyDown={(e) => {
 								if (e.key === "Enter") handleCodeSubmit();
 							}}
-							className="text-center text-lg font-mono tracking-wider uppercase h-12"
+							// text-center / RTL / CSS uppercase prepends keystrokes on iOS and some desktop browsers.
+							dir="ltr"
+							autoCapitalize="characters"
+							autoCorrect="off"
+							spellCheck={false}
+							autoComplete="off"
+							inputMode="text"
+							className="h-12 text-start text-lg font-mono tracking-wider"
 							autoFocus
 						/>
 						{error && <p className="text-xs text-destructive">{error}</p>}
