@@ -1,5 +1,7 @@
 # Dashboard Deployment
 
+Shared Docker targets, Dokploy fields, and build-time vs runtime variable policy live in the root guide: [`docs/deployment.md`](../../../docs/deployment.md).
+
 ## Quick Start
 
 ```bash
@@ -14,7 +16,7 @@ docker run -p 4323:4323 --env-file .env dashboard
 ## Prerequisites
 
 - Docker & Docker Compose
-- Bun runtime (for local development)
+- Node.js 24 and pnpm 11.21.0 (for local development)
 - Node.js 20+ (for the production Node server)
 
 ## Port Configuration
@@ -29,8 +31,10 @@ Set these in your `.env` file or pass as build args/runtime env vars:
 
 - `CONVEX_SELF_HOSTED_URL`
 - `CONVEX_SELF_HOSTED_ADMIN_KEY`
-- `AUTH_BRIDGE_MODE` (`legacy` for rollback, `native` for Convex-native auth)
+- `AUTH_BRIDGE_MODE` (`native` default for stay-signed-in Logto sessions; `legacy` rollback only)
 - `VITE_AUTH_BRIDGE_MODE` (must match `AUTH_BRIDGE_MODE` for client/server consistency)
+- `CONVEX_AUTH_STRATEGY` (`bridge` default; `jwt` only after Logto RSA rotation)
+- `VITE_CONVEX_AUTH_STRATEGY` (must match `CONVEX_AUTH_STRATEGY`)
 - `VITE_LOGTO_ENDPOINT`
 - `LOGTO_APP_ID` (required by Convex self-hosted auth config)
 - `VITE_LOGTO_APP_ID`
@@ -55,12 +59,12 @@ Set these in your `.env` file or pass as build args/runtime env vars:
 
 ### Self-Hosted Convex Auth
 
-The repo now includes `convex/auth.config.ts` for native Convex authentication against self-hosted Logto.
+The repo includes `convex/auth.config.ts` for native Convex authentication against self-hosted Logto.
+Self-hosted Convex supports this OIDC JWT path; you do not need Convex Cloud.
 
-- Set `LOGTO_ENDPOINT` to your Logto issuer URL.
+- Set `LOGTO_ENDPOINT` to your Logto **base** URL (e.g. `https://auth.example.com`). `auth.config.ts` normalizes it to the OIDC issuer (`…/oidc`) so it matches ID token `iss`.
 - Set `LOGTO_APP_ID` to the Logto application ID used by the dashboard.
-- Set both `AUTH_BRIDGE_MODE=native` and `VITE_AUTH_BRIDGE_MODE=native` in staging to enable native Convex auth.
-- Keep `AUTH_BRIDGE_MODE=legacy` as the rollback path while validating staging.
+- Default mode is `native`. Keep `AUTH_BRIDGE_MODE=legacy` only as an emergency rollback.
 - For self-hosted Convex manual setup, apply environment variables directly in the Convex deployment since the CLI flow is limited.
 
 ## Docker Deployment
@@ -75,8 +79,8 @@ docker build -t dashboard . --target dashboard
 
 ```bash
 docker build -t dashboard . --target dashboard \
-  --build-arg PUBLIC_FIREBASE_WEB_API_KEY=${PUBLIC_FIREBASE_WEB_API_KEY} \
-  --build-arg PUBLIC_FIREBASE_AUTH_DOMAIN=${PUBLIC_FIREBASE_AUTH_DOMAIN} \
+  --build-arg VITE_CONVEX_URL=${VITE_CONVEX_URL} \
+  --build-arg VITE_LOGTO_ENDPOINT=${VITE_LOGTO_ENDPOINT} \
   # ... additional build args
 ```
 
@@ -113,23 +117,23 @@ docker-compose up -d --build dashboard
 
 ```bash
 # Install dependencies
-bun install
+pnpm install
 
 # Start development server (port 3000)
-bun run dev
+pnpm dev
 
 # Build for production
-bun run build
+pnpm build
 
 # Start production server locally
-bun run start
+pnpm start
 ```
 
 ## Production Build
 
 The application builds to `.output/server/index.mjs` and runs with Node.js:
 
-1. **Build**: `bun run build` (Vite build)
+1. **Build**: `pnpm build` (Vite build)
 2. **Output**: `.output/` directory
 3. **Start**: `node .output/server/index.mjs`
 
@@ -141,13 +145,13 @@ The application builds to `.output/server/index.mjs` and runs with Node.js:
 # Multi-stage build
 FROM base as dashboard_builder
 WORKDIR /app/apps/dashboard
-RUN bun run build
+RUN pnpm build
 
 FROM base as dashboard
 COPY --from=dashboard_builder /app/apps/dashboard/.output /app/apps/dashboard/.output
 WORKDIR /app/apps/dashboard
 EXPOSE 4323
-CMD ["bun", "run", "start"]
+CMD ["node", ".output/server/index.mjs"]
 ```
 
 ### Docker Compose Service
@@ -164,7 +168,7 @@ dashboard:
   environment:
     - PORT=4323
     - HOST=0.0.0.0
-    # Firebase, Calendar, Email, AI, MXRoute env vars...
+    # Convex, Logto, Calendar, Email, AI, MXRoute env vars...
 ```
 
 ## Health Check

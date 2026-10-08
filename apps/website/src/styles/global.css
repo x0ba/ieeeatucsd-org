@@ -4,6 +4,15 @@
 
 @layer base {
   :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --duration-press: 140ms;
+    --duration-ui: 200ms;
+    --page-gutter: clamp(1.25rem, 4vw, 3rem);
+    /* Viewport-relative so wide screens and browser zoom-out keep a usable
+       content width. A rem cap (previously 72rem) stayed physically thin
+       when zoom dropped, which made every public page look margin-heavy. */
+    --page-max: 92vw;
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -80,14 +89,212 @@
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-ibm-plex-sans);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-display {
+    font-family: var(--font-ibm-plex-sans);
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+    text-wrap: balance;
+  }
+
+  h1 {
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+  }
+
+  h2 {
+    letter-spacing: -0.03em;
+  }
+
+  /* Tabular figures wherever numbers should line up */
+  table,
+  time,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Branded text selection */
+  ::selection {
+    background-color: rgba(136, 191, 236, 0.3);
+    color: #ffffff;
+  }
+
+  /* Accessible, on-brand focus rings */
+  :focus-visible {
+    outline: 2px solid rgba(136, 191, 236, 0.85);
+    outline-offset: 3px;
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  a:where(:not(.ieee-btn):not(.skip-link):not(:has(img))) {
+    @apply text-ieee-blue-100 underline underline-offset-[0.18em] decoration-ieee-blue-100/55;
+    transition:
+      color var(--duration-ui) ease,
+      text-decoration-color var(--duration-ui) ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    a:where(:not(.ieee-btn):not(.skip-link):not(:has(img))):hover {
+      @apply text-ieee-yellow decoration-ieee-yellow/85;
+    }
+  }
+
+  /* Respect reduced-motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Page structure + pressable controls */
+@layer components {
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: 0.75rem;
+    z-index: 10000;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+    background: #f3c135;
+    color: #0a0e1a;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .skip-link:focus {
+    width: auto;
+    height: auto;
+    padding: 0.65rem 1rem;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: normal;
+    border-radius: 999px;
+  }
+
+  .page-main {
+    width: min(100% - var(--page-gutter) * 2, var(--page-max));
+    margin-inline: auto;
+  }
+
+  .page-section {
+    padding-block: clamp(3rem, 7vw, 5.5rem);
+  }
+
+  .ieee-panel {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1.25rem;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(136, 191, 236, 0.08) 0%,
+        rgba(10, 14, 26, 0.4) 42%
+      ),
+      rgba(13, 19, 36, 0.72);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  }
+
+  .ieee-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.65rem 1.15rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    color: #fff;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    transition:
+      color var(--duration-ui) ease,
+      border-color var(--duration-ui) ease,
+      background-color var(--duration-ui) ease,
+      transform var(--duration-press) var(--ease-out);
+  }
+
+  .ieee-btn:active {
+    transform: scale(0.97);
+  }
+
+  .ieee-btn-primary {
+    background: #f3c135;
+    border-color: #f3c135;
+    color: #0a0e1a;
+  }
+
+  .ieee-btn-ghost {
+    background: transparent;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ieee-btn-ghost:hover {
+      color: #f3c135;
+      border-color: #f3c135;
+      background: rgba(243, 193, 53, 0.06);
+    }
+
+    .ieee-btn-primary:hover {
+      background: #ffd25a;
+      border-color: #ffd25a;
+    }
+  }
+}
+
+/* Typographic Utilities */
+@layer utilities {
+  /* Monospace technical labels — instrument-panel precision */
+  .font-mono-tech {
+    font-family: var(--font-ibm-plex-sans);
+  }
+
+  /* Lead paragraph — slightly larger, airier body copy */
+  .text-lead {
+    font-size: 1.125em;
+    line-height: 1.7;
+    font-weight: 350;
   }
 }
 
 /* Mobile-Specific Utilities */
 @layer utilities {
-
   /* Touch-friendly interactions */
   .touch-manipulation {
     touch-action: manipulation;
@@ -151,7 +358,6 @@
 
 /* Mobile-specific responsive breakpoints */
 @media (max-width: 320px) {
-
   /* Extra small mobile devices */
   .text-responsive {
     font-size: 14px;
@@ -159,7 +365,6 @@
 }
 
 @media (max-width: 375px) {
-
   /* Small mobile devices */
   .container-mobile {
     padding-left: 1rem;
@@ -168,7 +373,6 @@
 }
 
 @media (max-width: 414px) {
-
   /* Medium mobile devices */
   .grid-mobile-stack {
     grid-template-columns: 1fr;
@@ -176,7 +380,6 @@
 }
 
 @media (max-width: 768px) {
-
   /* Large mobile devices and tablets */
   .hide-mobile {
     display: none;
@@ -228,7 +431,6 @@ section[data-slot="base"] {
 
 /* Constitution Print Styles - Hide everything except constitution content when printing */
 @media print {
-
   /* When in constitution print mode, hide all elements by default */
   body.constitution-print-mode * {
     visibility: hidden !important;
@@ -433,7 +635,8 @@ section[data-slot="base"] {
   background: rgba(255, 255, 255, 0.2) !important;
 }
 
-.dark [data-sidebar="content"].sidebar-thin-scroll::-webkit-scrollbar-thumb:hover {
+.dark
+  [data-sidebar="content"].sidebar-thin-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.35) !important;
 }
 
@@ -465,8 +668,8 @@ section[data-slot="base"] {
 }
 
 /* Target the modal wrapper to ensure proper overflow handling */
-[role="dialog"][aria-modal="true"]>section,
-[role="dialog"][aria-modal="true"]>div[data-slot="base"] {
+[role="dialog"][aria-modal="true"] > section,
+[role="dialog"][aria-modal="true"] > div[data-slot="base"] {
   border-radius: 14px !important;
   overflow: hidden !important;
 }

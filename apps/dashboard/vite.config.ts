@@ -1,12 +1,11 @@
-import { defineConfig, type PluginOption } from "vite";
+import { fileURLToPath, URL } from "node:url";
+import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
-import viteTsConfigPaths from "vite-tsconfig-paths";
-import { fileURLToPath, URL } from "node:url";
-
-import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
+import { defineConfig, type PluginOption } from "vite";
+import viteTsConfigPaths from "vite-tsconfig-paths";
 
 const appRoot = fileURLToPath(new URL(".", import.meta.url));
 const serverExternalPackages = [
@@ -26,10 +25,6 @@ const serverExternalPackages = [
 	"imapflow",
 	"lucide-react",
 	"radix-ui",
-	"react",
-	"react-dom",
-	"react-dom/server",
-	"react/jsx-runtime",
 	"recharts",
 	"sonner",
 ];
@@ -42,7 +37,7 @@ function shouldExternalizeServerPackage(id: string) {
 	);
 }
 
-const config = defineConfig({
+const config = defineConfig(({ command }) => ({
 	root: appRoot,
 	resolve: {
 		alias: {
@@ -51,7 +46,17 @@ const config = defineConfig({
 		dedupe: ["react", "react-dom"],
 	},
 	ssr: {
-		noExternal: [/^@tanstack\//],
+		// Bundle React so standalone Docker deploys don't need hoisted workspace
+		// node_modules. React context consumers must be bundled with the same
+		// React instance; otherwise Nitro can put them in a separate chunk with a
+		// second React dispatcher and SSR fails with an invalid hook call.
+		// Only do this for builds: during `vite dev` the SSR module runner
+		// inline-evaluates React's CJS jsx-runtime, where `module` is undefined, so
+		// React must stay external in dev.
+		noExternal:
+			command === "build"
+				? [/^@tanstack\//, "next-themes", "react", "react-dom"]
+				: [/^@tanstack\//],
 	},
 	plugins: [
 		devtools() as PluginOption,
@@ -77,6 +82,6 @@ const config = defineConfig({
 			},
 		}),
 	],
-});
+}));
 
 export default config;

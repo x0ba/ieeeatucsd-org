@@ -14,10 +14,10 @@ import {
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
+import { ResponsiveOverlay } from "@/components/mobile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -495,7 +495,7 @@ export function FundRequestFormModal({
 											{vendorLinks.map((link) => (
 												<div
 													key={link.id}
-													className="group relative bg-background border border-border/60 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-200"
+													className="group relative bg-background border border-border/60 rounded-md p-4 shadow-sm hover:shadow-md hover:border-primary/20 transition-[border-color,box-shadow] duration-150 ease-[ease]"
 												>
 													<div className="flex flex-col gap-3">
 														<div className="flex gap-3 items-start">
@@ -591,7 +591,7 @@ export function FundRequestFormModal({
 											))}
 
 											{vendorLinks.length === 0 && (
-												<div className="flex flex-col items-center justify-center py-10 text-muted-foreground bg-background/50 border border-dashed rounded-xl">
+												<div className="flex flex-col items-center justify-center py-10 text-muted-foreground bg-background/50 border border-dashed rounded-md">
 													<p className="text-sm">No items added yet</p>
 													<Button
 														variant="link"
@@ -736,7 +736,7 @@ export function FundRequestFormModal({
 											</Badge>
 										</div>
 									</div>
-									<p className="text-2xl font-bold text-green-600">
+									<p className="text-2xl font-bold text-tone-success">
 										{formatCurrency(parseFloat(amount) || 0)}
 									</p>
 								</div>
@@ -801,7 +801,7 @@ export function FundRequestFormModal({
 		<Card
 			className={`border-0 shadow-none overflow-hidden flex flex-col h-full w-full bg-transparent ${className || ""}`}
 		>
-			{showHeader && (
+			{showHeader && renderMode === "page" && (
 				<div className="border-b bg-muted/10 px-4 py-3 flex-shrink-0 flex items-center justify-between">
 					<div>
 						<h2 className="text-lg font-semibold tracking-tight">
@@ -816,7 +816,7 @@ export function FundRequestFormModal({
 						variant="ghost"
 						size="icon"
 						onClick={onClose}
-						className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+						className="h-11 w-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:h-8 sm:w-8"
 					>
 						<X className="w-4 h-4" />
 					</Button>
@@ -831,12 +831,17 @@ export function FundRequestFormModal({
 						style={{ left: stepTrackInset, right: stepTrackInset }}
 					/>
 					<div
-						className="absolute top-4 h-0.5 bg-primary transition-all duration-300"
+						className="absolute top-4 h-0.5 overflow-hidden"
 						style={{
 							left: stepTrackInset,
-							width: `calc((100% - (${stepTrackInset} * 2)) * ${stepTrackProgress / 100})`,
+							right: stepTrackInset,
 						}}
-					/>
+					>
+						<div
+							className="h-full w-full origin-left bg-primary transition-transform duration-200 ease-[var(--ease-in-out)] motion-instant-reduce"
+							style={{ transform: `scaleX(${stepTrackProgress / 100})` }}
+						/>
+					</div>
 
 					<div
 						className="relative grid gap-3"
@@ -852,7 +857,7 @@ export function FundRequestFormModal({
 								<div key={step.id} className="flex flex-col items-center">
 									<div
 										className={`
-                      w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 border-2 relative z-10
+	                      w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-[background-color,border-color,color,box-shadow] duration-150 ease-[ease] border-2 relative z-10
                       ${isCompleted || isCurrent ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-muted bg-background text-muted-foreground"}
                     `}
 									>
@@ -876,13 +881,13 @@ export function FundRequestFormModal({
 				</div>
 			</ScrollArea>
 
-			<div className="flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-4 py-3 border-t bg-background flex flex-shrink-0 z-20 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
+			<div className="flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-3 border-t bg-background flex flex-shrink-0 z-20 shadow-[0_-5px_10px_rgba(0,0,0,0.02)]">
 				<Button
 					type="button"
 					variant="ghost"
 					onClick={onClose}
 					disabled={isSubmitting}
-					className="w-full sm:w-auto text-muted-foreground hover:bg-muted"
+					className="h-11 w-full sm:h-9 sm:w-auto text-muted-foreground hover:bg-muted"
 				>
 					Cancel
 				</Button>
@@ -894,7 +899,7 @@ export function FundRequestFormModal({
 							variant="outline"
 							onClick={handlePrevStep}
 							disabled={isSubmitting}
-							className="flex-1 sm:flex-none"
+							className="h-11 flex-1 sm:h-9 sm:flex-none"
 						>
 							Back
 						</Button>
@@ -904,7 +909,7 @@ export function FundRequestFormModal({
 						<Button
 							type="button"
 							onClick={handleNextStep}
-							className="flex-1 sm:flex-none"
+							className="h-11 flex-1 sm:h-9 sm:flex-none"
 						>
 							Next Step
 						</Button>
@@ -913,7 +918,7 @@ export function FundRequestFormModal({
 							type="button"
 							onClick={handleSubmit}
 							disabled={isSubmitting}
-							className="flex-1 sm:flex-none"
+							className="h-11 flex-1 sm:h-9 sm:flex-none"
 						>
 							{isSubmitting && (
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -931,20 +936,19 @@ export function FundRequestFormModal({
 	}
 
 	return (
-		<Dialog
+		<ResponsiveOverlay
 			open={isOpen}
 			onOpenChange={(open) => {
 				if (!open && !isSubmitting) {
 					onClose();
 				}
 			}}
+			title={isEditMode ? "Edit Fund Request" : "New Fund Request"}
+			description="Complete each step to submit a clear, review-ready request."
+			variant="fullscreen"
+			className="sm:max-w-6xl"
 		>
-			<DialogContent
-				showCloseButton={false}
-				className="max-w-6xl h-[min(92vh,960px)] overflow-hidden p-0 gap-0"
-			>
-				{formContent}
-			</DialogContent>
-		</Dialog>
+			{formContent}
+		</ResponsiveOverlay>
 	);
 }

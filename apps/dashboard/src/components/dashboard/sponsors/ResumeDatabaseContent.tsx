@@ -1,21 +1,32 @@
 import { api } from "@convex/_generated/api";
-import { useAuthedQuery } from "@/hooks/useAuthedConvex";
 import {
 	ArrowLeft,
 	Briefcase,
+	CheckSquare,
 	Download,
 	FileText,
 	Filter,
 	GraduationCap,
 	Search,
 	Users,
+	X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import {
+	MobileDataList,
+	MobileDataListItem,
+	type MobileFilterChip,
+	MobileFilters,
+	ResponsiveOverlay,
+	useMobileShell,
+} from "@/components/mobile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -31,49 +42,49 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthedQuery } from "@/hooks/useAuthedConvex";
 import {
 	getMajorNormalizationMap,
 	getUniqueNormalizedMajors,
 	normalizeMajorName,
 } from "@/lib/majorNormalization";
+import { downloadFileFromUrl } from "@/lib/resumeUpload";
 import type { UserWithResume } from "./types";
 
 export default function ResumeDatabaseContent() {
+	const isMobile = useIsMobile();
+	const { setHideTabBar } = useMobileShell();
 	const { logtoId } = useAuth();
-	const [users, setUsers] = useState<UserWithResume[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedMajors, setSelectedMajors] = useState<Set<string>>(new Set());
 	const [selectedYears, setSelectedYears] = useState<Set<string>>(new Set());
 	const [selectedOfficerStatus, setSelectedOfficerStatus] =
 		useState<string>("all");
 	const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+	const [selectionMode, setSelectionMode] = useState(false);
 	const [view, setView] = useState<"list" | "detail">("list");
 	const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(10);
 
-	const allUsers = useAuthedQuery(api.users.list, logtoId ? { logtoId } : "skip");
-
 	useEffect(() => {
-		if (!allUsers) return;
+		setHideTabBar(isMobile && view === "detail");
+		return () => setHideTabBar(false);
+	}, [isMobile, view, setHideTabBar]);
 
-		setLoading(true);
-		setError(null);
+	const resumeUsers = useAuthedQuery(
+		api.users.listResumes,
+		logtoId ? { logtoId } : "skip",
+	);
 
-		const usersWithResumes: UserWithResume[] = allUsers
-			.filter((u) => u.resume)
-			.map((u) => ({
-				...u,
-				id: u._id,
-			}));
-
-		setUsers(usersWithResumes);
-		setLoading(false);
-	}, [allUsers]);
+	const loading = resumeUsers === undefined;
+	const users = useMemo(
+		() => (resumeUsers ?? []).filter((u) => u.resume),
+		[resumeUsers],
+	);
 
 	const majorNormalizationMap = useMemo(() => {
 		const allMajors = users.map((u) => u.major).filter((m): m is string => !!m);
@@ -207,7 +218,58 @@ export default function ResumeDatabaseContent() {
 
 	const handleBackToList = () => {
 		setView("list");
+		setSelectedUserId(null);
 	};
+
+	const exitSelectionMode = () => {
+		setSelectionMode(false);
+		setSelectedUsers(new Set());
+	};
+
+	const activeFilterChips: MobileFilterChip[] = [];
+	if (selectedMajors.size > 0) {
+		for (const major of selectedMajors) {
+			activeFilterChips.push({
+				id: `major-${major}`,
+				label: major,
+				onClear: () => {
+					const next = new Set(selectedMajors);
+					next.delete(major);
+					setSelectedMajors(next);
+					setCurrentPage(1);
+				},
+			});
+		}
+	}
+	if (selectedYears.size > 0) {
+		for (const year of selectedYears) {
+			activeFilterChips.push({
+				id: `year-${year}`,
+				label: `Class of ${year}`,
+				onClear: () => {
+					const next = new Set(selectedYears);
+					next.delete(year);
+					setSelectedYears(next);
+					setCurrentPage(1);
+				},
+			});
+		}
+	}
+	if (selectedOfficerStatus !== "all") {
+		activeFilterChips.push({
+			id: "role",
+			label:
+				selectedOfficerStatus === "officers" ? "Officers only" : "Members only",
+			onClear: () => {
+				setSelectedOfficerStatus("all");
+				setCurrentPage(1);
+			},
+		});
+	}
+
+	const selectedIndex = selectedUser
+		? filteredUsers.findIndex((u) => u.id === selectedUser.id)
+		: -1;
 
 	const generateCSV = (usersToExport: UserWithResume[]): string => {
 		const headers = [
@@ -215,7 +277,8 @@ export default function ResumeDatabaseContent() {
 			"Email",
 			"Major",
 			"Year Graduating",
-			"Firebase Resume Link",
+			"Resume File",
+			"Resume URL",
 		];
 
 		const csvData = usersToExport.map((user) => {
@@ -223,7 +286,9 @@ export default function ResumeDatabaseContent() {
 			const email = user.email || "";
 			const major = getNormalizedMajor(user.major) || "";
 			const year = user.graduationYear?.toString() || "";
-			const resumeLink = user.resume || "";
+			const resumeFile =
+				user.fileName ?? `${user.name.replace(/\s+/g, "_")}_Resume.pdf`;
+			const resumeUrl = user.resume || "";
 
 			const escapeField = (field: string): string => {
 				if (
@@ -241,7 +306,8 @@ export default function ResumeDatabaseContent() {
 				escapeField(email),
 				escapeField(major),
 				escapeField(year),
-				escapeField(resumeLink),
+				escapeField(resumeFile),
+				escapeField(resumeUrl),
 			].join(",");
 		});
 
@@ -261,7 +327,7 @@ export default function ResumeDatabaseContent() {
 		URL.revokeObjectURL(url);
 	};
 
-	const handleDownloadSelected = () => {
+	const handleDownloadSelected = async () => {
 		const selectedUsersList = filteredUsers.filter((u) =>
 			selectedUsers.has(u.id),
 		);
@@ -271,13 +337,15 @@ export default function ResumeDatabaseContent() {
 		if (selectedUsersList.length === 1) {
 			const user = selectedUsersList[0];
 			if (user.resume) {
-				const link = document.createElement("a");
-				link.href = user.resume;
-				link.download = `${user.name.replace(/\s+/g, "_")}_Resume.pdf`;
-				link.target = "_blank";
-				document.body.appendChild(link);
-				link.click();
-				document.body.removeChild(link);
+				try {
+					await downloadFileFromUrl(
+						user.resume,
+						user.fileName ?? `${user.name.replace(/\s+/g, "_")}_Resume.pdf`,
+					);
+				} catch (err) {
+					console.error("Failed to download resume:", err);
+					toast.error("Failed to download resume");
+				}
 			}
 		} else {
 			try {
@@ -323,9 +391,9 @@ export default function ResumeDatabaseContent() {
 		(u) => u.role !== "Member" && u.role !== "Sponsor",
 	).length;
 
-	if (view === "detail" && selectedUser) {
+	if (view === "detail" && selectedUser && !isMobile) {
 		return (
-			<div className="w-full bg-slate-50 min-h-full">
+			<div className="w-full bg-muted min-h-full">
 				<div className="mx-auto max-w-7xl p-4 md:p-6 space-y-5">
 					<div className="flex flex-wrap items-center gap-3">
 						<Button variant="ghost" size="sm" onClick={handleBackToList}>
@@ -337,15 +405,17 @@ export default function ResumeDatabaseContent() {
 						</Badge>
 					</div>
 
-					<Card className="bg-white border-slate-200 shadow-sm">
+					<Card className="bg-background border-border shadow-sm">
 						<CardContent className="p-6 md:p-7">
 							<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 								<div className="space-y-2">
-									<h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+									<h1 className="text-2xl font-semibold tracking-tight text-foreground">
 										{selectedUser.name}
 									</h1>
-									<p className="text-sm text-slate-600">{selectedUser.email}</p>
-									<div className="flex flex-wrap gap-2 text-sm text-slate-700">
+									<p className="text-sm text-muted-foreground">
+										{selectedUser.email}
+									</p>
+									<div className="flex flex-wrap gap-2 text-sm text-foreground">
 										<Badge variant="outline">
 											{getNormalizedMajor(selectedUser.major) ||
 												"Major not listed"}
@@ -370,9 +440,9 @@ export default function ResumeDatabaseContent() {
 						</CardContent>
 					</Card>
 
-					<Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
-						<CardHeader className="border-b border-slate-100">
-							<CardTitle className="text-base text-slate-900">
+					<Card className="bg-background border-border shadow-sm overflow-hidden">
+						<CardHeader className="border-b border-border">
+							<CardTitle className="text-base text-foreground">
 								Resume Preview
 							</CardTitle>
 						</CardHeader>
@@ -390,68 +460,70 @@ export default function ResumeDatabaseContent() {
 	}
 
 	return (
-		<div className="w-full bg-slate-50 min-h-full">
+		<div className="w-full bg-muted min-h-full">
 			<div className="mx-auto max-w-7xl p-4 md:p-6 space-y-5">
 				<div className="space-y-1">
-					<h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+					<h1 className="text-2xl font-semibold tracking-tight text-foreground">
 						Resume Database
 					</h1>
-					<p className="text-sm text-slate-600">
+					<p className="text-sm text-muted-foreground">
 						Browse member resumes with consistent filters and quick in-page
 						review.
 					</p>
 				</div>
 
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-					<Card className="bg-white border-slate-200 shadow-sm">
+					<Card className="bg-background border-border shadow-sm">
 						<CardContent className="p-5 flex items-center gap-3">
-							<div className="rounded-xl p-2.5 bg-blue-50 text-blue-700">
+							<div className="rounded-md p-2.5 bg-ds-blue-100 text-tone-info">
 								<FileText className="h-5 w-5" />
 							</div>
 							<div>
-								<p className="text-xs text-slate-500">Total Resumes</p>
-								<p className="text-2xl font-semibold text-slate-900">
+								<p className="text-xs text-muted-foreground">Total Resumes</p>
+								<p className="text-2xl font-semibold text-foreground">
 									{users.length}
 								</p>
 							</div>
 						</CardContent>
 					</Card>
-					<Card className="bg-white border-slate-200 shadow-sm">
+					<Card className="bg-background border-border shadow-sm">
 						<CardContent className="p-5 flex items-center gap-3">
-							<div className="rounded-xl p-2.5 bg-emerald-50 text-emerald-700">
+							<div className="rounded-md p-2.5 bg-ds-green-100 text-tone-success">
 								<Filter className="h-5 w-5" />
 							</div>
 							<div>
-								<p className="text-xs text-slate-500">Filtered Results</p>
-								<p className="text-2xl font-semibold text-slate-900">
+								<p className="text-xs text-muted-foreground">
+									Filtered Results
+								</p>
+								<p className="text-2xl font-semibold text-foreground">
 									{filteredUsers.length}
 								</p>
 							</div>
 						</CardContent>
 					</Card>
-					<Card className="bg-white border-slate-200 shadow-sm">
+					<Card className="bg-background border-border shadow-sm">
 						<CardContent className="p-5 flex items-center gap-3">
-							<div className="rounded-xl p-2.5 bg-indigo-50 text-indigo-700">
+							<div className="rounded-md p-2.5 bg-ds-purple-100 text-tone-purple">
 								<Briefcase className="h-5 w-5" />
 							</div>
 							<div>
-								<p className="text-xs text-slate-500">Officer Resumes</p>
-								<p className="text-2xl font-semibold text-slate-900">
+								<p className="text-xs text-muted-foreground">Officer Resumes</p>
+								<p className="text-2xl font-semibold text-foreground">
 									{officerCount}
 								</p>
 							</div>
 						</CardContent>
 					</Card>
-					<Card className="bg-white border-slate-200 shadow-sm">
+					<Card className="bg-background border-border shadow-sm">
 						<CardContent className="p-5 flex items-center gap-3">
-							<div className="rounded-xl p-2.5 bg-amber-50 text-amber-700">
+							<div className="rounded-md p-2.5 bg-ds-amber-100 text-tone-warning">
 								<GraduationCap className="h-5 w-5" />
 							</div>
 							<div>
-								<p className="text-xs text-slate-500">
+								<p className="text-xs text-muted-foreground">
 									Graduating by {currentYear + 1}
 								</p>
-								<p className="text-2xl font-semibold text-slate-900">
+								<p className="text-2xl font-semibold text-foreground">
 									{graduatingSoonCount}
 								</p>
 							</div>
@@ -459,316 +531,570 @@ export default function ResumeDatabaseContent() {
 					</Card>
 				</div>
 
-				<Card className="bg-white border-slate-200 shadow-sm">
-					<CardContent className="p-4 md:p-5">
-						<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
-							<div className="relative xl:col-span-2">
-								<Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-								<Input
-									type="text"
-									placeholder="Search by name, email, or major"
-									value={searchTerm}
-									onChange={(e) => {
-										setSearchTerm(e.target.value);
-										setCurrentPage(1);
-									}}
-									className="pl-9 h-10"
-								/>
-							</div>
-							<Select
-								value={Array.from(selectedMajors)[0] || "all_majors"}
-								onValueChange={(value) => {
-									if (value === "all_majors") {
-										setSelectedMajors(new Set());
-									} else {
-										setSelectedMajors(new Set([value]));
-									}
-									setCurrentPage(1);
-								}}
-							>
-								<SelectTrigger className="h-10">
-									<SelectValue placeholder="All majors" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all_majors">All majors</SelectItem>
-									{uniqueMajors.map((major) => (
-										<SelectItem key={major} value={major}>
-											{major}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<Select
-								value={Array.from(selectedYears)[0] || "all_years"}
-								onValueChange={(value) => {
-									if (value === "all_years") {
-										setSelectedYears(new Set());
-									} else {
-										setSelectedYears(new Set([value]));
-									}
-									setCurrentPage(1);
-								}}
-							>
-								<SelectTrigger className="h-10">
-									<SelectValue placeholder="All years" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all_years">All years</SelectItem>
-									{uniqueYears.map((year) => (
-										<SelectItem key={year.toString()} value={year.toString()}>
-											Class of {year}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<Select
-								value={selectedOfficerStatus}
-								onValueChange={(value) => {
-									setSelectedOfficerStatus(value);
-									setCurrentPage(1);
-								}}
-							>
-								<SelectTrigger className="h-10">
-									<div className="flex items-center gap-2 flex-1">
-										<Users className="w-4 h-4 text-slate-400" />
-										<SelectValue placeholder="All members" />
-									</div>
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All members</SelectItem>
-									<SelectItem value="officers">Officers only</SelectItem>
-									<SelectItem value="members">General members</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="mt-3 flex items-center justify-between">
-							<p className="text-xs text-slate-500">
-								Click any user row to view their resume in-page.
+				{isMobile ? (
+					<div className="space-y-3">
+						<div className="flex items-center justify-between gap-2">
+							<p className="text-xs text-muted-foreground">
+								{selectionMode
+									? "Tap checkboxes to select resumes"
+									: "Tap a candidate to open their resume"}
 							</p>
-							<Button variant="outline" size="sm" onClick={clearFilters}>
-								Clear filters
+							<Button
+								variant={selectionMode ? "secondary" : "outline"}
+								size="sm"
+								className="h-11 gap-1.5"
+								onClick={() => {
+									if (selectionMode) exitSelectionMode();
+									else setSelectionMode(true);
+								}}
+							>
+								{selectionMode ? (
+									<>
+										<X className="h-4 w-4" />
+										Cancel
+									</>
+								) : (
+									<>
+										<CheckSquare className="h-4 w-4" />
+										Select
+									</>
+								)}
 							</Button>
 						</div>
-					</CardContent>
-				</Card>
-
-				{loading ? (
-					<Card className="bg-white border-slate-200 shadow-sm">
-						<CardContent className="p-12 text-center space-y-3">
-							<div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto" />
-							<p className="text-slate-600">Loading resumes...</p>
+						<MobileFilters
+							searchValue={searchTerm}
+							onSearchChange={(value) => {
+								setSearchTerm(value);
+								setCurrentPage(1);
+							}}
+							searchPlaceholder="Search name, email, major"
+							activeChips={activeFilterChips}
+							onClearAll={clearFilters}
+							activeFilterCount={activeFilterChips.length}
+							sheetContent={
+								<div className="space-y-4">
+									<div className="space-y-2">
+										<Label>Major</Label>
+										<Select
+											value={Array.from(selectedMajors)[0] || "all_majors"}
+											onValueChange={(value) => {
+												if (value === "all_majors") {
+													setSelectedMajors(new Set());
+												} else {
+													setSelectedMajors(new Set([value]));
+												}
+												setCurrentPage(1);
+											}}
+										>
+											<SelectTrigger className="h-11">
+												<SelectValue placeholder="All majors" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="all_majors">All majors</SelectItem>
+												{uniqueMajors.map((major) => (
+													<SelectItem key={major} value={major}>
+														{major}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+									<div className="space-y-2">
+										<Label>Graduation year</Label>
+										<Select
+											value={Array.from(selectedYears)[0] || "all_years"}
+											onValueChange={(value) => {
+												if (value === "all_years") {
+													setSelectedYears(new Set());
+												} else {
+													setSelectedYears(new Set([value]));
+												}
+												setCurrentPage(1);
+											}}
+										>
+											<SelectTrigger className="h-11">
+												<SelectValue placeholder="All years" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="all_years">All years</SelectItem>
+												{uniqueYears.map((year) => (
+													<SelectItem
+														key={year.toString()}
+														value={year.toString()}
+													>
+														Class of {year}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+									<div className="space-y-2">
+										<Label>Role</Label>
+										<Select
+											value={selectedOfficerStatus}
+											onValueChange={(value) => {
+												setSelectedOfficerStatus(value);
+												setCurrentPage(1);
+											}}
+										>
+											<SelectTrigger className="h-11">
+												<SelectValue placeholder="All members" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="all">All members</SelectItem>
+												<SelectItem value="officers">Officers only</SelectItem>
+												<SelectItem value="members">General members</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+								</div>
+							}
+							onReset={clearFilters}
+						/>
+					</div>
+				) : (
+					<Card className="bg-background border-border shadow-sm">
+						<CardContent className="p-4 md:p-5">
+							<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+								<div className="relative xl:col-span-2">
+									<Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+									<Input
+										type="text"
+										placeholder="Search by name, email, or major"
+										value={searchTerm}
+										onChange={(e) => {
+											setSearchTerm(e.target.value);
+											setCurrentPage(1);
+										}}
+										className="pl-9 h-10"
+									/>
+								</div>
+								<Select
+									value={Array.from(selectedMajors)[0] || "all_majors"}
+									onValueChange={(value) => {
+										if (value === "all_majors") {
+											setSelectedMajors(new Set());
+										} else {
+											setSelectedMajors(new Set([value]));
+										}
+										setCurrentPage(1);
+									}}
+								>
+									<SelectTrigger className="h-10">
+										<SelectValue placeholder="All majors" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all_majors">All majors</SelectItem>
+										{uniqueMajors.map((major) => (
+											<SelectItem key={major} value={major}>
+												{major}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<Select
+									value={Array.from(selectedYears)[0] || "all_years"}
+									onValueChange={(value) => {
+										if (value === "all_years") {
+											setSelectedYears(new Set());
+										} else {
+											setSelectedYears(new Set([value]));
+										}
+										setCurrentPage(1);
+									}}
+								>
+									<SelectTrigger className="h-10">
+										<SelectValue placeholder="All years" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all_years">All years</SelectItem>
+										{uniqueYears.map((year) => (
+											<SelectItem key={year.toString()} value={year.toString()}>
+												Class of {year}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<Select
+									value={selectedOfficerStatus}
+									onValueChange={(value) => {
+										setSelectedOfficerStatus(value);
+										setCurrentPage(1);
+									}}
+								>
+									<SelectTrigger className="h-10">
+										<div className="flex items-center gap-2 flex-1">
+											<Users className="w-4 h-4 text-muted-foreground" />
+											<SelectValue placeholder="All members" />
+										</div>
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all">All members</SelectItem>
+										<SelectItem value="officers">Officers only</SelectItem>
+										<SelectItem value="members">General members</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="mt-3 flex items-center justify-between">
+								<p className="text-xs text-muted-foreground">
+									Click any user row to view their resume in-page.
+								</p>
+								<Button variant="outline" size="sm" onClick={clearFilters}>
+									Clear filters
+								</Button>
+							</div>
 						</CardContent>
 					</Card>
-				) : error ? (
-					<Card className="border-rose-200 bg-rose-50">
-						<CardContent className="p-6">
-							<p className="text-rose-800 font-medium">Error</p>
-							<p className="text-rose-700 text-sm">{error}</p>
+				)}
+
+				{loading ? (
+					<Card className="bg-background border-border shadow-raised">
+						<CardContent className="space-y-3 p-12 text-center">
+							<div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-foreground" />
+							<p className="text-muted-foreground">Loading resumes…</p>
 						</CardContent>
 					</Card>
 				) : filteredUsers.length === 0 ? (
-					<Card className="bg-white border-slate-200 shadow-sm">
+					<Card className="bg-background border-border shadow-raised">
 						<CardContent className="p-12 text-center">
-							<FileText className="w-14 h-14 text-slate-300 mx-auto mb-3" />
-							<h3 className="text-base font-semibold text-slate-900">
+							<FileText className="mx-auto mb-3 h-14 w-14 text-muted-foreground" />
+							<h3 className="text-base font-semibold text-foreground">
 								No resumes found
 							</h3>
-							<p className="text-sm text-slate-600 mt-1">
+							<p className="mt-1 text-sm text-muted-foreground">
 								{searchTerm ||
 								selectedMajors.size > 0 ||
 								selectedYears.size > 0 ||
 								selectedOfficerStatus !== "all"
 									? "Try adjusting your filters."
-									: "No members have opted in to share resumes yet."}
+									: "No members have uploaded resumes yet. Ask members to add one from Settings."}
 							</p>
 						</CardContent>
 					</Card>
 				) : (
 					<>
 						{selectedUsers.size > 0 && (
-							<Card className="border-blue-200 bg-blue-50">
-								<CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-									<p className="text-sm text-blue-800">
-										<strong>{selectedUsers.size}</strong> user
-										{selectedUsers.size !== 1 ? "s" : ""} selected
-									</p>
-									<div className="flex items-center gap-2">
-										<Button
-											onClick={handleDownloadSelected}
-											size="sm"
-											className="gap-2"
-										>
-											<Download className="w-4 h-4" />
-											Download {selectedUsers.size === 1 ? "Resume" : "as CSV"}
-										</Button>
-										<Button
-											variant="outline"
-											size="sm"
-											onClick={() => setSelectedUsers(new Set())}
-										>
-											Clear Selection
-										</Button>
-									</div>
-								</CardContent>
-							</Card>
+							<div
+								className={
+									isMobile
+										? "sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 -mx-4 border-y border-ds-blue-100 bg-ds-blue-100 px-4 py-3 sm:-mx-6 sm:px-6 md:static md:mx-0 md:rounded-md md:border"
+										: undefined
+								}
+							>
+								<Card
+									className={
+										isMobile
+											? "border-0 bg-transparent shadow-none"
+											: "border-ds-blue-100 bg-ds-blue-100"
+									}
+								>
+									<CardContent className="flex flex-col gap-3 p-0 sm:flex-row sm:items-center sm:justify-between md:p-4">
+										<p className="text-sm text-tone-info">
+											<strong>{selectedUsers.size}</strong> user
+											{selectedUsers.size !== 1 ? "s" : ""} selected
+										</p>
+										<div className="flex items-center gap-2">
+											<Button
+												onClick={handleDownloadSelected}
+												size="sm"
+												className="h-11 flex-1 gap-2 sm:flex-none"
+											>
+												<Download className="w-4 h-4" />
+												Download{" "}
+												{selectedUsers.size === 1 ? "Resume" : "as CSV"}
+											</Button>
+											<Button
+												variant="outline"
+												size="sm"
+												className="h-11"
+												onClick={() => setSelectedUsers(new Set())}
+											>
+												Clear
+											</Button>
+										</div>
+									</CardContent>
+								</Card>
+							</div>
 						)}
 
-						<Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
-							<div className="overflow-x-auto">
-								<Table>
-									<TableHeader>
-										<TableRow className="bg-slate-50 hover:bg-slate-50">
-											<TableHead className="px-5 py-3 w-12">
-												<Checkbox
-													checked={
-														paginatedUsers.length > 0 &&
-														paginatedUsers.every((u) => selectedUsers.has(u.id))
-													}
-													onCheckedChange={(checked) =>
-														handleSelectAll(Boolean(checked))
-													}
-													aria-label="Select all users"
-												/>
-											</TableHead>
-											<TableHead className="px-5 py-3">Name</TableHead>
-											<TableHead className="px-5 py-3">Email</TableHead>
-											<TableHead className="px-5 py-3">Major</TableHead>
-											<TableHead className="px-5 py-3">Grad Year</TableHead>
-											<TableHead className="px-5 py-3">Role</TableHead>
-										</TableRow>
-									</TableHeader>
-									<TableBody>
-										{paginatedUsers.map((user) => (
-											<TableRow
-												key={user.id}
-												className="hover:bg-slate-50 cursor-pointer transition-colors"
-											>
-												<TableCell
-													className="px-5 py-4"
-													onClick={(e) => {
-														e.stopPropagation();
-														handleSelectUser(user.id);
-													}}
-												>
+						{isMobile ? (
+							<div className="space-y-3">
+								<MobileDataList>
+									{paginatedUsers.map((user) => (
+										<MobileDataListItem
+											key={user.id}
+											title={user.name}
+											subtitle={getNormalizedMajor(user.major) || "Major N/A"}
+											meta={
+												user.graduationYear
+													? `Class of ${user.graduationYear}`
+													: undefined
+											}
+											status={
+												<Badge variant={getRoleBadgeVariant(user.role)}>
+													{user.position || user.role}
+												</Badge>
+											}
+											leading={
+												selectionMode ? (
 													<Checkbox
 														checked={selectedUsers.has(user.id)}
 														onCheckedChange={() => handleSelectUser(user.id)}
 														aria-label={`Select ${user.name}`}
+														className="size-5"
 													/>
-												</TableCell>
-												<TableCell
-													className="px-5 py-4"
-													onClick={() => handleRowClick(user)}
-												>
-													<div className="text-sm font-medium text-slate-900">
-														{user.name}
-													</div>
-												</TableCell>
-												<TableCell
-													className="px-5 py-4"
-													onClick={() => handleRowClick(user)}
-												>
-													<div className="text-sm text-slate-600">
-														{user.email}
-													</div>
-												</TableCell>
-												<TableCell
-													className="px-5 py-4"
-													onClick={() => handleRowClick(user)}
-												>
-													<div
-														className="text-sm text-slate-900 max-w-[230px] truncate"
-														title={getNormalizedMajor(user.major) || "N/A"}
-													>
-														{getNormalizedMajor(user.major) || "N/A"}
-													</div>
-												</TableCell>
-												<TableCell
-													className="px-5 py-4"
-													onClick={() => handleRowClick(user)}
-												>
-													<div className="text-sm text-slate-900">
-														{user.graduationYear || "N/A"}
-													</div>
-												</TableCell>
-												<TableCell
-													className="px-5 py-4"
-													onClick={() => handleRowClick(user)}
-												>
-													<Badge variant={getRoleBadgeVariant(user.role)}>
-														{user.position || user.role}
-													</Badge>
-												</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
+												) : undefined
+											}
+											onClick={() => {
+												if (selectionMode) {
+													handleSelectUser(user.id);
+													return;
+												}
+												handleRowClick(user);
+											}}
+											showChevron={!selectionMode}
+										/>
+									))}
+								</MobileDataList>
+								{totalPages > 1 && (
+									<div className="flex items-center justify-between gap-3 px-1">
+										<Button
+											variant="outline"
+											className="h-11 flex-1"
+											disabled={currentPage === 1}
+											onClick={() => handlePageChange(currentPage - 1)}
+										>
+											Previous
+										</Button>
+										<span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+											Page {currentPage} of {totalPages}
+										</span>
+										<Button
+											variant="outline"
+											className="h-11 flex-1"
+											disabled={currentPage === totalPages}
+											onClick={() => handlePageChange(currentPage + 1)}
+										>
+											Next
+										</Button>
+									</div>
+								)}
 							</div>
-
-							{totalPages > 1 && (
-								<div className="bg-slate-50 px-5 py-4 border-t border-slate-200">
-									<div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-										<div className="flex flex-col sm:flex-row items-center gap-4">
-											<p className="text-sm text-slate-700">
-												Showing{" "}
-												<span className="font-medium">{startIndex + 1}</span> to{" "}
-												<span className="font-medium">
-													{Math.min(endIndex, filteredUsers.length)}
-												</span>{" "}
-												of{" "}
-												<span className="font-medium">
-													{filteredUsers.length}
-												</span>
-											</p>
-											<div className="flex items-center gap-2">
-												<span className="text-sm text-slate-700">
-													Per page:
-												</span>
-												<Select
-													value={itemsPerPage.toString()}
-													onValueChange={handleItemsPerPageChange}
+						) : (
+							<Card className="bg-background border-border shadow-sm overflow-hidden">
+								<div className="overflow-x-auto">
+									<Table>
+										<TableHeader>
+											<TableRow className="bg-muted hover:bg-muted">
+												<TableHead className="px-5 py-3 w-12">
+													<Checkbox
+														checked={
+															paginatedUsers.length > 0 &&
+															paginatedUsers.every((u) =>
+																selectedUsers.has(u.id),
+															)
+														}
+														onCheckedChange={(checked) =>
+															handleSelectAll(Boolean(checked))
+														}
+														aria-label="Select all users"
+													/>
+												</TableHead>
+												<TableHead className="px-5 py-3">Name</TableHead>
+												<TableHead className="px-5 py-3">Email</TableHead>
+												<TableHead className="px-5 py-3">Major</TableHead>
+												<TableHead className="px-5 py-3">Grad Year</TableHead>
+												<TableHead className="px-5 py-3">Role</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{paginatedUsers.map((user) => (
+												<TableRow
+													key={user.id}
+													className="hover:bg-muted cursor-pointer transition-colors"
 												>
-													<SelectTrigger className="w-20 h-8 bg-white">
-														<SelectValue />
-													</SelectTrigger>
-													<SelectContent>
-														<SelectItem value="10">10</SelectItem>
-														<SelectItem value="25">25</SelectItem>
-														<SelectItem value="50">50</SelectItem>
-														<SelectItem value="100">100</SelectItem>
-													</SelectContent>
-												</Select>
+													<TableCell
+														className="px-5 py-4"
+														onClick={(e) => {
+															e.stopPropagation();
+															handleSelectUser(user.id);
+														}}
+													>
+														<Checkbox
+															checked={selectedUsers.has(user.id)}
+															onCheckedChange={() => handleSelectUser(user.id)}
+															aria-label={`Select ${user.name}`}
+														/>
+													</TableCell>
+													<TableCell
+														className="px-5 py-4"
+														onClick={() => handleRowClick(user)}
+													>
+														<div className="text-sm font-medium text-foreground">
+															{user.name}
+														</div>
+													</TableCell>
+													<TableCell
+														className="px-5 py-4"
+														onClick={() => handleRowClick(user)}
+													>
+														<div className="text-sm text-muted-foreground">
+															{user.email}
+														</div>
+													</TableCell>
+													<TableCell
+														className="px-5 py-4"
+														onClick={() => handleRowClick(user)}
+													>
+														<div
+															className="text-sm text-foreground max-w-[230px] truncate"
+															title={getNormalizedMajor(user.major) || "N/A"}
+														>
+															{getNormalizedMajor(user.major) || "N/A"}
+														</div>
+													</TableCell>
+													<TableCell
+														className="px-5 py-4"
+														onClick={() => handleRowClick(user)}
+													>
+														<div className="text-sm text-foreground">
+															{user.graduationYear || "N/A"}
+														</div>
+													</TableCell>
+													<TableCell
+														className="px-5 py-4"
+														onClick={() => handleRowClick(user)}
+													>
+														<Badge variant={getRoleBadgeVariant(user.role)}>
+															{user.position || user.role}
+														</Badge>
+													</TableCell>
+												</TableRow>
+											))}
+										</TableBody>
+									</Table>
+								</div>
+
+								{totalPages > 1 && (
+									<div className="bg-muted px-5 py-4 border-t border-border">
+										<div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+											<div className="flex flex-col sm:flex-row items-center gap-4">
+												<p className="text-sm text-foreground">
+													Showing{" "}
+													<span className="font-medium">{startIndex + 1}</span>{" "}
+													to{" "}
+													<span className="font-medium">
+														{Math.min(endIndex, filteredUsers.length)}
+													</span>{" "}
+													of{" "}
+													<span className="font-medium">
+														{filteredUsers.length}
+													</span>
+												</p>
+												<div className="flex items-center gap-2">
+													<span className="text-sm text-foreground">
+														Per page:
+													</span>
+													<Select
+														value={itemsPerPage.toString()}
+														onValueChange={handleItemsPerPageChange}
+													>
+														<SelectTrigger className="w-20 h-8 bg-background">
+															<SelectValue />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value="10">10</SelectItem>
+															<SelectItem value="25">25</SelectItem>
+															<SelectItem value="50">50</SelectItem>
+															<SelectItem value="100">100</SelectItem>
+														</SelectContent>
+													</Select>
+												</div>
+											</div>
+
+											<div className="flex items-center gap-2">
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => handlePageChange(currentPage - 1)}
+													disabled={currentPage === 1}
+												>
+													Previous
+												</Button>
+												<span className="text-sm text-foreground">
+													Page {currentPage} of {totalPages}
+												</span>
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => handlePageChange(currentPage + 1)}
+													disabled={currentPage === totalPages}
+												>
+													Next
+												</Button>
 											</div>
 										</div>
-
-										<div className="flex items-center gap-2">
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => handlePageChange(currentPage - 1)}
-												disabled={currentPage === 1}
-											>
-												Previous
-											</Button>
-											<span className="text-sm text-slate-700">
-												Page {currentPage} of {totalPages}
-											</span>
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => handlePageChange(currentPage + 1)}
-												disabled={currentPage === totalPages}
-											>
-												Next
-											</Button>
-										</div>
 									</div>
-								</div>
-							)}
-						</Card>
+								)}
+							</Card>
+						)}
 					</>
 				)}
 			</div>
+
+			{isMobile && selectedUser && (
+				<ResponsiveOverlay
+					open={view === "detail"}
+					onOpenChange={(open) => {
+						if (!open) handleBackToList();
+					}}
+					title={selectedUser.name}
+					description={`${selectedUser.email} · ${getNormalizedMajor(selectedUser.major) || "Major N/A"} · Class of ${selectedUser.graduationYear || "N/A"}`}
+					variant="fullscreen"
+					footer={
+						<div className="flex w-full gap-2">
+							<Button
+								variant="outline"
+								className="h-11 flex-1"
+								disabled={selectedIndex <= 0}
+								onClick={() => {
+									const prev = filteredUsers[selectedIndex - 1];
+									if (prev) setSelectedUserId(prev.id);
+								}}
+							>
+								Previous
+							</Button>
+							<Button variant="outline" className="h-11 flex-1" asChild>
+								<a
+									href={selectedUser.resume}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									Download
+								</a>
+							</Button>
+							<Button
+								className="h-11 flex-1"
+								disabled={
+									selectedIndex < 0 || selectedIndex >= filteredUsers.length - 1
+								}
+								onClick={() => {
+									const next = filteredUsers[selectedIndex + 1];
+									if (next) setSelectedUserId(next.id);
+								}}
+							>
+								Next
+							</Button>
+						</div>
+					}
+				>
+					<iframe
+						src={selectedUser.resume}
+						className="h-[calc(100dvh-12rem)] w-full min-w-0 rounded-md border"
+						title={`${selectedUser.name}'s Resume`}
+					/>
+				</ResponsiveOverlay>
+			)}
 		</div>
 	);
 }

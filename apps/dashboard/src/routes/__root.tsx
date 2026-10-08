@@ -1,153 +1,205 @@
+import type { QueryClient } from "@tanstack/react-query";
 import {
-  HeadContent,
-  Outlet,
-  Scripts,
-  createRootRouteWithContext,
-  useRouterState,
+	createRootRouteWithContext,
+	HeadContent,
+	Outlet,
+	Scripts,
+	useRouterState,
 } from "@tanstack/react-router";
-import AppLogtoProvider from "../integrations/logto/provider";
-import ConvexProvider from "../integrations/convex/provider";
-import { AuthProvider } from "@/hooks/useAuth";
-
+import { useTheme } from "next-themes";
 import { Toaster } from "sonner";
-
+import { ThemeMeta, ThemeProvider, ThemeScript } from "@/components/theme";
+import { AuthProvider } from "@/hooks/useAuth";
+import ConvexProvider from "../integrations/convex/provider";
+import AppLogtoProvider from "../integrations/logto/provider";
 import appCss from "../styles.css?url";
 
-import type { QueryClient } from "@tanstack/react-query";
-
 interface MyRouterContext {
-  queryClient: QueryClient;
+	queryClient: QueryClient;
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  head: () => ({
-    meta: [
-      {
-        charSet: "utf-8",
-      },
-      {
-        name: "viewport",
-        content: "width=device-width, initial-scale=1",
-      },
-      {
-        title: "IEEE UCSD Dashboard",
-      },
-    ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      {
-        rel: "icon",
-        href: "/favicon.ico",
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        sizes: "16x16",
-        href: "/favicon-16x16.png",
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        sizes: "32x32",
-        href: "/favicon-32x32.png",
-      },
-      {
-        rel: "icon",
-        type: "image/svg+xml",
-        href: "/favicon.svg",
-      },
-      {
-        rel: "apple-touch-icon",
-        sizes: "180x180",
-        href: "/apple-touch-icon.png",
-      },
-    ],
-  }),
+	head: () => ({
+		meta: [
+			{
+				charSet: "utf-8",
+			},
+			{
+				name: "viewport",
+				content:
+					"width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5",
+			},
+			{
+				title: "IEEE UCSD Dashboard",
+			},
+			{
+				name: "theme-color",
+				content: "#006bff",
+			},
+			{
+				name: "apple-mobile-web-app-capable",
+				content: "yes",
+			},
+			{
+				name: "apple-mobile-web-app-status-bar-style",
+				content: "default",
+			},
+			{
+				name: "apple-mobile-web-app-title",
+				content: "IEEE UCSD",
+			},
+			{
+				name: "mobile-web-app-capable",
+				content: "yes",
+			},
+			{
+				name: "description",
+				content:
+					"IEEE at UC San Diego member dashboard — events, reimbursements, and chapter tools.",
+			},
+		],
+		links: [
+			{
+				rel: "stylesheet",
+				href: appCss,
+			},
+			{
+				rel: "manifest",
+				href: "/manifest.json",
+			},
+			{
+				rel: "icon",
+				href: "/favicon.ico",
+			},
+			{
+				rel: "icon",
+				type: "image/png",
+				sizes: "16x16",
+				href: "/favicon-16x16.png",
+			},
+			{
+				rel: "icon",
+				type: "image/png",
+				sizes: "32x32",
+				href: "/favicon-32x32.png",
+			},
+			{
+				rel: "icon",
+				type: "image/svg+xml",
+				href: "/favicon.svg",
+			},
+			{
+				rel: "apple-touch-icon",
+				sizes: "180x180",
+				href: "/apple-touch-icon.png",
+			},
+		],
+	}),
 
-  component: RootComponent,
-  shellComponent: RootDocument,
-  notFoundComponent: NotFoundComponent,
+	component: RootComponent,
+	shellComponent: RootDocument,
+	notFoundComponent: NotFoundComponent,
 });
 
 function NotFoundComponent() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold">404</h1>
-        <p className="text-muted-foreground">Page not found</p>
-        <a href="/overview" className="text-primary hover:underline">
-          Go to Dashboard
-        </a>
-      </div>
-    </div>
-  );
+	return (
+		<div className="flex min-h-dvh items-center justify-center bg-background px-4 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
+			<div className="w-full max-w-sm space-y-4 text-center">
+				<h1 className="text-4xl font-bold tracking-tight">404</h1>
+				<p className="text-muted-foreground">Page not found</p>
+				<a
+					href="/overview"
+					className="motion-press inline-flex h-12 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground"
+				>
+					Go to Dashboard
+				</a>
+			</div>
+		</div>
+	);
 }
 
 function HydrationCleanupScript() {
-  return (
-    <script
-      dangerouslySetInnerHTML={{
-        __html: [
-          // Runs in <head> before React hydrates the <body>.
-          // 1. Strips browser-extension-injected data-* attrs (e.g. data-qb-installed)
-          // 2. Strips the serialized suppresshydrationwarning HTML attribute
-          //    (React adds it during SSR but treats it as a React-internal prop during hydration)
-          // 3. Uses MutationObserver to catch extensions that inject after initial parse
-          `(function(){`,
-          `var h=document.documentElement;`,
-          `function c(){var a=h.getAttributeNames(),i=a.length;while(i--){var n=a[i];`,
-          `if((n.startsWith("data-")&&!n.startsWith("data-tsd-"))||n==="suppresshydrationwarning")h.removeAttribute(n)}}`,
-          `c();`,
-          `var o=new MutationObserver(function(){c()});`,
-          `o.observe(h,{attributes:true});`,
-          `setTimeout(function(){o.disconnect()},5000);`,
-          `})()`,
-        ].join(""),
-      }}
-    />
-  );
+	return (
+		<script
+			dangerouslySetInnerHTML={{
+				__html: [
+					// Runs in <head> before React hydrates the <body>.
+					// 1. Strips browser-extension-injected data-* attrs (e.g. data-qb-installed)
+					// 2. Strips the serialized suppresshydrationwarning HTML attribute
+					//    (React adds it during SSR but treats it as a React-internal prop during hydration)
+					// 3. Uses MutationObserver to catch extensions that inject after initial parse
+					`(function(){`,
+					`var h=document.documentElement;`,
+					`function c(){var a=h.getAttributeNames(),i=a.length;while(i--){var n=a[i];`,
+					`if((n.startsWith("data-")&&!n.startsWith("data-tsd-"))||n==="suppresshydrationwarning")h.removeAttribute(n)}}`,
+					`c();`,
+					`var o=new MutationObserver(function(){c()});`,
+					`o.observe(h,{attributes:true});`,
+					`setTimeout(function(){o.disconnect()},5000);`,
+					`})()`,
+				].join(""),
+			}}
+		/>
+	);
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <HeadContent />
-        <HydrationCleanupScript />
-      </head>
-      <body suppressHydrationWarning>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
+	return (
+		<html lang="en" suppressHydrationWarning>
+			<head>
+				<HeadContent />
+				<ThemeScript />
+				<HydrationCleanupScript />
+			</head>
+			<body suppressHydrationWarning>
+				{children}
+				<Scripts />
+			</body>
+		</html>
+	);
+}
+
+function ThemedToaster() {
+	const { resolvedTheme } = useTheme();
+	return (
+		<Toaster
+			theme={resolvedTheme === "dark" ? "dark" : "light"}
+			position="bottom-right"
+			toastOptions={{
+				classNames: {
+					toast:
+						"border-border bg-popover text-popover-foreground shadow-popover",
+				},
+			}}
+		/>
+	);
 }
 
 function RootComponent() {
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
+	const pathname = useRouterState({
+		select: (state) => state.location.pathname,
+	});
 
-  if (pathname.startsWith("/accept-invitation/")) {
-    return (
-      <>
-        <Outlet />
-        <Toaster richColors position="bottom-right" />
-      </>
-    );
-  }
+	if (pathname.startsWith("/accept-invitation/")) {
+		return (
+			<ThemeProvider>
+				<ThemeMeta />
+				<Outlet />
+			</ThemeProvider>
+		);
+	}
 
-  return (
-    <AppLogtoProvider>
-      <ConvexProvider>
-        <AuthProvider>
-          <Outlet />
-          <Toaster richColors position="bottom-right" />
-        </AuthProvider>
-      </ConvexProvider>
-    </AppLogtoProvider>
-  );
+	return (
+		<ThemeProvider>
+			<ThemeMeta />
+			<AppLogtoProvider>
+				<ConvexProvider>
+					<AuthProvider>
+						<Outlet />
+						<ThemedToaster />
+					</AuthProvider>
+				</ConvexProvider>
+			</AppLogtoProvider>
+		</ThemeProvider>
+	);
 }

@@ -5,10 +5,15 @@ import {
 	FilePlus,
 	List,
 	Loader2,
+	MoreHorizontal,
 	Plus,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+	DashboardPage,
+	PageHeader,
+} from "@/components/dashboard/DashboardPage";
 import {
 	DraftEventModal,
 	DraftViewModal,
@@ -35,21 +40,24 @@ import {
 	saveWeekLabelSettings,
 	type WeekLabelSettings,
 } from "@/components/manage-events/utils/weekLabels";
+import { ResponsiveOverlay, useMobileShell } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuthedMutation, useAuthedQuery } from "@/hooks/useAuthedConvex";
 import { usePermissions } from "@/hooks/usePermissions";
+import { prefetchAuthedQuery } from "@/lib/prefetch/prefetch";
 import { sendNotification } from "@/lib/send-notification";
 
 export const Route = createFileRoute("/_dashboard/manage-events")({
+	loader: (ctx) => prefetchAuthedQuery(api.events.listAll, undefined, ctx),
 	component: ManageEventsPage,
 });
 
@@ -120,6 +128,66 @@ function mapEventToType(event: any): EventRequest {
 	};
 }
 
+function buildUpdateEventArgs(
+	logtoId: string,
+	eventId: string,
+	data: EventFormData,
+) {
+	return {
+		logtoId,
+		id: eventId as any,
+		eventName: data.eventName,
+		location: data.location,
+		startDate: data.startDate,
+		endDate: data.endDate,
+		eventDescription: data.eventDescription,
+		eventType: normalizeEventType(data.eventType),
+		department: data.department,
+		expectedAttendance: data.estimatedAttendance,
+		flyersNeeded: data.needsFlyers,
+		needsGraphics: data.needsGraphics,
+		needsAsFunding: data.needsASFunding,
+		hasFood: data.hasFood,
+		eventCode: data.eventCode,
+		invoices: data.invoices.map((inv) => ({
+			id: inv._id,
+			vendor: inv.vendor,
+			items:
+				inv.items.length > 0
+					? inv.items
+					: [
+							{
+								description: inv.description,
+								quantity: 1,
+								unitPrice: inv.amount,
+								total: inv.amount,
+							},
+						],
+			tax: inv.tax || 0,
+			tip: inv.tip || 0,
+			subtotal: inv.subtotal || inv.amount,
+			total: inv.total || inv.amount,
+			additionalFiles: inv.additionalFiles || [],
+			invoiceFile: inv.invoiceFile,
+		})),
+		flyerType: data.flyerType,
+		otherFlyerType: data.otherFlyerType,
+		flyerAdvertisingStartDate: data.flyerAdvertisingStartDate,
+		flyerAdditionalRequests: data.flyerAdditionalRequests,
+		photographyNeeded: data.photographyNeeded,
+		requiredLogos: data.requiredLogos,
+		otherLogos: data.otherLogos,
+		advertisingFormat: data.advertisingFormat,
+		willOrHaveRoomBooking: data.willOrHaveRoomBooking,
+		roomBookingFiles: data.roomBookingFiles,
+		asFundingRequired: data.asFundingRequired,
+		foodDrinksBeingServed: data.foodDrinksBeingServed,
+		additionalSpecifications: data.additionalSpecifications,
+		flyersCompleted: data.flyersCompleted,
+		graphicsUploadNote: data.graphicsUploadNote || undefined,
+	};
+}
+
 function ManageEventsPage() {
 	const {
 		hasOfficerAccess,
@@ -129,6 +197,8 @@ function ManageEventsPage() {
 		getAuthHeaders,
 		isLoading,
 	} = usePermissions();
+	const isMobile = useIsMobile();
+	const { setHideTabBar } = useMobileShell();
 	const aiEnabled = user?.aiFeaturesEnabled !== false;
 
 	// Single unified query — events and eventRequests are now one table
@@ -136,6 +206,25 @@ function ManageEventsPage() {
 		api.events.listAll,
 		logtoId ? { logtoId } : "skip",
 	);
+	const cachedEventsDataRef = useRef<{
+		logtoId: string;
+		events: NonNullable<typeof eventsData>;
+	} | null>(null);
+
+	if (eventsData !== undefined && logtoId) {
+		cachedEventsDataRef.current = {
+			logtoId,
+			events: eventsData,
+		};
+	}
+
+	// A refreshed auth token briefly creates a new Convex subscription. Keep the
+	// resolved data mounted during that handoff so calendar and modal state survive.
+	const stableEventsData =
+		eventsData ??
+		(cachedEventsDataRef.current?.logtoId === logtoId
+			? cachedEventsDataRef.current.events
+			: undefined);
 
 	// Convex mutations (all unified under api.events)
 	const createEvent = useAuthedMutation(api.events.create);
@@ -180,6 +269,7 @@ function ManageEventsPage() {
 	const [isDraftModalOpen, setIsDraftModalOpen] = useState(false);
 	const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
 	const [isWeekSettingsOpen, setIsWeekSettingsOpen] = useState(false);
+	const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
 	const [editingRequest, setEditingRequest] = useState<EventRequest | null>(
 		null,
 	);
@@ -192,6 +282,24 @@ function ManageEventsPage() {
 
 	// Loading state
 	const [isProcessing, setIsProcessing] = useState(false);
+
+	useEffect(() => {
+		const immersive =
+			isWizardOpen ||
+			isDraftModalOpen ||
+			isViewModalOpen ||
+			isDraftViewModalOpen ||
+			isFileManagerOpen;
+		setHideTabBar(immersive);
+		return () => setHideTabBar(false);
+	}, [
+		isWizardOpen,
+		isDraftModalOpen,
+		isViewModalOpen,
+		isDraftViewModalOpen,
+		isFileManagerOpen,
+		setHideTabBar,
+	]);
 
 	useEffect(() => {
 		if (!convexWeekLabelSettings || hasHydratedWeekSettings.current) return;
@@ -219,8 +327,8 @@ function ManageEventsPage() {
 
 	// Transform data to EventRequest type — single query, no merge needed
 	const allEvents: EventRequest[] = useMemo(() => {
-		return (eventsData || []).map(mapEventToType);
-	}, [eventsData]);
+		return (stableEventsData || []).map(mapEventToType);
+	}, [stableEventsData]);
 
 	// Filter events
 	const filteredEvents = useMemo(() => {
@@ -283,12 +391,12 @@ function ManageEventsPage() {
 	const paginatedEvents = useMemo(() => {
 		const startIndex = (currentPage - 1) * itemsPerPage;
 		return sortedEvents.slice(startIndex, startIndex + itemsPerPage);
-	}, [sortedEvents, currentPage, itemsPerPage]);
+	}, [sortedEvents, currentPage]);
 
 	// Reset page on filter/sort change
 	useMemo(() => {
 		setCurrentPage(1);
-	}, [filters, sortConfig]);
+	}, []);
 
 	// Loading state
 	if (isLoading) {
@@ -395,10 +503,25 @@ function ManageEventsPage() {
 					submitterEmail: user?.email || "",
 				});
 			}
-
-			setIsWizardOpen(false);
 		} catch (error: any) {
 			toast.error(error.message || "Failed to submit event request");
+			throw error;
+		} finally {
+			setIsProcessing(false);
+		}
+	};
+
+	const handleSaveRequest = async (data: EventFormData) => {
+		if (!logtoId || !editingRequest) return;
+		setIsProcessing(true);
+		try {
+			await updateEvent(
+				buildUpdateEventArgs(logtoId, editingRequest._id, data),
+			);
+			toast.success("Event saved successfully!");
+		} catch (error: any) {
+			toast.error(error.message || "Failed to save event");
+			throw error;
 		} finally {
 			setIsProcessing(false);
 		}
@@ -412,59 +535,9 @@ function ManageEventsPage() {
 			const convertingDraft = editingRequest.status === "draft";
 			const eventId = editingRequest._id as any;
 
-			await updateEvent({
-				logtoId,
-				id: eventId,
-				eventName: data.eventName,
-				location: data.location,
-				startDate: data.startDate,
-				endDate: data.endDate,
-				eventDescription: data.eventDescription,
-				eventType: normalizeEventType(data.eventType),
-				department: data.department,
-				expectedAttendance: data.estimatedAttendance,
-				flyersNeeded: data.needsFlyers,
-				needsGraphics: data.needsGraphics,
-				needsAsFunding: data.needsASFunding,
-				hasFood: data.hasFood,
-				eventCode: data.eventCode,
-				invoices: data.invoices.map((inv) => ({
-					id: inv._id,
-					vendor: inv.vendor,
-					items:
-						inv.items.length > 0
-							? inv.items
-							: [
-									{
-										description: inv.description,
-										quantity: 1,
-										unitPrice: inv.amount,
-										total: inv.amount,
-									},
-								],
-					tax: inv.tax || 0,
-					tip: inv.tip || 0,
-					subtotal: inv.subtotal || inv.amount,
-					total: inv.total || inv.amount,
-					additionalFiles: inv.additionalFiles || [],
-					invoiceFile: inv.invoiceFile,
-				})),
-				flyerType: data.flyerType,
-				otherFlyerType: data.otherFlyerType,
-				flyerAdvertisingStartDate: data.flyerAdvertisingStartDate,
-				flyerAdditionalRequests: data.flyerAdditionalRequests,
-				photographyNeeded: data.photographyNeeded,
-				requiredLogos: data.requiredLogos,
-				otherLogos: data.otherLogos,
-				advertisingFormat: data.advertisingFormat,
-				willOrHaveRoomBooking: data.willOrHaveRoomBooking,
-				roomBookingFiles: data.roomBookingFiles,
-				asFundingRequired: data.asFundingRequired,
-				foodDrinksBeingServed: data.foodDrinksBeingServed,
-				additionalSpecifications: data.additionalSpecifications,
-				flyersCompleted: data.flyersCompleted,
-				graphicsUploadNote: data.graphicsUploadNote || undefined,
-			});
+			await updateEvent(
+				buildUpdateEventArgs(logtoId, editingRequest._id, data),
+			);
 
 			if (convertingDraft) {
 				await updateEventStatus({
@@ -493,11 +566,9 @@ function ManageEventsPage() {
 			} else {
 				toast.success("Event updated successfully!");
 			}
-
-			setIsWizardOpen(false);
-			setEditingRequest(null);
 		} catch (error: any) {
 			toast.error(error.message || "Failed to update event");
+			throw error;
 		} finally {
 			setIsProcessing(false);
 		}
@@ -859,42 +930,65 @@ function ManageEventsPage() {
 	};
 
 	return (
-		<div className="p-4 sm:p-6 space-y-6 w-full max-w-7xl mx-auto overflow-x-hidden">
+		<DashboardPage width="wide" className="overflow-x-hidden">
 			{/* Header */}
-			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight">Manage Events</h1>
-					<p className="text-muted-foreground">
-						Review event requests and manage published events.
-					</p>
-				</div>
-				<div className="flex gap-2">
-					<Button
-						variant="outline"
-						onClick={() => {
-							setDraftDate(null);
-							setIsDraftModalOpen(true);
-						}}
-					>
-						<FilePlus className="h-4 w-4 mr-2" />
-						Quick Draft
-					</Button>
-					<Dialog
-						open={isWeekSettingsOpen}
-						onOpenChange={setIsWeekSettingsOpen}
-					>
-						<DialogTrigger asChild>
-							<Button variant="outline">Week Label Settings</Button>
-						</DialogTrigger>
-						<DialogContent className="sm:max-w-xl">
-							<DialogHeader>
-								<DialogTitle>Week Label Settings</DialogTitle>
-							</DialogHeader>
-							<p className="text-xs text-muted-foreground">
-								Set quarter starts once. Labels apply to both Manage Events and
-								Officer Calendar.
-							</p>
-							<p className="text-xs text-muted-foreground">
+			<PageHeader
+				title="Manage Events"
+				description="Review event requests and manage published events."
+				actions={
+					<>
+						{isMobile ? (
+							<Button onClick={() => setIsCreateSheetOpen(true)}>
+								<Plus className="h-4 w-4 mr-2" />
+								Create
+							</Button>
+						) : (
+							<>
+								<Button
+									variant="outline"
+									onClick={() => {
+										setDraftDate(null);
+										setIsDraftModalOpen(true);
+									}}
+								>
+									<FilePlus className="h-4 w-4 mr-2" />
+									Quick Draft
+								</Button>
+								<Button onClick={() => setIsWizardOpen(true)}>
+									<Plus className="h-4 w-4 mr-2" />
+									New Event Request
+								</Button>
+							</>
+						)}
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button variant="ghost" size="icon" aria-label="Event settings">
+									<MoreHorizontal />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end">
+								<DropdownMenuItem onSelect={() => setIsWeekSettingsOpen(true)}>
+									Week label settings
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+						<ResponsiveOverlay
+							open={isWeekSettingsOpen}
+							onOpenChange={setIsWeekSettingsOpen}
+							title="Week Label Settings"
+							description="Set quarter starts once. Labels apply to both Manage Events and Officer Calendar."
+							variant="large-sheet"
+							className="sm:max-w-xl"
+							footer={
+								<Button
+									className="h-11 w-full sm:h-9 sm:w-auto"
+									onClick={() => setIsWeekSettingsOpen(false)}
+								>
+									Done
+								</Button>
+							}
+						>
+							<p className="mb-4 text-xs text-muted-foreground">
 								Follow the UCSD calendar and put the date where it says __
 								Quarter Begins and NOT the date that says instruction begins.
 							</p>
@@ -906,6 +1000,7 @@ function ManageEventsPage() {
 									<Input
 										id="fall-week0-start"
 										type="date"
+										className="h-11 text-base sm:h-9 sm:text-sm"
 										value={weekLabelSettings.fallWeek0Start}
 										onChange={(e) =>
 											updateWeekLabelSetting("fallWeek0Start", e.target.value)
@@ -919,6 +1014,7 @@ function ManageEventsPage() {
 									<Input
 										id="winter-week1-start"
 										type="date"
+										className="h-11 text-base sm:h-9 sm:text-sm"
 										value={weekLabelSettings.winterWeek1Start}
 										onChange={(e) =>
 											updateWeekLabelSetting("winterWeek1Start", e.target.value)
@@ -932,6 +1028,7 @@ function ManageEventsPage() {
 									<Input
 										id="spring-week1-start"
 										type="date"
+										className="h-11 text-base sm:h-9 sm:text-sm"
 										value={weekLabelSettings.springWeek1Start}
 										onChange={(e) =>
 											updateWeekLabelSetting("springWeek1Start", e.target.value)
@@ -939,18 +1036,49 @@ function ManageEventsPage() {
 									/>
 								</div>
 							</div>
-						</DialogContent>
-					</Dialog>
-					<Button onClick={() => setIsWizardOpen(true)}>
-						<Plus className="h-4 w-4 mr-2" />
+						</ResponsiveOverlay>
+					</>
+				}
+			/>
+
+			{/* Mobile create action sheet */}
+			<ResponsiveOverlay
+				open={isCreateSheetOpen}
+				onOpenChange={setIsCreateSheetOpen}
+				title="Create"
+				variant="sheet"
+			>
+				<div className="space-y-2 pb-2">
+					<Button
+						variant="outline"
+						className="h-12 w-full justify-start gap-3"
+						onClick={() => {
+							setIsCreateSheetOpen(false);
+							setIsWizardOpen(true);
+						}}
+					>
+						<Plus className="size-4" />
 						New Event Request
 					</Button>
+					<Button
+						variant="outline"
+						className="h-12 w-full justify-start gap-3"
+						onClick={() => {
+							setIsCreateSheetOpen(false);
+							setDraftDate(null);
+							setIsDraftModalOpen(true);
+						}}
+					>
+						<FilePlus className="size-4" />
+						Quick Draft
+					</Button>
 				</div>
-			</div>
+			</ResponsiveOverlay>
 
 			{/* View Toggle */}
 			<div className="flex items-center gap-2">
-				<button
+				<Button
+					variant={viewMode === "list" ? "default" : "secondary"}
 					type="button"
 					onClick={() => setViewMode("list")}
 					className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -961,8 +1089,9 @@ function ManageEventsPage() {
 				>
 					<List className="h-4 w-4" />
 					Events List
-				</button>
-				<button
+				</Button>
+				<Button
+					variant={viewMode === "calendar" ? "default" : "secondary"}
 					type="button"
 					onClick={() => setViewMode("calendar")}
 					className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -973,7 +1102,7 @@ function ManageEventsPage() {
 				>
 					<CalendarIcon className="h-4 w-4" />
 					Event Planning
-				</button>
+				</Button>
 			</div>
 
 			{/* Filters */}
@@ -984,58 +1113,53 @@ function ManageEventsPage() {
 			/>
 
 			{/* Loading State */}
-			{!eventsData && (
+			{!stableEventsData && (
 				<div className="space-y-4">
-					<div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
-					<div className="h-64 bg-gray-200 rounded animate-pulse" />
+					<div className="h-8 w-48 bg-muted rounded animate-pulse" />
+					<div className="h-64 bg-muted rounded animate-pulse" />
 				</div>
 			)}
 
 			{/* Content */}
-			{eventsData && (
-				<>
-					{viewMode === "list" ? (
-						<EventsDataTable
-							events={paginatedEvents}
-							sortConfig={sortConfig}
-							onSort={handleSort}
-							onView={(event) => {
-								setSelectedRequest(event);
-								if (event.status === "draft") {
-									setIsDraftViewModalOpen(true);
-								} else {
-									setIsViewModalOpen(true);
-								}
-							}}
-							onEdit={(event) => {
-								if (event.status === "draft") {
-									setEditingDraft(event);
-									setIsDraftModalOpen(true);
-								} else {
-									setEditingRequest(event);
-									setIsWizardOpen(true);
-								}
-							}}
-							onDelete={handleDelete}
-							onConvertToDraft={handleConvertToDraft}
-							pagination={{
-								currentPage,
-								totalPages,
-								onPageChange: setCurrentPage,
-							}}
-						/>
-					) : (
-						<EventCalendar
-							events={sortedEvents}
-							onDateClick={handleCalendarDateClick}
-							onEventClick={handleCalendarEventClick}
-							getDayLabel={(date) =>
-								getWeekLabelForDate(date, weekLabelSettings)
+			{stableEventsData &&
+				(viewMode === "list" ? (
+					<EventsDataTable
+						events={paginatedEvents}
+						sortConfig={sortConfig}
+						onSort={handleSort}
+						onView={(event) => {
+							setSelectedRequest(event);
+							if (event.status === "draft") {
+								setIsDraftViewModalOpen(true);
+							} else {
+								setIsViewModalOpen(true);
 							}
-						/>
-					)}
-				</>
-			)}
+						}}
+						onEdit={(event) => {
+							if (event.status === "draft") {
+								setEditingDraft(event);
+								setIsDraftModalOpen(true);
+							} else {
+								setEditingRequest(event);
+								setIsWizardOpen(true);
+							}
+						}}
+						onDelete={handleDelete}
+						onConvertToDraft={handleConvertToDraft}
+						pagination={{
+							currentPage,
+							totalPages,
+							onPageChange: setCurrentPage,
+						}}
+					/>
+				) : (
+					<EventCalendar
+						events={sortedEvents}
+						onDateClick={handleCalendarDateClick}
+						onEventClick={handleCalendarEventClick}
+						getDayLabel={(date) => getWeekLabelForDate(date, weekLabelSettings)}
+					/>
+				))}
 
 			{/* Event Request Wizard Modal */}
 			<EventRequestWizardModal
@@ -1045,6 +1169,7 @@ function ManageEventsPage() {
 					setEditingRequest(null);
 				}}
 				onSubmit={editingRequest ? handleUpdateRequest : handleCreateRequest}
+				onSave={editingRequest ? handleSaveRequest : undefined}
 				initialData={editingRequest || undefined}
 				aiEnabled={aiEnabled}
 			/>
@@ -1140,12 +1265,12 @@ function ManageEventsPage() {
 			{/* Processing Overlay */}
 			{isProcessing && (
 				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-					<div className="bg-white rounded-lg p-6 flex items-center gap-3">
+					<div className="bg-background rounded-lg p-6 flex items-center gap-3">
 						<Loader2 className="h-5 w-5 animate-spin" />
 						<span>Processing...</span>
 					</div>
 				</div>
 			)}
-		</div>
+		</DashboardPage>
 	);
 }

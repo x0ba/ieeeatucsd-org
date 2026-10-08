@@ -1,13 +1,5 @@
-import { Search, X, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -16,6 +8,14 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import type { EventFilters, EventStatus } from "../types";
 
 interface EventsFiltersProps {
@@ -108,13 +108,16 @@ export function EventsFilters({
 						className="pl-9"
 					/>
 					{filters.search && (
-						<button
+						<Button
+							variant="ghost"
+							size="icon"
+							aria-label="Clear search"
 							onClick={() => onFiltersChange({ ...filters, search: "" })}
 							className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
 							type="button"
 						>
 							<X className="h-4 w-4" />
-						</button>
+						</Button>
 					)}
 				</div>
 
@@ -126,14 +129,14 @@ export function EventsFilters({
 						)
 					}
 				>
-					<SelectTrigger className="w-full sm:w-[180px]">
-						<SelectValue placeholder="Team preset" />
+					<SelectTrigger className="w-full sm:w-[180px]" aria-label="Team">
+						<SelectValue placeholder="Team" />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="none">No team preset</SelectItem>
-						<SelectItem value="for_events">For Events</SelectItem>
-						<SelectItem value="for_internal">For Internal</SelectItem>
-						<SelectItem value="for_operations">For Operations</SelectItem>
+						<SelectItem value="none">All teams</SelectItem>
+						<SelectItem value="for_events">Events</SelectItem>
+						<SelectItem value="for_internal">Internal</SelectItem>
+						<SelectItem value="for_operations">Operations</SelectItem>
 					</SelectContent>
 				</Select>
 

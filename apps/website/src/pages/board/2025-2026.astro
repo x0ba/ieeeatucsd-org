@@ -1,0 +1,31 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Officers from "../../components/board/Officers.astro";
+import officers from "../../data/officers-2025-2026.json";
+
+const seoProps = {
+  title: "2025–2026 Board - IEEE at UC San Diego",
+  description:
+    "Meet the IEEE at UC San Diego board from the 2025–2026 academic year.",
+  keywords: [
+    "IEEE UCSD board",
+    "student officers",
+    "IEEE leadership",
+    "2025-2026 board",
+    "student organization board",
+  ],
+  image: "/logos/blue_logo_only.png",
+};
+---
+
+<Layout {...seoProps}>
+  <Officers
+    officers={officers}
+    heading="2025–2026 board"
+    description="The IEEE at UC San Diego board for the 2025–2026 academic year."
+    footerLink={{
+      href: "/board",
+      label: "View current board",
+    }}
+  />
+</Layout>

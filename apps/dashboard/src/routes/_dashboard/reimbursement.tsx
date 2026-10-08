@@ -7,6 +7,7 @@ import {
 	ArrowLeft,
 	ArrowRight,
 	Calendar,
+	Camera,
 	Car,
 	CheckCircle,
 	ChevronDown,
@@ -14,6 +15,7 @@ import {
 	ChevronRight,
 	ChevronUp,
 	ExternalLink,
+	Eye,
 	FileText,
 	Loader2,
 	Plus,
@@ -24,6 +26,17 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+	DashboardPage,
+	EmptyState,
+	PageHeader,
+} from "@/components/dashboard/DashboardPage";
+import {
+	MobileTaskStepper,
+	NetworkErrorState,
+	ResponsiveOverlay,
+	useMobileShell,
+} from "@/components/mobile";
 import { AddressAutocompleteInput } from "@/components/reimbursement/AddressAutocompleteInput";
 import ReceiptViewer from "@/components/reimbursement/ReceiptViewer";
 import { Badge } from "@/components/ui/badge";
@@ -41,9 +54,12 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthedMutation, useAuthedQuery } from "@/hooks/useAuthedConvex";
 import { useGoogleMapsPlacesLoader } from "@/hooks/useGoogleMapsPlacesLoader";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { prefetchAuthedQuery } from "@/lib/prefetch/prefetch";
 import {
 	computeMileageTotal,
 	formatMileageRoute,
@@ -81,37 +97,37 @@ function formatAuditAction(action: string): {
 		submitted: {
 			label: "Submitted",
 			description: "Reimbursement request was submitted for review",
-			color: "bg-blue-500",
+			color: "bg-ds-blue-700",
 			iconName: "FileText",
 		},
 		status_changed_to_approved: {
 			label: "Approved",
 			description: "Request was reviewed and approved",
-			color: "bg-green-500",
+			color: "bg-ds-green-700",
 			iconName: "CheckCircle",
 		},
 		status_changed_to_declined: {
 			label: "Declined",
 			description: "Request was reviewed and declined",
-			color: "bg-red-500",
+			color: "bg-ds-red-800",
 			iconName: "AlertTriangle",
 		},
 		status_changed_to_paid: {
 			label: "Marked as Paid",
 			description: "Payment has been processed",
-			color: "bg-emerald-500",
+			color: "bg-ds-green-700",
 			iconName: "Receipt",
 		},
 		payment_details_added: {
 			label: "Payment Confirmed",
 			description: "Payment confirmation details were recorded",
-			color: "bg-emerald-600",
+			color: "bg-ds-green-700",
 			iconName: "Receipt",
 		},
 		status_changed_to_submitted: {
 			label: "Re-submitted",
 			description: "Request was re-submitted for review",
-			color: "bg-blue-500",
+			color: "bg-ds-blue-700",
 			iconName: "FileText",
 		},
 	};
@@ -119,7 +135,7 @@ function formatAuditAction(action: string): {
 		map[action] || {
 			label: action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
 			description: "",
-			color: "bg-gray-400",
+			color: "bg-ds-gray-600",
 			iconName: "Calendar",
 		}
 	);
@@ -134,14 +150,16 @@ const AUDIT_ICONS = {
 };
 
 export const Route = createFileRoute("/_dashboard/reimbursement")({
+	loader: (ctx) =>
+		prefetchAuthedQuery(api.reimbursements.listMine, undefined, ctx),
 	component: ReimbursementPage,
 });
 
 const statusColors: Record<string, string> = {
-	submitted: "bg-blue-100 text-blue-800",
-	approved: "bg-green-100 text-green-800",
-	declined: "bg-red-100 text-red-800",
-	paid: "bg-purple-100 text-purple-800",
+	submitted: "bg-ds-blue-100 text-tone-info",
+	approved: "bg-ds-green-100 text-tone-success",
+	declined: "bg-ds-red-100 text-tone-danger",
+	paid: "bg-ds-purple-100 text-tone-purple",
 };
 
 const STEPS = [
@@ -281,6 +299,9 @@ const CATEGORIES = [
 	"Other",
 ];
 
+// Accept HEIC/HEIF explicitly since some mobile browsers omit them from image/*
+const RECEIPT_FILE_ACCEPT = "image/*,.heic,.heif,application/pdf";
+
 export function isAiFeatureEnabled(aiFeaturesEnabled?: boolean) {
 	return aiFeaturesEnabled !== false;
 }
@@ -406,10 +427,26 @@ function StepIndicator({
 	maxVisitedStep: number;
 	onStepClick: (step: number) => void;
 }) {
+	const current = STEPS.find((s) => s.id === currentStep);
+	const isMobile = useIsMobile();
+
+	if (isMobile) {
+		return (
+			<MobileTaskStepper
+				currentStep={currentStep}
+				totalSteps={STEPS.length}
+				stepTitle={current?.name ?? `Step ${currentStep}`}
+				maxVisitedStep={maxVisitedStep}
+				onStepClick={onStepClick}
+				className="mb-6"
+			/>
+		);
+	}
+
 	return (
 		<div className="mb-8 flex justify-center px-2">
-			<div className="w-full max-w-4xl">
-				<div className="mx-auto flex w-fit max-w-full items-center justify-center">
+			<div className="w-full max-w-4xl overflow-x-auto scrollbar-quiet">
+				<div className="mx-auto flex w-max max-w-full items-center justify-center">
 					{STEPS.map((step, index) => {
 						const isActive = step.id === currentStep;
 						const isCompleted = step.id < currentStep;
@@ -417,12 +454,13 @@ function StepIndicator({
 						const isLast = index === STEPS.length - 1;
 
 						return (
-							<div key={step.id} className="flex items-center">
-								<button
+							<div key={step.id} className="flex shrink-0 items-center">
+								<Button
+									variant="ghost"
 									onClick={() => isClickable && onStepClick(step.id)}
 									disabled={!isClickable}
 									className={cn(
-										"flex items-center gap-2 group transition-all",
+										"flex items-center gap-2 group",
 										isClickable ? "cursor-pointer" : "cursor-default",
 									)}
 								>
@@ -467,7 +505,7 @@ function StepIndicator({
 											{step.name}
 										</p>
 									</div>
-								</button>
+								</Button>
 								{!isLast && (
 									<div
 										className={cn(
@@ -505,12 +543,15 @@ function StepNavigation({
 	const isLastStep = currentStep === STEPS.length;
 
 	return (
-		<div className="flex justify-between items-center pt-6 mt-6 border-t">
+		<div className="sticky bottom-0 z-10 -mx-4 mt-6 flex flex-col gap-3 border-t bg-background/95 px-4 pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:static sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:bg-transparent sm:px-0 sm:pb-0 sm:pt-6 sm:backdrop-blur-none">
 			<Button
 				variant="outline"
 				onClick={onBack}
 				disabled={isFirstStep}
-				className={cn(isFirstStep && "invisible")}
+				className={cn(
+					"h-11 w-full order-2 sm:order-1 sm:h-9 sm:w-auto",
+					isFirstStep && "invisible",
+				)}
 			>
 				<ChevronLeft className="w-4 h-4 mr-1" />
 				Back
@@ -518,7 +559,7 @@ function StepNavigation({
 			<Button
 				onClick={onNext}
 				disabled={!canGoNext || isSubmitting}
-				className="min-w-[140px]"
+				className="h-11 w-full min-w-[140px] order-1 sm:order-2 sm:h-9 sm:w-auto"
 			>
 				{isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
 				{nextLabel || (isLastStep ? "Submit" : "Next")}
@@ -540,7 +581,9 @@ function ReimbursementDetailView({
 	onBack: () => void;
 	userName?: string;
 }) {
+	const isMobile = useIsMobile();
 	const [activeReceiptIndex, setActiveReceiptIndex] = useState(0);
+	const [receiptOverlayOpen, setReceiptOverlayOpen] = useState(false);
 
 	const receipts = reimbursement.receipts || [];
 	const currentReceipt = receipts[activeReceiptIndex] || {};
@@ -621,10 +664,10 @@ function ReimbursementDetailView({
 			{/* Content - Split Pane */}
 			<div className="grid grid-cols-1 lg:grid-cols-12 gap-0 flex-1 min-h-0 overflow-hidden">
 				{/* Left Panel: Info (5/12) */}
-				<div className="lg:col-span-5 border-r border-gray-200 overflow-y-auto">
+				<div className="lg:col-span-5 border-r border-border overflow-y-auto">
 					{/* Receipt Navigation */}
 					{hasReceipts && (
-						<div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-gray-50/50">
+						<div className="flex items-center justify-between px-6 py-3 border-b border-border bg-muted/50">
 							<span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
 								Expense {activeReceiptIndex + 1} of {receipts.length}
 							</span>
@@ -655,44 +698,44 @@ function ReimbursementDetailView({
 						{/* Payment Details Section */}
 						{reimbursement.status === "paid" &&
 							reimbursement.paymentDetails && (
-								<section className="bg-green-50 border border-green-200 rounded-xl p-5 space-y-4">
-									<div className="flex items-center gap-2 border-b border-green-100 pb-2 mb-2">
-										<CheckCircle className="w-5 h-5 text-green-600" />
-										<h3 className="text-sm font-bold text-green-900 uppercase tracking-wide">
+								<section className="bg-ds-green-100 border border-ds-green-100 rounded-md p-5 space-y-4">
+									<div className="flex items-center gap-2 border-b border-ds-green-100 pb-2 mb-2">
+										<CheckCircle className="w-5 h-5 text-tone-success" />
+										<h3 className="text-sm font-bold text-tone-success uppercase tracking-wide">
 											Payment Confirmation
 										</h3>
 									</div>
 									<div className="grid grid-cols-2 gap-y-4 gap-x-4">
 										<div>
-											<p className="text-xs font-semibold text-green-700 uppercase mb-1">
+											<p className="text-xs font-semibold text-tone-success uppercase mb-1">
 												Confirmation Number
 											</p>
-											<p className="text-sm font-mono font-medium bg-white/50 px-2 py-1 rounded border border-green-100 inline-block">
+											<p className="text-sm font-mono font-medium bg-background/50 px-2 py-1 rounded border border-ds-green-100 inline-block">
 												{reimbursement.paymentDetails.confirmationNumber}
 											</p>
 										</div>
 										<div>
-											<p className="text-xs font-semibold text-green-700 uppercase mb-1">
+											<p className="text-xs font-semibold text-tone-success uppercase mb-1">
 												Payment Date
 											</p>
 											<div className="flex items-center gap-1.5 text-sm">
-												<Calendar className="w-4 h-4 text-green-500" />
+												<Calendar className="w-4 h-4 text-tone-success" />
 												<span>
 													{formatDate(reimbursement.paymentDetails.paymentDate)}
 												</span>
 											</div>
 										</div>
 										<div>
-											<p className="text-xs font-semibold text-green-700 uppercase mb-1">
+											<p className="text-xs font-semibold text-tone-success uppercase mb-1">
 												Amount Paid
 											</p>
 											<p className="text-lg font-bold flex items-center gap-1">
-												<span className="text-green-600 text-sm">$</span>
+												<span className="text-tone-success text-sm">$</span>
 												{reimbursement.paymentDetails.amountPaid?.toFixed(2)}
 											</p>
 										</div>
 										<div>
-											<p className="text-xs font-semibold text-green-700 uppercase mb-1">
+											<p className="text-xs font-semibold text-tone-success uppercase mb-1">
 												Payment Proof
 											</p>
 											{reimbursement.paymentDetails.proofFileUrl ? (
@@ -700,7 +743,7 @@ function ReimbursementDetailView({
 													href={reimbursement.paymentDetails.proofFileUrl}
 													target="_blank"
 													rel="noopener noreferrer"
-													className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium"
+													className="flex items-center gap-2 text-sm text-tone-info hover:text-tone-info hover:underline font-medium"
 												>
 													<FileText className="w-4 h-4" />
 													View Proof
@@ -714,10 +757,10 @@ function ReimbursementDetailView({
 										</div>
 										{reimbursement.paymentDetails.memo && (
 											<div className="col-span-2 mt-1">
-												<p className="text-xs font-semibold text-green-700 uppercase mb-1">
+												<p className="text-xs font-semibold text-tone-success uppercase mb-1">
 													Memo
 												</p>
-												<p className="text-sm bg-white/50 p-2 rounded border border-green-100">
+												<p className="text-sm bg-background/50 p-2 rounded border border-ds-green-100">
 													{reimbursement.paymentDetails.memo}
 												</p>
 											</div>
@@ -915,10 +958,10 @@ function ReimbursementDetailView({
 									</p>
 								</div>
 								<div className="space-y-0.5">
-									<p className="text-[11px] font-bold text-green-700 uppercase">
+									<p className="text-[11px] font-bold text-tone-success uppercase">
 										Total
 									</p>
-									<p className="text-base font-bold tabular-nums text-green-600">
+									<p className="text-base font-bold tabular-nums text-tone-success">
 										${(currentReceipt.total || 0).toFixed(2)}
 									</p>
 								</div>
@@ -936,16 +979,16 @@ function ReimbursementDetailView({
 							{currentLineItems.length > 0 ? (
 								<div className="border rounded-lg overflow-hidden">
 									<table className="w-full text-sm">
-										<thead className="bg-gray-50 text-muted-foreground text-xs uppercase font-semibold">
+										<thead className="bg-muted text-muted-foreground text-xs uppercase font-semibold">
 											<tr>
 												<th className="px-3 py-2 text-left">Item</th>
 												<th className="px-3 py-2 text-center">Qty</th>
 												<th className="px-3 py-2 text-right">Price</th>
 											</tr>
 										</thead>
-										<tbody className="divide-y divide-gray-100">
+										<tbody className="divide-y divide-border">
 											{currentLineItems.map((item: LineItem, idx: number) => (
-												<tr key={idx} className="bg-white">
+												<tr key={idx} className="bg-background">
 													<td className="px-3 py-2">
 														<div className="font-medium">
 															{item.description}
@@ -996,7 +1039,7 @@ function ReimbursementDetailView({
 													<div
 														className={`relative z-10 flex-shrink-0 w-[23px] h-[23px] rounded-full ${info.color} flex items-center justify-center ring-4 ring-background`}
 													>
-														<Icon className="w-3 h-3 text-white" />
+														<Icon className="w-3 h-3 text-on-accent" />
 													</div>
 													<div className="flex-1 min-w-0 pt-0.5">
 														<div className="flex items-baseline justify-between gap-2">
@@ -1041,9 +1084,9 @@ function ReimbursementDetailView({
 				</div>
 
 				{/* Right Panel: receipt file or mileage summary */}
-				<div className="lg:col-span-7 bg-gray-50 min-h-[500px] lg:min-h-0 overflow-hidden flex flex-col p-4">
+				<div className="lg:col-span-7 bg-muted min-h-[500px] lg:min-h-0 overflow-hidden flex flex-col p-4">
 					{currentIsMileage ? (
-						<div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-card p-8">
+						<div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-md border border-dashed border-border/80 bg-card p-8">
 							<div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
 								<Car className="h-7 w-7 text-primary" />
 							</div>
@@ -1073,6 +1116,45 @@ function ReimbursementDetailView({
 								${(currentReceipt.total ?? 0).toFixed(2)}
 							</p>
 						</div>
+					) : isMobile ? (
+						<>
+							<button
+								type="button"
+								onClick={() => setReceiptOverlayOpen(true)}
+								className="motion-press flex h-full min-h-[220px] w-full flex-col items-center justify-center gap-3 rounded-md border border-dashed border-border/80 bg-card p-8 text-center"
+							>
+								<div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+									<Receipt className="h-7 w-7 text-primary" />
+								</div>
+								<p className="text-sm font-semibold text-foreground">
+									Receipt {activeReceiptIndex + 1}
+								</p>
+								<span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
+									<Eye className="h-4 w-4" />
+									View receipt
+								</span>
+							</button>
+							<ResponsiveOverlay
+								open={receiptOverlayOpen}
+								onOpenChange={setReceiptOverlayOpen}
+								variant="fullscreen"
+								title={`Receipt ${activeReceiptIndex + 1}`}
+								footer={
+									<Button
+										className="h-11 w-full"
+										onClick={() => setReceiptOverlayOpen(false)}
+									>
+										Done
+									</Button>
+								}
+							>
+								<ReceiptViewer
+									receiptUrl={receiptFileUrl || ""}
+									receiptName={`Receipt ${activeReceiptIndex + 1}`}
+									className="h-full"
+								/>
+							</ResponsiveOverlay>
+						</>
 					) : (
 						<ReceiptViewer
 							receiptUrl={receiptFileUrl || ""}
@@ -1095,8 +1177,8 @@ function AIWarningStep({
 	aiEnabled: boolean;
 }) {
 	return (
-		<div className="flex flex-col items-center justify-center flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500 p-6">
-			<div className="bg-card border shadow-sm rounded-2xl p-8 text-center space-y-6 max-w-lg w-full">
+		<div className="flex flex-col items-center justify-center flex-1 p-6">
+			<div className="bg-card border shadow-sm rounded-md p-8 text-center space-y-6 max-w-lg w-full">
 				<div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
 					<AlertTriangle className="w-10 h-10 text-primary" />
 				</div>
@@ -1147,7 +1229,7 @@ function BasicInfoStep({
 		formData.title && formData.department && formData.paymentMethod;
 
 	return (
-		<div className="flex flex-col items-center justify-center flex-1 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+		<div className="flex flex-col items-center justify-center flex-1 p-6">
 			<Card className="w-full max-w-2xl shadow-sm">
 				<CardContent className="gap-8 p-8">
 					<div className="border-b pb-4">
@@ -1263,6 +1345,7 @@ function ReceiptsStep({
 	aiEnabled: boolean;
 }) {
 	const { getAuthHeaders } = useAuth();
+	const isMobile = useIsMobile();
 	const [activeReceiptId, setActiveReceiptId] = useState<string | null>(
 		receipts[0]?.id ?? null,
 	);
@@ -1835,7 +1918,7 @@ function ReceiptsStep({
 	if (!activeReceipt) return null;
 
 	return (
-		<div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden">
+		<div className="flex flex-col h-full overflow-hidden">
 			<div className="flex items-center justify-between mb-4">
 				<div>
 					<h2 className="text-xl font-bold">Expenses</h2>
@@ -1856,64 +1939,58 @@ function ReceiptsStep({
 					{receipts.map((receipt, index) => {
 						const isActive = receipt.id === activeReceipt.id;
 						return (
-							<button
-								key={receipt.id}
-								type="button"
-								onClick={() => setActiveReceiptId(receipt.id)}
-								className={cn(
-									"group rounded-lg border px-3 py-2 text-left transition-colors",
-									isActive
-										? "border-primary bg-primary/5"
-										: "border-border bg-card hover:bg-muted/50",
-								)}
-							>
-								<div className="flex items-center gap-2">
-									{receipt.expenseType === "mileage" ? (
-										<Car className="h-3.5 w-3.5 text-muted-foreground" />
-									) : (
-										<Receipt className="h-3.5 w-3.5 text-muted-foreground" />
+							<div key={receipt.id} className="relative">
+								<Button
+									variant="outline"
+									type="button"
+									onClick={() => setActiveReceiptId(receipt.id)}
+									className={cn(
+										"group rounded-lg border px-3 py-2 text-left transition-colors",
+										isActive
+											? "border-primary bg-primary/5"
+											: "border-border bg-card hover:bg-muted/50",
 									)}
-									<span className="text-xs font-medium">
-										Expense {index + 1}
-									</span>
-									{receipts.length > 1 && (
-										<span
-											role="button"
-											tabIndex={0}
-											onClick={(e) => {
-												e.stopPropagation();
-												removeReceipt(receipt.id);
-											}}
-											onKeyDown={(e) => {
-												if (e.key === "Enter" || e.key === " ") {
-													e.preventDefault();
-													e.stopPropagation();
-													removeReceipt(receipt.id);
-												}
-											}}
-											className="ml-1 rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-										>
-											<Trash2 className="h-3.5 w-3.5" />
+								>
+									<div className="flex items-center gap-2">
+										{receipt.expenseType === "mileage" ? (
+											<Car className="h-3.5 w-3.5 text-muted-foreground" />
+										) : (
+											<Receipt className="h-3.5 w-3.5 text-muted-foreground" />
+										)}
+										<span className="text-xs font-medium">
+											Expense {index + 1}
 										</span>
-									)}
-								</div>
-								<div className="mt-1 text-[11px] text-muted-foreground max-w-44 truncate">
-									{(receipt.vendorName ?? "").trim()
-										? receipt.vendorName
-										: receipt.expenseType === "mileage"
-											? "Mileage"
-											: "Awaiting upload"}
-								</div>
-								<div className="mt-0.5 text-[11px] font-mono">
-									${receipt.total.toFixed(2)}
-								</div>
-							</button>
+									</div>
+									<div className="mt-1 text-[11px] text-muted-foreground max-w-44 truncate">
+										{(receipt.vendorName ?? "").trim()
+											? receipt.vendorName
+											: receipt.expenseType === "mileage"
+												? "Mileage"
+												: "Awaiting upload"}
+									</div>
+									<div className="mt-0.5 text-[11px] font-mono">
+										${receipt.total.toFixed(2)}
+									</div>
+								</Button>
+								{receipts.length > 1 && (
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										aria-label={`Remove expense ${index + 1}`}
+										onClick={() => removeReceipt(receipt.id)}
+										className="absolute right-1 top-1 h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+									>
+										<Trash2 className="h-3.5 w-3.5" />
+									</Button>
+								)}
+							</div>
 						);
 					})}
 				</div>
 			</div>
 
-			<div className="rounded-xl border bg-card flex-1 min-h-[560px] overflow-hidden flex flex-col">
+			<div className="rounded-md border bg-card flex-1 min-h-[560px] overflow-hidden flex flex-col">
 				<div className="shrink-0 border-b px-4 py-3 bg-muted/10">
 					<p className="text-xs font-medium text-muted-foreground mb-2">
 						Expense type
@@ -1923,7 +2000,10 @@ function ReceiptsStep({
 						role="radiogroup"
 						aria-label="Expense type"
 					>
-						<button
+						<Button
+							variant={
+								activeReceipt.expenseType !== "mileage" ? "default" : "ghost"
+							}
 							type="button"
 							role="radio"
 							aria-checked={activeReceipt.expenseType !== "mileage"}
@@ -1938,8 +2018,11 @@ function ReceiptsStep({
 							}
 						>
 							Receipt
-						</button>
-						<button
+						</Button>
+						<Button
+							variant={
+								activeReceipt.expenseType === "mileage" ? "default" : "ghost"
+							}
 							type="button"
 							role="radio"
 							aria-checked={activeReceipt.expenseType === "mileage"}
@@ -1955,7 +2038,7 @@ function ReceiptsStep({
 						>
 							<Car className="h-3.5 w-3.5" />
 							Mileage
-						</button>
+						</Button>
 					</div>
 				</div>
 				<div className="min-h-0 flex-1 overflow-hidden">
@@ -2213,7 +2296,7 @@ function ReceiptsStep({
 								</div>
 							</div>
 							<div className="flex min-h-[280px] items-center justify-center bg-muted/20 p-6 lg:min-h-0">
-								<div className="w-full max-w-sm space-y-4 rounded-xl border bg-card p-6 shadow-sm">
+								<div className="w-full max-w-sm space-y-4 rounded-md border bg-card p-6 shadow-sm">
 									<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
 										Summary
 									</p>
@@ -2261,10 +2344,10 @@ function ReceiptsStep({
 									</div>
 									<div className="flex items-center gap-2">
 										<label>
-											<input
+											<Input
 												type="file"
 												className="hidden"
-												accept="image/*,application/pdf"
+												accept={RECEIPT_FILE_ACCEPT}
 												onChange={(e) => {
 													const file = e.target.files?.[0];
 													if (file)
@@ -2283,6 +2366,33 @@ function ReceiptsStep({
 												</span>
 											</Button>
 										</label>
+										{isMobile && (
+											<label>
+												<Input
+													type="file"
+													className="hidden"
+													accept="image/*"
+													capture="environment"
+													onChange={(e) => {
+														const file = e.target.files?.[0];
+														if (file)
+															void handleFileUpload(activeReceipt.id, file);
+														e.target.value = "";
+													}}
+												/>
+												<Button
+													variant="outline"
+													size="sm"
+													asChild
+													disabled={isActiveUploading || isActiveParsing}
+												>
+													<span>
+														<Camera className="h-3.5 w-3.5 mr-1.5" />
+														Camera
+													</span>
+												</Button>
+											</label>
+										)}
 										{aiEnabled && activeReceipt.receiptFile && (
 											<Button
 												variant="outline"
@@ -2316,8 +2426,8 @@ function ReceiptsStep({
 										className={cn(
 											"text-xs",
 											parseResults[activeReceipt.id].success
-												? "text-green-600"
-												: "text-amber-600",
+												? "text-tone-success"
+												: "text-tone-warning",
 										)}
 									>
 										{parseResults[activeReceipt.id].message}
@@ -2573,7 +2683,7 @@ function ReceiptsStep({
 									activeReceipt.receiptFile.toLowerCase().includes(".pdf?") ? (
 										<iframe
 											src={activeReceipt.receiptFile}
-											className="w-full h-full rounded-lg border bg-white"
+											className="w-full h-full rounded-lg border bg-background"
 											title={`Receipt ${activeReceiptIndex + 1}`}
 										/>
 									) : (
@@ -2589,7 +2699,7 @@ function ReceiptsStep({
 													const iframe = document.createElement("iframe");
 													iframe.src = activeReceipt.receiptFile;
 													iframe.className =
-														"w-full h-full rounded-lg border bg-white";
+														"w-full h-full rounded-lg border bg-background";
 													iframe.title = `Receipt ${activeReceiptIndex + 1}`;
 													iframe.style.minHeight = "320px";
 													parent.appendChild(iframe);
@@ -2607,7 +2717,7 @@ function ReceiptsStep({
 						</div>
 					) : (
 						<div className="h-full flex items-center justify-center p-8">
-							<div className="w-full max-w-md rounded-xl border-2 border-dashed bg-muted/20 p-8 text-center">
+							<div className="w-full max-w-md rounded-md border-2 border-dashed bg-muted/20 p-8 text-center">
 								<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
 									<Upload className="h-6 w-6 text-primary" />
 								</div>
@@ -2616,23 +2726,51 @@ function ReceiptsStep({
 								</h3>
 								<p className="mt-2 text-sm text-muted-foreground">
 									Fields will appear after upload. Supports PDF, PNG, JPG, JPEG,
-									WEBP.
+									WEBP, HEIC.
 								</p>
-								<label className="mt-4 block">
-									<input
-										type="file"
-										className="hidden"
-										accept="image/*,application/pdf"
-										onChange={(e) => {
-											const file = e.target.files?.[0];
-											if (file) void handleFileUpload(activeReceipt.id, file);
-											e.target.value = "";
-										}}
-									/>
-									<Button asChild>
-										<span>Select File</span>
-									</Button>
-								</label>
+								<div className="mt-4 flex flex-col items-center justify-center gap-2 sm:flex-row">
+									<label className="w-full sm:w-auto">
+										<Input
+											type="file"
+											className="hidden"
+											accept={RECEIPT_FILE_ACCEPT}
+											onChange={(e) => {
+												const file = e.target.files?.[0];
+												if (file) void handleFileUpload(activeReceipt.id, file);
+												e.target.value = "";
+											}}
+										/>
+										<Button asChild className="w-full sm:w-auto">
+											<span>Select File</span>
+										</Button>
+									</label>
+									{isMobile && (
+										<label className="w-full sm:w-auto">
+											<Input
+												type="file"
+												className="hidden"
+												accept="image/*"
+												capture="environment"
+												onChange={(e) => {
+													const file = e.target.files?.[0];
+													if (file)
+														void handleFileUpload(activeReceipt.id, file);
+													e.target.value = "";
+												}}
+											/>
+											<Button
+												variant="outline"
+												asChild
+												className="w-full sm:w-auto"
+											>
+												<span>
+													<Camera className="h-4 w-4 mr-2" />
+													Take Photo
+												</span>
+											</Button>
+										</label>
+									)}
+								</div>
 								{(isActiveUploading || isActiveParsing) && (
 									<div className="mt-4 text-xs text-muted-foreground flex items-center justify-center gap-2">
 										<Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -2648,8 +2786,8 @@ function ReceiptsStep({
 										className={cn(
 											"mt-3 text-xs",
 											parseResults[activeReceipt.id].success
-												? "text-green-600"
-												: "text-amber-600",
+												? "text-tone-success"
+												: "text-tone-warning",
 										)}
 									>
 										{parseResults[activeReceipt.id].message}
@@ -2703,7 +2841,7 @@ function ReviewStep({
 	};
 
 	return (
-		<div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+		<div className="flex flex-col h-full pb-20">
 			<div className="mb-6 shrink-0">
 				<h2 className="text-2xl font-bold">Review Request</h2>
 				<p className="text-muted-foreground">
@@ -2753,7 +2891,7 @@ function ReviewStep({
 									<Separator />
 									<div className="flex justify-between items-center">
 										<span className="font-bold">Total Amount</span>
-										<span className="font-bold text-xl text-green-600">
+										<span className="font-bold text-xl text-tone-success">
 											${totalAmount.toFixed(2)}
 										</span>
 									</div>
@@ -2917,8 +3055,83 @@ function ReviewStep({
 	);
 }
 
+const REIMBURSEMENT_DRAFT_KEY = "reimbursement-draft-v1";
+
+type ReimbursementDraftFormData = {
+	title: string;
+	department: string;
+	paymentMethod: string;
+	additionalInfo: string;
+	businessPurpose: string;
+};
+
+type ReimbursementDraft = {
+	formData: ReimbursementDraftFormData;
+	receipts: ReceiptEntry[];
+	step: number;
+	maxVisitedStep: number;
+	savedAt: number;
+};
+
+// Draft is JSON-only (no File objects). Uploaded receipts keep their storage URL;
+// local Files that were never uploaded cannot be restored from sessionStorage.
+function loadReimbursementDraft(): ReimbursementDraft | null {
+	try {
+		const raw = sessionStorage.getItem(REIMBURSEMENT_DRAFT_KEY);
+		if (!raw) return null;
+		const parsed = JSON.parse(raw) as ReimbursementDraft;
+		if (!parsed || typeof parsed !== "object" || !parsed.formData) return null;
+		return parsed;
+	} catch {
+		return null;
+	}
+}
+
+function saveReimbursementDraft(draft: Omit<ReimbursementDraft, "savedAt">) {
+	try {
+		sessionStorage.setItem(
+			REIMBURSEMENT_DRAFT_KEY,
+			JSON.stringify({ ...draft, savedAt: Date.now() }),
+		);
+	} catch {
+		// Storage unavailable (private browsing, quota, etc.) — draft persistence is best-effort.
+	}
+}
+
+function clearReimbursementDraft() {
+	try {
+		sessionStorage.removeItem(REIMBURSEMENT_DRAFT_KEY);
+	} catch {
+		// ignore
+	}
+}
+
+function hasMeaningfulDraftContent(draft: ReimbursementDraft): boolean {
+	const { formData, receipts } = draft;
+	if (
+		formData.title.trim() ||
+		formData.department ||
+		formData.paymentMethod ||
+		formData.additionalInfo.trim() ||
+		formData.businessPurpose.trim()
+	) {
+		return true;
+	}
+	return receipts.some(
+		(r) =>
+			r.vendorName.trim() ||
+			r.receiptFile ||
+			r.total > 0 ||
+			(r.mileageFrom ?? "").trim() ||
+			(r.mileageTo ?? "").trim(),
+	);
+}
+
 function ReimbursementPage() {
 	const { logtoId, user, getAuthHeaders } = useAuth();
+	const { setHideTabBar } = useMobileShell();
+	const isMobile = useIsMobile();
+	const isOnline = useOnlineStatus();
 	const aiEnabled = isAiFeatureEnabled(user?.aiFeaturesEnabled);
 	const reimbursements = useAuthedQuery(
 		api.reimbursements.listMine,
@@ -2954,6 +3167,39 @@ function ReimbursementPage() {
 	// Search + filter state (must be before any early returns)
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
+
+	const hasRestoredDraftRef = useRef(false);
+
+	// Resume an in-progress draft (e.g. after accidental refresh/navigate away)
+	useEffect(() => {
+		if (hasRestoredDraftRef.current) return;
+		hasRestoredDraftRef.current = true;
+		const draft = loadReimbursementDraft();
+		if (draft && hasMeaningfulDraftContent(draft)) {
+			setFormData(draft.formData);
+			setReceipts(
+				draft.receipts.length > 0 ? draft.receipts : [emptyReceipt()],
+			);
+			setStep(draft.step || 1);
+			setMaxVisitedStep(draft.maxVisitedStep || draft.step || 1);
+			setView("create");
+			toast.info(
+				"Restored your reimbursement draft (form fields). Re-attach any receipts that weren't uploaded yet.",
+			);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	// Persist the draft while actively creating (never for File objects — receiptFile is a URL by then)
+	useEffect(() => {
+		if (view !== "create" || !hasRestoredDraftRef.current) return;
+		saveReimbursementDraft({ formData, receipts, step, maxVisitedStep });
+	}, [view, formData, receipts, step, maxVisitedStep]);
+
+	useEffect(() => {
+		setHideTabBar(view === "create" || view === "detail");
+		return () => setHideTabBar(false);
+	}, [view, setHideTabBar]);
 
 	const resetForm = () => {
 		setFormData({
@@ -3005,6 +3251,10 @@ function ReimbursementPage() {
 
 	const handleSubmit = async () => {
 		if (!logtoId) return;
+		if (!isOnline) {
+			toast.error("You're offline. Reconnect to submit your reimbursement.");
+			return;
+		}
 		if (!formData.title.trim()) {
 			toast.error("Title is required");
 			return;
@@ -3087,6 +3337,7 @@ function ReimbursementPage() {
 				submitterEmail: user?.email || "",
 			});
 
+			clearReimbursementDraft();
 			resetForm();
 			setView("list");
 		} catch (error: any) {
@@ -3111,71 +3362,79 @@ function ReimbursementPage() {
 
 	if (view === "create") {
 		return (
-			<div className="p-6 space-y-6 w-full">
-				<div className="flex items-center gap-3">
+			<div className="mx-auto w-full min-w-0 max-w-4xl space-y-6 px-4 py-5 sm:px-6 sm:py-6">
+				<div className="flex items-start gap-2 sm:items-center sm:gap-3">
 					<Button
 						variant="ghost"
-						size="sm"
+						size="icon"
+						className="size-11 shrink-0 sm:size-9"
 						onClick={() => {
 							setView("list");
 							resetForm();
 						}}
+						aria-label="Back to reimbursements"
 					>
-						<ArrowLeft className="h-4 w-4 mr-1" />
-						Back
+						<ArrowLeft className="h-4 w-4" />
 					</Button>
-					<div>
-						<h1 className="text-2xl font-bold tracking-tight">
+					<div className="min-w-0">
+						<h1
+							className={cn(
+								"text-xl font-semibold tracking-tight sm:text-2xl",
+								isMobile && "sr-only",
+							)}
+						>
 							New Reimbursement Request
 						</h1>
-						<p className="text-muted-foreground">
-							Fill out the details below to submit a reimbursement.
+						<p className="text-sm text-muted-foreground">
+							{isMobile
+								? "One step at a time — your progress is saved on this device until you submit."
+								: "Fill out the details below to submit a reimbursement."}
 						</p>
 					</div>
 				</div>
 
 				{/* Step Progress Indicator */}
-				<div className="flex justify-center">
-					<StepIndicator
-						currentStep={step}
-						maxVisitedStep={maxVisitedStep}
-						onStepClick={handleStepChange}
-					/>
-				</div>
+				<StepIndicator
+					currentStep={step}
+					maxVisitedStep={maxVisitedStep}
+					onStepClick={handleStepChange}
+				/>
 
 				{/* Step Content */}
-				{step === 1 && (
-					<AIWarningStep onNext={handleNext} aiEnabled={aiEnabled} />
-				)}
-				{step === 2 && (
-					<BasicInfoStep
-						formData={formData}
-						setFormData={setFormData}
-						onBack={handleBack}
-						onNext={handleNext}
-					/>
-				)}
-				{step === 3 && (
-					<ReceiptsStep
-						receipts={receipts}
-						setReceipts={setReceipts}
-						generateUploadUrl={generateUploadUrl}
-						getStorageUrl={getStorageUrl}
-						onBack={handleBack}
-						onNext={handleNext}
-						aiEnabled={aiEnabled}
-					/>
-				)}
-				{step === 4 && (
-					<ReviewStep
-						formData={formData}
-						receipts={receipts}
-						totalAmount={totalAmount}
-						onBack={handleBack}
-						onSubmit={handleSubmit}
-						isSubmitting={isSubmitting}
-					/>
-				)}
+				<div className="min-w-0">
+					{step === 1 && (
+						<AIWarningStep onNext={handleNext} aiEnabled={aiEnabled} />
+					)}
+					{step === 2 && (
+						<BasicInfoStep
+							formData={formData}
+							setFormData={setFormData}
+							onBack={handleBack}
+							onNext={handleNext}
+						/>
+					)}
+					{step === 3 && (
+						<ReceiptsStep
+							receipts={receipts}
+							setReceipts={setReceipts}
+							generateUploadUrl={generateUploadUrl}
+							getStorageUrl={getStorageUrl}
+							onBack={handleBack}
+							onNext={handleNext}
+							aiEnabled={aiEnabled}
+						/>
+					)}
+					{step === 4 && (
+						<ReviewStep
+							formData={formData}
+							receipts={receipts}
+							totalAmount={totalAmount}
+							onBack={handleBack}
+							onSubmit={handleSubmit}
+							isSubmitting={isSubmitting}
+						/>
+					)}
+				</div>
 			</div>
 		);
 	}
@@ -3207,147 +3466,162 @@ function ReimbursementPage() {
 	});
 
 	return (
-		<div className="p-6 space-y-6 w-full">
+		<DashboardPage variant="list">
 			{/* Header */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight">Reimbursements</h1>
-					<p className="text-muted-foreground">
-						Submit and track your reimbursement requests.
-					</p>
-				</div>
-				<Button onClick={() => setView("create")}>
-					<Plus className="h-4 w-4 mr-2" />
-					New Request
-				</Button>
-			</div>
-
+			<PageHeader
+				hideTitleOnMobile
+				title="Reimbursements"
+				description="Submit and track your reimbursement requests."
+				actions={
+					<Button
+						className="h-11 w-full sm:h-9 sm:w-auto"
+						onClick={() => setView("create")}
+					>
+						<Plus className="h-4 w-4 mr-2" />
+						New Request
+					</Button>
+				}
+			/>
 			{/* Stats Row */}
-			<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-				<div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
-					<p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-						Total Submitted
-					</p>
-					<p className="text-xl font-bold tabular-nums mt-0.5">
-						${statsTotal.toFixed(2)}
-					</p>
-					<p className="text-[10px] text-muted-foreground mt-0.5">
-						{allReimbursements.length} requests
-					</p>
+			{allReimbursements.length === 0 ? (
+				<div className="flex items-center justify-between rounded-md border bg-muted/20 px-4 py-3">
+					<div>
+						<p className="text-sm font-medium">No submitted reimbursements</p>
+						<p className="text-xs text-muted-foreground">
+							Amounts and processing totals will appear after your first
+							request.
+						</p>
+					</div>
+					<p className="text-xl font-semibold tabular-nums">$0.00</p>
 				</div>
-				<div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
-					<p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-						Pending
-					</p>
-					<p className="text-xl font-bold tabular-nums mt-0.5">
-						${statsPendingAmt.toFixed(2)}
-					</p>
-					<p className="text-[10px] text-muted-foreground mt-0.5">
-						{allReimbursements.filter((r) => r.status === "submitted").length}{" "}
-						requests
-					</p>
+			) : (
+				<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+					<div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+						<p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+							Total Submitted
+						</p>
+						<p className="text-xl font-bold tabular-nums mt-0.5">
+							${statsTotal.toFixed(2)}
+						</p>
+						<p className="mt-0.5 text-xs text-muted-foreground">
+							{allReimbursements.length} requests
+						</p>
+					</div>
+					<div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+						<p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+							Pending
+						</p>
+						<p className="text-xl font-bold tabular-nums mt-0.5">
+							${statsPendingAmt.toFixed(2)}
+						</p>
+						<p className="mt-0.5 text-xs text-muted-foreground">
+							{allReimbursements.filter((r) => r.status === "submitted").length}{" "}
+							requests
+						</p>
+					</div>
+					<div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+						<p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+							Approved
+						</p>
+						<p className="text-xl font-bold tabular-nums mt-0.5">
+							${statsApprovedAmt.toFixed(2)}
+						</p>
+						<p className="mt-0.5 text-xs text-muted-foreground">
+							{allReimbursements.filter((r) => r.status === "approved").length}{" "}
+							requests
+						</p>
+					</div>
+					<div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+						<p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+							Paid
+						</p>
+						<p className="text-xl font-bold tabular-nums mt-0.5">
+							${statsPaidAmt.toFixed(2)}
+						</p>
+						<p className="mt-0.5 text-xs text-muted-foreground">
+							{allReimbursements.filter((r) => r.status === "paid").length}{" "}
+							requests
+						</p>
+					</div>
 				</div>
-				<div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
-					<p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-						Approved
-					</p>
-					<p className="text-xl font-bold tabular-nums mt-0.5">
-						${statsApprovedAmt.toFixed(2)}
-					</p>
-					<p className="text-[10px] text-muted-foreground mt-0.5">
-						{allReimbursements.filter((r) => r.status === "approved").length}{" "}
-						requests
-					</p>
-				</div>
-				<div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
-					<p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-						Paid
-					</p>
-					<p className="text-xl font-bold tabular-nums mt-0.5">
-						${statsPaidAmt.toFixed(2)}
-					</p>
-					<p className="text-[10px] text-muted-foreground mt-0.5">
-						{allReimbursements.filter((r) => r.status === "paid").length}{" "}
-						requests
-					</p>
-				</div>
-			</div>
+			)}
 
 			{/* List Container */}
-			<div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+			<div className="rounded-md border bg-card shadow-sm overflow-hidden">
 				{/* Search + Filter Bar */}
-				<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 px-5 py-3 border-b bg-muted/30">
-					<div className="relative flex-1">
-						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-						<Input
-							placeholder="Search by title or department..."
-							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
-							className="pl-9 h-9 bg-background"
-						/>
+				{allReimbursements.length > 0 && (
+					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 px-5 py-3 border-b bg-muted/30">
+						<div className="relative flex-1">
+							<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+							<Input
+								placeholder="Search by title or department..."
+								value={searchTerm}
+								onChange={(e) => setSearchTerm(e.target.value)}
+								className="pl-9 h-9 bg-background"
+							/>
+						</div>
+						<Select value={statusFilter} onValueChange={setStatusFilter}>
+							<SelectTrigger className="w-full sm:w-[150px] h-9 bg-background">
+								<SelectValue placeholder="All Status" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All Status</SelectItem>
+								<SelectItem value="submitted">Submitted</SelectItem>
+								<SelectItem value="approved">Approved</SelectItem>
+								<SelectItem value="paid">Paid</SelectItem>
+								<SelectItem value="declined">Declined</SelectItem>
+							</SelectContent>
+						</Select>
 					</div>
-					<Select value={statusFilter} onValueChange={setStatusFilter}>
-						<SelectTrigger className="w-full sm:w-[150px] h-9 bg-background">
-							<SelectValue placeholder="All Status" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All Status</SelectItem>
-							<SelectItem value="submitted">Submitted</SelectItem>
-							<SelectItem value="approved">Approved</SelectItem>
-							<SelectItem value="paid">Paid</SelectItem>
-							<SelectItem value="declined">Declined</SelectItem>
-						</SelectContent>
-					</Select>
-				</div>
+				)}
 
 				{/* List */}
 				{!reimbursements ? (
-					<div className="p-5 space-y-3">
-						{[1, 2, 3].map((i) => (
-							<Skeleton key={i} className="h-16 w-full rounded-lg" />
-						))}
-					</div>
+					!isOnline ? (
+						<div className="p-5">
+							<NetworkErrorState
+								description="Your reimbursements need a connection to load. Reconnect and retry."
+								onRetry={() => window.location.reload()}
+							/>
+						</div>
+					) : (
+						<div className="p-5 space-y-3">
+							{[1, 2, 3].map((i) => (
+								<Skeleton key={i} className="h-16 w-full rounded-lg" />
+							))}
+						</div>
+					)
 				) : filteredReimbursements.length > 0 ? (
 					<div className="divide-y divide-border">
 						{filteredReimbursements.map((r) => (
-							<div
+							<button
+								type="button"
 								key={r._id}
-								className="flex items-center gap-4 px-5 py-3.5 hover:bg-accent/40 transition-colors cursor-pointer group"
+								className="flex w-full min-h-[52px] items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-accent/50 sm:gap-4 sm:px-5 md:hover:bg-accent/40"
 								onClick={() => handleViewDetail(r as ReimbursementData)}
 							>
 								{/* Left: Title + Meta */}
-								<div className="flex-1 min-w-0">
-									<p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+								<div className="min-w-0 flex-1">
+									<p className="line-clamp-2 text-sm font-medium leading-5">
 										{r.title}
 									</p>
-									<div className="flex items-center gap-1.5 mt-1 flex-wrap">
-										<span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
+									<div className="mt-1 flex flex-wrap items-center gap-1.5">
+										<span className="inline-flex items-center rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
 											{r.department}
 										</span>
-										<span className="text-muted-foreground/40 text-xs">·</span>
 										<span className="text-xs text-muted-foreground">
 											{r.paymentMethod}
 										</span>
-										{r.businessPurpose && (
-											<>
-												<span className="text-muted-foreground/40 text-xs">
-													·
-												</span>
-												<span className="text-xs text-muted-foreground/70 truncate max-w-[200px]">
-													{r.businessPurpose}
-												</span>
-											</>
-										)}
 									</div>
 								</div>
 
-								{/* Right: Amount + Date + Status */}
-								<div className="flex items-center gap-5 shrink-0">
-									<div className="text-right hidden sm:block">
+								{/* Right: Amount + Status */}
+								<div className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+									<div className="text-right">
 										<p className="text-sm font-bold tabular-nums">
 											${r.totalAmount.toFixed(2)}
 										</p>
-										<p className="text-[10px] text-muted-foreground tabular-nums">
+										<p className="hidden text-xs tabular-nums text-muted-foreground sm:block">
 											{new Date(r._creationTime).toLocaleDateString(undefined, {
 												month: "short",
 												day: "numeric",
@@ -3355,9 +3629,6 @@ function ReimbursementPage() {
 											})}
 										</p>
 									</div>
-									<span className="text-sm font-bold tabular-nums sm:hidden">
-										${r.totalAmount.toFixed(2)}
-									</span>
 									<span
 										className={cn(
 											"inline-flex items-center gap-1.5 text-xs font-medium capitalize px-2.5 py-1 rounded-full whitespace-nowrap",
@@ -3365,38 +3636,44 @@ function ReimbursementPage() {
 												"bg-muted text-muted-foreground",
 										)}
 									>
-										<span
-											className={cn(
-												"w-1.5 h-1.5 rounded-full shrink-0",
-												r.status === "submitted" && "bg-blue-500",
-												r.status === "approved" && "bg-green-500",
-												r.status === "declined" && "bg-red-500",
-												r.status === "paid" && "bg-purple-500",
-											)}
-										/>
 										{r.status}
 									</span>
-									<ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
 								</div>
-							</div>
+							</button>
 						))}
 					</div>
 				) : (
-					<div className="flex flex-col items-center justify-center py-16 text-muted-foreground/60">
-						<Receipt className="h-10 w-10 mb-3" />
-						<p className="text-sm font-medium text-muted-foreground">
-							{searchTerm || statusFilter !== "all"
+					<EmptyState
+						icon={<Receipt />}
+						title={
+							searchTerm || statusFilter !== "all"
 								? "No matching requests"
-								: "No reimbursements yet"}
-						</p>
-						<p className="text-xs text-muted-foreground/60 mt-1">
-							{searchTerm || statusFilter !== "all"
-								? "Try adjusting your search or filter."
-								: "Submit a request to get started."}
-						</p>
-					</div>
+								: "Submit your first reimbursement"
+						}
+						description={
+							searchTerm || statusFilter !== "all"
+								? "Try adjusting your search or status filter."
+								: "Eligible business expenses can be submitted with itemized receipts and payment details. Processing time depends on review completeness."
+						}
+						checklist={
+							!searchTerm && statusFilter === "all" ? (
+								<ul className="list-disc space-y-1 pl-5">
+									<li>Itemized receipt or invoice</li>
+									<li>Business purpose and department</li>
+									<li>Payment or mailing details</li>
+								</ul>
+							) : undefined
+						}
+						action={
+							!searchTerm && statusFilter === "all" ? (
+								<Button variant="outline" onClick={() => setView("create")}>
+									Create reimbursement
+								</Button>
+							) : undefined
+						}
+					/>
 				)}
 			</div>
-		</div>
+		</DashboardPage>
 	);
 }

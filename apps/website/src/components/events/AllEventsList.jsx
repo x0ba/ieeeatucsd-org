@@ -5,7 +5,7 @@ import {
   downloadEventIcs,
 } from "../../lib/calendarLinks";
 
-const EventCard = ({ event, index, publicCalendarId }) => {
+const EventCard = ({ event, publicCalendarId }) => {
   const startDate = new Date(Number(event.startDate));
   const endDate = new Date(Number(event.endDate));
 
@@ -27,10 +27,7 @@ const EventCard = ({ event, index, publicCalendarId }) => {
   const isPast = endDate < new Date();
 
   return (
-    <div
-      className={`bg-white/10 backdrop-blur-sm rounded-lg p-6 mb-6 border border-white/20 hover:bg-white/15 transition-all duration-300 animate-duration-500 animate-delay-${index * 100} in-view:animate-fade-up`}
-      data-inview
-    >
+    <div className="bg-white/10 rounded-lg p-6 mb-6 border border-white/20">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-white text-xl font-bold">{event.eventName}</h3>
         <span
@@ -73,7 +70,11 @@ const EventCard = ({ event, index, publicCalendarId }) => {
 
         {event.location && (
           <div className="flex items-center text-white/80">
-            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
               <path
                 fillRule="evenodd"
                 d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
@@ -86,7 +87,9 @@ const EventCard = ({ event, index, publicCalendarId }) => {
       </div>
 
       {event.eventDescription && (
-        <p className="text-white/70 text-sm leading-relaxed mb-4">{event.eventDescription}</p>
+        <p className="text-white/70 text-sm leading-relaxed mb-4">
+          {event.eventDescription}
+        </p>
       )}
 
       <div className="flex flex-wrap items-center gap-2 mt-4">
@@ -204,11 +207,10 @@ const AllEventsList = ({ events = [], publicCalendarId = "" }) => {
         </div>
       ) : (
         <div>
-          {filteredEvents.map((event, index) => (
+          {filteredEvents.map((event) => (
             <EventCard
               key={event._id}
               event={event}
-              index={index}
               publicCalendarId={publicCalendarId}
             />
           ))}

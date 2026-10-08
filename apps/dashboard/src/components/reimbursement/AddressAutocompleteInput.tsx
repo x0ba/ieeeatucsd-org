@@ -1,5 +1,6 @@
 import type { KeyboardEvent } from "react";
 import { useEffect, useId, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useGoogleMapsPlacesLoader } from "@/hooks/useGoogleMapsPlacesLoader";
@@ -379,7 +380,7 @@ export function AddressAutocompleteInput({
 				{isFetching || maps.loading ? (
 					<span className="-translate-y-1/2 absolute top-1/2 right-3 h-2 w-2 animate-pulse rounded-full bg-primary" />
 				) : placesApi && !suggestionsDisabled ? (
-					<span className="-translate-y-1/2 absolute top-1/2 right-3 h-2 w-2 rounded-full bg-emerald-500" />
+					<span className="-translate-y-1/2 absolute top-1/2 right-3 h-2 w-2 rounded-full bg-ds-green-1000" />
 				) : null}
 			</div>
 			{canShowSuggestions ? (
@@ -389,7 +390,8 @@ export function AddressAutocompleteInput({
 					className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-lg"
 				>
 					{suggestions.map((suggestion, index) => (
-						<button
+						<Button
+							variant="ghost"
 							key={`${suggestion.id}-${index}`}
 							id={`${dropdownId}-${index}`}
 							type="button"
@@ -413,7 +415,7 @@ export function AddressAutocompleteInput({
 									{suggestion.secondaryText}
 								</span>
 							) : null}
-						</button>
+						</Button>
 					))}
 				</div>
 			) : null}

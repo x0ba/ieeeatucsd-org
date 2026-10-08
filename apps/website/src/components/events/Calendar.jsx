@@ -10,7 +10,20 @@ const Calendar = ({ events = [], publicCalendarId = "" }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   const monthEvents = useMemo(() => {
@@ -32,7 +45,8 @@ const Calendar = ({ events = [], publicCalendarId = "" }) => {
     const days = [];
 
     for (let i = 0; i < firstDay.getDay(); i++) days.push(null);
-    for (let i = 1; i <= lastDay.getDate(); i++) days.push(new Date(year, month, i));
+    for (let i = 1; i <= lastDay.getDate(); i++)
+      days.push(new Date(year, month, i));
     while (days.length % 7 !== 0) days.push(null);
 
     return days;
@@ -42,36 +56,48 @@ const Calendar = ({ events = [], publicCalendarId = "" }) => {
   const getEventsForDay = (day) => {
     if (!day) return [];
     const dayKey = formatDate(day);
-    return monthEvents.filter((event) => formatDate(new Date(Number(event.startDate))) === dayKey);
+    return monthEvents.filter(
+      (event) => formatDate(new Date(Number(event.startDate))) === dayKey,
+    );
   };
 
   const changeMonth = (increment) => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + increment, 1));
+    setCurrentDate(
+      new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + increment,
+        1,
+      ),
+    );
   };
 
   const isToday = (day) => {
     if (!day) return false;
     const now = new Date();
-    return day.getDate() === now.getDate() && day.getMonth() === now.getMonth() && day.getFullYear() === now.getFullYear();
+    return (
+      day.getDate() === now.getDate() &&
+      day.getMonth() === now.getMonth() &&
+      day.getFullYear() === now.getFullYear()
+    );
   };
 
   return (
-    <div className="md:w-[90vw] w-[95vw] mx-auto p-[3vw] relative z-10">
-      <div className="flex justify-center mb-[2vw]">
-        <div className="bg-gradient-to-t from-ieee-blue-100/5 to-ieee-blue-100/25 rounded-[1.5vw] p-[1vw] backdrop-blur-sm w-[30vw] px-[2vw]">
-          <div className="flex items-center gap-[3vw]">
+    <div className="w-full py-6 sm:py-8 relative z-10">
+      <div className="flex justify-center mb-4 sm:mb-6">
+        <div className="bg-gradient-to-t from-ieee-blue-100/5 to-ieee-blue-100/25 rounded-2xl p-2 sm:p-3 backdrop-blur-sm w-fit max-w-full px-3 sm:px-5">
+          <div className="flex items-center gap-3 sm:gap-6">
             <button
               onClick={() => changeMonth(-1)}
-              className="text-white hover:text-ieee-yellow transition-colors text-[2vw] bg-ieee-black/40 w-[4vw] h-[4vw] rounded-[1vw] flex items-center justify-center"
+              className="text-white hover:text-ieee-yellow transition-colors text-lg sm:text-2xl bg-ieee-black/40 w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center"
             >
               ←
             </button>
-            <h2 className="text-white text-[2.5vw] font-bold whitespace-nowrap">
+            <h2 className="text-white text-xl sm:text-2xl md:text-3xl font-bold whitespace-nowrap">
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h2>
             <button
               onClick={() => changeMonth(1)}
-              className="text-white hover:text-gray transition-colors text-[2vw] bg-ieee-black/40 w-[4vw] h-[4vw] rounded-[1vw] flex items-center justify-center"
+              className="text-white hover:text-gray transition-colors text-lg sm:text-2xl bg-ieee-black/40 w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center"
             >
               →
             </button>
@@ -82,44 +108,46 @@ const Calendar = ({ events = [], publicCalendarId = "" }) => {
       {publicCalendarId && (
         <div className="flex justify-center mb-4">
           <div className="w-full max-w-3xl bg-gradient-to-r from-ieee-blue-100/35 to-ieee-black/50 border border-ieee-yellow/40 rounded-2xl px-4 py-3 md:px-5 md:py-4 shadow-lg shadow-black/30">
-            <p className="text-white font-semibold text-sm md:text-base mb-2">Add IEEE Events To Your Calendar</p>
+            <p className="text-white font-semibold text-sm md:text-base mb-2">
+              Add IEEE Events To Your Calendar
+            </p>
             <p className="text-white/80 text-xs md:text-sm mb-3">
               Subscribe once to stay synced, or open an individual event below.
             </p>
             <div className="flex flex-wrap gap-2">
-            <a
-              href={buildGoogleCalendarSubscribeUrl(publicCalendarId)}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs md:text-sm text-black bg-ieee-yellow px-3 py-1.5 rounded-full font-semibold hover:brightness-95 transition"
-            >
-              Subscribe in Google Calendar
-            </a>
-            <a
-              href={buildGoogleCalendarIcsUrl(publicCalendarId)}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs md:text-sm text-white bg-white/15 px-3 py-1.5 rounded-full hover:bg-white/25 transition"
-            >
-              Subscribe via ICS Feed
-            </a>
+              <a
+                href={buildGoogleCalendarSubscribeUrl(publicCalendarId)}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs md:text-sm text-black bg-ieee-yellow px-3 py-1.5 rounded-full font-semibold hover:brightness-95 transition"
+              >
+                Subscribe in Google Calendar
+              </a>
+              <a
+                href={buildGoogleCalendarIcsUrl(publicCalendarId)}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs md:text-sm text-white bg-white/15 px-3 py-1.5 rounded-full hover:bg-white/25 transition"
+              >
+                Subscribe via ICS Feed
+              </a>
             </div>
           </div>
         </div>
       )}
 
-      <div className="bg-gradient-to-t from-ieee-blue-100/5 to-ieee-blue-100/25 rounded-[1.5vw] p-[1vw] relative">
-        <div className="grid grid-cols-7 gap-[0.5vw] mb-[1vw]">
+      <div className="bg-gradient-to-t from-ieee-blue-100/5 to-ieee-blue-100/25 rounded-2xl p-2 sm:p-3 relative">
+        <div className="grid grid-cols-7 gap-1 sm:gap-1.5 mb-2">
           {weekDays.map((day, index) => (
             <div key={day} className="flex justify-center w-full">
               <div
-                className={`text-white text-center font-semibold p-[0.5vw] text-[1.2vw] bg-ieee-black/60 w-full h-[4vw] flex items-center justify-center
+                className={`text-white text-center font-semibold px-1 py-2 text-[0.65rem] sm:text-sm md:text-base bg-ieee-black/60 w-full min-h-9 sm:min-h-11 flex items-center justify-center
                 ${
                   index === 0
-                    ? "rounded-tl-[2vw] rounded-[0.5vw]"
+                    ? "rounded-tl-2xl rounded-md"
                     : index === 6
-                      ? "rounded-tr-[2vw] rounded-[0.5vw]"
-                      : "rounded-[0.5vw]"
+                      ? "rounded-tr-2xl rounded-md"
+                      : "rounded-md"
                 }`}
               >
                 {day}
@@ -128,28 +156,34 @@ const Calendar = ({ events = [], publicCalendarId = "" }) => {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-[0.5vw] relative">
+        <div className="grid grid-cols-7 gap-1 sm:gap-1.5 relative">
           {getDaysInMonth(currentDate).map((day, index) => (
             <div
               key={index}
-              className={`min-h-[10vw] p-[0.5vw] rounded relative ${day ? "bg-white/5" : "bg-transparent"} border border-white/10 ${
-                isToday(day) ? "ring-2 ring-ieee-yellow/60 bg-ieee-yellow/10" : ""
+              className={`min-h-20 sm:min-h-24 md:min-h-28 p-1 sm:p-1.5 rounded relative ${day ? "bg-white/5" : "bg-transparent"} border border-white/10 ${
+                isToday(day)
+                  ? "ring-2 ring-ieee-yellow/60 bg-ieee-yellow/10"
+                  : ""
               }`}
             >
               {day && (
                 <>
-                  <div className="text-white mb-[0.5vw] text-[1vw]">{day.getDate()}</div>
-                  <div className="space-y-[0.5vw]">
-                    {getEventsForDay(day).slice(0, 3).map((event) => (
-                      <button
-                        type="button"
-                        key={event._id}
-                        className="w-full text-left text-[0.75vw] border border-ieee-yellow text-white p-[0.45vw] rounded truncate hover:bg-white/10 transition-colors"
-                        onClick={() => setSelectedEvent(event)}
-                      >
-                        {event.eventName}
-                      </button>
-                    ))}
+                  <div className="text-white mb-1 text-xs sm:text-sm md:text-base">
+                    {day.getDate()}
+                  </div>
+                  <div className="space-y-1">
+                    {getEventsForDay(day)
+                      .slice(0, 3)
+                      .map((event) => (
+                        <button
+                          type="button"
+                          key={event._id}
+                          className="w-full text-left text-[0.65rem] sm:text-xs border border-ieee-yellow text-white px-1 py-0.5 rounded truncate hover:bg-white/10 transition-colors"
+                          onClick={() => setSelectedEvent(event)}
+                        >
+                          {event.eventName}
+                        </button>
+                      ))}
                   </div>
                 </>
               )}
@@ -161,7 +195,9 @@ const Calendar = ({ events = [], publicCalendarId = "" }) => {
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm">
             <div className="w-full max-w-lg bg-gradient-to-b from-ieee-blue-100/90 to-ieee-black border border-ieee-yellow/40 rounded-2xl p-5 shadow-2xl">
               <div className="flex items-start justify-between gap-3 mb-3">
-                <h3 className="text-white text-lg md:text-xl font-bold leading-tight">{selectedEvent.eventName}</h3>
+                <h3 className="text-white text-lg md:text-xl font-bold leading-tight">
+                  {selectedEvent.eventName}
+                </h3>
                 <button
                   type="button"
                   onClick={() => setSelectedEvent(null)}
@@ -176,9 +212,15 @@ const Calendar = ({ events = [], publicCalendarId = "" }) => {
                 {new Date(Number(selectedEvent.startDate)).toLocaleString()} -{" "}
                 {new Date(Number(selectedEvent.endDate)).toLocaleTimeString()}
               </p>
-              {selectedEvent.location && <p className="text-white/80 text-sm mb-2">{selectedEvent.location}</p>}
+              {selectedEvent.location && (
+                <p className="text-white/80 text-sm mb-2">
+                  {selectedEvent.location}
+                </p>
+              )}
               {selectedEvent.eventDescription && (
-                <p className="text-white/75 text-sm mb-4 line-clamp-4">{selectedEvent.eventDescription}</p>
+                <p className="text-white/75 text-sm mb-4 line-clamp-4">
+                  {selectedEvent.eventDescription}
+                </p>
               )}
 
               <div className="flex flex-wrap gap-2">
@@ -196,7 +238,8 @@ const Calendar = ({ events = [], publicCalendarId = "" }) => {
                   type="button"
                   onClick={() =>
                     downloadEventIcs({
-                      id: selectedEvent.publicGoogleEventId || selectedEvent._id,
+                      id:
+                        selectedEvent.publicGoogleEventId || selectedEvent._id,
                       title: selectedEvent.eventName,
                       description: selectedEvent.eventDescription,
                       location: selectedEvent.location,

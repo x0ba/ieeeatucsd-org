@@ -1,20 +1,43 @@
 ---
 import { LiaDotCircle } from "react-icons/lia";
+import { Image } from "astro:assets";
+import northropLogo from "../../images/logos/Northrop_Grumman_Logo.png";
+import altiumLogo from "../../images/logos/Altium_logo.png";
+import solidworksLogo from "../../images/logos/SolidWorks_logo.png";
+import rivianLogo from "../../images/logos/Rivian_logo.png";
 ---
 
 <div class="flex flex-col items-center text-white my-[5%]">
-  <div class="flex items-center text-[4.5vw] md:text-[2.5vw] mb-[3%]">
-    <LiaDotCircle className=" mr-[1vw] pt-[0.5%]" />
+  <div
+    class="flex items-center text-[min(4.5vw,4.05rem)] md:text-[min(2.5vw,2.25rem)] mb-[3%]"
+  >
+    <LiaDotCircle className=" mr-[min(1vw,0.9rem)] pt-[0.5%]" />
     <p
       class="text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-ieee-black"
     >
       Meet Our Sponsors
     </p>
   </div>
-  <div class="flex items-center pl-[2vw] gap-[0.5vw]">
-      <img src="/logos/Northrop_Grumman_Logo.png" alt="Northrop Logo" class="w-[17vw] object-contain"/>
-      <img src="/logos/Altium_Logo.png" alt="Altium Logo" class="w-[17vw] object-contain"/>
-      <img src="/logos/SolidWorks_Logo.png" alt="Solidworks Logo" class="w-[17vw] object-contain"/>
-      <img src="/logos/Rivian_Logo.png" alt="Rivian Logo" class="w-[17vw] object-contain"/>
+  <div class="flex items-center pl-[min(2vw,1.8rem)] gap-[min(0.5vw,0.45rem)]">
+    <Image
+      src={northropLogo}
+      alt="Northrop Logo"
+      class="w-[min(17vw,15.3rem)] object-contain"
+    />
+    <Image
+      src={altiumLogo}
+      alt="Altium Logo"
+      class="w-[min(17vw,15.3rem)] object-contain"
+    />
+    <Image
+      src={solidworksLogo}
+      alt="Solidworks Logo"
+      class="w-[min(17vw,15.3rem)] object-contain"
+    />
+    <Image
+      src={rivianLogo}
+      alt="Rivian Logo"
+      class="w-[min(17vw,15.3rem)] object-contain"
+    />
   </div>
 </div>

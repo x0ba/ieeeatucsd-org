@@ -2,42 +2,75 @@
 import { MdEmail } from "react-icons/md";
 import { Image } from "astro:assets";
 import type { ImageMetadata } from "astro";
+import ieeeMark from "../../images/logos/white_logo_only.svg";
 
 interface Props {
   name: string;
   position: string;
   picture: ImageMetadata | null;
-  email: string;
+  email?: string;
   eager?: boolean;
 }
 
 const { name, position, picture, email, eager = false } = Astro.props as Props;
+
+function officerInitials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 1).toUpperCase();
+  return `${parts[0]!.slice(0, 1)}${parts[parts.length - 1]!.slice(0, 1)}`.toUpperCase();
+}
+
+const initials = officerInitials(name);
 ---
 
-<div class="text-white">
+<div class="text-white min-w-0 w-full">
   <div
-    class="group md:w-[20vw] w-[35vw] aspect-[334/440] bg-gradient-to-t from-ieee-blue-100/5 to-ieee-blue-100/25 rounded-[10%] flex flex-col items-center relative border border-white/10 shadow-sm hover:shadow-glow transition-all duration-300 hover:-translate-y-[0.3vw] focus-within:shadow-glow"
+    class="group w-full min-w-0 aspect-[334/440] bg-gradient-to-t from-ieee-blue-100/5 to-ieee-blue-100/25 rounded-[10%] flex flex-col items-center relative border border-white/10"
   >
     <div
-        class="relative md:w-[18vw] w-[31vw] aspect-[334/440] md:rounded-[1.5vw] rounded-[3vw] overflow-hidden mt-[5%] mb-[3%]"
+      class="relative w-[90%] aspect-[334/440] md:rounded-[min(1.5vw,1.35rem)] rounded-[min(3vw,2.7rem)] overflow-hidden mt-[5%] mb-[3%]"
     >
-    {picture ? (
-      <Image
-        src={picture}
-        alt={`${name} portrait`}
-        class="w-full h-full object-cover"
-        width={334}
-        height={440}
-        widths={[160, 240, 334, 440]}
-        sizes="(max-width: 768px) 31vw, 18vw"
-        loading={eager ? "eager" : "lazy"}
-        decoding="async"
-    />
-    ) : (
-      <div class="w-full aspect-[334/440] bg-white/10 flex items-center justify-center">
-        <span class="text-white/70 text-sm">No photo</span>
-      </div>
-    )}
+      {
+        picture ? (
+          <Image
+            src={picture}
+            alt={`${name} portrait`}
+            class="w-full h-full object-cover"
+            width={334}
+            height={440}
+            widths={[160, 240, 334, 440]}
+            sizes="(max-width: 768px) 31vw, 18vw"
+            loading={eager ? "eager" : "lazy"}
+            decoding="async"
+          />
+        ) : (
+          <div
+            class="relative w-full h-full overflow-hidden bg-[#121a2e]"
+            role="img"
+            aria-label={`${name}`}
+          >
+            <div
+              class="absolute inset-0"
+              style="background:
+                radial-gradient(80% 55% at 50% 18%, rgba(136, 191, 236, 0.22) 0%, rgba(136, 191, 236, 0.08) 36%, rgba(35, 51, 99, 0) 68%),
+                linear-gradient(180deg, #2a3f6e 0%, #1a2744 46%, #0d1528 100%);"
+            />
+            <div class="absolute inset-x-0 top-[36%] flex -translate-y-1/2 flex-col items-center">
+              <Image
+                src={ieeeMark}
+                alt=""
+                class="w-[28%] opacity-70 mb-[min(0.8vw,0.72rem)]"
+                widths={[80, 120, 160]}
+                sizes="(max-width: 768px) 9vw, 5vw"
+              />
+              <span class="font-display font-extrabold tracking-tight text-white md:text-[min(3.8vw,3.42rem)] text-[min(7.2vw,6.48rem)] leading-none">
+                {initials}
+              </span>
+            </div>
+          </div>
+        )
+      }
       <div
         class="absolute inset-0 pointer-events-none"
         style="background:
@@ -50,10 +83,10 @@ const { name, position, picture, email, eager = false } = Astro.props as Props;
       </div>
       <div class="absolute inset-x-0 bottom-0 backdrop-blur-sm">
         <div
-          class="flex items-center justify-center px-[1vw] py-[0.8vw] md:py-[0.6vw]"
+          class="flex items-center justify-center px-[min(1vw,0.9rem)] py-[min(0.8vw,0.72rem)] md:py-[min(0.6vw,0.54rem)]"
         >
           <span
-            class="text-white md:text-[1vw] text-[2vw] font-semibold uppercase tracking-wide leading-tight text-center"
+            class="text-white md:text-[min(1vw,0.9rem)] text-[min(2vw,1.8rem)] font-semibold uppercase tracking-wide leading-tight text-center"
           >
             {position}
           </span>
@@ -63,25 +96,28 @@ const { name, position, picture, email, eager = false } = Astro.props as Props;
 
     <div class="w-[85%] flex flex-col items-center text-center">
       <p
-        data-inview
-        class="opacity-0 in-view:animate-fade-right md:text-[1.6vw] text-[3.2vw] font-semibold tracking-tight md:leading-[2.1vw] leading-[4.2vw]"
+        class="md:text-[min(1.6vw,1.44rem)] text-[min(3.2vw,2.88rem)] font-semibold tracking-tight md:leading-[min(2.1vw,1.89rem)] leading-[min(4.2vw,3.78rem)]"
       >
         {name}
       </p>
     </div>
 
-    <div class="w-[85%] pb-[1.2vw] pt-[0.6vw] flex justify-center">
-      <a
-        href={`mailto:${email}`}
-        class="group/email inline-flex items-center gap-[0.6vw] rounded-full bg-white/5 hover:bg-white/10 border border-white/10 px-[1.2vw] py-[0.4vw] text-ieee-yellow md:text-[0.85vw] text-[1.7vw] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ieee-yellow/60"
-        aria-label={`Email ${name}`}
-        title={email}
-      >
-        <MdEmail
-          className="md:text-[1.1vw] text-[2.2vw] opacity-80 group-hover/email:opacity-100 transition-opacity"
-        />
-        <span class="truncate max-w-[14vw] md:max-w-[12vw]">{email}</span>
-      </a>
-    </div>
+    {
+      email && (
+        <div class="w-[85%] pb-[min(1.2vw,1.08rem)] pt-[min(0.6vw,0.54rem)] flex justify-center">
+          <a
+            href={`mailto:${email}`}
+            class="group/email inline-flex items-center gap-[min(0.6vw,0.54rem)] rounded-full bg-white/5 hover:bg-white/10 border border-white/10 px-[min(1.2vw,1.08rem)] py-[min(0.4vw,0.36rem)] text-ieee-yellow md:text-[min(0.85vw,0.765rem)] text-[min(1.7vw,1.53rem)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ieee-yellow/60"
+            aria-label={`Email ${name}`}
+            title={email}
+          >
+            <MdEmail className="md:text-[min(1.1vw,0.99rem)] text-[min(2.2vw,1.98rem)] opacity-80 group-hover/email:opacity-100 transition-opacity" />
+            <span class="truncate max-w-[min(14vw,12.6rem)] md:max-w-[min(12vw,10.8rem)]">
+              {email}
+            </span>
+          </a>
+        </div>
+      )
+    }
   </div>
 </div>

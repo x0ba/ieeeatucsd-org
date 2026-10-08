@@ -106,8 +106,11 @@ async function getNativeIdentity(ctx: AuthContext) {
 
 /**
  * Get the current user document from the database using their Logto ID.
- * Since Convex is self-hosted, ctx.auth is not available.
- * The logtoId is passed explicitly from the client and must match auth token subject.
+ *
+ * Self-hosted Convex supports OIDC JWT auth via auth.config.ts. Prefer the
+ * native identity from ctx.auth.getUserIdentity() when AUTH_BRIDGE_MODE=native.
+ * Legacy mode still accepts the app-minted HMAC bridge token (authToken), which
+ * must match the explicit logtoId from the client.
  */
 export async function getCurrentUser(
   ctx: AuthContext,
@@ -258,6 +261,21 @@ export async function requireAdmin(
   const user = await requireCurrentUser(ctx, logtoId, authToken);
   if (!isAdmin(user.role)) {
     throw new Error("Insufficient permissions: administrator access required");
+  }
+  return user;
+}
+
+/**
+ * Require access to the sponsor resume database (admin or non-Bronze sponsor).
+ */
+export async function requireResumeDatabaseAccess(
+  ctx: AuthContext,
+  logtoId?: string,
+  authToken?: string,
+) {
+  const user = await requireCurrentUser(ctx, logtoId, authToken);
+  if (!canAccessResumeDatabase(user.role, user.sponsorTier)) {
+    throw new Error("Insufficient permissions: resume database access required");
   }
   return user;
 }

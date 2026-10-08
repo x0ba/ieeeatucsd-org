@@ -20,11 +20,21 @@ import {
 	TrendingUp,
 	XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import {
+	DashboardPage,
+	EmptyState,
+	PageHeader,
+} from "@/components/dashboard/DashboardPage";
 import { BudgetLogModal } from "@/components/dashboard/fund-requests/BudgetLogModal";
 import { BudgetTrackingCard } from "@/components/dashboard/fund-requests/BudgetTrackingCard";
 import { FundRequestFormModal } from "@/components/dashboard/fund-requests/FundRequestFormModal";
+import {
+	MobileDataList,
+	MobileDataListItem,
+	useMobileShell,
+} from "@/components/mobile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,9 +42,11 @@ import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthedMutation, useAuthedQuery } from "@/hooks/useAuthedConvex";
 import { usePermissions } from "@/hooks/usePermissions";
+import { prefetchAuthedQuery } from "@/lib/prefetch/prefetch";
 import { cn } from "@/lib/utils";
 import {
 	CATEGORY_LABELS,
@@ -49,27 +61,29 @@ import {
 } from "@/types/fund-requests";
 
 export const Route = createFileRoute("/_dashboard/fund-requests")({
+	loader: (ctx) =>
+		prefetchAuthedQuery(api.fundRequests.listMine, undefined, ctx),
 	component: FundRequestsPage,
 });
 
 const ITEMS_PER_PAGE = 6;
 
 const statusColors: Record<string, string> = {
-	draft: "bg-gray-100 text-gray-800",
-	submitted: "bg-blue-100 text-blue-800",
-	needs_info: "bg-yellow-100 text-yellow-800",
-	approved: "bg-green-100 text-green-800",
-	denied: "bg-red-100 text-red-800",
-	completed: "bg-purple-100 text-purple-800",
+	draft: "bg-muted text-foreground",
+	submitted: "bg-ds-blue-100 text-tone-info",
+	needs_info: "bg-ds-amber-100 text-tone-warning",
+	approved: "bg-ds-green-100 text-tone-success",
+	denied: "bg-ds-red-100 text-tone-danger",
+	completed: "bg-ds-blue-100 text-tone-purple",
 };
 
 const statusIconColors: Record<string, string> = {
 	draft: "bg-muted text-muted-foreground",
-	submitted: "bg-blue-500/10 text-blue-700",
-	needs_info: "bg-yellow-500/10 text-yellow-700",
-	approved: "bg-green-500/10 text-green-700",
-	denied: "bg-red-500/10 text-red-700",
-	completed: "bg-purple-500/10 text-purple-700",
+	submitted: "bg-ds-blue-100 text-tone-info",
+	needs_info: "bg-ds-amber-100 text-tone-warning",
+	approved: "bg-ds-green-100 text-tone-success",
+	denied: "bg-ds-red-100 text-tone-danger",
+	completed: "bg-ds-purple-100 text-tone-info",
 };
 
 const getStatusIcon = (status: FundRequestStatus) => {
@@ -108,9 +122,15 @@ function FundRequestDetailPage({
 	const vendorLinks = request.vendorLinks || [];
 	const attachments = request.attachments || [];
 	const auditLogs = request.auditLogs || [];
+	const showStickyEditBar = canEdit && !!onEdit;
 
 	return (
-		<div className="w-full max-w-[1600px] mx-auto space-y-6 p-4 sm:p-6">
+		<div
+			className={cn(
+				"w-full max-w-[1600px] mx-auto space-y-6 p-4 sm:p-6",
+				showStickyEditBar && "pb-24 sm:pb-6",
+			)}
+		>
 			<div className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
 				<div className="flex items-start gap-3 min-w-0">
 					<Button
@@ -150,12 +170,12 @@ function FundRequestDetailPage({
 						<p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
 							Amount
 						</p>
-						<p className="text-xl font-bold text-green-600">
+						<p className="text-xl font-bold text-tone-success">
 							{formatCurrency(request.amount)}
 						</p>
 					</div>
-					{canEdit && onEdit && (
-						<Button onClick={onEdit} className="h-10">
+					{showStickyEditBar && (
+						<Button onClick={onEdit} className="hidden h-10 sm:inline-flex">
 							<Edit className="w-4 h-4 mr-2" />
 							{request.status === "needs_info"
 								? "Respond & Resubmit"
@@ -166,13 +186,13 @@ function FundRequestDetailPage({
 			</div>
 
 			{request.status === "needs_info" && request.infoRequestNotes && (
-				<div className="rounded-md border border-yellow-200 bg-yellow-50 p-3 flex gap-3">
-					<AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+				<div className="rounded-md border border-ds-amber-100 bg-ds-amber-100 p-3 flex gap-3">
+					<AlertCircle className="w-4 h-4 text-tone-warning flex-shrink-0 mt-0.5" />
 					<div>
-						<h2 className="font-semibold text-yellow-800 text-sm mb-0.5">
+						<h2 className="font-semibold text-tone-warning text-sm mb-0.5">
 							Information Requested
 						</h2>
-						<p className="text-xs text-yellow-700 leading-relaxed">
+						<p className="text-xs text-tone-warning leading-relaxed">
 							{request.infoRequestNotes}
 						</p>
 					</div>
@@ -180,13 +200,13 @@ function FundRequestDetailPage({
 			)}
 
 			{request.status === "denied" && request.reviewNotes && (
-				<div className="rounded-xl border border-red-200 bg-red-50 p-4 flex gap-3">
-					<XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+				<div className="rounded-md border border-ds-red-100 bg-ds-red-100 p-4 flex gap-3">
+					<XCircle className="w-5 h-5 text-tone-danger flex-shrink-0 mt-0.5" />
 					<div>
-						<h2 className="font-semibold text-red-800 text-sm mb-1">
+						<h2 className="font-semibold text-tone-danger text-sm mb-1">
 							Request Denied
 						</h2>
-						<p className="text-sm text-red-700 leading-relaxed">
+						<p className="text-sm text-tone-danger leading-relaxed">
 							{request.reviewNotes}
 						</p>
 					</div>
@@ -194,14 +214,14 @@ function FundRequestDetailPage({
 			)}
 
 			{request.status === "approved" && (
-				<div className="rounded-xl border border-green-200 bg-green-50 p-4 flex gap-3">
-					<CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+				<div className="rounded-md border border-ds-green-100 bg-ds-green-100 p-4 flex gap-3">
+					<CheckCircle className="w-5 h-5 text-tone-success flex-shrink-0 mt-0.5" />
 					<div>
-						<h2 className="font-semibold text-green-800 text-sm mb-1">
+						<h2 className="font-semibold text-tone-success text-sm mb-1">
 							Request Approved
 						</h2>
 						{request.reviewNotes && (
-							<p className="text-sm text-green-700 leading-relaxed">
+							<p className="text-sm text-tone-success leading-relaxed">
 								{request.reviewNotes}
 							</p>
 						)}
@@ -223,9 +243,9 @@ function FundRequestDetailPage({
 					</Card>
 
 					{request.infoResponseNotes && (
-						<Card className="border-yellow-200/70 bg-yellow-50/50 shadow-sm">
+						<Card className="border-ds-amber-100/70 bg-ds-amber-100/50 shadow-sm">
 							<CardContent className="p-5 space-y-2">
-								<h2 className="text-xs font-semibold text-yellow-700 uppercase tracking-wide">
+								<h2 className="text-xs font-semibold text-tone-warning uppercase tracking-wide">
 									Response to Info Request
 								</h2>
 								<p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -428,11 +448,24 @@ function FundRequestDetailPage({
 					</Card>
 				</div>
 			</div>
+
+			{showStickyEditBar && (
+				<div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:hidden">
+					<Button onClick={onEdit} className="h-11 w-full">
+						<Edit className="w-4 h-4 mr-2" />
+						{request.status === "needs_info"
+							? "Respond & Resubmit"
+							: "Edit Request"}
+					</Button>
+				</div>
+			)}
 		</div>
 	);
 }
 
 function FundRequestsPage() {
+	const isMobile = useIsMobile();
+	const { setHideTabBar } = useMobileShell();
 	const { logtoId } = useAuth();
 	const { hasOfficerAccess } = usePermissions();
 	const requests = useAuthedQuery(
@@ -450,6 +483,11 @@ function FundRequestsPage() {
 	const [selectedTab, setSelectedTab] = useState<FilterTab>("all");
 	const [page, setPage] = useState(1);
 	const [isDeleting, setIsDeleting] = useState(false);
+
+	useEffect(() => {
+		setHideTabBar(view === "form" || view === "detail");
+		return () => setHideTabBar(false);
+	}, [view, setHideTabBar]);
 
 	// Budget stats queries
 	const budgetStatsEvents = useAuthedQuery(
@@ -669,6 +707,12 @@ function FundRequestsPage() {
 				return [];
 		}
 	};
+	const isTrueZeroState = requests?.length === 0;
+	const budgetsConfigured = [
+		budgetStatsEvents,
+		budgetStatsProjects,
+		budgetStatsInternal,
+	].some((budget) => budget?.isConfigured);
 
 	if (view === "form") {
 		return (
@@ -730,30 +774,21 @@ function FundRequestsPage() {
 
 	return (
 		<>
-			<div className="p-4 sm:p-6 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
+			<DashboardPage width="wide">
 				{/* Header */}
-				<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-					<div className="min-w-0">
-						<h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-							Fund Requests
-						</h1>
-						<p className="text-sm sm:text-base text-muted-foreground mt-1 max-w-2xl">
-							Request funding, track review status, and keep department budgets
-							organized.
-						</p>
-					</div>
-					<Button
-						onClick={handleNewRequest}
-						size="lg"
-						className="w-full font-medium shadow-sm sm:w-auto"
-					>
-						<Plus className="h-5 w-5 mr-2" />
-						New Request
-					</Button>
-				</div>
+				<PageHeader
+					title="Fund Requests"
+					description="Request funding, track review status, and keep department budgets organized."
+					actions={
+						<Button onClick={handleNewRequest} className="w-full sm:w-auto">
+							<Plus />
+							New Request
+						</Button>
+					}
+				/>
 
 				{/* Budget Tracking Section */}
-				{hasOfficerAccess && (
+				{hasOfficerAccess && budgetsConfigured && (
 					<div className="space-y-4">
 						<div className="flex items-center gap-2">
 							<TrendingUp className="w-5 h-5 text-primary" />
@@ -791,134 +826,171 @@ function FundRequestsPage() {
 						</div>
 					</div>
 				)}
-
-				{/* Filters and Search */}
-				<div className="sticky top-0 z-20 -mx-4 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-						<Tabs
-							value={selectedTab}
-							onValueChange={(v) => {
-								setSelectedTab(v as FilterTab);
-								setPage(1);
-							}}
-							className="w-full min-w-0 lg:w-auto"
-						>
-							<div className="-mx-1 overflow-x-auto px-1 pb-1">
-								<TabsList className="w-max">
-									<TabsTrigger value="all" className="gap-2">
-										<span>All Requests</span>
-										<Badge variant="secondary">{stats.total}</Badge>
-									</TabsTrigger>
-									<TabsTrigger value="draft" className="gap-2">
-										<span>Draft</span>
-										{stats.draft > 0 && (
-											<Badge variant="secondary">{stats.draft}</Badge>
-										)}
-									</TabsTrigger>
-									<TabsTrigger value="submitted" className="gap-2">
-										<span>Submitted</span>
-										{stats.submitted > 0 && (
-											<Badge
-												variant="secondary"
-												className="bg-blue-500/10 text-blue-700"
-											>
-												{stats.submitted}
-											</Badge>
-										)}
-									</TabsTrigger>
-									<TabsTrigger value="needs_info" className="gap-2">
-										<span>Needs Info</span>
-										{stats.needsInfo > 0 && (
-											<Badge
-												variant="secondary"
-												className="bg-yellow-500/10 text-yellow-700"
-											>
-												{stats.needsInfo}
-											</Badge>
-										)}
-									</TabsTrigger>
-									<TabsTrigger value="approved" className="gap-2">
-										<span>Approved</span>
-										{stats.approved > 0 && (
-											<Badge
-												variant="secondary"
-												className="bg-green-500/10 text-green-700"
-											>
-												{stats.approved}
-											</Badge>
-										)}
-									</TabsTrigger>
-									<TabsTrigger value="denied" className="gap-2">
-										<span>Denied</span>
-										{stats.denied > 0 && (
-											<Badge
-												variant="secondary"
-												className="bg-red-500/10 text-red-700"
-											>
-												{stats.denied}
-											</Badge>
-										)}
-									</TabsTrigger>
-									<TabsTrigger value="completed" className="gap-2">
-										<span>Completed</span>
-										{stats.completed > 0 && (
-											<Badge
-												variant="secondary"
-												className="bg-purple-500/10 text-purple-700"
-											>
-												{stats.completed}
-											</Badge>
-										)}
-									</TabsTrigger>
-								</TabsList>
-							</div>
-						</Tabs>
-						<div className="relative w-full lg:max-w-sm">
-							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-							<Input
-								placeholder="Search requests..."
-								value={searchQuery}
-								onChange={(e) => {
-									setSearchQuery(e.target.value);
-									setPage(1);
-								}}
-								className="pl-10"
-							/>
+				{hasOfficerAccess && !budgetsConfigured && (
+					<div className="flex flex-col gap-3 rounded-md border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+						<div>
+							<h2 className="font-medium">
+								Department budgets are not configured
+							</h2>
+							<p className="mt-1 text-sm text-muted-foreground">
+								Events, Projects, and Internal Operations need starting budgets.
+								Ask the Treasurer to configure them.
+							</p>
 						</div>
 					</div>
-				</div>
+				)}
+
+				{/* Filters and Search */}
+				{!isTrueZeroState && (
+					<div className="sticky top-0 z-20 -mx-4 border-b border-border/60 bg-background/95 px-4 py-2 backdrop-blur-sm sm:-mx-6 sm:px-6">
+						<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+							<Tabs
+								value={selectedTab}
+								onValueChange={(v) => {
+									setSelectedTab(v as FilterTab);
+									setPage(1);
+								}}
+								className="w-full min-w-0 lg:w-auto"
+							>
+								<div className="scrollbar-quiet -mx-1 overflow-x-auto px-1 pb-1 [mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-12px),transparent)]">
+									<TabsList className="w-max">
+										<TabsTrigger value="all" className="gap-2">
+											<span>All Requests</span>
+											<Badge variant="secondary">{stats.total}</Badge>
+										</TabsTrigger>
+										<TabsTrigger value="draft" className="gap-2">
+											<span>Draft</span>
+											{stats.draft > 0 && (
+												<Badge variant="secondary">{stats.draft}</Badge>
+											)}
+										</TabsTrigger>
+										<TabsTrigger value="submitted" className="gap-2">
+											<span>Submitted</span>
+											{stats.submitted > 0 && (
+												<Badge
+													variant="secondary"
+													className="bg-ds-blue-100 text-tone-info"
+												>
+													{stats.submitted}
+												</Badge>
+											)}
+										</TabsTrigger>
+										<TabsTrigger value="needs_info" className="gap-2">
+											<span>Needs Info</span>
+											{stats.needsInfo > 0 && (
+												<Badge
+													variant="secondary"
+													className="bg-ds-amber-100 text-tone-warning"
+												>
+													{stats.needsInfo}
+												</Badge>
+											)}
+										</TabsTrigger>
+										<TabsTrigger value="approved" className="gap-2">
+											<span>Approved</span>
+											{stats.approved > 0 && (
+												<Badge
+													variant="secondary"
+													className="bg-ds-green-100 text-tone-success"
+												>
+													{stats.approved}
+												</Badge>
+											)}
+										</TabsTrigger>
+										<TabsTrigger value="denied" className="gap-2">
+											<span>Denied</span>
+											{stats.denied > 0 && (
+												<Badge
+													variant="secondary"
+													className="bg-ds-red-100 text-tone-danger"
+												>
+													{stats.denied}
+												</Badge>
+											)}
+										</TabsTrigger>
+										<TabsTrigger value="completed" className="gap-2">
+											<span>Completed</span>
+											{stats.completed > 0 && (
+												<Badge
+													variant="secondary"
+													className="bg-ds-purple-100 text-tone-info"
+												>
+													{stats.completed}
+												</Badge>
+											)}
+										</TabsTrigger>
+									</TabsList>
+								</div>
+							</Tabs>
+							<div className="relative w-full lg:max-w-sm">
+								<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+								<Input
+									placeholder="Search requests..."
+									value={searchQuery}
+									onChange={(e) => {
+										setSearchQuery(e.target.value);
+										setPage(1);
+									}}
+									className="pl-10"
+								/>
+							</div>
+						</div>
+					</div>
+				)}
 
 				{/* Request List - Card Grid */}
 				{!requests ? (
 					<div className="grid grid-cols-1 gap-4">
 						{[1, 2, 3, 4, 5, 6].map((i) => (
-							<Skeleton key={i} className="h-32 w-full rounded-xl" />
+							<Skeleton key={i} className="h-32 w-full rounded-md" />
 						))}
 					</div>
 				) : filteredRequests.length === 0 ? (
-					<Card className="border-dashed border-2 border-border/50 bg-muted/30">
-						<CardContent className="py-12 text-center">
-							<div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
-								<FileText className="w-8 h-8" />
-							</div>
-							<h3 className="text-xl font-semibold text-foreground mb-2">
-								{requests.length === 0
-									? "No fund requests yet"
-									: "No matching requests found"}
-							</h3>
-							<p className="text-muted-foreground max-w-sm mx-auto mb-6">
-								{requests.length === 0
-									? "Create your first fund request to get started with your project funding."
-									: "Try adjusting your filters or search query to find what you are looking for."}
-							</p>
-							{requests.length === 0 && (
-								<Button onClick={handleNewRequest}>
-									<Plus className="h-4 w-4 mr-2" />
-									New Fund Request
+					<EmptyState
+						icon={<FileText />}
+						title={
+							requests.length === 0
+								? "No fund requests yet"
+								: "No matching requests found"
+						}
+						description={
+							requests.length === 0
+								? "Prepare the amount, purpose, department, and supporting documents. Most requests are reviewed after the submission is complete."
+								: "Try adjusting your filters or search query to find what you are looking for."
+						}
+						action={
+							requests.length === 0 ? (
+								<Button variant="outline" onClick={handleNewRequest}>
+									Create a fund request
 								</Button>
-							)}
-						</CardContent>
-					</Card>
+							) : undefined
+						}
+					/>
+				) : isMobile ? (
+					<MobileDataList>
+						{paginatedRequests.map((r) => (
+							<MobileDataListItem
+								key={r._id}
+								title={r.title}
+								subtitle={
+									CATEGORY_LABELS[r.category as keyof typeof CATEGORY_LABELS] ||
+									r.category
+								}
+								meta={formatDate(r.createdAt)}
+								trailing={formatCurrency(r.amount)}
+								status={
+									<Badge
+										className={`${statusColors[r.status] || ""}`}
+										variant="secondary"
+									>
+										{STATUS_LABELS[r.status as keyof typeof STATUS_LABELS] ||
+											r.status}
+									</Badge>
+								}
+								onClick={() => handleViewRequest(r)}
+							/>
+						))}
+					</MobileDataList>
 				) : (
 					<div className="grid grid-cols-1 gap-4">
 						{paginatedRequests.map((r) => (
@@ -948,7 +1020,7 @@ function FundRequestsPage() {
 													{r.title}
 												</h3>
 												<Badge
-													className={`${statusColors[r.status] || ""} h-5 px-2 py-0.5 text-[10px]`}
+													className={`${statusColors[r.status] || ""} min-h-6 px-2 py-1 text-xs`}
 													variant="secondary"
 												>
 													<span className="flex items-center gap-1.5">
@@ -988,13 +1060,13 @@ function FundRequestsPage() {
 											</div>
 
 											{r.status === "needs_info" && r.infoRequestNotes && (
-												<div className="mt-2 p-2 bg-yellow-50/50 rounded border border-yellow-200/50 flex items-start gap-2">
-													<AlertCircle className="w-3.5 h-3.5 text-yellow-600 flex-shrink-0 mt-0.5" />
+												<div className="mt-2 p-2 bg-ds-amber-100/50 rounded border border-ds-amber-100/50 flex items-start gap-2">
+													<AlertCircle className="w-3.5 h-3.5 text-tone-warning flex-shrink-0 mt-0.5" />
 													<div>
-														<span className="text-xs font-semibold text-yellow-700 block mb-0.5">
+														<span className="text-xs font-semibold text-tone-warning block mb-0.5">
 															Action Required
 														</span>
-														<p className="text-xs text-yellow-800 line-clamp-1">
+														<p className="text-xs text-tone-warning line-clamp-1">
 															{r.infoRequestNotes}
 														</p>
 													</div>
@@ -1056,7 +1128,7 @@ function FundRequestsPage() {
 						/>
 					</div>
 				)}
-			</div>
+			</DashboardPage>
 
 			{/* Budget Log Modal (Officer Only) */}
 			{hasOfficerAccess && (

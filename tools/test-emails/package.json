@@ -1,0 +1,21 @@
+{
+  "name": "@ieeeatucsd/test-emails",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preview": "tsx src/index.ts --preview",
+    "typecheck": "tsc --noEmit",
+    "check": "tsc --noEmit",
+    "test": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ieeeatucsd/email": "workspace:*",
+    "resend": "^4.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "tsx": "^4.23.12",
+    "typescript": "^5.7.2"
+  }
+}

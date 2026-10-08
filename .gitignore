@@ -3,12 +3,18 @@ dist/
 
 # generated types
 .astro/
-.cursor
+# Cursor local state; keep committed cloud environment config
+.cursor/*
+!.cursor/environment.json
 
 final_review_gate.py
 
 # dependencies
 node_modules/
+
+# turborepo
+.turbo
+**/.turbo
 
 # logs
 npm-debug.log*
@@ -27,3 +33,7 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+out/
+
+.direnv/
